@@ -1,0 +1,33 @@
+VERSION 7
+Move 163
+Channel: 18
+1 0 0 0 0 0 1 1 1 1 1 1 1  X O O . . O X . X2X X X X
+1 0 0 0 0 0 1 1 1 1 1 0 0  X O . O O O X X X X X O O
+1 0 0 0 0 1 1 1 1 1 0 0 0  X O O . O X X X X X O . O
+1 0 0 0 1 1 1 1 1 1 0 0 0  X O O O X . X X X X O O O
+1 1 0 0 1 1 1 1 1 1 1 0 0  X X O O X . X . . X X O X
+1 1 1 1 1 1 1 1 1 1 0 0 0  X X X X X X . X . X O O .
+1 1 1 1 1 0 1 1 1 1 1 0 0  X X . . X O X X X . X O O
+1 1 1 1 0 0 1 0 1 1 1 1 1  . X X X . O X O X X . X X
+1 1 0 0 0 0 1 0 1 1 1 1 1  . X O O O O X O X X X X X
+1 1 0 1 0 0 1 0 0 0 1 1 0  . X O X O O X O O O X X O
+1 1 1 1 1 0 0 0 1 0 0 0 0  X X X X X O O . X O O O O
+1 0 0 0 0 0 0 0 0 0 1 0 0  X O O O O O O O O O X4. O
+0 0 0 0 0 0 0 0 0 0 0 0 0  O O . . . . . . . . . O .
+
+Channel: 19
+0 1 1 1 1 1 0 0 0 0 0 0 0  X O O . . O X . X2X X X X
+0 1 1 1 1 1 0 0 0 0 0 1 1  X O . O O O X X X X X O O
+0 1 1 1 1 0 0 0 0 0 1 1 1  X O O . O X X X X X O . O
+0 1 1 1 0 0 0 0 0 0 1 1 1  X O O O X . X X X X O O O
+0 0 1 1 0 0 0 0 0 0 0 1 1  X X O O X . X . . X X O X
+0 0 0 0 0 0 0 0 0 0 1 1 1  X X X X X X . X . X O O .
+0 0 0 0 0 1 0 0 0 0 0 1 1  X X . . X O X X X . X O O
+0 0 0 0 0 1 0 1 0 0 0 0 0  . X X X . O X O X X . X X
+0 0 1 1 1 1 0 1 0 0 0 0 0  . X O O O O X O X X X X X
+0 0 1 0 1 1 0 1 1 1 0 0 1  . X O X O O X O O O X X O
+0 0 0 0 0 1 1 0 0 1 1 1 1  X X X X X O O . X O O O O
+0 1 1 1 1 1 1 1 1 1 0 0 1  X O O O O O O O O O X4. O
+1 1 0 0 0 0 0 0 0 0 0 1 1  O O . . . . . . . . . O .
+
+

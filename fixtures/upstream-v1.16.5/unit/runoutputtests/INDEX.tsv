@@ -1,0 +1,40 @@
+file	line	test	role
+nn-inputs-v3v4v5v6-basic.expected0.txt	1732	NN Inputs V3V4V5V6 Basic	expected
+nn-inputs-v3v4v5v6-ko.expected0.txt	2371	NN Inputs V3V4V5V6 Ko	expected
+nn-inputs-v3v4v5v6-7x7.expected0.txt	3196	NN Inputs V3V4V5V6 7x7	expected
+nn-inputs-v3v4v5v6-7x7-embedded-in-9x9.expected0.txt	4356	NN Inputs V3V4V5V6 7x7 embedded in 9x9	expected
+nn-inputs-v3v4v6-area-komi.expected0.txt	4815	NN Inputs V3V4V6 Area Komi	expected
+nn-inputs-v3v4v5v6-rules.expected0.txt	5083	NN Inputs V3V4V5V6 Rules	expected
+nn-inputs-v3v4v5v6-rules.expected1.txt	5333	NN Inputs V3V4V5V6 Rules	expected
+nn-inputs-v3v4v6-ko-prohib-and-pass-hist-and-whitebonus-and-encorestart.expected0.txt	6202	NN Inputs V3V4V6 Ko Prohib and pass hist and whitebonus and encorestart	expected
+nn-inputs-v3v4v6-some-other-test-positions.expected0.txt	6572	NN Inputs V3V4V6 some other test positions	expected
+nn-inputs-v6-area-feature-and-komi.expected0.txt	8865	NN Inputs V6 Area Feature and Komi	expected
+nn-inputs-v6-pass-history.expected0.txt	11518	NN Inputs V6 Pass history	expected
+nn-inputs-selfkomi-handicap-white-bonus.expected0.txt	11914	NN Inputs SelfKomi Handicap White Bonus	expected
+passing-hack-condition-based-on-as-is-scoring.expected0.txt	13492	Passing hack condition based on as-is scoring	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected0.txt	15625	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected1.txt	15719	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected2.txt	15813	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected3.txt	15908	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected4.txt	16002	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected5.txt	16096	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected6.txt	16191	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected7.txt	16285	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected8.txt	16379	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected9.txt	16474	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected10.txt	16568	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected11.txt	16662	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected12.txt	16757	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected13.txt	16851	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected14.txt	16945	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected15.txt	17040	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected16.txt	17134	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected17.txt	17228	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected18.txt	17323	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected19.txt	17417	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected20.txt	17511	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected21.txt	17606	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected22.txt	17700	NN Inputs history scoring past end of game or end of phase	expected
+nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected23.txt	17794	NN Inputs history scoring past end of game or end of phase	expected
+score-and-utility-tests.expected0.txt	22883	Score and utility tests	expected
+nn-symmetry-tests.expected0.txt	23421	NN symmetry tests	expected

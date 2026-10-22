@@ -1,0 +1,393 @@
+VERSION 7
+
+Channel: 9
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . . . . . . . . .
+
+Channel: 0: 1
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 
+Channel: 9
+1 0 0 0 0 0 0 0 0  O . . . . . . . .
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  O . . . . . . . .
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  O . . . . . . . .
+
+Channel: 0: 0
+Channel: 1: 1
+Channel: 2: 0
+-----
+pass A1 D1 
+Channel: 9
+0 0 0 1 0 0 0 0 0  O . . X . . . . .
+
+Channel: 10
+1 0 0 0 0 0 0 0 0  O . . X . . . . .
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  O . . X . . . . .
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 1
+-----
+pass A1 D1 F1 
+Channel: 9
+0 0 0 0 0 1 0 0 0  O . . X . O . . .
+
+Channel: 10
+0 0 0 1 0 0 0 0 0  O . . X . O . . .
+
+Channel: 11
+1 0 0 0 0 0 0 0 0  O . . X . O . . .
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 
+Channel: 9
+0 0 0 0 0 0 0 1 0  O2. . X3. O4. X5.
+
+Channel: 10
+0 0 0 0 0 1 0 0 0  O2. . X3. O4. X5.
+
+Channel: 11
+0 0 0 1 0 0 0 0 0  O2. . X3. O4. X5.
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 
+Channel: 9
+0 0 0 0 1 0 0 0 0  O1. . X2O5O3. X4.
+
+Channel: 10
+0 0 0 0 0 0 0 1 0  O1. . X2O5O3. X4.
+
+Channel: 11
+0 0 0 0 0 1 0 0 0  O1. . X2O5O3. X4.
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 
+Channel: 9
+0 0 0 0 0 0 1 0 0  O . . X1.4.2X5X3.
+
+Channel: 10
+0 0 0 0 1 0 0 0 0  O . . X1.4.2X5X3.
+
+Channel: 11
+0 0 0 0 0 0 0 1 0  O . . X1.4.2X5X3.
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 
+Channel: 9
+0 1 0 0 0 0 0 0 0  O O5. X .3.1X4X2.
+
+Channel: 10
+0 0 0 0 0 0 1 0 0  O O5. X .3.1X4X2.
+
+Channel: 11
+0 0 0 0 1 0 0 0 0  O O5. X .3.1X4X2.
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 
+Channel: 9
+0 0 0 0 0 0 0 0 1  O O4. X .2. X3X1X5
+
+Channel: 10
+0 1 0 0 0 0 0 0 0  O O4. X .2. X3X1X5
+
+Channel: 11
+0 0 0 0 0 0 1 0 0  O O4. X .2. X3X1X5
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 
+Channel: 9
+0 0 0 0 0 1 0 0 0  O O3. X .1O5.2. .4
+
+Channel: 10
+0 0 0 0 0 0 0 0 1  O O3. X .1O5.2. .4
+
+Channel: 11
+0 1 0 0 0 0 0 0 0  O O3. X .1O5.2. .4
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 
+Channel: 9
+0 0 0 0 0 0 0 0 1  O O2. X . O4.1. X3
+
+Channel: 10
+0 0 0 0 0 1 0 0 0  O O2. X . O4.1. X3
+
+Channel: 11
+0 0 0 0 0 0 0 0 1  O O2. X . O4.1. X3
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 
+Channel: 9
+0 0 0 0 0 0 1 0 0  O O1. X . O3O5. X2
+
+Channel: 10
+0 0 0 0 0 0 0 0 1  O O1. X . O3O5. X2
+
+Channel: 11
+0 0 0 0 0 1 0 0 0  O O1. X . O3O5. X2
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 
+Channel: 9
+0 0 1 0 0 0 0 0 0  . . X5X . O2O4. X1
+
+Channel: 10
+0 0 0 0 0 0 1 0 0  . . X5X . O2O4. X1
+
+Channel: 11
+0 0 0 0 0 0 0 0 1  . . X5X . O2O4. X1
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 
+Channel: 9
+0 0 0 0 1 0 0 0 0  . . X4X O5O1O3. X2
+
+Channel: 10
+0 0 1 0 0 0 0 0 0  . . X4X O5O1O3. X2
+
+Channel: 11
+0 0 0 0 0 0 1 0 0  . . X4X O5O1O3. X2
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 
+Channel: 9
+0 1 0 0 0 0 0 0 0  . X5X3X O4O O2. X1
+
+Channel: 10
+0 0 0 0 1 0 0 0 0  . X5X3X O4O O2. X1
+
+Channel: 11
+0 0 1 0 0 0 0 0 0  . X5X3X O4O O2. X1
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  . X4X2X O3O O1. X
+
+Channel: 10
+0 1 0 0 0 0 0 0 0  . X4X2X O3O O1. X
+
+Channel: 11
+0 0 0 0 1 0 0 0 0  . X4X2X O3O O1. X
+
+Channel: 0: 1
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  . X3X1X O2O O . X
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  . X3X1X O2O O . X
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . X3X1X O2O O . X
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 
+Channel: 9
+0 0 0 0 0 0 0 1 0  . X2X X O1O O O5.
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  . X2X X O1O O O5.
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . X2X X O1O O O5.
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 
+Channel: 9
+0 0 0 0 0 0 0 0 1  . X1X X . . . .4X5
+
+Channel: 10
+0 0 0 0 0 0 0 1 0  . X1X X . . . .4X5
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . X1X X . . . .4X5
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 
+Channel: 9
+0 0 0 0 1 0 0 0 0  . X X X O5. . .3X4
+
+Channel: 10
+0 0 0 0 0 0 0 0 1  . X X X O5. . .3X4
+
+Channel: 11
+0 0 0 0 0 0 0 1 0  . X X X O5. . .3X4
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 
+Channel: 9
+0 0 0 0 0 0 1 0 0  . X X X O4. X5.2X3
+
+Channel: 10
+0 0 0 0 1 0 0 0 0  . X X X O4. X5.2X3
+
+Channel: 11
+0 0 0 0 0 0 0 0 1  . X X X O4. X5.2X3
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  . X X X O3. X4.1X2
+
+Channel: 10
+0 0 0 0 0 0 1 0 0  . X X X O3. X4.1X2
+
+Channel: 11
+0 0 0 0 1 0 0 0 0  . X X X O3. X4.1X2
+
+Channel: 0: 1
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  . X X X O2. X3. X1
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  . X X X O2. X3. X1
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  . X X X O2. X3. X1
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass pass A1 
+Channel: 9
+1 0 0 0 0 0 0 0 0  O5. . . O1. X2. X
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  O5. . . O1. X2. X
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  O5. . . O1. X2. X
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass pass A1 pass 
+Channel: 9
+0 0 0 0 0 0 0 0 0  O4. . . O . X1. X
+
+Channel: 10
+1 0 0 0 0 0 0 0 0  O4. . . O . X1. X
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  O4. . . O . X1. X
+
+Channel: 0: 1
+Channel: 1: 0
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass pass A1 pass D1 
+Channel: 9
+0 0 0 1 0 0 0 0 0  O3. . O5O . X . X
+
+Channel: 10
+0 0 0 0 0 0 0 0 0  O3. . O5O . X . X
+
+Channel: 11
+1 0 0 0 0 0 0 0 0  O3. . O5O . X . X
+
+Channel: 0: 0
+Channel: 1: 1
+Channel: 2: 0
+-----
+pass A1 D1 F1 H1 E1 G1 B1 J1 F1 J1 G1 C1 E1 B1 pass pass H1 J1 E1 G1 pass pass A1 pass D1 C1 
+Channel: 9
+0 0 1 0 0 0 0 0 0  O2. X5O4O . X . X
+
+Channel: 10
+0 0 0 1 0 0 0 0 0  O2. X5O4O . X . X
+
+Channel: 11
+0 0 0 0 0 0 0 0 0  O2. X5O4O . X . X
+
+Channel: 0: 0
+Channel: 1: 0
+Channel: 2: 1
+-----

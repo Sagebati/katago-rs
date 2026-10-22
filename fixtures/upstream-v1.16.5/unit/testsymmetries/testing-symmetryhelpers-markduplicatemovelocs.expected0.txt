@@ -1,0 +1,573 @@
+
+Fully symmetric board
+HASH: 9F0B2D702FC8448C75410E097F089AEB
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 1 2 3 4 5 6 7
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+
+Fully symmetric board white next
+HASH: 9F0B2D702FC8448C75410E097F089AEB
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 1 2 3 4 5 6 7
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+.....xxxx
+....xxxxx
+...xxxxxx
+..xxxxxxx
+.xxxxxxxx
+
+X-flip symmetry
+HASH: AC45122339406741350EF7164F7537BA
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . X . . . X . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 2
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+
+Y-flip symmetry
+HASH: 5E99A27FD0F9F1F5CE83F28467EC0A20
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . X . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . X . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 1
+.........
+.........
+.........
+.........
+.........
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+
+Diagonal-flips symmetry
+HASH: B7760937ABCCDDEB7806FB3350688799
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . X . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . X . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3 4 7
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxxxx....
+xxxxxx...
+xxxxxxx..
+xxxxxxxx.
+
+2 fold-rotational symmetry
+HASH: 6D5019C791BAB0D7E9D8E41D4F90487D
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . X . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxxx....
+xxxxx....
+xxxxx....
+xxxxx....
+
+Square-flips symmetry
+HASH: 800DA33B7624879BE7EA5FDB80A3BCA0
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . X . . . .
+ 5 . . O . O . O . .
+ 4 . . . . X . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 1 2 3
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+xxxxxxxxx
+
+Diagonal-flips symmetry
+HASH: 6DD79D2CC671D2388ECC0B9B5791A771
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . X . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . . . . X . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3 4 7
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxxxx....
+xxxxxx...
+xxxxxxx..
+xxxxxxxx.
+
+2 fold-rotational symmetry
+HASH: C187B4A7C45ADFEC2010F47B431E6ABC
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . O . . . . . . .
+ 7 . . . . . X . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . O .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxxx....
+xxxxx....
+xxxxx....
+xxxxx....
+
+4 fold-rotational symmetry
+HASH: 9A99D63A6BCF4A80259685FCC27D968C
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . X . . .
+ 6 . . X . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . X . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3 5 6
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxxxxx...
+xxxxxxx..
+xxxxxxxx.
+xxxxxxxxx
+
+4 fold-rotational symmetry white next
+HASH: 9A99D63A6BCF4A80259685FCC27D968C
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . X . . .
+ 6 . . X . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . X . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3 5 6
+xxxxxxxxx
+.xxxxxxxx
+..xxxxxxx
+...xxxxxx
+.....xxxx
+....xxxxx
+...xxxxxx
+..xxxxxxx
+.xxxxxxxx
+
+UR-only diagonal flip symmetry
+HASH: B58EB39FCBE4BB347271756E0404D59E
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . O . X . .
+ 6 . . . . . . . . .
+ 5 . . . . . . O . .
+ 4 . . . X . . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 7
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxx......
+xx.......
+x........
+.........
+
+UL-only diagonal flip symmetry
+HASH: 599EAB2B3EFFA546F09C5912E678BF76
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . O . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . X . . . .
+ 4 . . . . . O X . .
+ 3 . . . . . X . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 4
+.........
+x........
+xx.......
+xxx......
+xxxx.....
+xxxxx....
+xxxxxx...
+xxxxxxx..
+xxxxxxxx.
+
+Not symmetric
+HASH: 3ABD04808F9C1524634579C78A198436
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . O . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0
+.........
+.........
+.........
+.........
+.........
+.........
+.........
+.........
+.........
+
+Empty rectangular board
+HASH: 1F1DB4700ED476F6F9783C1E9C3A563A
+   A B C D E
+ 7 . . . . .
+ 6 . . . . .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . . . . .
+ 1 . . . . .
+
+
+Symmetries: 0 1 2 3
+xx...
+xx...
+xx...
+xx...
+xxxxx
+xxxxx
+xxxxx
+
+Fully symmetric rectangular board
+HASH: 53E2C35DAB4280F5F678CBC9207C87EC
+   A B C D E
+ 7 . . O . .
+ 6 . . . . .
+ 5 . . . . .
+ 4 O . X . O
+ 3 . . . . .
+ 2 . . . . .
+ 1 . . O . .
+
+
+Symmetries: 0 1 2 3
+xx...
+xx...
+xx...
+xx...
+xxxxx
+xxxxx
+xxxxx
+
+X-flip rectangular board
+HASH: 3A7FF58A0936DC8EF710C7A589001C63
+   A B C D E
+ 7 . . . . .
+ 6 . . . . .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . X . X .
+ 1 . . . . .
+
+
+Symmetries: 0 2
+xx...
+xx...
+xx...
+xx...
+xx...
+xx...
+xx...
+
+Y-flip rectangular board
+HASH: 7D78242056062482634520C44021A007
+   A B C D E
+ 7 . . . . .
+ 6 . X . . .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . X . . .
+ 1 . . . . .
+
+
+Symmetries: 0 1
+.....
+.....
+.....
+.....
+xxxxx
+xxxxx
+xxxxx
+
+Both-flip rectangular board
+HASH: 7A1C4D8F92C366AB477354585AAE5710
+   A B C D E
+ 7 . . . . .
+ 6 . . . X .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . X . . .
+ 1 . . . . .
+
+
+Symmetries: 0 3
+xx...
+xx...
+xx...
+xx...
+xxx..
+xxx..
+xxx..
+
+Both-flip rectangular board white next
+HASH: 7A1C4D8F92C366AB477354585AAE5710
+   A B C D E
+ 7 . . . . .
+ 6 . . . X .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . X . . .
+ 1 . . . . .
+
+
+Symmetries: 0 3
+..xxx
+..xxx
+..xxx
+...xx
+...xx
+...xx
+...xx
+
+Not symmetric
+HASH: 35099DA736AFB3AE345C49821CE3F188
+   A B C D E
+ 7 . . . . .
+ 6 . . . . .
+ 5 . . . . .
+ 4 . . . . .
+ 3 . . . . .
+ 2 . X . . .
+ 1 . . . . .
+
+
+Symmetries: 0
+.....
+.....
+.....
+.....
+.....
+.....
+.....
+
+4 fold-rotational symmetry, no 5 6
+HASH: 9A99D63A6BCF4A80259685FCC27D968C
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . X . . .
+ 6 . . X . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . X . .
+ 3 . . . X . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxxx....
+xxxxx....
+xxxxx....
+xxxxx....
+
+Empty board, no 1,2,4,7
+HASH: 9F0B2D702FC8448C75410E097F089AEB
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 3 5 6
+xxxxxxxx.
+xxxxxxx..
+xxxxxx...
+xxxxx....
+xxxx.....
+xxxxxx...
+xxxxxxx..
+xxxxxxxx.
+xxxxxxxxx
+
+Empty board, only hflip
+HASH: 9F0B2D702FC8448C75410E097F089AEB
+   A B C D E F G H J
+ 9 . . . . . . . . .
+ 8 . . . . . . . . .
+ 7 . . . . . . . . .
+ 6 . . . . . . . . .
+ 5 . . . . . . . . .
+ 4 . . . . . . . . .
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Symmetries: 0 2
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+xxxx.....
+

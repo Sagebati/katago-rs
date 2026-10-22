@@ -1,0 +1,42 @@
+file	line	test	role
+basic-flipping-of-tensors-and-boards-and-locations.input0.txt	15	Basic flipping of tensors and boards and locations	input
+basic-flipping-of-tensors-and-boards-and-locations.input1.txt	51	Basic flipping of tensors and boards and locations	input
+basic-flipping-of-tensors-and-boards-and-locations.expected0.txt	77	Basic flipping of tensors and boards and locations	expected
+basic-flipping-of-tensors-and-boards-and-locations.input2.txt	379	Basic flipping of tensors and boards and locations	input
+symmetry-composition-tests.input0.txt	397	Symmetry composition tests	input
+symmetry-composition-tests.expected0.txt	421	Symmetry composition tests	expected
+symmetry-inverse-tests.expected0.txt	498	Symmetry inverse tests	expected
+symmetry-and-move-commute.input0.txt	569	Symmetry and move commute	input
+symmetry-and-move-commute.expected0.txt	593	Symmetry and move commute	expected
+testing-symmetryhelpers-markduplicatemovelocs.input0.txt	834	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input1.txt	850	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input2.txt	866	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input3.txt	882	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input4.txt	898	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input5.txt	915	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input6.txt	931	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input7.txt	947	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input8.txt	963	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input9.txt	979	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input10.txt	995	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input11.txt	1011	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input12.txt	1027	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input13.txt	1043	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input14.txt	1059	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input15.txt	1073	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input16.txt	1087	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input17.txt	1101	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input18.txt	1115	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input19.txt	1129	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input20.txt	1143	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input21.txt	1157	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input22.txt	1174	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.input23.txt	1191	Testing SymmetryHelpers::markDuplicateMoveLocs	input
+testing-symmetryhelpers-markduplicatemovelocs.expected0.txt	1206	Testing SymmetryHelpers::markDuplicateMoveLocs	expected
+simple-difference-tests.input0.txt	1801	Simple difference tests	input
+simple-difference-tests.input1.txt	1808	Simple difference tests	input
+simple-difference-tests.input2.txt	1815	Simple difference tests	input
+simple-difference-tests.input3.txt	1822	Simple difference tests	input
+simple-difference-tests.expected0.txt	1836	Simple difference tests	expected
+all-8-symmetries-difference-tests.input0.txt	1849	All 8 symmetries difference tests	input
+all-8-symmetries-difference-tests.expected0.txt	1861	All 8 symmetries difference tests	expected

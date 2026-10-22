@@ -1,0 +1,200 @@
+
+SYMMETRY 0
+HASH: 56798EFB369AAD4E774C248FD652F95E
+   A B C D E F G H J
+ 7 X . . . . . . . O
+ 6 X . X X O . . . .
+ 5 . . O X . . . . X
+ 4 . . O . . X . . .
+ 3 . O . . . . . . X
+ 2 . . . X O O O . .
+ 1 . X . . . . X . O
+
+
+HASH: 56798EFB369AAD4E774C248FD652F95E
+   A B C D E F G H J
+ 7 X . . . . . . . O
+ 6 X . X X O . . . .
+ 5 . . O X . . . . X
+ 4 . . O . . X . . .
+ 3 . O . . . . . . X
+ 2 . . . X O O O . .
+ 1 . X . . . . X . O
+
+
+SYMMETRY 1
+HASH: 28D390F7DAAD7ACC2DC345898255355C
+   A B C D E F G H J
+ 7 . X . . . . X . O
+ 6 . . . X O O O . .
+ 5 . O . . . . . . X
+ 4 . . O . . X . . .
+ 3 . . O X . . . . X
+ 2 X . X X O . . . .
+ 1 X . . . . . . . O
+
+
+HASH: 28D390F7DAAD7ACC2DC345898255355C
+   A B C D E F G H J
+ 7 . X . . . . X . O
+ 6 . . . X O O O . .
+ 5 . O . . . . . . X
+ 4 . . O . . X . . .
+ 3 . . O X . . . . X
+ 2 X . X X O . . . .
+ 1 X . . . . . . . O
+
+
+SYMMETRY 2
+HASH: 4A4757278AA22029B01A83FE170F9D65
+   A B C D E F G H J
+ 7 O . . . . . . . X
+ 6 . . . . O X X . X
+ 5 X . . . . X O . .
+ 4 . . . X . . O . .
+ 3 X . . . . . . O .
+ 2 . . O O O X . . .
+ 1 O . X . . . . X .
+
+
+HASH: 4A4757278AA22029B01A83FE170F9D65
+   A B C D E F G H J
+ 7 O . . . . . . . X
+ 6 . . . . O X X . X
+ 5 X . . . . X O . .
+ 4 . . . X . . O . .
+ 3 X . . . . . . O .
+ 2 . . O O O X . . .
+ 1 O . X . . . . X .
+
+
+SYMMETRY 3
+HASH: EE186B4F08581E0E604B679A44526705
+   A B C D E F G H J
+ 7 O . X . . . . X .
+ 6 . . O O O X . . .
+ 5 X . . . . . . O .
+ 4 . . . X . . O . .
+ 3 X . . . . X O . .
+ 2 . . . . O X X . X
+ 1 O . . . . . . . X
+
+
+HASH: EE186B4F08581E0E604B679A44526705
+   A B C D E F G H J
+ 7 O . X . . . . X .
+ 6 . . O O O X . . .
+ 5 X . . . . . . O .
+ 4 . . . X . . O . .
+ 3 X . . . . X O . .
+ 2 . . . . O X X . X
+ 1 O . . . . . . . X
+
+
+SYMMETRY 4
+HASH: EA1BA453DFA10B913CCF8E53D4550EC3
+   A B C D E F G
+ 9 X X . . . . .
+ 8 . . . . O . X
+ 7 . X O O . . .
+ 6 . X X . . X .
+ 5 . O . . . O .
+ 4 . . . X . O .
+ 3 . . . . . O X
+ 2 . . . . . . .
+ 1 O . X . X . O
+
+
+HASH: EA1BA453DFA10B913CCF8E53D4550EC3
+   A B C D E F G
+ 9 X X . . . . .
+ 8 . . . . O . X
+ 7 . X O O . . .
+ 6 . X X . . X .
+ 5 . O . . . O .
+ 4 . . . X . O .
+ 3 . . . . . O X
+ 2 . . . . . . .
+ 1 O . X . X . O
+
+
+SYMMETRY 5
+HASH: BB69F761E815818D4A4A508377B7F0A9
+   A B C D E F G
+ 9 . . . . . X X
+ 8 X . O . . . .
+ 7 . . . O O X .
+ 6 . X . . X X .
+ 5 . O . . . O .
+ 4 . O . X . . .
+ 3 X O . . . . .
+ 2 . . . . . . .
+ 1 O . X . X . O
+
+
+HASH: BB69F761E815818D4A4A508377B7F0A9
+   A B C D E F G
+ 9 . . . . . X X
+ 8 X . O . . . .
+ 7 . . . O O X .
+ 6 . X . . X X .
+ 5 . O . . . O .
+ 4 . O . X . . .
+ 3 X O . . . . .
+ 2 . . . . . . .
+ 1 O . X . X . O
+
+
+SYMMETRY 6
+HASH: 4618413C04A4D83A49F924616E3821B7
+   A B C D E F G
+ 9 O . X . X . O
+ 8 . . . . . . .
+ 7 . . . . . O X
+ 6 . . . X . O .
+ 5 . O . . . O .
+ 4 . X X . . X .
+ 3 . X O O . . .
+ 2 . . . . O . X
+ 1 X X . . . . .
+
+
+HASH: 4618413C04A4D83A49F924616E3821B7
+   A B C D E F G
+ 9 O . X . X . O
+ 8 . . . . . . .
+ 7 . . . . . O X
+ 6 . . . X . O .
+ 5 . O . . . O .
+ 4 . X X . . X .
+ 3 . X O O . . .
+ 2 . . . . O . X
+ 1 X X . . . . .
+
+
+SYMMETRY 7
+HASH: 8E86BD1078F74D5BA0A8DCAD3D8E6BCC
+   A B C D E F G
+ 9 O . X . X . O
+ 8 . . . . . . .
+ 7 X O . . . . .
+ 6 . O . X . . .
+ 5 . O . . . O .
+ 4 . X . . X X .
+ 3 . . . O O X .
+ 2 X . O . . . .
+ 1 . . . . . X X
+
+
+HASH: 8E86BD1078F74D5BA0A8DCAD3D8E6BCC
+   A B C D E F G
+ 9 O . X . X . O
+ 8 . . . . . . .
+ 7 X O . . . . .
+ 6 . O . X . . .
+ 5 . O . . . O .
+ 4 . X . . X X .
+ 3 . . . O O X .
+ 2 X . O . . . .
+ 1 . . . . . X X
+

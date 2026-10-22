@@ -1,0 +1,47 @@
+rules koPOSITIONALscoreAREAtaxNONEsui1komi7.5
+enablePassingHacks 1 conservativePassAndIsRoot 0
+VERSION 7
+encorephase 0 finished 0 numTurnsThisPhase 0 numApproxValidTurnsThisPhase 0
+3368838144F812C6E8C96E018EB0F193
+History that net sees null null null null null
+Move 0 F4
+encorephase 0 finished 0 numTurnsThisPhase 1 numApproxValidTurnsThisPhase 1
+976AC1976F689AA26CB770868ED255EB
+History that net sees F4 null null null null
+Move 1 E5
+encorephase 0 finished 0 numTurnsThisPhase 2 numApproxValidTurnsThisPhase 2
+BD50B761A383F835F8A4FBAF6F16532C
+History that net sees E5 F4 null null null
+Move 2 D6
+encorephase 0 finished 0 numTurnsThisPhase 3 numApproxValidTurnsThisPhase 3
+D0F821301625DCF82731D2E428DD59C9
+History that net sees D6 E5 F4 null null
+Move 3 pass
+encorephase 0 finished 0 numTurnsThisPhase 4 numApproxValidTurnsThisPhase 4
+94D07360CD41D57D77053BFB69F90CF2
+History that net sees null null null null null
+Move 4 pass
+encorephase 0 finished 1 numTurnsThisPhase 5 numApproxValidTurnsThisPhase 5
+E4B405F99153F9AB887FCB006ADC3845
+History that net sees pass null null null null
+Move 5 pass
+encorephase 0 finished 1 numTurnsThisPhase 6 numApproxValidTurnsThisPhase 2
+6505F0B9ADE51B02C1FCDF9E30837B1C
+History that net sees null null null null null
+Move 6 C7
+encorephase 0 finished 0 numTurnsThisPhase 7 numApproxValidTurnsThisPhase 2
+C764794E70977A4B4E86F7BB27879E02
+History that net sees C7 pass null null null
+Move 7 B8
+encorephase 0 finished 0 numTurnsThisPhase 8 numApproxValidTurnsThisPhase 3
+3D4E55D19ACA27E433F4D74B8FB26DB7
+History that net sees B8 C7 pass null null
+Move 8 pass
+encorephase 0 finished 0 numTurnsThisPhase 9 numApproxValidTurnsThisPhase 4
+7966078141AE2E6163C03E54CE96388C
+History that net sees pass B8 C7 pass null
+Move 9 pass
+encorephase 0 finished 1 numTurnsThisPhase 10 numApproxValidTurnsThisPhase 5
+090271181DBC02B79CBACEAFCDB30C3B
+History that net sees null null null null null
+

@@ -1,0 +1,1578 @@
+VERSION 7
+----------------------------------------
+Black makes 3 moves in a row
+HASH: 3905A305868F1C75F0B0D201AADD5F7E
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . . . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+HASH: A5C3B1A6BC7517C49073321706A3DF54
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+One more move
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 4
+Approx valid turns this phase 4
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 F6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Reclear history
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+One more move
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Unset assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Play white move
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 2
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 E6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -1
+
+Reclear history
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 0 0 
+Final score: -1
+----------------------------------------
+Black makes 3 moves in a row
+HASH: 3905A305868F1C75F0B0D201AADD5F7E
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . . . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 
+0 0 0 0 0 -0.15 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+HASH: A5C3B1A6BC7517C49073321706A3DF54
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 
+0 0 0 0 0 -0.15 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.15 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -46
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 2
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.25 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -44
+
+One more move
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 4
+Approx valid turns this phase 4
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 F6 
+0 0 0 0 0 -0.3 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -43
+
+Reclear history
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.3 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -43
+
+One more move
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.3 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -43
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.35 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -42
+
+Unset assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.3 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -43
+
+Play white move
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 2
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 E6 
+0 0 0 0 0 -0.3 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: 2
+
+Reclear history
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.15 1 0.5 1 0 0 0 0 0 0 0 0 0 0 
+Final score: -1
+----------------------------------------
+Black makes 3 moves in a row
+HASH: 3905A305868F1C75F0B0D201AADD5F7E
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . . . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -45.5
+HASH: A5C3B1A6BC7517C49073321706A3DF54
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -45.5
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -45.5
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 3
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.3 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -42.5
+
+One more move
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 4
+Approx valid turns this phase 4
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 F6 
+0 0 0 0 0 -0.35 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -41.5
+
+Reclear history
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.35 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -42.5
+
+One more move
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.35 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -41.5
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 5
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.4 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -40.5
+
+Unset assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.35 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -41.5
+
+Play white move
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 2
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 4
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 E6 
+0 0 0 0 0 -0.35 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: 2.5
+
+Reclear history
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreAREAtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 0
+White handicap bonus score 0
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.15 1 0.5 0 0 0 0 0 0 0 0 0 1 0 
+Final score: -1.5
+----------------------------------------
+Black makes 3 moves in a row
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 3905A305868F1C75F0B0D201AADD5F7E
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . . . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 1
+White handicap bonus score 0
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 
+0 0 0 0 0 -0.2 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -45
+HASH: A5C3B1A6BC7517C49073321706A3DF54
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 2
+White handicap bonus score 1
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 
+0 0 0 0 0 -0.3 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -43
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 3
+White handicap bonus score 2
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.4 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -41
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 3
+White handicap bonus score 2
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.4 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -41
+
+One more move
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 4
+Approx valid turns this phase 4
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 F6 
+0 0 0 0 0 -0.5 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -39
+
+Reclear history
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 3
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.5 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -39
+
+One more move
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.55 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -38
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 4
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.6 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -37
+
+Unset assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 3
+Has button 0
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.55 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: -38
+
+Play white move
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 2
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 3
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 E6 
+0 0 0 0 0 -0.5 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: 6
+
+Reclear history
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui1whbN-1komi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.35 1 0.5 1 1 0 0 0 0 0 0 0 0 0 
+Final score: 3
+----------------------------------------
+Black makes 3 moves in a row
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 3905A305868F1C75F0B0D201AADD5F7E
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . . . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 1
+White handicap bonus score 0
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 
+0 0 0 0 0 -0.2 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -44.5
+HASH: A5C3B1A6BC7517C49073321706A3DF54
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . . . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 2
+White handicap bonus score 2
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 
+0 0 0 0 0 -0.35 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -41.5
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 3
+White handicap bonus score 3
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.45 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -39.5
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: B64FADC0A0EA9D97F2B7BDF8F5A5F52B
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . . .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 3
+Approx valid turns this phase 3
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 3
+White handicap bonus score 3
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 
+0 0 0 0 0 -0.45 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -39.5
+
+One more move
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 4
+Approx valid turns this phase 4
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves D4 D5 D6 F6 
+0 0 0 0 0 -0.55 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -37.5
+
+Reclear history
+HASH: 79983C38BF1B0D5611B3AD3C4E081933
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . . X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 4
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.55 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -38.5
+
+One more move
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.6 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -36.5
+
+Set assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 5
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.65 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -35.5
+
+Unset assumeMultipleStartingBlackMovesAreHandicap
+HASH: 83A2C13196A54E7650EDD05A68409AAF
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X . X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 1
+Approx valid turns this phase 1
+Approx consec valid turns this game 1
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 5
+White handicap bonus score 4
+Has button 1
+Presumed next pla White
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 
+0 0 0 0 0 -0.6 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: -36.5
+
+Play white move
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 2
+Approx valid turns this phase 2
+Approx consec valid turns this game 2
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 4
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves C6 E6 
+0 0 0 0 0 -0.55 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: 6.5
+
+Reclear history
+HASH: F365B92D3E14EB81F25698FDF518FAB9
+   A B C D E F G
+ 7 . . . . . . .
+ 6 . . X X O X .
+ 5 . . . X . . .
+ 4 . . . X . . .
+ 3 . . . . . . .
+ 2 . . . . . . .
+ 1 . . . . . . .
+
+
+Initial pla Black
+Encore phase 0
+Turns this phase 0
+Approx valid turns this phase 0
+Approx consec valid turns this game 0
+Rules koPOSITIONALscoreTERRITORYtaxNONEsui0button1whbNkomi3
+Ko recap block hash 00000000000000000000000000000000
+White bonus score 4
+White handicap bonus score 0
+Has button 1
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves 
+0 0 0 0 0 -0.35 1 0.5 0 1 0 0 0 0 0 0 0 1 0 
+Final score: 2.5

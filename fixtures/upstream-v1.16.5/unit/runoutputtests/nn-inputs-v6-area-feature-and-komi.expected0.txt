@@ -1,0 +1,2257 @@
+VERSION 7
+=========================================== 
+goToEncore2 = 0
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+ED61C841FCA0094226F918F9F5AD99A6
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 8FA81D28395DA8EE5C74E43EA5218E04
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 28780BADD2DFD4A9EA600826FB615EB9
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 7A2C3E59EB28AA237527B461E38E56FC
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 668222A26673C09A6DA0285F9DEAFF7A
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X X
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 FA5FD1DBB0688A18BE4AC32AAFB669A2
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O5. O X X X4
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 1 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 1  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 17D4D687767974EE4F9BF2DB04435D46
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 1  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 1  . O4. O X X X3
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 1 1 0  O X X O X5X O
+0 0 1 0 0 1 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 F3 C6BFED333599B063C9AF76E032E3F906
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O3. O X X X2
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 0
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+E66BCB101D7BBD10464C2A767D3F7E94
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 84A21E79D8861CBC3CC1D6B12DB36936
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 237208FC330460FB8AD53AA973F3B98B
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 71263D080AF31E71159286EE6B1CB1CE
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 6D8821F387A874C80D151AD015781848
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O O X O X . O
+1 0 0 1 0 0 1  O X X O . X O
+1 0 0 1 1 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X X
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O O X O X . O
+0 1 1 0 0 1 0  O X X O . X O
+0 0 1 0 0 1 1  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 F155D28A51B33E4ADEFFF1A527248E90
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O5. O X X X4
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 1 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 1  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 1CDED5D697A2C0BC2F2EC0548CD1BA74
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 1  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 1  . O4. O X X X3
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 1 1 0  O X X O X5X O
+0 0 1 0 0 1 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 F3 CDB5EE62D4420431A91A446FBA711E34
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O3. O X X X2
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 0
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+F2CDB69DAEC0CD8DD8A3F97249C0ED5F
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 6D7B0EDE203A6E3B02222407BCAAFCD3
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 37D4757180BF1066143AE9AD470C2A40
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 98FF2DAFF24F6CF62B717458FA05242B
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 A3 G7 792E5C7E3413045593FAC9D421878B83
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X X
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X X
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 G7 B7 188CC22DA90F4CCDE01C0313B63D1B75
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . O5. O X X X4
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O3O X O X . O
+0 0 0 0 0 0 0  O X X O . X O1
+0 0 0 0 0 0 0  O . X O O X2X
+
+Channel: 19
+0 0 0 0 0 0 0  . O5. O X X X4
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O3O X O X . O
+0 0 0 0 0 0 0  O X X O . X O1
+0 0 0 0 0 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 0878A85B2419B021B1C11350B82E29BF
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . O4. O X X X3
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O2O X O X . O
+0 0 0 0 0 0 0  O X X O X5X O
+0 0 0 0 0 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 0 0 0  . O4. O X X X3
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O2O X O X . O
+0 0 0 0 0 0 0  O X X O X5X O
+0 0 0 0 0 0 0  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 F3 246CFEC52CFE76B697F9B6D92B688BD1
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . O3. O X X X2
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O1O X O . O5O
+0 0 0 0 0 0 0  O X X O .4. O
+0 0 0 0 0 0 0  O . X O O . .
+
+Channel: 19
+0 0 0 0 0 0 0  . O3. O X X X2
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O1O X O . O5O
+0 0 0 0 0 0 0  O X X O .4. O
+0 0 0 0 0 0 0  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 0
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+F9C7B5CC4F1B79DFB816CBFDC1520A6D
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 66710D8FC1E1DA696297168834381BE1
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 3CDE76206164A434748FDB22CF9ECD72
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 93F52EFE1394D8A44BC446D77297C319
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 A3 G7 72245F2FD5C8B007F34FFB5BA9156CB1
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X X
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X X
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O O X O X . O
+0 0 0 0 0 0 0  O X X O . X O
+0 0 0 0 0 0 0  O . X O O X X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 G7 B7 1386C17C48D4F89F80A9319C3EAFFC47
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . O5. O X X X4
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O3O X O X . O
+0 0 0 0 0 0 0  O X X O . X O1
+0 0 0 0 0 0 0  O . X O O X2X
+
+Channel: 19
+0 0 0 0 0 0 0  . O5. O X X X4
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O3O X O X . O
+0 0 0 0 0 0 0  O X X O . X O1
+0 0 0 0 0 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 0372AB0AC5C20473D17421DF30BCCE8D
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . O4. O X X X3
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O2O X O X . O
+0 0 0 0 0 0 0  O X X O X5X O
+0 0 0 0 0 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 0 0 0  . O4. O X X X3
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O2O X O X . O
+0 0 0 0 0 0 0  O X X O X5X O
+0 0 0 0 0 0 0  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -2
+Encore phase: 0
+G2 F1 A3 G7 B7 E2 F3 2F66FD94CD25C2E4F74C8456A3FA6CE3
+Channel: 5: -0.225
+Channel: 18
+0 0 0 0 0 0 0  . O3. O X X X2
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O1O X O . O5O
+0 0 0 0 0 0 0  O X X O .4. O
+0 0 0 0 0 0 0  O . X O O . .
+
+Channel: 19
+0 0 0 0 0 0 0  . O3. O X X X2
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  O1O X O . O5O
+0 0 0 0 0 0 0  O X X O .4. O
+0 0 0 0 0 0 0  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 1
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+ED61C841FCA0094226F918F9F5AD99A6
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass FFA1767702106111153EF5E08B495106
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass FFA1767702106111153EF5E08B495106
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 8FA81D28395DA8EE5C74E43EA5218E04
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O5
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O5
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 28780BADD2DFD4A9EA600826FB615EB9
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O4
+1 0 0 1 1 0 0  O . X O O X5X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O4
+0 0 1 0 0 1 1  O . X O O X5X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 7A2C3E59EB28AA237527B461E38E56FC
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O5O X O X . O
+0 1 1 0 0 1 0  O X X O . X O3
+0 0 1 0 0 1 1  O . X O O X4X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O5O X O X . O
+1 0 0 1 0 0 1  O X X O . X O3
+1 0 0 1 1 0 0  O . X O O X4X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 668222A26673C09A6DA0285F9DEAFF7A
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X5
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O4O X O X . O
+1 0 0 1 0 0 1  O X X O . X O2
+1 0 0 1 1 0 0  O . X O O X3X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X X5
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O4O X O X . O
+0 1 1 0 0 1 0  O X X O . X O2
+0 0 1 0 0 1 1  O . X O O X3X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 FA5FD1DBB0688A18BE4AC32AAFB669A2
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O5. O X X X4
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 1 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 1  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 E2 17D4D687767974EE4F9BF2DB04435D46
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 1  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 1  . O4. O X X X3
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 1 1 0  O X X O X5X O
+0 0 1 0 0 1 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 E2 F3 C6BFED333599B063C9AF76E032E3F906
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O3. O X X X2
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 1
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+E66BCB101D7BBD10464C2A767D3F7E94
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass F4AB7526E3CBD543758BC76F03DBB634
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass F4AB7526E3CBD543758BC76F03DBB634
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 84A21E79D8861CBC3CC1D6B12DB36936
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O5
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O5
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 237208FC330460FB8AD53AA973F3B98B
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 1  O X X O . X O4
+1 0 0 1 1 0 0  O . X O O X5X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O4
+0 0 1 0 0 1 1  O . X O O X5X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 71263D080AF31E71159286EE6B1CB1CE
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O5O X O X . O
+0 1 1 0 0 1 0  O X X O . X O3
+0 0 1 0 0 1 1  O . X O O X4X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O5O X O X . O
+1 0 0 1 0 0 1  O X X O . X O3
+1 0 0 1 1 0 0  O . X O O X4X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 6D8821F387A874C80D151AD015781848
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X5
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O4O X O X . O
+1 0 0 1 0 0 1  O X X O . X O2
+1 0 0 1 1 0 0  O . X O O X3X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X X5
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O4O X O X . O
+0 1 1 0 0 1 0  O X X O . X O2
+0 0 1 0 0 1 1  O . X O O X3X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 F155D28A51B33E4ADEFFF1A527248E90
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O5. O X X X4
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 1 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 1  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 E2 1CDED5D697A2C0BC2F2EC0548CD1BA74
+Channel: 5: 0.325
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 1  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 1  . O4. O X X X3
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 1 1 0  O X X O X5X O
+0 0 1 0 0 1 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100 -100 -100  100 
+ 100    0 -100  100  100 -100 -100 
+
+Rules: koPOSITIONALscoreAREAtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 0
+Encore phase: 0
+pass pass pass pass G2 F1 A3 G7 B7 E2 F3 CDB5EE62D4420431A91A446FBA711E34
+Channel: 5: -0.325
+Channel: 18
+0 0 0 0 1 1 1  . O3. O X X X2
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 1
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+F2CDB69DAEC0CD8DD8A3F97249C0ED5F
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 1
+pass pass 725706A2A0F2BF41E88A913831CD45AA
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass 4CC634F4CA737CC2460AB79A31A72DDF
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 9006F24B51FF2710EA2409DC271A9AEF
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O5
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X O5
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 89DFF718E40CA1298A93A7453F6BEAC0
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+1 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X O4
+1 0 0 1 1 0 0  O . X O O X5X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O4
+0 0 1 0 0 0 1  O . X O O X5X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+ 100  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 6582D13A838A25DDC377598361B54217
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O5O X O X . O
+0 1 1 0 0 1 0  O X X O . X O3
+0 0 1 0 0 0 1  O . X O O X4X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O5O X O X . O
+1 0 0 1 0 0 0  O X X O . X O3
+1 0 0 1 1 0 0  O . X O O X4X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 C725DE1750A0B51A0D53873C59E04B03
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X5
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O4O X O X . O
+1 0 0 1 0 0 0  O X X O . X O2
+1 0 0 1 1 0 0  O . X O O X3X
+
+Channel: 19
+0 0 0 0 1 1 0  . . . O X X X5
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O4O X O X . O
+0 1 1 0 0 1 0  O X X O . X O2
+0 0 1 0 0 0 1  O . X O O X3X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 E5F13EB8D8CA05E6081A2EC82D8D7D49
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 0  . O5. O X X X4
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 0 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 0  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 E2 B6732A3240AA016E2F685DB8C049E93F
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 0  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 0  . O4. O X X X3
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 0 1 0  O X X O X5X O
+0 0 1 0 0 0 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxNONEsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 E2 F3 D91102505D3B3F9D7FFF9B02B0D8EDED
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 0  . O3. O X X X2
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+
+=========================================== 
+goToEncore2 = 1
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 0
+F9C7B5CC4F1B79DFB816CBFDC1520A6D
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 1
+pass pass 795D05F341290B13883FA3B7B95FA298
+Channel: 5: 0.275
+Channel: 18
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 0 0 0  . . . O X X .
+0 0 0 0 0 0 0  O O O O X . X
+0 0 0 0 0 0 0  X X X X O X X
+0 0 0 0 0 0 0  O . X O O O O
+0 0 0 0 0 0 0  . O X O X . O
+0 0 0 0 0 0 0  O X X O . X .
+0 0 0 0 0 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass 47CC37A52BA8C89026BF8515B935CAED
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X .
+1 0 0 1 1 0 0  O . X O O . X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X .
+0 0 1 0 0 0 1  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 9B0CF11AB02493428A913B53AF887DDD
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O5
+0 0 1 0 0 0 1  O . X O O . X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X O5
+1 0 0 1 1 0 0  O . X O O . X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 82D5F44905D7157BEA2695CAB7F90DF2
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  . O X O X . O
+1 0 0 1 0 0 0  O X X O . X O4
+1 0 0 1 1 0 0  O . X O O X5X
+
+Channel: 19
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  . O X O X . O
+0 1 1 0 0 1 0  O X X O . X O4
+0 0 1 0 0 0 1  O . X O O X5X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 6E88D26B6251918FA3C26B0CE927A525
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 1  . . . O X X .
+0 0 0 0 1 1 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O5O X O X . O
+0 1 1 0 0 1 0  O X X O . X O3
+0 0 1 0 0 0 1  O . X O O X4X
+
+Channel: 19
+1 1 1 1 0 0 0  . . . O X X .
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O5O X O X . O
+1 0 0 1 0 0 0  O X X O . X O3
+1 0 0 1 1 0 0  O . X O O X4X
+
+ 100  100  100  100 -100 -100 -100 
+ 100  100  100  100 -100 -100 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 CC2FDD46B17B01486DE6B5B3D172AC31
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . . . O X X X5
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O4O X O X . O
+1 0 0 1 0 0 0  O X X O . X O2
+1 0 0 1 1 0 0  O . X O O X3X
+
+Channel: 19
+0 0 0 0 1 1 0  . . . O X X X5
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O4O X O X . O
+0 1 1 0 0 1 0  O X X O . X O2
+0 0 1 0 0 0 1  O . X O O X3X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 EEFB3DE93911B1B468AF1C47A51F9A7B
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 0  . O5. O X X X4
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O3O X O X . O
+0 1 1 0 0 1 0  O X X O . X O1
+0 0 1 0 0 0 1  O . X O O X2X
+
+Channel: 19
+1 1 1 1 0 0 0  . O5. O X X X4
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O3O X O X . O
+1 0 0 1 0 0 0  O X X O . X O1
+1 0 0 1 1 0 0  O . X O O X2X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 E2 BD792963A171B53C4FDD6F3748DB0E0D
+Channel: 5: 0.275
+Channel: 18
+1 1 1 1 0 0 0  . O4. O X X X3
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 0 0 1  O2O X O X . O
+1 0 0 1 0 0 0  O X X O X5X O
+1 0 0 1 1 0 0  O . X O O X1X
+
+Channel: 19
+0 0 0 0 1 1 0  . O4. O X X X3
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 1 0 0  O2O X O X . O
+0 1 1 0 0 1 0  O X X O X5X O
+0 0 1 0 0 0 1  O . X O O X1X
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100 -100    0  100 
+ 100 -100 -100  100    0 -100    0 
+ 100    0 -100  100  100    0 -100 
+
+Rules: koPOSITIONALscoreTERRITORYtaxSEKIsui0komi6.5
+Komi and Bonus: 6.5 -1
+Encore phase: 2
+pass pass pass pass G2 F1 A3 G7 B7 E2 F3 D21B0101BCE08BCF1F4AA98D384A0ADF
+Channel: 5: -0.275
+Channel: 18
+0 0 0 0 1 1 0  . O3. O X X X2
+0 0 0 0 1 0 1  O O O O X . X
+1 1 1 1 0 1 1  X X X X O X X
+0 0 1 0 0 0 0  O . X O O O O
+0 0 1 0 0 0 0  O1O X O . O5O
+0 1 1 0 0 0 0  O X X O .4. O
+0 0 1 0 0 0 0  O . X O O . .
+
+Channel: 19
+1 1 1 1 0 0 0  . O3. O X X X2
+1 1 1 1 0 0 0  O O O O X . X
+0 0 0 0 1 0 0  X X X X O X X
+1 0 0 1 1 1 1  O . X O O O O
+0 1 0 1 1 1 1  O1O X O . O5O
+1 0 0 1 1 1 1  O X X O .4. O
+1 0 0 1 1 1 1  O . X O O . .
+
+ 100  100  100  100 -100 -100    0 
+ 100  100  100  100 -100    0 -100 
+-100 -100 -100 -100  100 -100 -100 
+ 100    0 -100  100  100  100  100 
+   0  100 -100  100  100  100  100 
+ 100 -100 -100  100  100  100  100 
+ 100    0 -100  100  100  100  100 
+
+

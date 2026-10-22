@@ -1,0 +1,5 @@
+file	line	test	role
+on-board-even-9x9-komi-7-5.input0.txt	45	On-board even 9x9, komi 7.5	input
+on-board-even-9x9-komi-7.input0.txt	71	On-board even 9x9, komi 7	input
+on-board-black-ahead-7-9x9-komi-7.input0.txt	98	On-board black ahead 7 9x9, komi 7	input
+on-board-even-5x5-komi-7.input0.txt	126	On-board even 5x5, komi 7	input
