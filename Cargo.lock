@@ -3772,6 +3772,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "katago-cli"
+version = "0.0.0"
+dependencies = [
+ "burn",
+ "futures",
+ "katago-core",
+ "katago-nn-burn",
+ "log",
+ "serde_json",
+]
+
+[[package]]
 name = "katago-core"
 version = "0.0.0"
 dependencies = [

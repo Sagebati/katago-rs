@@ -46,7 +46,8 @@ use super::math_divzero;
 
 /// Parses a C hexadecimal floating literal (`"-0x1.8p-2"`) into the double it denotes.
 /// Only exact normal values and zero are accepted (anything else fails const evaluation).
-const fn hexf(s: &str) -> f64 {
+/// Shared with math/atan.rs (`#[macro_use] mod lgamma` in math.rs exports `hf!`).
+pub(super) const fn hexf(s: &str) -> f64 {
   let b = s.as_bytes();
   let mut i = 0;
   let neg = b[0] == b'-';

@@ -36,6 +36,10 @@ macro_rules! network {
             include!(concat!(env!("OUT_DIR"), "/model/", $name, ".rs"));
             include!(concat!(env!("OUT_DIR"), "/model/", $name, ".desc.rs"));
 
+            /// Path of this network's generated `.bpk` weights in katago-nn-burn's build directory (native
+            /// hosts read it at runtime; usable from other crates, unlike `bpk_path!`).
+            pub const BPK_PATH: &str = concat!(env!("OUT_DIR"), "/model/", $name, ".bpk");
+
             impl super::Network for Model {
                 const NAME: &'static str = $name;
                 const POS_LEN: i32 = POS_LEN;

@@ -3,9 +3,11 @@
 // M2 subset (port-manifest.toml: the module is M8): only the SGFMetadata struct and its constants,
 // because NNEvaluator::evaluate takes a `const SGFMetadata*` and reads `initialized`.
 // Not ported yet (TODO(port): deferred (sgfmetadata.cpp), M8): operator==/!=, getHash,
-// fillMetadataRow (needs port::math sin/cos/log), getProfile, and the `gameDate` field
+// fillMetadataRow (needs port::math sin/cos/log), getProfile beyond its "no profile" branch, and the `gameDate` field
 // (SimpleDate, core/datetime.cpp, M8). They are only reached for human-SL nets
 // (numInputMetaChannels > 0), which tools/bin2onnx rejects, so no backend can load one yet.
+
+use crate::core::global::KataError;
 
 /// upstream: SGFMetadata (sgfmetadata.h)
 #[derive(Clone, Debug, Default)]
@@ -54,4 +56,21 @@ impl SGFMetadata {
 
   /// upstream: SGFMetadata::METADATA_INPUT_NUM_CHANNELS (sgfmetadata.h)
   pub const METADATA_INPUT_NUM_CHANNELS: i32 = 192;
+
+  /// upstream: SGFMetadata::getProfile (sgfmetadata.cpp)
+  /// PORT NOTE (M3 wave 2b, Setup::loadParams reads humanSLProfile for every bot): only the first
+  /// branch is ported, the one every config without a human-SL profile takes (an empty name, "_" or
+  /// "\"\"" -> a default, uninitialized SGFMetadata). Throws -> Result.
+  pub fn get_profile(human_sl_profile_name: &str) -> Result<SGFMetadata, KataError> {
+    if human_sl_profile_name == "" || human_sl_profile_name == "_" || human_sl_profile_name == "\"\"" {
+      return Ok(SGFMetadata::default());
+    }
+
+    // TODO(port): deferred (sgfmetadata.cpp, M8): the "proyear_<year>", "rank_<r>" / "preaz_<r>" and
+    // "rank_<b>_<w>" profiles need makeHistoricalProProfile / makeModernProProfile / makeBasicRankProfile
+    // (SimpleDate gameDate, core/datetime.cpp). Only human-SL nets use a profile, and tools/bin2onnx rejects
+    // those, so this fails instead of guessing; upstream throws only for unknown names, with
+    // "Unknown human SL network profile: " + name.
+    Err(KataError::StringError("humanSLProfile ".to_string() + human_sl_profile_name + " is not supported yet (SGFMetadata::getProfile is M8 in katago-rs)"))
+  }
 }

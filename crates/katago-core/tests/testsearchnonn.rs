@@ -21,9 +21,7 @@
 //!
 //! Sections not compared ("pending"), see `SECTIONS`: "Board size distribution" needs GameInitializer
 //! (program/play.cpp, [[ignored]] in port-manifest.toml). "SearchParams for GTP/Analysis/Match/Benchmark/
-//! Other/Distributed" use `Setup::loadSingleParams` (program/setup.cpp is not ported yet); a test-local
-//! copy specialised to the config of this test (only `numSearchThreads=1`, so every other key takes its
-//! `else` branch) is used instead, as `searchparams_oracle.rs` does for the GTP path.
+//! Other/Distributed" use the ported `Setup::loadSingleParams` (program/setup.rs).
 //!
 //! Timing dependence: none (no maxTime/time controls; the injected clock is a constant).
 //! Not a port of upstream code.
@@ -60,13 +58,14 @@ use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
 use katago_core::neuralnet::nninputs::ScoreValue;
 use katago_core::neuralnet::nninterface::*;
-use katago_core::port::cpp::cpp_min;
 use katago_core::port::executor::LocalBoxFuture;
 use katago_core::port::executor::Spawner;
 use katago_core::port::fmt::cpp_ostream_f64;
 use katago_core::port::math::powf;
 use katago_core::port::nlohmann;
 use katago_core::port::node_arena::NodeIdx;
+use katago_core::program::setup::Setup;
+use katago_core::program::setup::setup_for_t;
 use katago_core::search::reportedsearchvalues::ReportedSearchValues;
 use katago_core::search::search::Search;
 use katago_core::search::searchnode::SearchNode;
@@ -536,137 +535,6 @@ fn avoid_black_stones_setup(board: &mut Board) -> Vec<i32> {
 
 //------------------------------------------------------------------------------------------------
 // Test-local Setup::loadSingleParams
-
-#[derive(Clone, Copy, PartialEq)]
-enum SetupFor {
-  Gtp,
-  Benchmark,
-  Match,
-  Analysis,
-  Other,
-  Distributed,
-}
-
-/// upstream: Setup::loadSingleParams (setup.cpp) via Setup::loadParams — test-local copy, specialised
-/// to a config whose only key is `numSearchThreads` (asserted), so every other `cfg.contains(...)` is false
-/// and its `else` default applies. humanSLProfile (SGFMetadata::getProfile("")) keeps its default.
-/// TODO(port): replace by Setup::load_single_params (program/setup.rs, wave 2b).
-fn load_single_params(cfg: &mut ConfigParser, setup_for: SetupFor) -> SearchParams {
-  assert_eq!(cfg.get_all_key_vals(), "numSearchThreads = 1\n", "this copy only handles a config with numSearchThreads alone");
-  let analysis_or_gtp = setup_for == SetupFor::Analysis || setup_for == SetupFor::Gtp;
-  let not_dist = setup_for != SetupFor::Distributed;
-  let not_dist_other = setup_for != SetupFor::Distributed && setup_for != SetupFor::Other;
-  let _ = (SetupFor::Benchmark, SetupFor::Match);
-
-  let mut params = SearchParams::new();
-  //maxPlayouts, maxVisits, maxTime: not in the config (SearchParams defaults)
-  params.max_playouts_pondering = 1i64 << 50;
-  params.max_visits_pondering = 1i64 << 50;
-  params.max_time_pondering = 1.0e20;
-  params.lag_buffer = 0.0;
-  //searchFactorAfterOnePass/TwoPass: not in the config
-  params.num_threads = cfg.get_int("numSearchThreads", 1, 4096).unwrap();
-  params.min_playouts_per_thread = if analysis_or_gtp { 8.0 } else { 0.0 };
-
-  params.win_loss_utility_factor = 1.0;
-  params.static_score_utility_factor = 0.1;
-  params.dynamic_score_utility_factor = 0.3;
-  params.no_result_utility_for_white = 0.0;
-  params.draw_equivalent_wins_for_white = 0.5;
-  params.dynamic_score_center_zero_weight = 0.20;
-  params.dynamic_score_center_scale = 0.75;
-  params.cpuct_exploration = 1.0;
-  params.cpuct_exploration_log = 0.45;
-  params.cpuct_exploration_base = 500.0;
-  params.cpuct_utility_stdev_prior = 0.40;
-  params.cpuct_utility_stdev_prior_weight = 2.0;
-  params.cpuct_utility_stdev_scale = if not_dist_other { 0.85 } else { 0.0 };
-  params.fpu_reduction_max = 0.2;
-  params.fpu_loss_prop = 0.0;
-  params.fpu_parent_weight_by_visited_policy = not_dist;
-  if params.fpu_parent_weight_by_visited_policy {
-    params.fpu_parent_weight_by_visited_policy_pow = 2.0;
-  } else {
-    params.fpu_parent_weight = 0.0;
-  }
-  params.policy_optimism = if not_dist_other { 1.0 } else { 0.0 };
-  params.value_weight_exponent = 0.25;
-  params.use_noise_pruning = not_dist_other;
-  params.noise_prune_utility_scale = 0.15;
-  params.noise_pruning_cap = 1e50;
-  params.use_uncertainty = not_dist_other;
-  params.uncertainty_coeff = 0.25;
-  params.uncertainty_exponent = 1.0;
-  params.uncertainty_max_weight = 8.0;
-  params.use_graph_search = not_dist;
-  params.graph_search_rep_bound = 11;
-  params.graph_search_catch_up_leak_prob = 0.0;
-  params.root_noise_enabled = false;
-  params.root_dirichlet_noise_total_concentration = 10.83;
-  params.root_dirichlet_noise_weight = 0.25;
-  params.root_policy_temperature = 1.0;
-  params.root_policy_temperature_early = params.root_policy_temperature;
-  params.root_fpu_reduction_max = if params.root_noise_enabled { 0.0 } else { 0.1 };
-  params.root_fpu_loss_prop = params.fpu_loss_prop;
-  params.root_num_symmetries_to_sample = 1;
-  params.root_symmetry_pruning = analysis_or_gtp;
-  params.root_desired_per_child_visits_coeff = 0.0;
-  params.root_policy_optimism = if not_dist_other { cpp_min(params.policy_optimism, 0.2) } else { 0.0 };
-  params.chosen_move_temperature = 0.1;
-  params.chosen_move_temperature_early = 0.5;
-  params.chosen_move_temperature_halflife = 19.0;
-  params.chosen_move_temperature_only_below_prob = 1.0;
-  params.chosen_move_subtract = 0.0;
-  params.chosen_move_prune = 1.0;
-  params.use_lcb_for_selection = true;
-  params.lcb_stdevs = 5.0;
-  params.min_visit_prop_for_lcb = 0.15;
-  params.use_non_buggy_lcb = not_dist_other;
-  params.root_ending_bonus_points = 0.5;
-  params.root_prune_useless_moves = true;
-  params.conservative_pass = false;
-  params.fill_dame_before_pass = false;
-  //Controlled by GTP directly, not used in any other mode
-  params.avoid_myt_dagger_hack_pla = C_EMPTY;
-  params.wide_root_noise = if setup_for == SetupFor::Analysis { 0.04 } else { 0.00 }; //Setup::DEFAULT_ANALYSIS_WIDE_ROOT_NOISE
-  params.enable_passing_hacks = analysis_or_gtp;
-  params.enable_more_passing_hacks = analysis_or_gtp;
-  params.playout_doubling_advantage = 0.0;
-  params.playout_doubling_advantage_pla = C_EMPTY;
-  params.avoid_repeated_pattern_utility = 0.0;
-  params.nn_policy_temperature = 1.0f32;
-  params.anti_mirror = false;
-  params.ignore_pre_root_history = setup_for == SetupFor::Analysis; //Setup::DEFAULT_ANALYSIS_IGNORE_PRE_ROOT_HISTORY = true
-  params.ignore_all_history = false;
-  params.subtree_value_bias_factor = 0.45;
-  params.subtree_value_bias_free_prop = 0.8;
-  params.subtree_value_bias_weight_exponent = 0.85;
-  params.use_eval_cache = false;
-  params.eval_cache_min_visits = 100;
-  params.node_table_shards_power_of_two = 16;
-  params.num_virtual_losses_per_thread = 1.0;
-  params.tree_reuse_carry_over_time_factor = 0.0;
-  params.overallocate_time_factor = 1.0;
-  params.midgame_time_factor = 1.0;
-  params.midgame_turn_peak_time = 130.0;
-  params.endgame_turn_time_decay = 100.0;
-  params.obvious_moves_time_factor = 1.0;
-  params.obvious_moves_policy_entropy_tolerance = 0.30;
-  params.obvious_moves_policy_surprise_tolerance = 0.15;
-  params.futile_visits_threshold = 0.0;
-  params.human_sl_cpuct_exploration = 1.0;
-  params.human_sl_cpuct_permanent = 0.0;
-  params.human_sl_root_explore_prob_weightless = 0.0;
-  params.human_sl_root_explore_prob_weightful = 0.0;
-  params.human_sl_pla_explore_prob_weightless = 0.0;
-  params.human_sl_pla_explore_prob_weightful = 0.0;
-  params.human_sl_opp_explore_prob_weightless = 0.0;
-  params.human_sl_opp_explore_prob_weightful = 0.0;
-  params.human_sl_chosen_move_prop = 0.0;
-  params.human_sl_chosen_move_ignore_pass = false;
-  params.human_sl_chosen_move_pikl_lambda = 1000000000.0;
-  params
-}
 
 //------------------------------------------------------------------------------------------------
 // The sections of Tests::runNNLessSearchTests(), in order. Each `fn` is the body of one `{ ... }` block
@@ -2286,36 +2154,36 @@ fn search_params_for_tests_v1(_ctx: &mut Ctx) {
 
 /// "SearchParams for <setup>" sections: `ConfigParser cfg; cfg.overrideKey("numSearchThreads","1");` once
 /// before the first of them in the C++; same config here for each.
-fn search_params_for(setup_for: SetupFor) {
+fn search_params_for(setup_for: setup_for_t) {
   let mut cfg = ConfigParser::new(false, true);
   cfg.override_key("numSearchThreads", "1");
-  let params = load_single_params(&mut cfg, setup_for);
+  let params = Setup::load_single_params(&mut cfg, setup_for).expect("upstream: loadSingleParams succeeds for this config");
   params.print_params(&mut Cout);
   coutln!();
 }
 
 fn search_params_for_gtp(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Gtp);
+  search_params_for(Setup::SETUP_FOR_GTP);
 }
 
 fn search_params_for_analysis(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Analysis);
+  search_params_for(Setup::SETUP_FOR_ANALYSIS);
 }
 
 fn search_params_for_match(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Match);
+  search_params_for(Setup::SETUP_FOR_MATCH);
 }
 
 fn search_params_for_benchmark(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Benchmark);
+  search_params_for(Setup::SETUP_FOR_BENCHMARK);
 }
 
 fn search_params_for_other(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Other);
+  search_params_for(Setup::SETUP_FOR_OTHER);
 }
 
 fn search_params_for_distributed(_ctx: &mut Ctx) {
-  search_params_for(SetupFor::Distributed);
+  search_params_for(Setup::SETUP_FOR_DISTRIBUTED);
 }
 
 //------------------------------------------------------------------------------------------------

@@ -1,0 +1,28 @@
+[package]
+name = "katago-cli"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Native drop-in `katago-rs analysis -model ... -config ...`: the ported analysis engine over stdin/stdout with the burn backend. Native only."
+
+[[bin]]
+name = "katago-rs"
+path = "src/main.rs"
+
+[features]
+# CPU (burn flex) with every compile-time net. GPU: `-F wgpu` then `-backend wgpu` on the command line.
+default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt"]
+flex = ["katago-nn-burn/flex"]
+wgpu = ["katago-nn-burn/wgpu"]
+net-b6c96 = ["katago-nn-burn/net-b6c96"]
+net-b10c128 = ["katago-nn-burn/net-b10c128"]
+net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
+
+[dependencies]
+katago-core = { path = "../katago-core" }
+katago-nn-burn = { path = "../katago-nn-burn", default-features = false }
+burn = { workspace = true, features = ["std"] }
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+log = "0.4"
+serde_json = { version = "1", features = ["float_roundtrip"] }

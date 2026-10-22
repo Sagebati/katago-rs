@@ -272,6 +272,10 @@ pub struct Search {
   pub old_nn_outputs_to_clean_up: RefCell<Vec<Rc<NNOutput>>>,
 }
 
+/// The `concurrent_task` parameter of Search::run_whole_search_full (PORT NOTE there): a task that
+/// reads the Search while the virtual search threads run (AsyncBot's analyze-callback loop).
+pub type ConcurrentTask<'a> = &'a dyn for<'s> Fn(&'s Search) -> LocalBoxFuture<'s, Result<(), KataError>>;
+
 /// The by-reference captures of runWholeSearch's `searchLoop` lambda.
 /// PORT NOTE (PORTING.md §11): the lambda becomes the async fn `search_loop`; the locals it shares
 /// across threads are Cells borrowed by every virtual thread.
@@ -764,9 +768,9 @@ impl Search {
     if move_pla != self.root_pla {
       self.set_player_and_clear_history(move_pla)?;
     }
-    let search_begun: Option<&dyn Fn()> = None;
+    let search_begun: Option<&dyn Fn(&Search)> = None;
     let should_stop_early: Option<&dyn Fn() -> bool> = None;
-    self.run_whole_search_full(search_begun, should_stop_early, pondering, &TimeControls::new(), 1.0).await
+    self.run_whole_search_full(search_begun, should_stop_early, pondering, &TimeControls::new(), 1.0, None).await
   }
 
   /// upstream: Search::runWholeSearch(Player, bool, std::function<bool()>*) (search.cpp)
@@ -779,21 +783,30 @@ impl Search {
     if move_pla != self.root_pla {
       self.set_player_and_clear_history(move_pla)?;
     }
-    let search_begun: Option<&dyn Fn()> = None;
-    self.run_whole_search_full(search_begun, should_stop_early, pondering, &TimeControls::new(), 1.0).await
+    let search_begun: Option<&dyn Fn(&Search)> = None;
+    self.run_whole_search_full(search_begun, should_stop_early, pondering, &TimeControls::new(), 1.0, None).await
   }
 
   /// upstream: Search::runWholeSearch(const std::function<void()>*, std::function<bool()>*, bool, const TimeControls&, double) (search.cpp)
   /// PORT NOTE: name from PORTING.md Appendix B. async (PORTING.md §11): `performTaskWithThreads(&searchLoop,
   /// capThreads)` becomes a join_all over the virtual threads upstream would use; the shared locals
   /// (numPlayoutsShared, shouldStopNow, tcMaxTime, upperBoundVisitsLeftDueToTime) are Cells.
+  /// PORT NOTE (PORTING.md §11, AsyncBot): upstream's callers reach the Search from inside their
+  /// callbacks through their own pointer to it (`bot->getSearch()`); here `&mut self` is borrowed for
+  /// the whole search, so `searchBegun` receives the Search as an argument, and the new
+  /// `concurrent_task` stands for AsyncBot's analyze-callback thread, which reads the Search while the
+  /// search threads run: it is polled alongside the virtual search threads (after searchBegun, with a
+  /// shared borrow of the Search) and dropped as soon as they all finish (upstream: callbackLoopShouldStop,
+  /// notify and join, right after runWholeSearch returns). If it fails, the search threads are stopped
+  /// through shouldStopNow and awaited (never dropped, §11) before its error is returned.
   pub async fn run_whole_search_full(
     &mut self,
-    search_begun: Option<&dyn Fn()>, //If not null, will be called once search has begun and tree inspection is safe
+    search_begun: Option<&dyn Fn(&Search)>, //If not null, will be called once search has begun and tree inspection is safe
     should_stop_early: Option<&dyn Fn() -> bool>, //If not null and returns true, search will stop soon after
     pondering: bool,
     tc: &TimeControls,
     mut search_factor: f64,
+    concurrent_task: Option<ConcurrentTask<'_>>,
   ) -> Result<(), KataError> {
     let timer: ClockTimer = ClockTimer::new();
     let num_playouts_shared: Cell<i64> = Cell::new(0);
@@ -804,7 +817,7 @@ impl Search {
     //Do this first, just in case this causes us to clear things and have 0 effective time carried over
     self.begin_search(pondering).await?;
     if let Some(search_begun) = search_begun {
-      search_begun();
+      search_begun(&*self);
     }
     let num_non_playout_visits: i64 = self.get_root_visits();
 
@@ -890,10 +903,31 @@ impl Search {
       for thread_idx in 0..(num_additional_threads_to_use + 1) {
         loops.push(Box::pin(this.search_loop(thread_idx, &captures)));
       }
-      let results: Vec<Result<(), KataError>> = futures::future::join_all(loops).await;
+      let loops_joined = futures::future::join_all(loops);
+      let mut task_result: Result<(), KataError> = Ok(());
+      let results: Vec<Result<(), KataError>> = match concurrent_task {
+        None => loops_joined.await,
+        Some(concurrent_task) => {
+          let task: LocalBoxFuture<'_, Result<(), KataError>> = concurrent_task(this);
+          match futures::future::select(loops_joined, task).await {
+            futures::future::Either::Left((results, task_rest)) => {
+              drop(task_rest);
+              results
+            }
+            futures::future::Either::Right((r, loops_rest)) => {
+              if r.is_err() {
+                should_stop_now.set(true) /*relaxed*/;
+              }
+              task_result = r;
+              loops_rest.await
+            }
+          }
+        }
+      };
       for r in results {
         r?;
       }
+      task_result?;
     }
 
     //If the search did not actually do anything, we need to still make sure to update the root node if it needs

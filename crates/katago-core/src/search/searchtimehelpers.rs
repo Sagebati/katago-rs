@@ -13,7 +13,9 @@ use crate::search::timecontrols::TimeControls;
 
 impl Search {
   /// upstream: Search::numVisitsNeededToBeNonFutile (searchtimehelpers.cpp)
-  pub(crate) fn num_visits_needed_to_be_non_futile(&self, max_visits_move_visits: f64) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the parity oracle
+  /// tests/searchtimehelpers_oracle.rs can call it.
+  pub fn num_visits_needed_to_be_non_futile(&self, max_visits_move_visits: f64) -> f64 {
     let required_visits: f64 = self.search_params.futile_visits_threshold * max_visits_move_visits;
     //In the case where we're playing high temperature, also require that we can't get to more than a 1:100 odds of playing the move.
     let chosen_move_temperature: f64 = self.interpolate_early(
@@ -29,7 +31,9 @@ impl Search {
   }
 
   /// upstream: Search::computeUpperBoundVisitsLeftDueToTime (searchtimehelpers.cpp)
-  pub(crate) fn compute_upper_bound_visits_left_due_to_time(&self, root_visits: i64, time_used: f64, planned_time_limit: f64) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the parity oracle
+  /// tests/searchtimehelpers_oracle.rs can call it.
+  pub fn compute_upper_bound_visits_left_due_to_time(&self, root_visits: i64, time_used: f64, planned_time_limit: f64) -> f64 {
     if root_visits <= 1 {
       return 1e30;
     }
@@ -46,7 +50,9 @@ impl Search {
 
   /// upstream: Search::recomputeSearchTimeLimit (searchtimehelpers.cpp)
   /// PORT NOTE: throws (TimeControls::getTime) -> Result.
-  pub(crate) fn recompute_search_time_limit(&self, tc: &TimeControls, time_used: f64, search_factor: f64, root_visits: i64) -> Result<f64, KataError> {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the parity oracle
+  /// tests/searchtimehelpers_oracle.rs can call it.
+  pub fn recompute_search_time_limit(&self, tc: &TimeControls, time_used: f64, search_factor: f64, root_visits: i64) -> Result<f64, KataError> {
     let mut tc_min: f64 = 0.0;
     let mut tc_rec: f64 = 0.0;
     let mut tc_max: f64 = 0.0;

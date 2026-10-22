@@ -1077,6 +1077,80 @@ pub fn get_i32(v: &Value) -> Result<i32, KataError> {
   }
 }
 
+/// upstream: nlohmann::detail::from_json(const BasicJsonType&, number_integer_t&) -> get_arithmetic_value (json.hpp)
+/// `j.get<int64_t>()`: number_unsigned, number_integer or number_float (NOT boolean, unlike get<int>),
+/// `static_cast<int64_t>`; anything else is type_error 302.
+/// PORT NOTE: `static_cast<int64_t>` of a u64 above i64::MAX wraps (= Rust `as`); of a double out of
+/// range or NaN it is C++ UB, x86-64 cvttsd2si gives INT64_MIN (port::cpp::static_cast_i64_f64).
+pub fn get_i64(v: &Value) -> Result<i64, KataError> {
+  match v {
+    Value::Number(n) => {
+      if let Some(u) = n.as_u64() {
+        Ok(u as i64)
+      } else if let Some(i) = n.as_i64() {
+        Ok(i)
+      } else {
+        Ok(crate::port::cpp::static_cast_i64_f64(n.as_f64().expect("serde_json Number is u64, i64 or f64")))
+      }
+    }
+    _ => Err(KataError::NlohmannJson(format!("[json.exception.type_error.302] type must be number, but is {}", type_name(v)))),
+  }
+}
+
+/// upstream: nlohmann::detail::from_json(const BasicJsonType&, number_float_t&) -> get_arithmetic_value (json.hpp)
+/// `j.get<double>()`: number_unsigned, number_integer or number_float (NOT boolean); anything else is
+/// type_error 302. Integers convert with `static_cast<double>` (round to nearest, = Rust `as`).
+pub fn get_f64(v: &Value) -> Result<f64, KataError> {
+  match v {
+    Value::Number(n) => {
+      if let Some(u) = n.as_u64() {
+        Ok(u as f64)
+      } else if let Some(i) = n.as_i64() {
+        Ok(i as f64)
+      } else {
+        Ok(n.as_f64().expect("serde_json Number is u64, i64 or f64"))
+      }
+    }
+    _ => Err(KataError::NlohmannJson(format!("[json.exception.type_error.302] type must be number, but is {}", type_name(v)))),
+  }
+}
+
+/// upstream: nlohmann::detail::from_json(const BasicJsonType&, ConstructibleArrayType&) (json.hpp), for `std::vector<int>`
+/// `j.get<std::vector<int>>()`: an array (else type_error 302 "type must be array"), each element `get<int>()`
+/// (so booleans and floats convert, see get_i32).
+pub fn get_vector_i32(v: &Value) -> Result<Vec<i32>, KataError> {
+  match v {
+    Value::Array(a) => {
+      let mut ret: Vec<i32> = Vec::with_capacity(a.len());
+      for elt in a {
+        ret.push(get_i32(elt)?);
+      }
+      Ok(ret)
+    }
+    _ => Err(KataError::NlohmannJson(format!("[json.exception.type_error.302] type must be array, but is {}", type_name(v)))),
+  }
+}
+
+/// upstream: nlohmann::detail::from_json(const BasicJsonType&, ConstructibleArrayType&) (json.hpp), for `std::vector<int64_t>`
+/// `j.get<std::vector<int64_t>>()`: an array, each element `get<int64_t>()` (see get_i64).
+pub fn get_vector_i64(v: &Value) -> Result<Vec<i64>, KataError> {
+  match v {
+    Value::Array(a) => {
+      let mut ret: Vec<i64> = Vec::with_capacity(a.len());
+      for elt in a {
+        ret.push(get_i64(elt)?);
+      }
+      Ok(ret)
+    }
+    _ => Err(KataError::NlohmannJson(format!("[json.exception.type_error.302] type must be array, but is {}", type_name(v)))),
+  }
+}
+
+/// nlohmann `is_number_integer()`: number_integer or number_unsigned (PORTING.md §9).
+pub fn is_number_integer(v: &Value) -> bool {
+  v.is_i64() || v.is_u64()
+}
+
 // ---------------------------------------------------------------------------------------
 // json::parse: detail::lexer, detail::parser and detail::json_sax_dom_parser (json.hpp).
 // PORT NOTE: only the JSON text format over a contiguous byte input (`input_adapter(std::string)`
@@ -2706,5 +2780,25 @@ mod tests {
     assert_eq!(f(123456789012345.0), "123456789012345.0");
     assert_eq!(f(1e-5), "1e-05");
     assert_eq!(f(0.0001), "0.0001");
+  }
+
+  #[test]
+  fn get_arithmetic_and_vectors() {
+    let v = |t: &str| parse(t).ok().unwrap();
+    assert_eq!(get_i64(&v("5")).ok(), Some(5));
+    assert_eq!(get_i64(&v("-5")).ok(), Some(-5));
+    assert_eq!(get_i64(&v("18446744073709551615")).ok(), Some(-1)); // static_cast<int64_t>(u64) wraps
+    assert_eq!(get_i64(&v("2.9")).ok(), Some(2));
+    assert_eq!(get_i64(&v("1e300")).ok(), Some(i64::MIN)); // x86-64 cvttsd2si
+    assert!(get_i64(&v("true")).is_err()); // number_integer_t: no boolean
+    assert_eq!(get_f64(&v("3")).ok(), Some(3.0));
+    assert!(get_f64(&v("false")).is_err());
+    assert!(get_f64(&v("\"x\"")).is_err());
+    assert_eq!(get_vector_i32(&v("[1, true, 2.5, -3]")).ok(), Some(vec![1, 1, 2, -3])); // get<int> accepts booleans
+    assert!(get_vector_i32(&v("{}")).is_err());
+    assert!(get_vector_i32(&v("[1, \"a\"]")).is_err());
+    assert_eq!(get_vector_i64(&v("[1, -2]")).ok(), Some(vec![1, -2]));
+    assert!(get_vector_i64(&v("[true]")).is_err());
+    assert!(is_number_integer(&v("3")) && is_number_integer(&v("-3")) && !is_number_integer(&v("3.0")));
   }
 }

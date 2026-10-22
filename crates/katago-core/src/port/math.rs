@@ -36,8 +36,10 @@
 //! double-double evaluation, not a port of glibc's code (see its section). `lgamma`/`lgamma_r`
 //! (CORE-MATH, MIT, correctly rounded) are a port of glibc's copy in math/lgamma.rs. `expm1`
 //! (fdlibm, `__expm1_fma`) is ported with glibc's FMA contractions like the ARM routines (see
-//! its section). `atan`, `tan` (IBM Accurate Mathematical Library, LGPL) wrap the platform
-//! libm (D13). `log10` (fdlibm) is [`log10`]. `tanh`, `atanf` (CORE-MATH) are not here yet: see
+//! its section). `atan` (IBM Accurate Mathematical Library in glibc, LGPL, not correctly rounded)
+//! is a port of CORE-MATH's correctly rounded `cr_atan` (MIT) in math/atan.rs plus a table of
+//! glibc's misroundings on ScoreValue's table arguments (D13 b). `tan` (IBM, LGPL) wraps the
+//! platform libm (D13). `log10` (fdlibm) is [`log10`]. `tanh`, `atanf` (CORE-MATH) are not here yet: see
 //! the TODO(port) at the end of the file. `sqrt` is correctly rounded everywhere and stays
 //! `f64::sqrt`.
 
@@ -672,22 +674,12 @@ pub fn expf(x: f32) -> f32 {
   y as f32
 }
 
-/// upstream: C `atan` (double), as called by `ScoreValue` (nninputs.cpp).
-///
-/// PORT NOTE (DECISIONS.md D13): delegates to the platform libm. Natively that is glibc
-/// (identical); on wasm32 it is compiler-builtins' libm, which differs from glibc by at most
-/// 1 ulp (6.1% of inputs). glibc's atan is LGPL-2.1+ IBM code, so it is not ported; ScoreValue
-/// only feeds score utility, which fixtures compare with a tolerance.
-/// Oracle: `tests/math.rs` vs `oracle/math_ulp.txt` (≤ 1 ulp, also under `just test-wasm`).
-#[allow(clippy::disallowed_methods)]
-pub fn atan(x: f64) -> f64 {
-  x.atan()
-}
-
 /// upstream: C `tan` (double), as called by `inverse_atan` (nninputs.cpp).
 ///
-/// PORT NOTE (DECISIONS.md D13): same as [`atan`]: platform libm, ≤ 1 ulp from glibc on wasm32
-/// (3.8% of inputs differ).
+/// PORT NOTE (DECISIONS.md D13): delegates to the platform libm. Natively that is glibc
+/// (identical); on wasm32 it is compiler-builtins' libm, ≤ 1 ulp from glibc (3.8% of inputs
+/// differ). glibc's tan is LGPL-2.1+ IBM code, so it is not ported. Only `inverse_atan` calls
+/// it, which only model-version-3 nets reach. Oracle: `tests/math.rs` vs `oracle/math_ulp.txt`.
 #[allow(clippy::disallowed_methods)]
 pub fn tan(x: f64) -> f64 {
   x.tan()
@@ -1013,6 +1005,7 @@ pub fn expm1(mut x: f64) -> f64 {
 // was never reached (its 19 inputs are settled by the fast path in this version).
 // Fixture oracle on every target: tests/math_lgamma.rs vs oracle/math_lgamma.txt.
 
+#[macro_use]
 mod lgamma;
 
 pub use lgamma::lgamma_r;
@@ -1024,6 +1017,27 @@ pub fn lgamma(x: f64) -> f64 {
   let mut signgam: i32 = 0;
   lgamma_r(x, &mut signgam)
 }
+
+// ---------------------------------------------------------------------------------------
+// atan (CORE-MATH, in math/atan.rs)
+// ---------------------------------------------------------------------------------------
+//
+// DECISIONS.md D13 (b): CORE-MATH's correctly rounded cr_atan (MIT) plus a table of glibc's
+// misroundings on ScoreValue's table arguments, so `atan` is the same function on every target.
+// The Rust cr_atan was checked against the C atan.c it was ported from (gcc -O2 -mfma
+// -ffp-contract=off) on 6*10^9 inputs (10^9 each: uniform bits, uniform [-8,8], log-uniform
+// 2^-60..2^60, exponent in [-30,20], ScoreValue-like quotients, |x| < 2^-7), 0 mismatches; that
+// run took the accurate path (as_atan_refine2) 1.8*10^8 times. Plus 24,440 boundary/special
+// inputs including all of as_atan_refine2's hard cases (0 mismatches), 3*10^6 inputs against
+// MPFR (0 mismatches) and all 50,531 table arguments against host glibc 2.44 with the override
+// (0 mismatches). Throwaway programs, not checked in. Fixture oracle on every target:
+// tests/math_atan.rs vs oracle/math_atan.txt.
+
+mod atan;
+
+pub use atan::atan;
+pub use atan::GLIBC_ATAN_OVERRIDES;
+pub use atan::cr_atan;
 
 // ---------------------------------------------------------------------------------------
 // e_log10.c
@@ -1095,8 +1109,9 @@ pub fn log10(mut x: f64) -> f64 {
 //   - lgamma, expm1 (fancymath.cpp): done (lgamma: CORE-MATH port in math/lgamma.rs; expm1:
 //     fdlibm with glibc's FMA contractions, above).
 //   - log10 (global.cpp roundDynamic): done above (fdlibm, no FMA variant in glibc).
-//   - atan, tan (nninputs.cpp ScoreValue): done above as platform-libm wrappers (D13: glibc's
-//     are LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).
+//   - atan (nninputs.cpp ScoreValue): done (CORE-MATH port + glibc overrides, math/atan.rs, D13).
+//   - tan (nninputs.cpp inverse_atan, v3 nets only): platform-libm wrapper above (D13: glibc's is
+//     LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).
 
 // ---------------------------------------------------------------------------------------
 // Tables (generated; see the module docs)

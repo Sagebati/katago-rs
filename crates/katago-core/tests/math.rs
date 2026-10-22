@@ -210,31 +210,36 @@ fn math_vs_host_glibc() {
   eprintln!("math_vs_host_glibc: {} inputs x 4 functions", n);
 }
 
-/// D13: `atan`/`tan` use the platform libm, so they must be within 1 ulp of glibc (exact natively).
+/// D13 (b): `atan` is CORE-MATH's correctly rounded atan (+ glibc's misroundings on ScoreValue's
+/// table arguments, see tests/math_atan.rs), so on every target it equals glibc wherever glibc is
+/// correctly rounded: here everywhere but the 2 of 2048 inputs where glibc 2.44 is 1 ulp off
+/// (checked with MPFR). `tan` uses the platform libm: within 1 ulp of glibc (exact natively).
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 #[test]
 fn atan_tan_within_one_ulp_of_glibc() {
   common::init();
   let table = common::fixture("oracle", "math_ulp.txt");
-  let (mut n, mut differ) = (0, 0);
+  let (mut n, mut differ_atan, mut differ_tan) = (0, 0, 0);
   for line in table.lines() {
     let parts: Vec<&str> = line.split_whitespace().collect();
     let x = f64::from_bits(hex(parts[1]));
     let want = f64::from_bits(hex(parts[2]));
-    let got = match parts[0] {
-      "atan" => katago_core::port::math::atan(x),
-      "tan" => katago_core::port::math::tan(x),
+    let (got, differ) = match parts[0] {
+      "atan" => (katago_core::port::math::atan(x), &mut differ_atan),
+      "tan" => (katago_core::port::math::tan(x), &mut differ_tan),
       other => panic!("unknown fn {other}"),
     };
     let ulps = (got.to_bits() as i64 - want.to_bits() as i64).abs();
     assert!(ulps <= 1, "{line}: got {:016X} ({ulps} ulp)", got.to_bits());
     if ulps != 0 {
-      differ += 1;
+      *differ += 1;
     }
     n += 1;
   }
   assert_eq!(n, 4096, "math_ulp.txt cases");
-  report!("atan/tan: {n} cases, {differ} differ by 1 ulp");
+  report!("atan/tan: {n} cases, {differ_atan} atan and {differ_tan} tan differ by 1 ulp");
+  // glibc misrounds atan at x = BFCD1486C8F6B8A0 and BFF85EB42EEA89F8; the port is correctly rounded there.
+  assert_eq!(differ_atan, 2, "atan must equal glibc except where glibc is not correctly rounded");
   #[cfg(not(target_arch = "wasm32"))]
-  assert_eq!(differ, 0, "native must be glibc itself");
+  assert_eq!(differ_tan, 0, "native tan must be glibc itself");
 }

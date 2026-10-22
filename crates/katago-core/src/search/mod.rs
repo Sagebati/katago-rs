@@ -19,3 +19,4 @@ pub mod searchupdatehelpers;
 pub mod analysisdata;
 pub mod searchprint;
 pub mod searchresults;
+pub mod asyncbot;

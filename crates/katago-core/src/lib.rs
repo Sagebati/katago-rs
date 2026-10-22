@@ -23,6 +23,10 @@
 #![allow(clippy::mixed_case_hex_literals, clippy::module_inception, clippy::unnecessary_unwrap,
          clippy::should_implement_trait, clippy::ptr_arg, clippy::identity_op, clippy::borrow_deref_ref,
          clippy::diverging_sub_expression)]
+// Added in M3 wave 2b: upstream's `size() > 0`, `== ""`, `cond ? true : false`, try/catch-as-match, map
+// iteration over (key, value) and push-after-construct shapes kept verbatim (setup.cpp, analysis.cpp).
+#![allow(clippy::len_zero, clippy::comparison_to_empty, clippy::needless_bool, clippy::single_match,
+         clippy::for_kv_map, clippy::vec_init_then_push)]
 #![deny(clippy::await_holding_refcell_ref)]
 // PORTING.md §6 item 3: transcendentals only through port::math (list in clippy.toml).
 #![deny(clippy::disallowed_methods)]
@@ -33,3 +37,4 @@ pub mod game;
 pub mod neuralnet;
 pub mod search;
 pub mod program;
+pub mod command;

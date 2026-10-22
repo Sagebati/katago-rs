@@ -321,16 +321,17 @@ r(f,"AsyncBot","threadWaitingToSearch","std::condition_variable","OWNED","(remov
 r(f,"AsyncBot","userWaitingForStop","std::condition_variable","OWNED","(removed)","the caller awaits the search future")
 r(f,"AsyncBot","searchThread","std::thread","OWNED","(removed)","")
 r(f,"AsyncBot","shouldStopNow","std::atomic<bool>","SHARED","Rc<Cell<bool>>","set by stopWithoutWait from the host (terminate) while the search future runs; read by the shouldStopEarly closure")
-r(f,"AsyncBot","queuedOnMove","std::function<void(Loc,int,Search*)>","OWNED","Option<Box<dyn FnMut(Loc, i32, &mut Search)>>","genMove path not ported (manifest)")
-r(f,"AsyncBot","analyzeCallback","std::function<void(const Search*)>","OWNED","Option<Box<dyn Fn(&Search)>>","")
-r(f,"AsyncBot","searchBegunCallback","std::function<void()>","OWNED","Option<Box<dyn Fn()>>","")
+r(f,"AsyncBot","isKilled","bool","SHARED","Rc<Cell<bool>>","set by setKilled from another virtual thread (AsyncBotStopHandle, analysis shutdown)")
+r(f,"AsyncBot","queuedOnMove","std::function<void(Loc,int,Search*)>","OWNED","Option<Box<dyn FnMut(Loc, i32, &mut Search)>>","set by the private genMove*Async queueing fns")
+r(f,"AsyncBot","analyzeCallback","std::function<void(const Search*)>","SHARED","Option<Rc<dyn Fn(&Search) -> Result<(), KataError>>>","Rc: internalSearchThreadLoop copies it; Result: an exception in upstream's callback thread terminates the process")
+r(f,"AsyncBot","searchBegunCallback","std::function<void()>","SHARED","Option<Rc<dyn Fn(&Search)>>","gets the Search (upstream callbacks reach it through the bot, which the search borrows mutably)")
 r(f,"AsyncBot","AsyncBot(nnEval)","NNEvaluator*","BORROWED","Rc<NNEvaluator>","ctor param; humanEval -> Option<Rc<NNEvaluator>>; Logger* param dropped")
 r(f,"AsyncBot","getSearch(return)","const Search*","BORROWED","&Search","")
 
 # ---------------- command/analysis.cpp ----------------
 f = "cpp/command/analysis.cpp"
 r(f,"AnalyzeRequest","status","std::atomic<int>","SHARED","Cell<i32>","the request is shared between the request handler and the search driver as Rc<AnalyzeRequest>")
-r(f,"(local)","openRequests","std::map<int64_t,AnalyzeRequest*>","SHARED","BTreeMap<i64, Rc<AnalyzeRequest>>","request loop not ported (manifest); for katago-wasm / katago-cli drivers")
+r(f,"(local)","openRequests","std::map<int64_t,AnalyzeRequest*>","SHARED","RefCell<BTreeMap<i64, Rc<AnalyzeRequest>>>","field of AnalysisContext; openRequestsMutex removed")
 
 out = sys.argv[1]
 with open(out, "w") as fh:

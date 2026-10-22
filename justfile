@@ -58,7 +58,7 @@ check-features:
 # yields to the JS event loop between batches (PORTING.md §11).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
@@ -72,3 +72,19 @@ nn-parity *flags="":
 # prints visit-vector / top-move / value-diff statistics by maxVisits. Release only (debug burn is very slow).
 search-smoke *flags="":
     cargo test --release -p katago-nn-burn --test search_smoke {{flags}} -- --nocapture
+
+# Analysis goldens (M3, D9): cpp/tests/analysis/*.txt through the ported analysis engine (katago-cli, burn flex,
+# g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.16.5/analysis/*.stdout (structure exact, floats within
+# the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
+analysis-goldens *flags="":
+    cargo test --release -p katago-cli {{flags}} -- --nocapture
+
+# Real-net search tests (testsearchv9 / testsearchv8 transcriptions, b6c96 via burn flex vs the Eigen expected
+# outputs). Release: the two heaviest v8 groups are ignored in debug (~15 min release in parallel).
+search-tests *flags="":
+    cargo test --release -p katago-nn-burn --test testsearchv9 --test testsearchv8 {{flags}} -- --nocapture
+
+# Tolerance study: 160 b6c96 + 32 b10c128 searches at 400-1000 visits, burn flex vs Eigen
+# (fixtures/upstream-v1.16.5/search/oracle/search_tolerance_*.txt). Release, ~16 min.
+search-tolerance *flags="":
+    cargo test --release -p katago-nn-burn --test search_tolerance {{flags}} -- --nocapture

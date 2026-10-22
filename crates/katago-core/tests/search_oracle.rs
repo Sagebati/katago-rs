@@ -33,7 +33,6 @@ use std::fmt::Write as _;
 use std::rc::Rc;
 use std::sync::OnceLock;
 
-#[cfg(not(target_arch = "wasm32"))]
 use common::Cases;
 use common::compare_lines;
 use common::fixture;
@@ -987,7 +986,6 @@ struct Variant<'v> {
   check: Option<&'v mut dyn FnMut(&Search)>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 fn no_variant<'v>() -> Variant<'v> {
   Variant { ops: None, num_threads: None, overrides: &[], check: None }
 }
@@ -1030,10 +1028,10 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
 }
 
 //------------------------------------------------------------------------------------------------
-// The oracle test (native only: on wasm32, `port::math::atan`/`tan` wrap the platform libm, up to 1 ulp from glibc
-// (DECISIONS.md D13), which changes score utilities in the last bit, so the bit-exact comparison cannot hold there)
+// The oracle test. Also on wasm32 (`just test-wasm`): `port::math::atan` is target-independent and glibc-identical on
+// ScoreValue's table arguments (DECISIONS.md D13), so the bit-exact comparison holds there too. On wasm32 a panic
+// cannot be caught (`try_catch`), so the first mismatching case aborts the test instead of being collected.
 
-#[cfg(not(target_arch = "wasm32"))]
 const NUM_CASES: usize = 341;
 
 /// Cases of the multi-thread test taken from the fixture (spread over all generators).
@@ -1041,7 +1039,6 @@ const NUM_MT_CASES: usize = 36;
 
 /// The fixture text. For exploration only, the environment variable SEARCH_ORACLE_FILE names another output of
 /// search_nonn.cpp (e.g. `ORACLE_SEED=x ORACLE_STRESS_ONLY=2000 search_nonn`); then the case count is not checked.
-#[cfg(not(target_arch = "wasm32"))]
 fn fixture_text() -> (String, bool) {
   if let Ok(p) = std::env::var("SEARCH_ORACLE_FILE") {
     return (std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("{}: {}", p, e)), true);
@@ -1049,7 +1046,6 @@ fn fixture_text() -> (String, bool) {
   (fixture("oracle", "search_nonn.txt"), false)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 struct Mismatch {
   idx: i32,
   kind: String,
@@ -1058,12 +1054,10 @@ struct Mismatch {
 }
 
 /// `common::compare_lines` for one case, returning its failure message instead of unwinding.
-#[cfg(not(target_arch = "wasm32"))]
 fn compare_case(label: &str, actual: &str, expected: &str) -> Result<(), String> {
   try_catch(|| compare_lines(label, actual, expected))
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 fn run_oracle() -> (usize, Vec<Mismatch>) {
   init();
   ScoreValue::init_tables(); //upstream's main(): "MUST BE CALLED AT PROGRAM START!"
@@ -1096,7 +1090,6 @@ fn run_oracle() -> (usize, Vec<Mismatch>) {
   (cases.len(), mismatches)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 fn run_oracle_report() {
   let mut cases = Cases::new("search_oracle::search_oracle");
   let (num_cases, mismatches) = run_oracle_on_big_stack();
@@ -1126,8 +1119,14 @@ fn run_oracle_on_big_stack() -> (usize, Vec<Mismatch>) {
     .expect("run_oracle panicked outside the per-case catch")
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-#[test]
+#[cfg(target_arch = "wasm32")]
+fn run_oracle_on_big_stack() -> (usize, Vec<Mismatch>) {
+  //No threads on wasm32: the wasm stack size is a link-time setting (`just test-wasm`).
+  run_oracle()
+}
+
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn search_oracle() {
   run_oracle_report();
 }
