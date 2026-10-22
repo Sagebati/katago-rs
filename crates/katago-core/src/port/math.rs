@@ -33,10 +33,13 @@
 //! glibc. C `exp`→[`exp`], `log`→[`ln`], `pow`→[`powf`], `expf`→[`expf`]. `logf`/`powf` (float)
 //! are not called by upstream code and not provided. Of the functions glibc implements
 //! elsewhere, `tanhf` (CORE-MATH, correctly rounded) is [`tanhf`]: our own correctly rounded
-//! double-double evaluation, not a port of glibc's code (see its section). `atan`, `tan` (IBM
-//! Accurate Mathematical Library, LGPL) wrap the platform libm (D13). `tanh`, `atanf`, `lgamma`
-//! (CORE-MATH) and `expm1`, `log10` (fdlibm) are not here yet: see the TODO(port) at the end of
-//! the file. `sqrt` is correctly rounded everywhere and stays `f64::sqrt`.
+//! double-double evaluation, not a port of glibc's code (see its section). `lgamma`/`lgamma_r`
+//! (CORE-MATH, MIT, correctly rounded) are a port of glibc's copy in math/lgamma.rs. `expm1`
+//! (fdlibm, `__expm1_fma`) is ported with glibc's FMA contractions like the ARM routines (see
+//! its section). `atan`, `tan` (IBM Accurate Mathematical Library, LGPL) wrap the platform
+//! libm (D13). `tanh`, `atanf` (CORE-MATH) and `log10` (fdlibm) are not here yet: see the
+//! TODO(port) at the end of the file. `sqrt` is correctly rounded everywhere and stays
+//! `f64::sqrt`.
 
 // ---------------------------------------------------------------------------------------
 // math_config.h helpers
@@ -824,6 +827,204 @@ pub fn tanhf(x: f32) -> f32 {
   if x > 0.0 { r } else { -r }
 }
 
+// ---------------------------------------------------------------------------------------
+// s_expm1.c
+// ---------------------------------------------------------------------------------------
+//
+// Ported from glibc 2.44 sysdeps/ieee754/dbl-64/s_expm1.c (fdlibm, "Modified by Naohiko
+// Shimizu/Tokai University, Japan 1997/08/25, for performance improvement on pipelined
+// processors"), as built into `__expm1_fma` (sysdeps/x86_64/fpu/multiarch/s_expm1-fma.c, the
+// variant the ifunc picks on a CPU with FMA and AVX2). Its notice, kept as it asks:
+//
+//   Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+//
+//   Developed at SunPro, a Sun Microsystems, Inc. business.
+//   Permission to use, copy, modify, and distribute this
+//   software is freely granted, provided that this notice
+//   is preserved.
+//
+// (glibc's LICENSES file lists the fdlibm files under this notice; the 1997 modification
+// carries no other notice.) Each `mul_add` is one `.FMA`/`.FMS`/`.FNMA` in GCC 16's GIMPLE for
+// `gcc -O2 -mfma -mavx2 -frounding-math` on that file; that object matches the installed
+// glibc 2.44 `expm1` on 2*10^7 inputs (the `-mno-fma` build differs on 0.06% of them).
+// `k = invln2 * x + 0.5` is not contracted (the add is behind a PHI).
+
+/// `SET_HIGH_WORD`: replaces the top 32 bits of `d`.
+#[inline(always)]
+fn set_high_word(d: f64, v: u32) -> f64 {
+  asdouble(((v as u64) << 32) | (asuint64(d) & 0xffffffff))
+}
+
+/// C `expm1(double)` (glibc 2.44 `__expm1_fma`), bit-identical on every target. Use instead of
+/// `f64::exp_m1`.
+pub fn expm1(mut x: f64) -> f64 {
+  const HUGE: f64 = 1.0e+300;
+  const TINY: f64 = 1.0e-300;
+  const O_THRESHOLD: f64 = f64::from_bits(0x40862E42FEFA39EF); // 7.09782712893383973096e+02
+  const LN2_HI: f64 = f64::from_bits(0x3fe62e42fee00000); // 6.93147180369123816490e-01
+  const LN2_LO: f64 = f64::from_bits(0x3dea39ef35793c76); // 1.90821492927058770002e-10
+  const INVLN2: f64 = f64::from_bits(0x3ff71547652b82fe); // 1.44269504088896338700e+00
+  /* scaled coefficients related to expm1 */
+  const Q: [f64; 6] = [
+    1.0,
+    f64::from_bits(0xBFA11111111110F4), // -3.33333333333331316428e-02
+    f64::from_bits(0x3F5A01A019FE5585), // 1.58730158725481460165e-03
+    f64::from_bits(0xBF14CE199EAADBB7), // -7.93650757867487942473e-05
+    f64::from_bits(0x3ED0CFCA86E65239), // 4.00821782732936239552e-06
+    f64::from_bits(0xBE8AFDB76E09C32D), // -2.01099218183624371326e-07
+  ];
+  let one = Q[0];
+
+  let mut y: f64;
+  let hi: f64;
+  let lo: f64;
+  let c: f64;
+  let t: f64;
+  let mut e: f64;
+  let k: i32;
+
+  let mut hx: u32 = (asuint64(x) >> 32) as u32;
+  let xsb: u32 = hx & 0x80000000; /* sign bit of x */
+  // PORT NOTE: C also computes y = |x| here; it is never read.
+  hx &= 0x7fffffff; /* high word of |x| */
+
+  /* filter out huge and non-finite argument */
+  if hx >= 0x4043687A {
+    /* if |x|>=56*ln2 */
+    if hx >= 0x40862E42 {
+      /* if |x|>=709.78... */
+      if hx >= 0x7ff00000 {
+        let low: u32 = asuint64(x) as u32;
+        if ((hx & 0xfffff) | low) != 0 {
+          return x + x; /* NaN */
+        } else {
+          return if xsb == 0 { x } else { -1.0 }; /* exp(+-inf)={inf,-1} */
+        }
+      }
+      if x > O_THRESHOLD {
+        // PORT NOTE: __set_errno (ERANGE) dropped (no errno).
+        return HUGE * HUGE; /* overflow */
+      }
+    }
+    if xsb != 0 {
+      /* x < -56*ln2, return -1.0 with inexact */
+      // PORT NOTE: math_force_eval (x + tiny) only raises inexact; dropped.
+      return TINY - one; /* return -1 */
+    }
+  }
+
+  /* argument reduction */
+  if hx > 0x3fd62e42 {
+    /* if  |x| > 0.5 ln2 */
+    if hx < 0x3FF0A2B2 {
+      /* and |x| < 1.5 ln2 */
+      if xsb == 0 {
+        hi = x - LN2_HI;
+        lo = LN2_LO;
+        k = 1;
+      } else {
+        hi = x + LN2_HI;
+        lo = -LN2_LO;
+        k = -1;
+      }
+    } else {
+      // PORT NOTE: (int32_t) conversion in range: |x| < 709.79 here.
+      k = (INVLN2 * x + if xsb == 0 { 0.5 } else { -0.5 }) as i32;
+      let tk: f64 = k as f64;
+      hi = (-tk).mul_add(LN2_HI, x); /* t*ln2_hi is exact here */
+      lo = tk * LN2_LO;
+    }
+    x = hi - lo;
+    c = (hi - x) - lo;
+  } else if hx < 0x3c900000 {
+    /* when |x|<2**-54, return x */
+    // PORT NOTE: math_check_force_underflow only raises a flag; dropped.
+    let th: f64 = HUGE + x; /* return x with inexact flags when x!=0 */
+    return x - (th - (HUGE + x));
+  } else {
+    k = 0;
+    c = 0.0; // PORT NOTE: uninitialised in C; only read when k != 0.
+  }
+
+  /* x is now in primary range */
+  let hfx: f64 = 0.5 * x;
+  let hxs: f64 = x * hfx;
+  let r1_: f64 = hxs.mul_add(Q[1], one);
+  let h2: f64 = hxs * hxs;
+  let r2_: f64 = hxs.mul_add(Q[3], Q[2]);
+  let h4: f64 = h2 * h2;
+  let r3_: f64 = hxs.mul_add(Q[5], Q[4]);
+  // r1 = R1 + h2 * R2 + h4 * R3;
+  let r1: f64 = h4.mul_add(r3_, h2.mul_add(r2_, r1_));
+  let tt: f64 = (-hfx).mul_add(r1, 3.0);
+  e = hxs * ((r1 - tt) / (-x).mul_add(tt, 6.0));
+  if k == 0 {
+    // x - (x * e - hxs)
+    return x - x.mul_add(e, -hxs); /* c is 0 */
+  } else {
+    // e = (x * (e - c) - c);
+    e = (e - c).mul_add(x, -c);
+    e -= hxs;
+    if k == -1 {
+      // 0.5 * (x - e) - 0.5
+      return (x - e).mul_add(0.5, -0.5);
+    }
+    if k == 1 {
+      if x < -0.25 {
+        return -2.0 * (e - (x + 0.5));
+      } else {
+        // one + 2.0 * (x - e)
+        return (x - e).mul_add(2.0, one);
+      }
+    }
+    // `k << 20` is done in unsigned arithmetic (k may be negative).
+    let k20: u32 = (k as u32) << 20;
+    if k <= -2 || k > 56 {
+      /* suffice to return exp(x)-1 */
+      y = one - (e - x);
+      let high: u32 = (asuint64(y) >> 32) as u32;
+      y = set_high_word(y, high.wrapping_add(k20)); /* add k to y's exponent */
+      return y - one;
+    }
+    if k < 20 {
+      t = set_high_word(one, 0x3ff00000 - (0x200000u32 >> k)); /* t=1-2^-k */
+      y = t - (e - x);
+      let high: u32 = (asuint64(y) >> 32) as u32;
+      y = set_high_word(y, high.wrapping_add(k20)); /* add k to y's exponent */
+    } else {
+      t = set_high_word(one, ((0x3ff - k) as u32) << 20); /* 2^-k */
+      y = x - (e + t);
+      y += one;
+      let high: u32 = (asuint64(y) >> 32) as u32;
+      y = set_high_word(y, high.wrapping_add(k20)); /* add k to y's exponent */
+    }
+  }
+  y
+}
+
+// ---------------------------------------------------------------------------------------
+// lgamma (CORE-MATH, in math/lgamma.rs)
+// ---------------------------------------------------------------------------------------
+//
+// Checked against the host glibc 2.44 (i7-8700K) on 1.2*10^9 inputs each for lgamma_r (value
+// and signgam) and expm1, 0 mismatches (throwaway program, not checked in; inputs: random bits,
+// near the poles and the roots, negative non-integers, huge, subnormal). That run took
+// lgamma's accurate path ~10^8 times, including all 17 near-root branches; as_lgamma_database
+// was never reached (its 19 inputs are settled by the fast path in this version).
+// Fixture oracle on every target: tests/math_lgamma.rs vs oracle/math_lgamma.txt.
+
+mod lgamma;
+
+pub use lgamma::lgamma_r;
+
+/// C `lgamma(double)`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every
+/// target: ln|Γ(x)|. glibc's wrapper also stores the sign of Γ(x) in the global `signgam`;
+/// use [`lgamma_r`] for it (fancymath.cpp never reads `signgam`).
+pub fn lgamma(x: f64) -> f64 {
+  let mut signgam: i32 = 0;
+  lgamma_r(x, &mut signgam)
+}
+
 // TODO(port): glibc does not use optimized-routines for the other transcendentals the
 // upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
 // 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0%, expm1 0.24%,
@@ -833,8 +1034,8 @@ pub fn tanhf(x: f32) -> f32 {
 //     correctly rounded versions (MIT): port those, or do as tanhf above (any correctly rounded
 //     implementation is bit-identical; check exhaustively for atanf, on a large sample for tanh).
 //   - tanhf (nneval.cpp ownership): done above.
-//   - lgamma, expm1 (fancymath.cpp): lgamma is CORE-MATH (MIT, ~2000 lines); expm1 is fdlibm
-//     compiled with FMA contraction (s_expm1-fma.c): replicate the contraction like above.
+//   - lgamma, expm1 (fancymath.cpp): done (lgamma: CORE-MATH port in math/lgamma.rs; expm1:
+//     fdlibm with glibc's FMA contractions, above).
 //   - log10 (global.cpp roundDynamic): fdlibm, no FMA variant in glibc.
 //   - atan, tan (nninputs.cpp ScoreValue): done above as platform-libm wrappers (D13: glibc's
 //     are LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).

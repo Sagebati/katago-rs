@@ -8,7 +8,7 @@ disallowed-methods = [
   { path = "f64::powf", reason = "use port::math::powf (PORTING.md §6)" },
   { path = "f64::powi", reason = "C++ has no powi; pow(x, n) is port::math::powf (PORTING.md §6)" },
   { path = "f64::exp2", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
-  { path = "f64::exp_m1", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
+  { path = "f64::exp_m1", reason = "use port::math::expm1 (PORTING.md §6)" },
   { path = "f64::ln_1p", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::log", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::log2", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },

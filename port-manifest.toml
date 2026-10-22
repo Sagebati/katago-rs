@@ -208,25 +208,25 @@ notes = "Converter (M0): one parser function per *Desc in desc.cpp with the same
 rust = "crates/katago-core/src/core/fancymath.rs"
 upstream = ["cpp/core/fancymath.cpp", "cpp/core/fancymath.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "t-distribution pdf/cdf etc. used by search (valueWeightDistribution, LCB). Preserve float evaluation order."
+notes = "Bit-identical to upstream: tests/fancymath.rs replays FancyMath::runTests (its T distribution block extracted to unit/fancymath/) and compares with oracle/fancymath.txt, made from upstream's own object: search.cpp's DistributionTable at VALUE_WEIGHT_DEGREES_OF_FREEDOM=3 bit for bit, every function on 65536 random inputs, plus edge cases. Also under just test-wasm. lgamma/exp/log/pow/expm1 go through port::math. runTests is consumed as a test, not ported. std::function params become &mut dyn FnMut(i32) -> f64."
 
 [[module]]
 rust = "crates/katago-core/src/core/timer.rs"
 upstream = ["cpp/core/timer.cpp", "cpp/core/timer.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "ClockTimer (maxTime, reportDuringSearchEvery). Divergence: no std::time::Instant in core; the clock is injected (performance.now() in wasm, Instant in katago-cli)."
+notes = "Injected clock: set_clock(fn() -> f64) returns seconds, first call wins; an unset clock is fatal in ClockTimer. Windows GetTickCount64 implementation not ported."
 
 [[module]]
 rust = "crates/katago-core/src/core/config_parser.rs"
 upstream = ["cpp/core/config_parser.cpp", "cpp/core/config_parser.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Parses config text (incl. @include, overrides) for Setup::loadSingleParams and katago-cli -config / -override-config. Divergence: takes &str; file reading lives in katago-cli; Logger hooks -> log crate."
+notes = "IO-skipped: the two file constructors have no Rust fn. File access (initialize(fname), overrideKeys(fname), @include) goes through the injected set_include_reader (D15); istream& is &str; mutex removed; Logger* removed from warnUnusedKeys. Overload names: new/new_in/new_kvs/new_copy, initialize/initialize_in/initialize_kvs, override_keys/override_keys_newkvs/override_keys_newkvs_mutex_key_sets, get_string_possibles, get_strings_possibles. Oracle: tests/config_parser.rs, tests/testconfig.rs."
 
 [[module]]
 rust = "crates/katago-core/src/search/search.rs"
@@ -256,9 +256,9 @@ notes = "Graph-search node table; per-shard mutexes dropped (single-threaded)."
 rust = "crates/katago-core/src/search/searchparams.rs"
 upstream = ["cpp/search/searchparams.cpp", "cpp/search/searchparams.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "compiles"
 phase = "M3"
-notes = "serde(rename_all=camelCase) so cfg keys and overrideSettings work unchanged; defaults checked against data/<tag>/searchparams_defaults.json (xtask gen-params, deny_unknown_fields)."
+notes = "plain struct with snake_case fields; operator== is PartialEq (humanSLProfile via a private stand-in for SGFMetadata::operator==, TODO M8); printParams's two cout lines go through log::info!; JSON via changeable_parameters_to_json + port::nlohmann::dump; oracle tests/searchparams_oracle.rs (+ real kata-get-params reply); setup.cpp pieces wait for setup.rs (wave 2b)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchexplorehelpers.rs"
@@ -320,9 +320,9 @@ notes = "numVisitsNeededToBeNonFutile etc. recomputeSearchTimeLimit is only reac
 rust = "crates/katago-core/src/search/timecontrols.rs"
 upstream = ["cpp/search/timecontrols.cpp", "cpp/search/timecontrols.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Analysis always passes TimeControls() (unlimited), so only the default ctor + isEffectivelyUnlimitedTime are on the parity path; the rest (getTime, byo-yomi) is pure arithmetic, port it faithfully rather than stubbing. Plan §2.2 listed timecontrols as ignored; mapped instead because search.cpp/searchtimehelpers.cpp take it as a parameter."
+notes = "All kinds ported and oracle-checked (tests/timecontrols.rs incl. upstream testtime.cpp replay); getTime's exp(-1.0) via port::math."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchresults.rs"
@@ -344,25 +344,25 @@ notes = "PrintTreeOptions (printTree itself is in searchresults.cpp); needed for
 rust = "crates/katago-core/src/search/subtreevaluebiastable.rs"
 upstream = ["cpp/search/subtreevaluebiastable.cpp", "cpp/search/subtreevaluebiastable.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "compiles"
 phase = "M3"
-notes = "Subtree value bias (parity-essential). Shard mutexes dropped."
+notes = "mutex pool and spin lock removed (PORT NOTE), get takes &self (RefCell), file statics in OnceLock, RNG order unchanged. Oracle tests/subtreevaluebiastable_oracle.rs."
 
 [[module]]
 rust = "crates/katago-core/src/search/localpattern.rs"
 upstream = ["cpp/search/localpattern.cpp", "cpp/search/localpattern.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "compiles"
 phase = "M3"
-notes = "LocalPatternHasher, used by subtreevaluebiastable and searchnodetable."
+notes = "all of LocalPatternHasher. Oracle tests/localpattern_oracle.rs."
 
 [[module]]
 rust = "crates/katago-core/src/search/distributiontable.rs"
 upstream = ["cpp/search/distributiontable.cpp", "cpp/search/distributiontable.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Tabulated t-distribution for valueWeightDistribution (value weight exponent)."
+notes = "All of it; oracle tests/distributiontable.rs. (int)d is UB for NaN or z far outside the table range (INT_MIN then out-of-bounds read); the port panics (§6b, not exercised)."
 
 [[module]]
 rust = "crates/katago-core/src/search/analysisdata.rs"
@@ -375,8 +375,9 @@ phase = "M3"
 rust = "crates/katago-core/src/search/reportedsearchvalues.rs"
 upstream = ["cpp/search/reportedsearchvalues.cpp", "cpp/search/reportedsearchvalues.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "compiles"
 phase = "M3"
+notes = "struct, default ctor and operator<< ported; the const Search& constructor (new_search) is deferred to wave 2a (TODO(port) in place). Oracle tests/reportedsearchvalues_oracle.rs."
 
 [[module]]
 rust = "crates/katago-core/src/search/asyncbot.rs"

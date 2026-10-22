@@ -15,7 +15,7 @@ def main(src, outdir):
     text = open(src, encoding='utf-8').read()
     stem = os.path.splitext(os.path.basename(src))[0]
     os.makedirs(os.path.join(outdir, stem), exist_ok=True)
-    func_re = re.compile(r'^(?:static\s+)?void\s+([A-Za-z_:]+)\s*\(', re.M)
+    func_re = re.compile(r'^(?:static\s+)?void\s+([A-Za-z0-9_:]+)\s*\(', re.M)
     name_re = re.compile(r'const char\*\s*name\s*=\s*"([^"]*)"')
     # Walk tokens in order: function starts, name decls, raw blocks.
     events = []

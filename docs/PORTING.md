@@ -44,7 +44,7 @@ or static. Overloads get the same qualified name. For file-scope statics use
 (3) Of the remaining overloads, the one with the fewest parameters keeps the base name (ties: first
 declared in the header). Each other overload appends `_` + the snake_case names of its
 parameters that are not in the base overload, in declaration order. (4) If that still
-collides, the overload declared later appends the snake_case of its first differing parameter's C++ type (`std::ostringstream&` → `_ostringstream`, `const std::string&` → `_string`, `uint64_t` → `_u64`). Parameter names come from the **header** declaration when header and `.cpp` disagree. (5) **Appendix B overrides rules 3–4**; add an entry there whenever a generated name is longer than ~40 characters or reads badly. Constructors use the same
+collides, the overload declared later appends the snake_case of its first differing parameter's C++ type (`std::ostringstream&` → `_ostringstream`, `const std::string&` → `_string`, `uint64_t` → `_u64`). Parameter names come from the **header** declaration when header and `.cpp` disagree. (4b) For a constructor whose parameters all have defaults, the base `new` is the all-defaulted call (e.g. `ConfigParser(bool=false, bool=true)` → `new(ko, kfi)` with callers passing the values). (5) **Appendix B overrides rules 3–4**; add an entry there whenever a generated name is longer than ~40 characters or reads badly. Constructors use the same
 rule with base `new`. A copy constructor becomes `impl Clone`, or `new_copy` when it takes
 extra arguments. Examples: `Rand::nextUInt()` → `next_uint`, `nextUInt(n)` → `next_uint_n`,
 `nextUInt(freq,n)` → `next_uint_freq_n`; `Rand(seed: string)` → `new_seed`, `Rand(uint64_t seed)`
@@ -195,8 +195,7 @@ port were in this category.
    desyncs `Rand`'s accept/reject loops and every later draw). `port::math` reproduces the glibc
    2.44 x86-64/FMA results bit for bit on every target (Appendix). C `exp`/`log`/`pow`/`expf` →
    `math::exp`/`ln`/`powf`/`expf`; `atan`/`tan` → `math::atan`/`tan` (platform libm, ≤ 1 ulp on
-   wasm, DECISIONS.md D13). A C function it lacks (`tanh`, `tanhf`, `atanf`, `expm1`, `log10`,
-   `lgamma`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
+   wasm, DECISIONS.md D13). `expm1` → `math::expm1`, `lgamma` → `math::lgamma` (`lgamma_r` for the sign), `tanhf` → `math::tanhf`. A C function it lacks (`tanh`, `atanf`, `log10`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
    `crates/katago-core/clippy.toml` lists the std methods under `disallowed_methods`, which
    `lib.rs` denies. `sqrt`, `abs`, `floor`, `round`… are exact everywhere and stay std methods.
 4. **No FMA.** Rust never contracts and upstream is built without `-march`/FMA. Don't use
@@ -422,7 +421,7 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 
 **Feature sets.** katago-nn-burn's default features include all three nets (b6c96, b10c128, b18c384nbt); wasm test builds use `--no-default-features -F flex,net-b6c96`.
 
-**wasm stack.** Debug wasm has a 1 MiB stack. `Board::init_hash` and large `Board`/`BoardHistory` frames can overflow it in tests: box big locals in tests that run on wasm, and init statics from a small frame.
+**wasm stack.** Debug wasm has a 1 MiB stack, and in debug every temporary of a `BoardHistory` (~34 KB) or `Board` (~4.7 KB) gets its own slot, so boxing at the call site isn't enough: build boxed values in a small helper fn (`boxed_history` in `tests/timecontrols.rs`), and init statics from a small frame. Test macros from `tests/common` are invoked as `crate::report!`.
 
 **Oracle link lines.** Oracle programs link upstream's `core`, `game`, `neuralnet`, `search`, `dataio` and `program` object files from `build/eigen` only, never `command/*.o` or `main.cpp.o` (they need `Version::getGitRevision`). Generators must avoid inputs that trip upstream asserts (e.g. a button ruleset with a nonzero starting `encorePhase`: `BoardHistory::clear` reads the old phase for `hasButton`).
 
@@ -441,6 +440,8 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
   the recipe. `tests/common::fixture` reads fixtures through node's `fs` there.
 - Reviewers spot-check one fixture by hand: change one expected byte locally and confirm the
   test fails.
+
+**Injected host services.** Core does no IO and reads no clock. File access that upstream does through `FileUtils` (config `@include`, `initialize(fname)`, `overrideKeys(fname)`) goes through a reader callback the host installs (`ConfigParser::set_include_reader`), which receives the path exactly as `FileUtils::open` would and fails with `FileUtils::open`'s error text when absent (D15). Time comes from `core::timer::set_clock(fn() -> f64)`: seconds as `f64`, first call wins (returns `false` after), and a `ClockTimer` with no clock installed is a fatal error, so hosts and search tests install one first.
 
 **Test-local copies.** A test that needs an upstream helper from a later milestone (e.g. `PlayUtils::chooseRandomLegalMove`, M3) may carry a faithful copy in its test file, tagged `/// upstream: PlayUtils::chooseRandomLegalMove (playutils.cpp) — test-local copy until M3`. Delete it when the module lands. A function skipped because it does IO or reads stdin (`Global::pauseForKey`) gets no Rust fn; the manifest `notes` say so.
 
@@ -470,7 +471,8 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::cpp::cmp_from_lt` | `fn(lt: impl Fn(&T,&T)->bool) -> impl Fn(&T,&T)->Ordering` |
 | `port::cpp::cell_cas`, `cell_fetch_add` | `fn<T: Copy+PartialEq>(c: &Cell<T>, expected: &mut T, desired: T) -> bool`; `fn<T: Copy+Add<Output=T>>(c: &Cell<T>, d: T) -> T` |
 | `port::fmt` | `printf`, `printf_bytes`, `cpp_ostream_f64`, `cpp_ostream_f64_prec`, `cpp_to_string_f64`, `PrintfArg` (keeps C width and signedness so `%u`/`%x` of an int is right; `char`/`short` promote to `int`). `printf_bytes` has C byte semantics (`%c` one raw byte, `%.Ns` may cut a UTF-8 character, `%s` stops at NUL); `printf` is its `String` form, with U+FFFD where the bytes are not UTF-8 |
-| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). `port::math::tanhf`: C `tanhf`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every target; our double-double evaluation + one rounding, checked against glibc on all 2^32 inputs; oracle `tests/math_tanhf.rs` vs `oracle/math_tanhf.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `tanh`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
+| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). `port::math::tanhf`: C `tanhf`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every target; our double-double evaluation + one rounding, checked against glibc on all 2^32 inputs; oracle `tests/math_tanhf.rs` vs `oracle/math_tanhf.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `tanh`, `atanf`, `log10`, float `logf`/`powf` |
+| `port::math::{lgamma, lgamma_r, expm1}` | C `lgamma` (ln\|Γ(x)\|), `lgamma_r(x, &mut signgam)` (also the sign of Γ(x), what glibc stores in `signgam`), `expm1`: bit-identical to glibc 2.44 (x86-64, FMA) on every target. `lgamma`: port of glibc's CORE-MATH code (MIT, correctly rounded) in `port/math/lgamma.rs`. `expm1`: fdlibm `s_expm1.c` as built into `__expm1_fma`, GCC's FMA contractions as explicit `mul_add`. Oracle: `tests/math_lgamma.rs` vs `oracle/math_lgamma.cpp` (also under `just test-wasm`); 1.2·10^9 inputs each matched the host glibc |
 | `port::cpp::static_cast_i32_f64`, `static_cast_i32_f32` | `(int)x` with x86-64 `cvtts*2si` results: truncation in range, `i32::MIN` for NaN/out of range (§6 item 5) |
 | `port::cpp::static_cast_i64_f64`, `static_cast_i64_f32` | same for `int64_t` targets: `i64::MIN` for NaN/out of range |
 | `port::cpp::c_str` | `fn(&str) -> &str`: cut at the first NUL, the `const char*` view of a string |
@@ -493,3 +495,4 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `Global::mapGet(const std::map<std::string,V>&, const char*)` (specialisation with its own message) | `Global::map_get_str` |
 | `Global::contains(const std::vector<A>&, const A&)` / `(const std::set<A>&, …)` / `(const std::map<A,B>&, …)` | `contains_vector` / `contains_set` / `contains_map` |
 | `Global::concat(const char*, int len)` / `concat(const std::set<std::string>&, …)` | `concat_len` / `concat_set` |
+| `ReportedSearchValues::ReportedSearchValues(const Search&, double winLossValue, …)` | `ReportedSearchValues::new_search` |
