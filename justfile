@@ -54,7 +54,15 @@ check-features:
 
 # Oracle tests on wasm32-unknown-unknown under node: port::math (vs glibc), Rand, hash, printf,
 # rules, global, testrules, the BoardHistory fuzz oracle. On wasm the std float math is not
-# glibc's, so this is where libm drift shows up.
+# glibc's, so this is where libm drift shows up. Plus katago-nn-burn's wasm_yield: the CPU backend
+# yields to the JS event loop between batches (PORTING.md §11).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
+
+# NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
+# Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
+# b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
+nn-parity *flags="":
+    cargo test --release -p katago-nn-burn --test nn_parity {{flags}} -- --nocapture

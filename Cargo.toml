@@ -17,3 +17,23 @@ debug = false
 strip = true
 lto = "thin"
 codegen-units = 1
+
+# burn's CPU kernels are ~50x slower unoptimized; the NN parity tests (crates/katago-nn-burn/tests)
+# run them in the debug profile too. Only these third-party compute crates are optimized: the
+# workspace crates (katago-core: debug assertions, overflow checks) keep the dev profile.
+[profile.dev.package.burn-flex]
+opt-level = 3
+[profile.dev.package.burn-backend]
+opt-level = 3
+[profile.dev.package.burn-std]
+opt-level = 3
+[profile.dev.package.gemm]
+opt-level = 3
+[profile.dev.package.gemm-common]
+opt-level = 3
+[profile.dev.package.gemm-f32]
+opt-level = 3
+[profile.dev.package.macerator]
+opt-level = 3
+[profile.dev.package.pulp]
+opt-level = 3

@@ -114,3 +114,36 @@ pub fn compare_lines(label: &str, actual: &str, expected: &str) {
 pub fn dbits(x: f64) -> String {
   katago_core::core::global::Global::uint64_to_hex_string(x.to_bits())
 }
+
+/// Watchdog for async tests (no upstream counterpart): drives `fut` to completion on `pool` like
+/// `LocalPool::run_until`, but never parks the thread. After each poll of `fut` it runs every other
+/// ready task (`run_until_stalled`); if the pool then stalls while `fut` is pending and nothing woke
+/// it, nothing ever will (these tests have no outside events), so it panics with `label` instead of
+/// hanging: a lost wakeup fails the test.
+pub fn run_or_stall_panic<F: std::future::Future>(pool: &mut futures::executor::LocalPool, label: &str, fut: F) -> F::Output {
+  use std::sync::Arc;
+  use std::sync::atomic::AtomicBool;
+  use std::sync::atomic::Ordering;
+  use std::task::Context;
+  use std::task::Poll;
+  struct Flag(AtomicBool);
+  impl futures::task::ArcWake for Flag {
+    fn wake_by_ref(arc_self: &Arc<Self>) {
+      arc_self.0.store(true, Ordering::SeqCst);
+    }
+  }
+  let flag = Arc::new(Flag(AtomicBool::new(true)));
+  let waker = futures::task::waker(flag.clone());
+  let mut cx = Context::from_waker(&waker);
+  let mut fut = std::pin::pin!(fut);
+  loop {
+    flag.0.store(false, Ordering::SeqCst);
+    if let Poll::Ready(v) = fut.as_mut().poll(&mut cx) {
+      return v;
+    }
+    pool.run_until_stalled();
+    if !flag.0.load(Ordering::SeqCst) {
+      panic!("{}: the executor stalled with the future pending and not woken (lost wakeup / deadlock)", label);
+    }
+  }
+}

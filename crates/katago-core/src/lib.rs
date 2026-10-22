@@ -10,6 +10,11 @@
          clippy::inherent_to_string_shadow_display, clippy::manual_swap, clippy::nonminimal_bool,
          clippy::needless_return, clippy::comparison_chain, clippy::if_same_then_else,
          clippy::field_reassign_with_default)]
+// Added in M2 (upstream literals such as nninputs.cpp's twoOverPi trip the deny-by-default
+// approx_constant; the rest are upstream statement shapes kept verbatim).
+#![allow(clippy::approx_constant, clippy::excessive_precision, clippy::assign_op_pattern, clippy::bool_comparison,
+         clippy::needless_late_init, clippy::int_plus_one, clippy::manual_clamp, clippy::neg_cmp_op_on_partial_ord,
+         clippy::inherent_to_string, clippy::wrong_self_convention)]
 #![deny(clippy::await_holding_refcell_ref)]
 // PORTING.md §6 item 3: transcendentals only through port::math (list in clippy.toml).
 #![deny(clippy::disallowed_methods)]
@@ -17,3 +22,4 @@
 pub mod port;
 pub mod core;
 pub mod game;
+pub mod neuralnet;

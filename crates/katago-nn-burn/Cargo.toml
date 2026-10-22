@@ -6,7 +6,10 @@ license.workspace = true
 publish = false
 
 [features]
-default = ["flex", "net-b10c128"]
+# b18c384nbt is default so `cargo test -p katago-nn-burn` / `just nn-parity` cover a v14 net
+# (optimistic policy, shortterm errors): +~25 s debug test time, +~30 s release build.
+default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt"]
+net-b6c96 = []
 net-b10c128 = []
 net-b18c384nbt = []
 # CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
@@ -18,10 +21,24 @@ vulkan = ["wgpu", "burn/vulkan"]
 fusion = ["burn/fusion"]
 
 [dependencies]
+# The ported engine (nninterface.rs trait, NNEvaluator, SymmetryHelpers); backend.rs implements its NeuralNet trait.
+katago-core = { path = "../katago-core" }
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+log = "0.4"
 burn = { workspace = true, features = ["std"] }
 burn-store.workspace = true
 # burn enables flex without its SIMD kernels (macerator, gemm's wasm simd128).
 burn-flex = { version = "0.22.1", default-features = false, features = ["std", "simd"], optional = true }
+
+# wasm32: the CPU backend yields to the JS event loop between batches (host.rs, PORTING.md §11).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+
+# The wasm tests run under node with wasm-bindgen-test-runner 0.2.129 (as katago-core's).
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.79"
 
 [build-dependencies]
 burn-onnx.workspace = true

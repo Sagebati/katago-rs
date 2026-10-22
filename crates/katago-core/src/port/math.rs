@@ -31,10 +31,12 @@
 //!
 //! Scope: the transcendentals the in-scope upstream code calls through optimized-routines in
 //! glibc. C `exp`→[`exp`], `log`→[`ln`], `pow`→[`powf`], `expf`→[`expf`]. `logf`/`powf` (float)
-//! are not called by upstream code and not provided. Functions glibc implements elsewhere
-//! (`atan`, `tan`: IBM Accurate Mathematical Library, LGPL; `tanh`, `tanhf`, `atanf`, `lgamma`:
-//! CORE-MATH; `expm1`, `log10`: fdlibm) are not here yet: see the TODO(port) at the end of the
-//! file. `sqrt` is correctly rounded everywhere and stays `f64::sqrt`.
+//! are not called by upstream code and not provided. Of the functions glibc implements
+//! elsewhere, `tanhf` (CORE-MATH, correctly rounded) is [`tanhf`]: our own correctly rounded
+//! double-double evaluation, not a port of glibc's code (see its section). `atan`, `tan` (IBM
+//! Accurate Mathematical Library, LGPL) wrap the platform libm (D13). `tanh`, `atanf`, `lgamma`
+//! (CORE-MATH) and `expm1`, `log10` (fdlibm) are not here yet: see the TODO(port) at the end of
+//! the file. `sqrt` is correctly rounded everywhere and stays `f64::sqrt`.
 
 // ---------------------------------------------------------------------------------------
 // math_config.h helpers
@@ -688,13 +690,149 @@ pub fn tan(x: f64) -> f64 {
   x.tan()
 }
 
+// ---------------------------------------------------------------------------------------
+// tanhf
+// ---------------------------------------------------------------------------------------
+//
+// glibc >= 2.41 implements `tanhf` with CORE-MATH's correctly rounded code, so glibc 2.44's
+// result is the correctly rounded (round-to-nearest-even) tanh(x), and any correctly rounded
+// implementation reproduces it bit for bit. This one is ours, not a port of CORE-MATH: it
+// evaluates tanh in double-double arithmetic (relative error far below 2^-90), then rounds once
+// to f32, so no float input lands on the wrong side of a rounding boundary.
+// Checked EXHAUSTIVELY against glibc 2.44 `tanhf` (x86-64, i7-8700K): all 2^32 = 4294967296 bit
+// patterns, 0 mismatches (NaN results compared as is_nan), 224 s on 12 threads (throwaway program
+// calling both, not checked in).
+// Fixture oracle on every target (wasm included): tests/math_tanhf.rs vs oracle/math_tanhf.txt.
+
+/// A double-double `hi + lo`, |lo| <= ulp(hi)/2.
+#[derive(Clone, Copy)]
+struct Dd {
+  hi: f64,
+  lo: f64,
+}
+
+/// Knuth's two-sum: `a + b == s + e` exactly.
+#[inline(always)]
+fn dd_two_sum(a: f64, b: f64) -> Dd {
+  let s = a + b;
+  let bb = s - a;
+  let e = (a - (s - bb)) + (b - bb);
+  Dd { hi: s, lo: e }
+}
+
+/// `a + b == s + e` exactly when |a| >= |b| (or a == 0).
+#[inline(always)]
+fn dd_fast_two_sum(a: f64, b: f64) -> Dd {
+  let s = a + b;
+  let e = b - (s - a);
+  Dd { hi: s, lo: e }
+}
+
+/// `a * b == p + e` exactly (`mul_add` is a correctly rounded fma on every target).
+#[inline(always)]
+fn dd_two_prod(a: f64, b: f64) -> Dd {
+  let p = a * b;
+  let e = a.mul_add(b, -p);
+  Dd { hi: p, lo: e }
+}
+
+#[inline(always)]
+fn dd_add(a: Dd, b: Dd) -> Dd {
+  let s = dd_two_sum(a.hi, b.hi);
+  let t = dd_two_sum(a.lo, b.lo);
+  let s = dd_fast_two_sum(s.hi, s.lo + t.hi);
+  dd_fast_two_sum(s.hi, s.lo + t.lo)
+}
+
+#[inline(always)]
+fn dd_mul(a: Dd, b: Dd) -> Dd {
+  let p = dd_two_prod(a.hi, b.hi);
+  let e = p.lo + (a.hi * b.lo + a.lo * b.hi);
+  dd_fast_two_sum(p.hi, e)
+}
+
+/// Quotient with two correction steps.
+#[inline(always)]
+fn dd_div(a: Dd, b: Dd) -> Dd {
+  let q1 = a.hi / b.hi;
+  let r = dd_add(a, dd_mul(Dd { hi: -q1, lo: 0.0 }, b));
+  let q2 = r.hi / b.hi;
+  let r = dd_add(r, dd_mul(Dd { hi: -q2, lo: 0.0 }, b));
+  let q3 = r.hi / b.hi;
+  dd_add(dd_fast_two_sum(q1, q2), Dd { hi: q3, lo: 0.0 })
+}
+
+/// `expm1(a)` for `0 <= a <= 20` in double-double: `a = k*ln2 + r` with |r| <= ln2/2, then
+/// `expm1(a) = 2^k * expm1(r) + (2^k - 1)` with expm1(r) from its Taylor series.
+fn dd_expm1(a: f64) -> Dd {
+  const LN2_HI: f64 = f64::from_bits(0x3FE62E42FEFA39EF); // 0x1.62e42fefa39efp-1
+  const LN2_LO: f64 = f64::from_bits(0x3C7ABC9E3B39803F); // 0x1.abc9e3b39803fp-56
+  const INV_LN2: f64 = f64::from_bits(0x3FF71547652B82FE); // 0x1.71547652b82fep+0
+  let k: f64 = (a * INV_LN2).round();
+  // r = a - k*LN2_HI - k*LN2_LO, with both products split exactly.
+  let p = dd_two_prod(-k, LN2_HI);
+  let r = dd_add(dd_two_sum(a, p.hi), Dd { hi: p.lo, lo: 0.0 });
+  let r = dd_add(r, dd_two_prod(-k, LN2_LO));
+  // expm1(r) = r * (1 + r/2 * (1 + r/3 * (1 + ...))); |r|^28/28! < 2^-110.
+  let one = Dd { hi: 1.0, lo: 0.0 };
+  let mut s = one;
+  let mut i: i32 = 27;
+  while i >= 2 {
+    s = dd_add(one, dd_div(dd_mul(s, r), Dd { hi: i as f64, lo: 0.0 }));
+    i -= 1;
+  }
+  let em1r = dd_mul(s, r);
+  // 2^k * em1r is exact (scaling by a power of two); 2^k - 1 is exact for 0 <= k <= 52.
+  let pk = f64::from_bits(((1023 + k as i64) as u64) << 52);
+  dd_add(Dd { hi: pk - 1.0, lo: 0.0 }, Dd { hi: em1r.hi * pk, lo: em1r.lo * pk })
+}
+
+/// Rounds a positive, normal-range double-double to the nearest f32 (ties to even) with one
+/// rounding: `hi as f32` alone double-rounds when `hi` is exactly an f32 midpoint and lo != 0.
+fn dd_to_f32(v: Dd) -> f32 {
+  const LOW: u64 = (1u64 << 29) - 1;
+  let m = v.hi.to_bits();
+  if (m & LOW) == (1u64 << 28) && v.lo != 0.0 {
+    let down = f64::from_bits(m & !LOW) as f32; // exact
+    if v.lo > 0.0 { f32::from_bits(down.to_bits() + 1) } else { down }
+  } else {
+    v.hi as f32
+  }
+}
+
+/// C `tanhf(float)`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every
+/// target. Use instead of `f32::tanh`.
+pub fn tanhf(x: f32) -> f32 {
+  if x.is_nan() {
+    return x + x;
+  }
+  let ax: f32 = x.abs();
+  // Below 2^-13, tanh(x) = x - x^3/3 + ... rounds to x (x^3/3 is under a quarter ulp of x);
+  // this covers +-0 and subnormals. At 10 and above, 1 - tanh(x) < 2^-27 while the rounding
+  // boundary below 1 is 1 - 2^-25, so it rounds to +-1; this covers +-inf.
+  if ax < f32::from_bits(0x39000000) {
+    // 0x1p-13
+    return x;
+  }
+  if ax >= 10.0f32 {
+    return if x > 0.0 { 1.0f32 } else { -1.0f32 };
+  }
+  // tanh(a) = expm1(2a) / (expm1(2a) + 2), with 2a exact.
+  let e = dd_expm1(2.0 * ax as f64);
+  let t = dd_div(e, dd_add(e, Dd { hi: 2.0, lo: 0.0 }));
+  let r = dd_to_f32(t);
+  if x > 0.0 { r } else { -r }
+}
+
 // TODO(port): glibc does not use optimized-routines for the other transcendentals the
 // upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
 // 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0%, expm1 0.24%,
 // log10 3.8%, lgamma 37%, tanhf 8.0%, atanf 6.2%). Not needed by the modules ported so far
 // (rand.cpp only calls log/pow/sqrt). Before porting their callers, add them here:
-//   - tanh, tanhf, atanf (nneval.cpp ownership/v3 score; searchmirror.cpp tanh): glibc 2.44
-//     uses CORE-MATH's correctly rounded versions (MIT): port those.
+//   - tanh, atanf (nneval.cpp v3 score; searchmirror.cpp tanh): glibc 2.44 uses CORE-MATH's
+//     correctly rounded versions (MIT): port those, or do as tanhf above (any correctly rounded
+//     implementation is bit-identical; check exhaustively for atanf, on a large sample for tanh).
+//   - tanhf (nneval.cpp ownership): done above.
 //   - lgamma, expm1 (fancymath.cpp): lgamma is CORE-MATH (MIT, ~2000 lines); expm1 is fdlibm
 //     compiled with FMA contraction (s_expm1-fma.c): replicate the contraction like above.
 //   - log10 (global.cpp roundDynamic): fdlibm, no FMA variant in glibc.

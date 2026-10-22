@@ -208,6 +208,7 @@ port were in this category.
    `cvttsd2si`/`cvttss2si`, and add `// PORT NOTE: C++ UB; x86-64 gives INT_MIN`. `int64_t` targets work the same way with
    `port::cpp::static_cast_i64_f64`/`_f32` (`i64::MIN`); plain `as i64` only when provably in
    range, with `// PORT NOTE: in range because …`.
+5b. **Printers too.** Every `(int)` of a float, including in debug printers, goes through `port::cpp::static_cast_*`, never `as i32`; arithmetic on the cast result (`cast + const`) uses `wrapping_add`.
 6. **Integer overflow.** Signed overflow is UB in C++: use plain `+ - *` (debug builds panic,
    which catches bugs). Unsigned wraparound that upstream relies on uses `wrapping_*`.
    **Always** in hash, RNG and zobrist code (`Rand::nextUInt(n)`'s `bits - val + (n-1)`,
@@ -319,7 +320,7 @@ synchronous and keeps its upstream code.
 | File | Functions |
 |---|---|
 | `neuralnet/nninterface.rs` | `NeuralNet::getOutput` (trait method; GPU readback is async) |
-| `neuralnet/nneval.rs` | `NNEvaluator::evaluate` (both overloads), `averageMultipleSymmetries`, `waitForNextNNEvalIfAny`, `spawnServerThreads` (awaits server start-up, `mainThreadWaitingForSpawn`), `serve` (the spawned server task) |
+| `neuralnet/nneval.rs` | `NNEvaluator::evaluate` (both overloads), `averageMultipleSymmetries`, `waitForNextNNEvalIfAny`, `spawnServerThreads` (awaits the previous serve tasks' end, D8, then server start-up, `mainThreadWaitingForSpawn`), `serve` (the spawned server task) |
 | `search/searchnnhelpers.rs` | `computeRootNNEvaluation`, `initNodeNNOutput`, `maybeRecomputeExistingNNOutput` |
 | `search/search.rs` | `runSinglePlayout`, `playoutDescend`, `beginSearch`, `computeRootValues`, every `runWholeSearch*` / `runWholeSearchAndGetMove*` overload, the `searchLoop` lambda |
 | `search/asyncbot.rs` | the `genMoveSynchronous*` entry points the analysis path uses (manifest notes) |
@@ -336,8 +337,8 @@ update and results helpers, `allocateOrFindNode`, `recursivelyRecomputeStats`, t
 | `ThreadSafeQueue<NNResultBuf*> queryQueue` | `port::executor::AsyncQueue<Rc<NNResultBuf>>` with the same API names: `force_push`, `wait_pop_up_to_n(&mut buf, n).await -> bool`, `set_read_only`, `unset_read_only`, `close`. |
 | `NNResultBuf` handshake (`resultMutex` + `clientWaitingForResult` + `hasResult`) | `SearchThread::nnResultBuf` is an `Rc<NNResultBuf>` whose fields are `Cell`/`RefCell` (TSV). `client_waiting_for_result: WakerList`. The client does `buf.client_waiting_for_result.wait_until(\|\| buf.has_result.get()).await` (= `while(!buf.hasResult) wait`). The server sets `has_result` then calls `notify_all()`. |
 | `std::condition_variable cv` + `while(!cond) cv.wait(lock)` | `cv: WakerList`; `cv.wait_until(\|\| cond).await`; `notify_all()` wakes all of them. The mutex disappears. Counters it guarded become `Cell`. |
-| server thread `serve(...)` | spawned via the injected `Rc<dyn Spawner>` (new NNEvaluator ctor param, PORT NOTE). The loop body is unchanged. `waitPopUpToN` returns whatever is queued when the server is polled. With FIFO scheduling that is every virtual thread blocked on the NN, which gives the plan's "flush when all blocked or batch full". `isKilled` + `close()` end the loop. `killServerThreads` doesn't join (PORT NOTE). |
-| timing (`ClockTimer`) | the injected clock. `maxTime` and `reportDuringSearchEvery` work because the server awaits a real GPU readback (a macrotask). A CPU backend must yield to the event loop in its `get_output`. |
+| server thread `serve(...)` | spawned via the injected `Rc<dyn Spawner>` (new NNEvaluator ctor param, PORT NOTE). The loop body is unchanged. `waitPopUpToN` returns whatever is queued when the server is polled. With FIFO scheduling that is every virtual thread blocked on the NN, which gives the plan's "flush when all blocked or batch full". `isKilled` + `setReadOnly()` end the loop. `killServerThreads` can't join: the join moves to the next `spawnServerThreads`, which awaits `num_server_threads_alive == 0` (WakerList `server_threads_exited`, notified by each ending task) before `isKilled = false`, the post-join `testAssert`s and `unsetReadOnly` (D8). |
+| timing (`ClockTimer`) | the injected clock. `maxTime` and `reportDuringSearchEvery` work because the server awaits a real GPU readback (a macrotask). A CPU backend must yield to the event loop in its `get_output`: on wasm32 a macrotask (`katago_nn_burn::host::yield_to_event_loop`, a Promise resolved by `setTimeout(_, 0)`; test `katago-nn-burn/tests/wasm_yield.rs` under `just test-wasm`), never only `yield_now()` (a microtask under `wasm_bindgen_futures`: the event loop would not turn until the search ends). Natively `yield_now()`. |
 
 Rules:
 - **Never hold a `Ref`/`RefMut` (or a `RefCell` borrow) across `.await`.** katago-core sets
@@ -348,6 +349,9 @@ Rules:
   EXPANDED0…`), the "someone else got there first" CAS failures and the edge-visit
   catch-up are ported as is.** They now interleave only at awaits, which makes runs
   deterministic for a given thread count.
+- **Lifecycle.** Spawned serve tasks hold an `Rc<NNEvaluator>`, so the evaluator can't be dropped while they live and `Drop` never runs `killServerThreads` by itself: the host calls `kill_server_threads()` explicitly before dropping. Upstream's post-join `testAssert`s run only once no serve task is alive: in `killServerThreads` if none is, else in the next `spawnServerThreads` (D8); `isKilled` stays true until then, as upstream's waiters see it during the join.
+- **Futures on the eval path must not be cancelled.** An `evaluate` future dropped after its `force_push` leaves the `Rc<NNResultBuf>` in the queue (and the server later writes into it); the next `evaluate` with that buf would queue it twice (debug builds assert). Hosts that need to abort a search stop it through upstream's own flags (`shouldStopNow`, `killServerThreads`) and let the futures finish, never by dropping them.
+- **A backend's `get_output` reads its inputs before its first await.** Everything it takes from the `input_bufs` (features, `symmetry`, `policyOptimism`) is copied or snapshotted before awaiting, as upstream reads them under the batch; after the await it only writes `outputs`.
 - Recursive async fns return a boxed future: `fn playout_descend<'a>(&'a self, thread: &'a mut
   SearchThread, node: &'a SearchNode, is_root: bool) -> LocalBoxFuture<'a, Result<bool, KataError>>
   { Box::pin(async move { … }) }`, marked `// PERF(port): one allocation per depth`.
@@ -368,6 +372,12 @@ The fidelity rules trigger lints that are not bugs here. `crates/katago-core/src
          clippy::inherent_to_string_shadow_display, clippy::manual_swap, clippy::nonminimal_bool,
          clippy::needless_return, clippy::comparison_chain, clippy::if_same_then_else,
          clippy::field_reassign_with_default)]
+// upstream literals (twoOverPi) trip the deny-by-default approx_constant; the rest are
+// upstream statement shapes kept verbatim
+#![allow(clippy::approx_constant, clippy::excessive_precision, clippy::assign_op_pattern,
+         clippy::bool_comparison, clippy::needless_late_init, clippy::int_plus_one,
+         clippy::manual_clamp, clippy::neg_cmp_op_on_partial_ord, clippy::inherent_to_string,
+         clippy::wrong_self_convention)]
 #![deny(clippy::await_holding_refcell_ref)]
 ```
 
@@ -400,11 +410,21 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 |---|---|---|
 | Unit (M1) | `R"%%(…)%%"` expected blocks in `cpp/tests/test*.cpp`, extracted by `xtask extract-tests`. The Rust `#[test]` replays the same calls in the same order and prints with the ported printers (`Board::printBoard`, `BoardHistory::printDebugInfo`, `NNOutput::debugPrint`). That's why printers are ported exactly. | string-equal after `TestCommon::expect`-style trimming |
 | Features (M2) | `build/eigen/katago` + the dump patch: `rowSpatial`/`rowGlobal`/hashes for ~2k positions | bit-exact |
-| NN (M2) | `kata-raw-nn` from the Eigen build | flex ≤1e-5, wgpu ≤2e-4 logits / ≤1e-4 winrate, ownership |
+| NN (M2) | the upstream NNEvaluator on the Eigen build (`nn/oracle/nneval_eigen.cpp`, agrees with `kata-raw-nn`) | after post-processing: flex ≤1e-5 policy/winrate, ≤2e-5 ownership (tanh of final-conv accumulation-order noise, measured: no bias, mean 2e-7), ≤5e-4 score lead/mean; wgpu ≤2e-4 logits / ≤1e-4 winrate, ownership |
 | Search (M3) | `cpp/tests/analysis/*.txt` queries through the ported analysis path. Primary oracle: our **Eigen** rerun under `runcmdtests.sh` overrides. Secondary: upstream `tests/results/analysis/*.stdout`, which were produced on CUDA with b6c96 (see `.stderr`), so allow float tolerance. | identical moves, order and visits; values ±1e-4; JSON key order and format exact |
 | Corpus (M3) | deterministic Eigen `katago analysis`, b10c128, 100 visits | ≥99% same top move, ≥95% identical visit vectors |
 
 **Comparisons.** Unit blocks use `TestCommon::expect` (upstream's per-line trim). Oracle-program outputs are compared **byte-exact** by `tests/common::compare_lines` (line endings and trailing newline included). `tests/fixture_coverage.rs` fails if an extracted expected block is consumed by no test and isn't on its allowlist with a reason.
+
+**Async tests** drive pools through `tests/common::run_or_stall_panic`, which panics when the pool stalls while the future is pending and unwoken, so a lost wakeup fails fast instead of hanging.
+
+**Random-game generators** for oracles include out-of-turn (board-legal) moves, odd×even board sizes, finished games where pass dominates, and hand-built encore ko fights: plain legal play never reaches those states.
+
+**Feature sets.** katago-nn-burn's default features include all three nets (b6c96, b10c128, b18c384nbt); wasm test builds use `--no-default-features -F flex,net-b6c96`.
+
+**wasm stack.** Debug wasm has a 1 MiB stack. `Board::init_hash` and large `Board`/`BoardHistory` frames can overflow it in tests: box big locals in tests that run on wasm, and init statics from a small frame.
+
+**Oracle link lines.** Oracle programs link upstream's `core`, `game`, `neuralnet`, `search`, `dataio` and `program` object files from `build/eigen` only, never `command/*.o` or `main.cpp.o` (they need `Version::getGitRevision`). Generators must avoid inputs that trip upstream asserts (e.g. a button ruleset with a nonzero starting `encorePhase`: `BoardHistory::clear` reads the old phase for `hasButton`).
 
 **Fixture layout.** `fixtures/<tag>/unit/<test-file-stem>/<test-slug>.<input|expected><k>.txt` plus an `INDEX.tsv`, produced by `tools/extract_raw_blocks.py` (stand-in for `xtask extract-tests`). C++ oracle programs that print values from upstream code live next to their outputs, in `fixtures/<tag>/unit/oracle/`, with the build command in their header.
 
@@ -450,7 +470,7 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::cpp::cmp_from_lt` | `fn(lt: impl Fn(&T,&T)->bool) -> impl Fn(&T,&T)->Ordering` |
 | `port::cpp::cell_cas`, `cell_fetch_add` | `fn<T: Copy+PartialEq>(c: &Cell<T>, expected: &mut T, desired: T) -> bool`; `fn<T: Copy+Add<Output=T>>(c: &Cell<T>, d: T) -> T` |
 | `port::fmt` | `printf`, `printf_bytes`, `cpp_ostream_f64`, `cpp_ostream_f64_prec`, `cpp_to_string_f64`, `PrintfArg` (keeps C width and signedness so `%u`/`%x` of an int is right; `char`/`short` promote to `int`). `printf_bytes` has C byte semantics (`%c` one raw byte, `%.Ns` may cut a UTF-8 character, `%s` stops at NUL); `printf` is its `String` form, with U+FFFD where the bytes are not UTF-8 |
-| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). Not provided yet (TODO(port) list in the file): `tanh`, `tanhf`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
+| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). `port::math::tanhf`: C `tanhf`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every target; our double-double evaluation + one rounding, checked against glibc on all 2^32 inputs; oracle `tests/math_tanhf.rs` vs `oracle/math_tanhf.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `tanh`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
 | `port::cpp::static_cast_i32_f64`, `static_cast_i32_f32` | `(int)x` with x86-64 `cvtts*2si` results: truncation in range, `i32::MIN` for NaN/out of range (§6 item 5) |
 | `port::cpp::static_cast_i64_f64`, `static_cast_i64_f32` | same for `int64_t` targets: `i64::MIN` for NaN/out of range |
 | `port::cpp::c_str` | `fn(&str) -> &str`: cut at the first NUL, the `const char*` view of a string |
@@ -460,7 +480,7 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::nlohmann::{get_string, get_bool, get_f32, get_i32, static_cast_i32_f64}` | nlohmann `get<T>` semantics (e.g. `get<float>` accepts booleans; `get<int>` of an out-of-range/NaN float is `INT_MIN`); errors are `KataError::NlohmannJson` |
 | `port::nlohmann::dump` | `fn(&serde_json::Value) -> String`, equal to `nlohmann::json::dump()` |
 | `port::node_arena::{NodeIdx, NodeArena}` | §4 |
-| `port::executor` | `yield_now`, `WakerList { wait_until, notify_all }`, `AsyncQueue<T>`, `trait Spawner { fn spawn_local(&self, f: LocalBoxFuture<'static, ()>) }`, re-export `LocalBoxFuture` |
+| `port::executor` | `yield_now`, `WakerList { wait_until, notify_all }`, `AsyncQueue<T>` (`ThreadSafeQueue` names: `force_push`, `try_pop`, async `wait_pop_up_to_n`, `set_read_only`, `unset_read_only`, `close`, `reserve`, `size`; no `maxSize`/`waitPush`, unused on ported paths; plus `any(f)`, for debug assertions only), `trait Spawner { fn spawn_local(&self, f: LocalBoxFuture<'static, ()>) }` (implemented for `futures::executor::LocalSpawner`), re-export `LocalBoxFuture`. Unit tests in the module |
 
 ## Appendix B: name overrides (win over the overload rules)
 

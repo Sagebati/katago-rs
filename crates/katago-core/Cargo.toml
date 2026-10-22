@@ -14,6 +14,8 @@ sha2 = "0.10"
 # `float_roundtrip`: correctly rounded float parsing wherever serde_json parses (`just check-features`).
 serde_json = { version = "1", features = ["float_roundtrip"] }
 getrandom = "0.4"
+# Async virtual threads (PORTING.md §10/§11): LocalBoxFuture, LocalPool for native hosts/tests. No thread-pool.
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 
 # Unseeded Rand::init() entropy needs the browser's crypto.getRandomValues on wasm32-unknown-unknown.
 [target.'cfg(target_arch = "wasm32")'.dependencies]

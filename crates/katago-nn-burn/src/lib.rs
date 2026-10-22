@@ -1,6 +1,9 @@
 //! KataGo networks imported through burn-onnx.
 
+pub mod backend;
 pub mod conv;
+#[cfg(target_arch = "wasm32")]
+pub mod host;
 
 use burn::prelude::*;
 
@@ -18,6 +21,10 @@ pub struct RawOutputs {
 pub trait Network {
     /// File name stem of the network, also the name of its ONNX/`.bpk` files.
     const NAME: &'static str;
+    /// Fixed spatial size of the graph (bin2onnx `--pos-len`, 19).
+    const POS_LEN: i32;
+    /// KataGo's `ModelDesc` for this network, from the ONNX `metadata_props` (build.rs).
+    fn model_desc() -> katago_core::neuralnet::desc::ModelDesc;
     fn from_bpk(bytes: Vec<u8>, device: &Device) -> Self;
     fn forward(&self, bin_input: Tensor<4>, global_input: Tensor<2>) -> RawOutputs;
 }
@@ -27,9 +34,15 @@ macro_rules! network {
         #[cfg(feature = $feature)]
         pub mod $module {
             include!(concat!(env!("OUT_DIR"), "/model/", $name, ".rs"));
+            include!(concat!(env!("OUT_DIR"), "/model/", $name, ".desc.rs"));
 
             impl super::Network for Model {
                 const NAME: &'static str = $name;
+                const POS_LEN: i32 = POS_LEN;
+
+                fn model_desc() -> katago_core::neuralnet::desc::ModelDesc {
+                    model_desc()
+                }
 
                 fn from_bpk(bytes: Vec<u8>, device: &Device) -> Self {
                     Model::from_bytes(Bytes::from_bytes_vec(bytes), device)
@@ -44,6 +57,7 @@ macro_rules! network {
     };
 }
 
+network!("net-b6c96", b6c96, "g170-b6c96");
 network!("net-b10c128", b10c128, "g170e-b10c128");
 network!("net-b18c384nbt", b18c384nbt, "kata1-b18c384nbt");
 

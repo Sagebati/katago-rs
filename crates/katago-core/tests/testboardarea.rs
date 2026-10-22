@@ -1,8 +1,6 @@
 //! Replays upstream cpp/tests/testboardarea.cpp @ v1.16.5 (Tests::runBoardAreaTests) against
-//! fixtures/upstream-v1.16.5/unit/testboardarea/.
-//!
-//! Not ported (need code outside the pilot): "groupTaxScoring", "groupTaxScoring2",
-//! "groupTaxScoring2 but with unsafe territories on" (NNInputs::fillScoring).
+//! fixtures/upstream-v1.16.5/unit/testboardarea/ (all 22 expected blocks; the three
+//! groupTaxScoring blocks use NNInputs::fillScoring, M2).
 
 mod common;
 
@@ -12,6 +10,8 @@ use common::fixture;
 use common::init;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
+use katago_core::neuralnet::nninputs::NNInputs;
+use katago_core::strprintf;
 use katago_core::testAssert;
 
 const F: &str = "testboardarea";
@@ -228,5 +228,70 @@ fn independent_life_cases() {
   case("IndependentLife 9", "independentlife-9", &[(15, 5)], true, None);
   cases.ran();
   case("IndependentLife 10", "independentlife-10", &[(15, 5)], true, None);
+  cases.ran();
+}
+
+/// upstream: the three groupTaxScoring blocks of Tests::runBoardAreaTests: calculateArea with the
+/// given flags, then NNInputs::fillScoring without and with group tax, printed with "%4.0f ".
+fn group_tax_case(
+  out: &mut String,
+  name: &str,
+  slug: &str,
+  multi_stone_suicide_legal: bool,
+  non_pass_alive_stones: bool,
+  safe_big_territories: bool,
+  unsafe_big_territories: bool,
+) {
+  let mut result: [Color; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
+  let board = parse(13, 13, &fixture(F, &format!("{}.input0.txt", slug)));
+  board.calculate_area(&mut result, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, multi_stone_suicide_legal);
+  let mut scoring: [f32; Board::MAX_ARR_SIZE as usize] = [0.0; Board::MAX_ARR_SIZE as usize];
+
+  endl(out);
+  *out += "No group tax";
+  endl(out);
+  NNInputs::fill_scoring(&board, &result, false, &mut scoring);
+  for y in 0..board.y_size {
+    for x in 0..board.x_size {
+      let loc = Location::get_loc(x, y, board.x_size);
+      *out += &strprintf!("%4.0f ", scoring[loc as usize] * 100.0f32);
+    }
+    endl(out);
+  }
+  endl(out);
+  *out += "Group tax";
+  endl(out);
+  NNInputs::fill_scoring(&board, &result, true, &mut scoring);
+  for y in 0..board.y_size {
+    for x in 0..board.x_size {
+      let loc = Location::get_loc(x, y, board.x_size);
+      *out += &strprintf!("%4.0f ", scoring[loc as usize] * 100.0f32);
+    }
+    endl(out);
+  }
+  endl(out);
+
+  let expected = fixture(F, &format!("{}.expected0.txt", slug));
+  TestCommon::expect_string(name, out, &expected);
+}
+
+#[test]
+fn group_tax_scoring_cases() {
+  init();
+  let mut cases = Cases::new("testboardarea::group_tax_scoring_cases");
+  let mut out = String::new();
+  group_tax_case(&mut out, "groupTaxScoring", "grouptaxscoring", false, true, true, true);
+  cases.ran();
+  group_tax_case(&mut out, "groupTaxScoring2", "grouptaxscoring2", true, true, true, false);
+  cases.ran();
+  group_tax_case(
+    &mut out,
+    "groupTaxScoring2 but with unsafe territories on",
+    "grouptaxscoring2-but-with-unsafe-territories-on",
+    true,
+    true,
+    true,
+    true,
+  );
   cases.ran();
 }

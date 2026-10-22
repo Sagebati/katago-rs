@@ -7,7 +7,8 @@
 //! "Referenced" means one of:
 //!   - the file name as a string literal: `"area-1.expected0.txt"`;
 //!   - the slug as a string literal (`"area-1"`) in a file that also builds the name with
-//!     `"{}.expected<k>.txt"` (the table-driven tests in testboardarea.rs / testboardbasic.rs).
+//!     `"{}.expected<k>.txt"` (the table-driven tests in testboardarea.rs / testboardbasic.rs), or
+//!     with `"{}.expected{}.txt"` (slug and index both passed in, as in testnninputs.rs).
 #![cfg(not(target_arch = "wasm32"))]
 
 mod common;
@@ -18,20 +19,11 @@ use common::Cases;
 use common::fixture_dir;
 
 /// Expected blocks that no test compares yet: (stem, file, reason). Tracked in port-manifest.toml.
-const ALLOWLIST: [(&str, &str, &str); 4] = [
-  (
-    "testrules",
-    "test-basic-game.expected0.txt",
-    "'Test basic game' needs CompactSgf (cpp/dataio/sgf, an [[ignored]] entry in port-manifest.toml); stays an exception unless sgf is ported",
-  ),
-  ("testboardarea", "grouptaxscoring.expected0.txt", "groupTaxScoring needs NNInputs::fillScoring (M2): must be enabled in M2"),
-  ("testboardarea", "grouptaxscoring2.expected0.txt", "groupTaxScoring2 needs NNInputs::fillScoring (M2): must be enabled in M2"),
-  (
-    "testboardarea",
-    "grouptaxscoring2-but-with-unsafe-territories-on.expected0.txt",
-    "groupTaxScoring2 but with unsafe territories on needs NNInputs::fillScoring (M2): must be enabled in M2",
-  ),
-];
+const ALLOWLIST: [(&str, &str, &str); 1] = [(
+  "testrules",
+  "test-basic-game.expected0.txt",
+  "'Test basic game' needs CompactSgf (cpp/dataio/sgf, an [[ignored]] entry in port-manifest.toml); stays an exception unless sgf is ported",
+)];
 
 fn test_sources() -> Vec<(String, String)> {
   let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests");
@@ -64,7 +56,10 @@ fn is_referenced(sources: &[(String, String)], file: &str) -> bool {
   let literal = format!("\"{}\"", file);
   let slug_literal = format!("\"{}\"", slug);
   let pattern = format!("\"{{}}.expected{}.txt\"", k);
-  sources.iter().any(|(_, text)| text.contains(&literal) || (text.contains(&slug_literal) && text.contains(&pattern)))
+  let any_k = "\"{}.expected{}.txt\"";
+  sources
+    .iter()
+    .any(|(_, text)| text.contains(&literal) || (text.contains(&slug_literal) && (text.contains(&pattern) || text.contains(any_k))))
 }
 
 #[test]

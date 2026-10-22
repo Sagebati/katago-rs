@@ -75,6 +75,9 @@ cpp/neuralnet/nninputs.cpp	ScoreValue	scoreValueTablesInitialized	static bool	ST
 cpp/neuralnet/nneval.h	NNCacheTable	entries	Entry*	OWNED	RefCell<Box<[Entry]>>	new Entry[tableSize]; get/set take &self (called during search)
 cpp/neuralnet/nneval.h	NNCacheTable::Entry	ptr	std::shared_ptr<NNOutput>	SHARED	Option<Rc<NNOutput>>	
 cpp/neuralnet/nneval.h	NNCacheTable	mutexPool	MutexPool*	OWNED	(removed)	PORT NOTE: lock removed; nothing derived from it
+cpp/neuralnet/nneval.h	NNEvaluator	numThreads	int	OWNED	Cell<i32>	written by setNumThreads while the evaluator is shared (Rc)
+cpp/neuralnet/nneval.h	NNEvaluator	gpuIdxByServerThread	std::vector<int>	OWNED	RefCell<Vec<i32>>	rewritten by spawnServerThreads
+cpp/neuralnet/nneval.h	NNEvaluator	numServerThreadsEverSpawned	int	OWNED	Cell<i32>	incremented by spawned serve tasks
 cpp/neuralnet/nneval.h	NNCacheTable	mutexPoolMask	uint32_t	OWNED	(removed)	only selected a lock
 cpp/neuralnet/nneval.h	NNResultBuf	clientWaitingForResult	std::condition_variable	OWNED	WakerList	port::executor::WakerList; client: client_waiting_for_result.wait_until(|| buf.has_result.get()).await; server: set has_result then notify_all() (section 11)
 cpp/neuralnet/nneval.h	NNResultBuf	resultMutex	std::mutex	OWNED	(removed)	
@@ -97,7 +100,8 @@ cpp/neuralnet/nneval.h	NNEvaluator	nnCacheTable	NNCacheTable*	OWNED	Option<Box<N
 cpp/neuralnet/nneval.h	NNEvaluator	logger	Logger*	NULLABLE_BORROWED	(removed)	log crate (manifest); ctor param dropped (PORT NOTE)
 cpp/neuralnet/nneval.h	NNEvaluator	(new) spawner	-	SHARED	Rc<dyn Spawner>	PORT NOTE: port::executor::Spawner injected by the host (new ctor param); used by spawnServerThreads to spawn serve tasks
 cpp/neuralnet/nneval.h	NNEvaluator	(new) backend	-	SHARED	Rc<dyn NeuralNet>	PORT NOTE: trait in nninterface.rs standing in for the NeuralNet:: free functions (new ctor param); implemented by katago-nn-burn
-cpp/neuralnet/nneval.h	NNEvaluator	serverThreads	std::vector<std::thread*>	OWNED	(removed)	server threads become tasks spawned via spawner; killServerThreads sets is_killed + closes queryQueue and does not join (PORT NOTE)
+cpp/neuralnet/nneval.h	NNEvaluator	serverThreads	std::vector<std::thread*>	OWNED	(removed)	server threads become tasks spawned via spawner, counted by server_threads: Cell<i32> and num_server_threads_alive: Cell<i32>; killServerThreads sets is_killed + setReadOnly and does not join: the join moves to the next spawnServerThreads (D8, PORT NOTE)
+cpp/neuralnet/nneval.h	NNEvaluator	(new) serverThreadsExited	-	OWNED	WakerList	PORT NOTE (D8): port::executor::WakerList; each serve task notifies it as it ends (num_server_threads_alive -= 1); spawnServerThreads awaits num_server_threads_alive == 0 on it (the deferred join) before isKilled = false, the post-join testAsserts and unsetReadOnly
 cpp/neuralnet/nneval.h	NNEvaluator	bufferMutex	mutable std::mutex	OWNED	(removed)	the counters it guarded become Cell
 cpp/neuralnet/nneval.h	NNEvaluator	isKilled	bool	OWNED	Cell<bool>	
 cpp/neuralnet/nneval.h	NNEvaluator	numServerThreadsStartingUp	int	OWNED	Cell<i32>	

@@ -5,4 +5,5 @@ pub mod hash;
 pub mod rand_helpers;
 pub mod rand;
 pub mod bsearch;
+pub mod commontypes;
 pub mod test;
