@@ -1,0 +1,7 @@
+
+HASH: C5B7EC66E875EF237ADC456CEE8436EA
+   A B C D
+ 4 . X O .
+ 3 . X O .
+ 2 . X O O
+ 1 . X O .

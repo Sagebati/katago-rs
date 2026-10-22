@@ -1,0 +1,11 @@
+
+   A B C D E F G H J
+ 9 . O . O O X X O .
+ 8 O . O . O O X X O
+ 7 O O O O O O X . X
+ 6 O X O . O O X X X
+ 5 X X O O O O X X .
+ 4 . X O O O X X X .
+ 3 . X O O O O O O X
+ 2 O X X O X X X X X
+ 1 . X X X . X . . .

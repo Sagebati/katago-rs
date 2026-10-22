@@ -1,0 +1,12 @@
+
+HASH: 5C26A060FA78FD93FFF559C72BD7C6A4
+   A B C D E F G H J
+ 9 X X X X X X X X X
+ 8 X . O X X X X X X
+ 7 X X X X O X X X X
+ 6 X X X . O O X X X
+ 5 O X X X O O X X X
+ 4 . O X X X X X X O
+ 3 X X X X O X O O O
+ 2 X X X O O O O O O
+ 1 X X X O O . O O O

@@ -1,0 +1,13 @@
+
+HASH: 409F174F874CCA2DE7DBBD2A3385E3F0
+   A B C D E F G
+ 6 . . . . . . .
+ 5 . X . X . X .
+ 4 X . X . X . X
+ 3 X X X X X X X
+ 2 O O O O O O O
+ 1 . . . . . . .
+
+
+Ko recap blocked at F5
+

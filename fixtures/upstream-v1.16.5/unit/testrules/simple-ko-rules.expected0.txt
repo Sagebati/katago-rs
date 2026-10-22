@@ -1,0 +1,12 @@
+
+After black ko capture:
+Illegal: (5,0) O
+After black ko capture and one pass:
+After black ko capture and one pass and black other move:
+White recapture:
+Illegal: (5,1) X
+Beginning sending two returning one cycle
+Winner: Black
+W-B Score: -1.5
+isNoResult: 0
+isResignation: 0

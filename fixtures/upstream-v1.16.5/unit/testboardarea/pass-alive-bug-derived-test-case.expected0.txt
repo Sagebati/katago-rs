@@ -1,0 +1,89 @@
+
+Safe big territories 0 Unsafe big territories 0 Non pass alive stones 0 Suicide 0
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 0 Unsafe big territories 0 Non pass alive stones 0 Suicide 1
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 0 Non pass alive stones 0 Suicide 0
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 0 Non pass alive stones 0 Suicide 1
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 1 Non pass alive stones 0 Suicide 0
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 1 Non pass alive stones 0 Suicide 1
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 1 Non pass alive stones 1 Suicide 0
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+
+Safe big territories 1 Unsafe big territories 1 Non pass alive stones 1 Suicide 1
+OOOOOXXXX
+OOOOOOXXX
+OOOOOOXXX
+OXOOOOXXX
+XXOOOOXXX
+XXOOOXXXX
+XXOOOOOOX
+XXXOXXXXX
+XXXXXXXXX
+

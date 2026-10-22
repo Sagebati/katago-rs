@@ -1,0 +1,65 @@
+
+After first cap
+Ko-recap-blocked: (0,1)
+After second cap
+Ko-recap-blocked: (1,0)
+Ko-recap-blocked: (0,1)
+Just after black pass for ko
+Ko-recap-blocked: (0,1)
+HASH: 2057B7FA441F035BBDC6D7A1145BEDDF
+   A B C D E F G
+ 5 . O X . . . .
+ 4 O X X . . . .
+ 3 . O X . . . .
+ 2 O O O . . . .
+ 1 . . . . . . .
+
+
+After another white pass
+Ko-recap-blocked: (0,1)
+After first cap
+Ko-recap-blocked: (0,0)
+Ko-recap-blocked: (0,1)
+HASH: C633B34FFB80ACF9CE65C31B2535BE38
+   A B C D E F G
+ 5 X . X . . . .
+ 4 O X X . . . .
+ 3 . O X . . . .
+ 2 O O O . . . .
+ 1 . . . . . . .
+
+
+After second pass for ko
+Ko-recap-blocked: (0,0)
+HASH: C633B34FFB80ACF9CE65C31B2535BE38
+   A B C D E F G
+ 5 X . X . . . .
+ 4 O X X . . . .
+ 3 . O X . . . .
+ 2 O O O . . . .
+ 1 . . . . . . .
+
+
+After second cap
+Ko-recap-blocked: (0,0)
+Ko-recap-blocked: (0,2)
+HASH: 8705EF013F504135C0282E8BA3ACDBBB
+   A B C D E F G
+ 5 X . X . . . .
+ 4 . X X . . . .
+ 3 X O X . . . .
+ 2 O O O . . . .
+ 1 . . . . . . .
+
+
+After pass for ko
+Ko-recap-blocked: (0,0)
+Illegal: (0,1) O
+HASH: 8705EF013F504135C0282E8BA3ACDBBB
+   A B C D E F G
+ 5 X . X . . . .
+ 4 . X X . . . .
+ 3 X O X . . . .
+ 2 O O O . . . .
+ 1 . . . . . . .
+

@@ -1,0 +1,36 @@
+
+Black can't retake
+Ko-recap-blocked: (5,0)
+Ko threat shouldn't work in the encore
+Ko-recap-blocked: (5,0)
+Regular pass shouldn't work in the encore
+Ko-recap-blocked: (5,0)
+Pass for ko! (Should not affect the board stones)
+HASH: 086ABE8E7FBAD75D8FCEE51816C3FEEE
+   A B C D E F G
+ 7 . . O X X O .
+ 6 . . O X X X O
+ 5 . O X O O X .
+ 4 . . . . O X X
+ 3 . . O . O O .
+ 2 . . . . . . .
+ 1 O . . . . . .
+
+
+Now black can retake, and white's retake isn't legal
+Ko-recap-blocked: (6,0)
+White's retake is legal after passing for ko
+Black's retake is illegal again
+Ko-recap-blocked: (5,0)
+And is still illegal due to only-once
+Illegal: (6,0) X
+But a ko threat fixes that
+White illegal now
+Ko-recap-blocked: (6,0)
+Legal again in second encore
+Lastly, try black ko threat one more time
+Ko-recap-blocked: (5,0)
+And a pass for ko
+And repeat with white
+And see the only-once for black
+Illegal: (6,0) X

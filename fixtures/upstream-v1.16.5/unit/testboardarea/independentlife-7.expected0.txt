@@ -1,0 +1,65 @@
+
+Keep Territories 0 Keep Stones 0 Suicide 0
+whiteMinusBlackIndependentLifeRegionCount -1
+......XXXXXX...
+......XXXXXX...
+.....XXXXXXXX..
+.....XXXXXX....
+..XXXXXXXXX....
+
+Keep Territories 0 Keep Stones 0 Suicide 1
+whiteMinusBlackIndependentLifeRegionCount -1
+......XXXXXX...
+......XXXXXX...
+.....XXXXXXXX..
+.....XXXXXX....
+..XXXXXXXXX....
+
+Keep Territories 1 Keep Stones 0 Suicide 0
+whiteMinusBlackIndependentLifeRegionCount -1
+X..O..XXXXXX.O.
+......XXXXXX...
+X..O.XXXXXXXX..
+.....XXXXXX....
+..XXXXXXXXX.O.O
+
+Keep Territories 1 Keep Stones 0 Suicide 1
+whiteMinusBlackIndependentLifeRegionCount -1
+X..O..XXXXXX.O.
+......XXXXXX...
+X..O.XXXXXXXX..
+.....XXXXXX....
+..XXXXXXXXX.O.O
+
+Keep Territories 0 Keep Stones 1 Suicide 0
+whiteMinusBlackIndependentLifeRegionCount -1
+.XO.OOXXXXXXO.O
+XXXOOOXXXXXXOOX
+.XO.OXXXXXXXXO.
+XOOOOXXXXXXOOOO
+OOXXXXXXXXXO.O.
+
+Keep Territories 0 Keep Stones 1 Suicide 1
+whiteMinusBlackIndependentLifeRegionCount -1
+.XO.OOXXXXXXO.O
+XXXOOOXXXXXXOOX
+.XO.OXXXXXXXXO.
+XOOOOXXXXXXOOOO
+OOXXXXXXXXXO.O.
+
+Keep Territories 1 Keep Stones 1 Suicide 0
+whiteMinusBlackIndependentLifeRegionCount -1
+XXOOOOXXXXXXOOO
+XXXOOOXXXXXXOOX
+XXOOOXXXXXXXXO.
+XOOOOXXXXXXOOOO
+OOXXXXXXXXXOOOO
+
+Keep Territories 1 Keep Stones 1 Suicide 1
+whiteMinusBlackIndependentLifeRegionCount -1
+XXOOOOXXXXXXOOO
+XXXOOOXXXXXXOOX
+XXOOOXXXXXXXXO.
+XOOOOXXXXXXOOOO
+OOXXXXXXXXXOOOO
+

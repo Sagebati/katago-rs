@@ -1,0 +1,103 @@
+
+HASH: 6CC6F6B94B2F52DED5CA2B28C2D58357
+   A B C D E F G H J
+ 9 . . . . X O . O X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X .
+ 6 . . . . O X O O X
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at H9
+Ko recap blocked at J6
+HASH: 6CC6F6B94B2F52DED5CA2B28C2D58357
+   A B C D E F G H J
+ 9 . . . . X O . O X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X .
+ 6 . . . . O X O O X
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at J6
+HASH: 6CC6F6B94B2F52DED5CA2B28C2D58357
+   A B C D E F G H J
+ 9 . . . . X O . O X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X .
+ 6 . . . . O X O O X
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+HASH: 7D91609C1321DCFF8FF70F3B78BDC9DB
+   A B C D E F G H J
+ 9 . . . . X O X . X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X .
+ 6 . . . . O X O O X
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at G9
+HASH: 7966CC88C79E3DD83CAD6E7CD3DDD890
+   A B C D E F G H J
+ 9 . . . . X O X . X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X O
+ 6 . . . . O X O O .
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at G9
+Ko recap blocked at J7
+HASH: 7966CC88C79E3DD83CAD6E7CD3DDD890
+   A B C D E F G H J
+ 9 . . . . X O X . X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X O
+ 6 . . . . O X O O .
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at G9
+HASH: 7966CC88C79E3DD83CAD6E7CD3DDD890
+   A B C D E F G H J
+ 9 . . . . X O X . X
+ 8 . . . . X O O X X
+ 7 . . X . X X O X O
+ 6 . . . . O X O O .
+ 5 . . . O O X X O O
+ 4 . X X X X . X O .
+ 3 X X O O O X X O O
+ 2 O O O X O O X X X
+ 1 . . . . . O O O O
+
+
+Ko recap blocked at G9
+Ko-recap-blocked: (6,0)
+Illegal: (8,3) X
+

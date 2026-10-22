@@ -1,0 +1,121 @@
+
+HASH: 38C8C7F27510D958FD31111920914550
+   A B C D E F G H J
+ 9 . . . X O X . X .
+ 8 . . . X O O X . X
+ 7 . . . X X O O X O
+ 6 . . . . X X O O .
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at H7
+HASH: C5436F2F449C44F2032BE90BF82BCFC6
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O X . X
+ 7 . . . X X O O X O
+ 6 . . . . X X O O .
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at G9
+Ko recap blocked at H7
+HASH: C1B4C33B9023A5D5B071884C534BDE8D
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O X . X
+ 7 . . . X X O O X .
+ 6 . . . . X X O O X
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at G9
+Ko recap blocked at H7
+Ko recap blocked at J6
+HASH: 7E612069F9D69EAEEEAADC4E30CF728B
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O . O X
+ 7 . . . X X O O X .
+ 6 . . . . X X O O X
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at G9
+Ko recap blocked at H8
+Ko recap blocked at H7
+Ko recap blocked at J6
+HASH: 7E612069F9D69EAEEEAADC4E30CF728B
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O . O X
+ 7 . . . X X O O X .
+ 6 . . . . X X O O X
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at G9
+Ko recap blocked at H7
+Ko recap blocked at J6
+HASH: 5082A5AA1512BAD190D4C8951B76C472
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O . O X
+ 7 . . . X X O O . O
+ 6 . . . . X X O O .
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Ko recap blocked at G9
+HASH: 5082A5AA1512BAD190D4C8951B76C472
+   A B C D E F G H J
+ 9 . . . X O . O X .
+ 8 . . . X O O . O X
+ 7 . . . X X O O . O
+ 6 . . . . X X O O .
+ 5 . . . . . X X O O
+ 4 . . . . . . X X X
+ 3 . . . . . . . . .
+ 2 . . . . . . . . .
+ 1 . . . . . . . . .
+
+
+Initial pla Black
+Encore phase 1
+Turns this phase 6
+Approx valid turns this phase 6
+Approx consec valid turns this game 8
+Rules koSIMPLEscoreTERRITORYtaxALLsui1komi6.5
+Ko recap block hash 6785AE217D0AAA7AD4FA074F6C3B370B
+White bonus score 3
+White handicap bonus score 0
+Has button 0
+Presumed next pla Black
+Past normal phase end 0
+Game result 0 Empty 0 0 0 0
+Last moves pass pass H7 G9 J6 H8 G8 J7
+

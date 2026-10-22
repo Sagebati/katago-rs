@@ -1,0 +1,25 @@
+
+Winner: White
+W-B Score: 1.5
+isNoResult: 0
+isResignation: 0
+Winner: Black
+W-B Score: -0.5
+isNoResult: 0
+isResignation: 0
+Winner: Black
+W-B Score: -2.5
+isNoResult: 0
+isResignation: 0
+Winner: Black
+W-B Score: -1.5
+isNoResult: 0
+isResignation: 0
+Winner: Black
+W-B Score: -3.5
+isNoResult: 0
+isResignation: 0
+Winner: Black
+W-B Score: -5.5
+isNoResult: 0
+isResignation: 0

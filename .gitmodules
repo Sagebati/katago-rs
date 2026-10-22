@@ -1,0 +1,3 @@
+[submodule "upstream/KataGo"]
+	path = upstream/KataGo
+	url = https://github.com/lightvector/KataGo.git

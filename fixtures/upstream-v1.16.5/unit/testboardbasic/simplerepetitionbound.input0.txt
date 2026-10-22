@@ -1,0 +1,21 @@
+
+   A B C D E F G H J K L M N O P Q R S T
+19 . . X O . X O . X O O . . . . O X . .
+18 . . . X X O O X . . X O O . O X X X X
+17 . X . . X X X X X X X . . O O O X O .
+16 X . . X O X O O O O X X O O X O X X .
+15 O X X . O O . O . . X . O X X X O X .
+14 . O O O . . X O X X X O O . X X O X O
+13 O . . . . O O X O O O O . O X O O O .
+12 X O O O O . X X . . O X X . X O . O X
+11 . X . X . X . . X . O . X . X X X O .
+10 X . . X . . X O X X O O X O . X O . O
+ 9 . X . O X . X X O . X O . O X . O . .
+ 8 . X . O . . X O O . X O O X X X O X .
+ 7 . O X . . O O . . X X O . O X X O O .
+ 6 X X O X . . . . X . X O O . . X X O .
+ 5 O . O O O O O X . . . X O O O X O X .
+ 4 . O . O X X . O X X X X X O X X O . .
+ 3 . . . O X O O O X . . X O X . X O . .
+ 2 . . O X X O X X O . X . O X . . O X .
+ 1 . . O . . X . O O . . X O . . . O . .

@@ -1,0 +1,5 @@
+
+Winner: Empty
+W-B Score: 0
+isNoResult: 1
+isResignation: 0

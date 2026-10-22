@@ -1,0 +1,12 @@
+
+Ko-recap-blocked: (0,2)
+HASH: 033D9B7148AE33C416342BB8B4F8D869
+   A B C D E F G
+ 5 X . X . . . .
+ 4 . X X . . . .
+ 3 X O . . . . .
+ 2 O O . . . . .
+ 1 . . . . . . .
+
+
+Ko-recap-blocked: (0,2)

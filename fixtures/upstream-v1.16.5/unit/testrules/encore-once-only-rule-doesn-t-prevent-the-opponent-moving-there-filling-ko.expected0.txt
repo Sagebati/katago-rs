@@ -1,0 +1,85 @@
+
+HASH: 1348EF75660494F6D082F558CD18E727
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O . O . .
+ 3 . . X O X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+Ko recap blocked at D3
+HASH: 1348EF75660494F6D082F558CD18E727
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O . O . .
+ 3 . . X O X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+HASH: 1348EF75660494F6D082F558CD18E727
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O . O . .
+ 3 . . X O X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+HASH: D9AAFF5A5E3BFB6413BF1A6DEE3FC53A
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O X O . .
+ 3 . . X . X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+Ko recap blocked at D4
+HASH: D9AAFF5A5E3BFB6413BF1A6DEE3FC53A
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O X O . .
+ 3 . . X . X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+Ko recap blocked at D4
+HASH: D863E09142D83AB43ADC8894A4EFAB46
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O X O . .
+ 3 . . X X X . .
+ 2 . . . X . . .
+ 1 . . . . . . .
+
+
+Ko recap blocked at D4
+HASH: 0C8681141012AB6C12101C461464F282
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O X O . .
+ 3 . O X X X . .
+ 2 . . O X O . .
+ 1 . . . O . . .
+
+
+Ko recap blocked at D4
+HASH: B1D6901D12A3E4F624A15ADCCA8707DD
+   A B C D E F G
+ 6 . . O . . . .
+ 5 . . . O . . .
+ 4 . X O . O . .
+ 3 . O . . . O .
+ 2 . . O . O . .
+ 1 . . . O . . .
+

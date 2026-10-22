@@ -1,0 +1,9 @@
+file	line	test	role
+simpletest.expected0.txt	463	simpleTest	expected
+bit-mixer-tests.expected0.txt	530	Bit mixer tests	expected
+rand-tests.expected0.txt	613	Rand tests	expected
+nextindexcumulative-tests.expected0.txt	823	nextIndexCumulative tests	expected
+gamma-tests.expected0.txt	868	Gamma tests	expected
+gamma-tests.expected1.txt	1039	Gamma tests	expected
+rand-moment-tests.expected0.txt	1132	Rand moment tests	expected
+shuffle-tests.expected0.txt	1162	Shuffle tests	expected

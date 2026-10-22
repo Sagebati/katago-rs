@@ -1,0 +1,13 @@
+
+pow(0.5,inf) 0
+pow(1.0,inf) 1
+log(0) -inf
+rand.nextGamma(inf)
+inf
+inf
+inf
+inf
+inf
+inf
+inf
+inf

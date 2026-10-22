@@ -1,0 +1,7 @@
+
+
+regularMoveCount 2446
+passCount 475
+koCaptureCount 24
+suicideCount 79
+

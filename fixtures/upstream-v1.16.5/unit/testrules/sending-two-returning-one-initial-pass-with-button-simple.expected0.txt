@@ -1,0 +1,5 @@
+
+Winner: Black
+W-B Score: -10
+isNoResult: 0
+isResignation: 0

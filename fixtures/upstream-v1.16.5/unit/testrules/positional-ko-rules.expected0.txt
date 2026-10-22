@@ -1,0 +1,17 @@
+
+After black ko capture:
+Illegal: (5,0) O
+After black ko capture and one pass:
+Beginning sending two returning one cycle
+After white sends two?
+Can white recapture?
+Illegal: (1,0) O
+After white recaptures the other ko instead
+Illegal: (5,1) X
+After white recaptures the other ko instead and black passes
+After white now returns 1
+Illegal: (5,1) X
+After white now returns 1 and black passes
+After white sends 2 again
+Illegal: (0,0) X
+Illegal: (5,1) X

@@ -1,0 +1,50 @@
+
+------------------------------
+After black suicide and white pass
+Illegal: (5,0) X
+After a little looping
+Illegal: (0,1) O
+Filling in a bit more
+Illegal: (0,1) O
+Looped some more
+Illegal: (0,0) O
+Illegal: (0,1) O
+HASH: B4BA4BDE006CDCB657325F131F4F1278
+   A B C D E F
+ 5 . O X O X .
+ 4 . X X O O O
+ 3 X X . . . .
+ 2 . . . . . .
+ 1 . . . . . .
+
+
+------------------------------
+After black suicide and white pass
+After a little looping
+Illegal: (0,1) O
+Filling in a bit more
+Illegal: (0,1) O
+Looped some more
+HASH: B4BA4BDE006CDCB657325F131F4F1278
+   A B C D E F
+ 5 . O X O X .
+ 4 . X X O O O
+ 3 X X . . . .
+ 2 . . . . . .
+ 1 . . . . . .
+
+
+------------------------------
+After black suicide and white pass
+After a little looping
+Filling in a bit more
+Looped some more
+Illegal: (0,0) O
+HASH: B4BA4BDE006CDCB657325F131F4F1278
+   A B C D E F
+ 5 . O X O X .
+ 4 . X X O O O
+ 3 X X . . . .
+ 2 . . . . . .
+ 1 . . . . . .
+

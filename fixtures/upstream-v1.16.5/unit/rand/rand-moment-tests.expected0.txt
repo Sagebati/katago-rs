@@ -1,0 +1,17 @@
+
+Uniform sample: Mean 0.499861 Variance 0.083304 Skew 0.000470 ExcessKurt -1.198536
+Uniform expected: Mean 0.500000 Variance 0.083333 Skew 0.000000 ExcessKurt -1.200000
+Gaussian sample: Mean -0.002168 Variance 1.009814 Skew -0.006133 ExcessKurt 0.009611
+Gaussian expected: Mean 0.000000 Variance 1.000000 Skew 0.000000 ExcessKurt 0.000000
+Logistic sample: Mean -0.006190 Variance 3.288051 Skew 0.004409 ExcessKurt 1.217031
+Logistic expected: Mean 0.000000 Variance 3.289868 Skew 0.000000 ExcessKurt 1.200000
+Exponential sample: Mean 1.004176 Variance 1.015094 Skew 2.038615 ExcessKurt 6.431784
+Exponential expected: Mean 1.000000 Variance 1.000000 Skew 2.000000 ExcessKurt 6.000000
+Gamma(0.05) sample: Mean 0.049499 Variance 0.049302 Skew 8.716963 ExcessKurt 108.076402
+Gamma(0.05) expected: Mean 0.050000 Variance 0.050000 Skew 8.944272 ExcessKurt 120.000000
+Gamma(0,5) sample: Mean 0.496322 Variance 0.492312 Skew 2.839173 ExcessKurt 12.203226
+Gamma(0,5) expected: Mean 0.500000 Variance 0.500000 Skew 2.828427 ExcessKurt 12.000000
+Gamma(1.01) sample: Mean 1.007725 Variance 1.012255 Skew 2.011365 ExcessKurt 6.055355
+Gamma(1.01) expected: Mean 1.010000 Variance 1.010000 Skew 1.990074 ExcessKurt 5.940594
+Gamma(4.0) sample: Mean 4.002986 Variance 4.015291 Skew 1.007541 ExcessKurt 1.536908
+Gamma(4.0) expected: Mean 4.000000 Variance 4.000000 Skew 1.000000 ExcessKurt 1.500000

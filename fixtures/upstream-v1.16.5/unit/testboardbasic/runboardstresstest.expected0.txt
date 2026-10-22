@@ -1,0 +1,12 @@
+
+
+regularMoveCount 38017
+passCount 273
+koCaptureCount 212
+koBanCount 45
+suicideCount 440
+Caps 4753 5024
+Caps 4821 4733
+Caps 4995 5041
+Caps 4420 4335
+
