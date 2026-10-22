@@ -1,0 +1,3 @@
+[target.wasm32-unknown-unknown]
+# Every browser with WebGPU also has wasm SIMD.
+rustflags = ["-C", "target-feature=+simd128"]

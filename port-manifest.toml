@@ -1,0 +1,721 @@
+# port-manifest.toml: the upstream sync record for katago-rs.
+#
+# Upstream is KataGo, vendored as the git submodule `upstream/KataGo` (never edited).
+# This file says, for every file under `upstream/KataGo/cpp/`, either which Rust (or
+# tool) module ports it or why it is not ported. `cargo xtask upstream-diff --to <tag>`
+# uses it to turn an upstream release into a list of modules (and, via the
+# `/// upstream: Class::method (file.cpp)` tags, functions) to re-port.
+#
+# Paths in `upstream`, `secondary` and `paths` are relative to `upstream/KataGo` and start
+# with `cpp/`. Rust paths are relative to the repo root.
+#
+# [[module]]  one per ported Rust module (one .rs per upstream .cpp/.h pair, at the
+#             mirrored path; plan §1).
+#   rust       path of the Rust (or tool) file
+#   upstream   upstream files this module ports: its OWNED files. Exact paths, no globs.
+#   secondary  optional: upstream files OWNED BY ANOTHER MODULE that this module also
+#              follows (e.g. desc.cpp is owned by desc.rs and also followed by bin2onnx.py).
+#              upstream-diff reports a change to these files to this module too.
+#   synced     upstream commit this module was last ported or re-synced against
+#   status     "planned" | "draft" (Phase A, may not compile) | "compiles" (Phase B)
+#              | "partial" (the functions in `notes` are done, the rest is not ported yet)
+#              | "done" (Phase C parity green)
+#   phase      milestone that ports it (plan §4/§9): M1 | M2 | M3 | M8
+#   notes      scope: functions skipped or partially ported, deliberate divergences
+#
+# [[ignored]] one per group of files that is deliberately not ported.
+#   paths      exact paths or globs (`*` within a path segment, `**` across segments)
+#   kind       "backend" | "external" | "replaced" (by a crate or by our own code)
+#              | "not-needed" | "deferred" (feature postponed, plan §6; call sites stay
+#              behind their params) | "fixture" (consumed as test data, never ported)
+#   reason     one line
+#
+# INVARIANT (checked by `python3 -I tools/manifest_check.py`, run in CI):
+#   every file under upstream/KataGo/cpp/ (recursively, every extension, nothing
+#   excluded) is OWNED exactly once: either it is listed in exactly one [[module]]
+#   `upstream` list, or it matches exactly one [[ignored]] entry, never both.
+#   `secondary` entries must be owned by some [[module]]. Every listed path must exist and
+#   every ignored glob must match at least one file. [upstream].commit must equal the
+#   submodule HEAD. A new upstream file therefore fails the check until it is mapped.
+#
+# When you port or re-sync a module: set `status`, set `synced` to the commit you ported
+# from, and record skipped functions / divergences in `notes`.
+
+[upstream]
+repo = "https://github.com/lightvector/KataGo"
+tag = "v1.16.5"
+commit = "ba938676d7f42d70950b3a535af2466fb642008c"
+
+# ---------------------------------------------------------------------------------------
+# M1: core + game
+# ---------------------------------------------------------------------------------------
+
+[[module]]
+rust = "crates/katago-core/src/core/global.rs"
+upstream = ["cpp/core/global.cpp", "cpp/core/global.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "partial"
+phase = "M1"
+notes = "Pilot. Ported: fatalError, boolToString, intToString, floatToString, doubleToString, doubleToStringHighPrecision, int64ToString, uint32ToString, uint64ToString, uint32ToHexString, uint64ToHexString, sizeToString, tryStringToInt/stringToInt, tryStringToInt64/stringToInt64, tryStringToBool/stringToBool, tryStringToUInt64/stringToUInt64, tryHexStringToUInt64/hexStringToUInt64, tryStringToFloat/stringToFloat, tryStringToDouble/stringToDouble, isWhitespace (both), isPrefix, isSuffix, trim, split (both: split / split_delim), toUpper, toLower, isEqualCaseInsensitive, isDigit, isAlpha, contains(const char*,char) as contains_str_char, strprintf (macro, port::fmt). StringError/IOError/ConfigParsingError/ValueError/CommandError + nlohmann exception -> KataError. istream >> parsing -> port::cpp::istream_parse_*. Not yet ported: getDateString, charToString, chopPrefix/Suffix, concat, isDigits/parseDigits, stringCharsAllAllowed, stripComments, readKeyValues, readMem, pauseForKey, roundStatic/roundDynamic, contains/indexOf/map_get templates, STRUCT_NAMED_* (hand-written per struct), unique_ptr_void, WrappedWithDeleter, CustomScopeGuard. fatalError panics instead of quick_exit. trim's default delims -> Global::TRIM_DEFAULT_DELIM (PORTING.md §5 exception). KataError::what() stops at the first NUL like e.what() = message.c_str()."
+
+[[module]]
+rust = "crates/katago-core/src/core/hash.rs"
+upstream = ["cpp/core/hash.cpp", "cpp/core/hash.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "Whole file. Hash128 Ord compares hash1 then hash0 (hand-written). Hash128() -> Hash128::default(). simpleHash(const char*) -> simple_hash(&str) (stops at NUL, char sign-extended); simpleHash(const int*,int) -> simple_hash_input_len. SHA2::get256 -> port::digest (sha2 crate). Parity: tests/hash.rs vs oracle/hash.txt, tests/rand.rs bit mixer block."
+
+[[module]]
+rust = "crates/katago-core/src/core/rand.rs"
+upstream = ["cpp/core/rand.cpp", "cpp/core/rand.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "Bit-identical (tests/rand.rs: upstream simpleTest + Rand::runTests blocks, and oracle/rand.txt from the real C++). Also holds the rand.cpp members of XorShift1024Mult/PCG32 (new, init, test). String seeding via md-5 / sha2 crates (port::digest). Divergence: unseeded Rand::init() entropy (atomic counter, time, pid, hostname, thread id, stack/heap address) -> 32 getrandom bytes hashed the same way; never used where outputs are compared. nextGamma / fillShuffledUIntRange return Result. Rand::runTests and static simpleTest are consumed as tests (tests/rand.rs), not ported. Overload names: new/new_seed/new_seed_u64, init/init_seed/init_seed_u64, next_uint/next_uint_n/next_uint_freq_n/next_uint_rel_probs_n, next_int/next_int_a_b, next_uint64/next_uint64_n, next_double/next_double_n/next_double_a_b. numCalls is never incremented upstream either. log/pow go through port::math (glibc 2.44 bit-identical on every target; wasm libm differed and desynced nextGaussianTruncated/nextGamma): tests/rand.rs and tests/math.rs also run on wasm32 (just test-wasm)."
+
+[[module]]
+rust = "crates/katago-core/src/core/rand_helpers.rs"
+upstream = ["cpp/core/rand_helpers.cpp", "cpp/core/rand_helpers.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "XorShift1024Mult and PCG32 struct + inline nextUInt, bit-identical (XorShift1024Mult::test / PCG32::test pass). Constructors/init/test live in core/rand.rs (defined in rand.cpp)."
+
+[[module]]
+rust = "crates/katago-core/src/core/bsearch.rs"
+upstream = ["cpp/core/bsearch.cpp", "cpp/core/bsearch.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "BSearch::findFirstGt (needed by Rand::nextIndexCumulative). runTests -> tests/bsearch.rs."
+
+[[module]]
+rust = "crates/katago-core/src/core/test.rs"
+upstream = ["cpp/core/test.cpp", "cpp/core/test.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "Whole test.h: testAssert! (always on), TestCommon::testAssertFailed, TestCommon::expect (string overload) and expect_string (ostringstream overload, clears the buffer). expect panics with the upstream diff text instead of exit(1). test.cpp is empty."
+
+[[module]]
+rust = "crates/katago-core/src/game/board.rs"
+upstream = ["cpp/game/board.cpp", "cpp/game/board.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "Includes Location:: and PlayerIO::. printBoard/toStringSimple/parseBoard ported. Skipped: Board::toJson / Board::ofJson (only used by book/); PointList is commented out upstream. Statics in BoardStatics/BOARD_STATICS OnceLock (Board::statics() initializes on first read). ChainData/MoveRecord are module-level structs (Rust has no nested structs). Lambdas that capture arrays the enclosing fn also writes (calculateAreaForPla buildRegion, checkConsistency checkChainConsistency, initHash nextHash) take them as parameters. Board() -> new() (expect: constant size), Board(x,y) -> new_x_y -> Result; checkConsistency / isEqualForTesting / parseBoard / ofString / parsePlayer return Result. Parity: tests/testboardbasic.rs (25/25 expected blocks; runBoardHandicapTest + runBoardReplayTest need BoardHistory), tests/testboardarea.rs (19/22; groupTaxScoring x3 need NNInputs), tests/board_oracle.rs (zobrist tables + ~1200 moves of hashes vs C++), tests/board_fuzz_oracle.rs (differential fuzz vs oracle/board_fuzz.cpp: 800 games as per-game FNV hashes of the full trace incl. calculateArea/IndependentLifeArea, legality, liberties, ladders, undo, setStone; 10 full traces; 160 tryOfString cases). Divergence: Location::getLoc and tryOfString `y = y_size - y` use wrapping i32 arithmetic (C++ signed overflow UB reachable from user input; wraps like x86-64 instead of panicking in debug). Fixed-size stack arrays in searchIsLadderCaptured / calculateAreaForPla are zero-initialised (PERF(port))."
+
+[[module]]
+rust = "crates/katago-core/src/game/boardhistory.rs"
+upstream = ["cpp/game/boardhistory.cpp", "cpp/game/boardhistory.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M1"
+notes = "Whole file, including encore / Japanese-rules pass logic (main parity trap; guarded by testrules cases)."
+
+[[module]]
+rust = "crates/katago-core/src/game/rules.rs"
+upstream = ["cpp/game/rules.cpp", "cpp/game/rules.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M1"
+notes = "Whole file. nlohmann::json -> serde_json::Value; dump via port::nlohmann::dump (D4); json::parse / get<string|bool|float> via port::nlohmann::{parse,get_string,get_bool,get_f32}. Rules(8 params) -> Rules::new_full (PORTING.md Appendix B). tryParseRules* return Result<bool> (catch StringError only). operator<< -> Display. Parity: tests/rules.rs (testrules round trip + 'Rules parsing bug', oracle/rules.txt incl. JSON edge cases). gameResultWillBeInteger / komiIsIntOrHalfInt: (int) casts out of range/NaN give INT_MIN via port::cpp::static_cast_i32_f32 (x86-64 cvttss2si), tested vs C++ in tests/rules.rs."
+
+# ---------------------------------------------------------------------------------------
+# M2: NN inputs, model header, evaluator
+# ---------------------------------------------------------------------------------------
+
+[[module]]
+rust = "crates/katago-core/src/core/commontypes.rs"
+upstream = ["cpp/core/commontypes.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "enabled_t (used by nneval/nninterface and config parsing)."
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/modelversion.rs"
+upstream = ["cpp/neuralnet/modelversion.cpp", "cpp/neuralnet/modelversion.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "Model-version tables re-encoded; a regex test checks them against modelversion.cpp (plan §2.4)."
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/desc.rs"
+upstream = ["cpp/neuralnet/desc.cpp", "cpp/neuralnet/desc.h", "cpp/neuralnet/activations.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "Header reader only: ModelDesc name/modelVersion/channel counts/metaEncoderVersion and ModelPostProcessParams (header values for v13+, desc.cpp defaults otherwise), getSupportedRules. Layer descs (ConvLayerDesc..TrunkDesc, heads), iterConvLayers, transformToReduceActivations are NOT ported: the network goes through tools/bin2onnx + burn-onnx. May instead read the same values from the ONNX metadata_props bin2onnx writes."
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/nninputs.rs"
+upstream = ["cpp/neuralnet/nninputs.cpp", "cpp/neuralnet/nninputs.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "fillRowV7 (+ ladder/area helpers it uses), NNInputs::getHash, SymmetryHelpers, ScoreValue (tables), NNOutput, MiscNNInputParams. Skipped: fillRowV3/V4/V5/V6 (input versions of pre-v8 nets; v8 and v14 nets are input v7). fillScoring is training-only (skip unless a test needs it)."
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/nninterface.rs"
+upstream = ["cpp/neuralnet/nninterface.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "NeuralNet:: free functions become a backend trait in katago-core (no burn dep); implemented by katago-nn-burn. Device/GPU enumeration and the testEvaluate* hooks are not ported."
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/nneval.rs"
+upstream = ["cpp/neuralnet/nneval.cpp", "cpp/neuralnet/nneval.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "NNResultBuf, NNEvaluator::evaluate (symmetry choice, postprocessing: policy temperature/optimism, value/score/ownership), averageMultipleSymmetries, NNCacheTable (2^14 entries default, not 2^23). Divergence: server threads/serve()/waitForNextNNEvalIfAny/mutexes -> single-threaded async batch queue (evaluate().await, plan §6)."
+
+[[module]]
+rust = "crates/katago-nn-burn/src/backend.rs"
+upstream = []
+secondary = ["cpp/neuralnet/nninterface.h", "cpp/neuralnet/eigenbackend.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M2"
+notes = "Implements the nninterface.rs trait over the burn-onnx-generated model. Mirrors eigenbackend.cpp's NeuralNet::getOutput input/output layout and symmetry handling (copyInputsWithSymmetry / copyOutputsWithSymmetry); the forward pass itself is generated, not ported."
+
+[[module]]
+rust = "tools/bin2onnx/bin2onnx.py"
+upstream = ["cpp/neuralnet/eigenbackend.cpp"]
+secondary = ["cpp/neuralnet/desc.cpp", "cpp/neuralnet/desc.h", "cpp/neuralnet/activations.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "done"
+phase = "M2"
+notes = "Converter (M0): one parser function per *Desc in desc.cpp with the same modelVersion gates; graph follows eigenbackend.cpp's forward pass (the forward-semantics reference). Verified vs the Eigen build on v8 and v14 nets (docs/M0-report.md). eigenbackend's NeuralNet:: glue is followed by katago-nn-burn/src/backend.rs."
+
+# ---------------------------------------------------------------------------------------
+# M3: search + analysis protocol
+# ---------------------------------------------------------------------------------------
+
+[[module]]
+rust = "crates/katago-core/src/core/fancymath.rs"
+upstream = ["cpp/core/fancymath.cpp", "cpp/core/fancymath.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "t-distribution pdf/cdf etc. used by search (valueWeightDistribution, LCB). Preserve float evaluation order."
+
+[[module]]
+rust = "crates/katago-core/src/core/timer.rs"
+upstream = ["cpp/core/timer.cpp", "cpp/core/timer.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "ClockTimer (maxTime, reportDuringSearchEvery). Divergence: no std::time::Instant in core; the clock is injected (performance.now() in wasm, Instant in katago-cli)."
+
+[[module]]
+rust = "crates/katago-core/src/core/config_parser.rs"
+upstream = ["cpp/core/config_parser.cpp", "cpp/core/config_parser.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Parses config text (incl. @include, overrides) for Setup::loadSingleParams and katago-cli -config / -override-config. Divergence: takes &str; file reading lives in katago-cli; Logger hooks -> log crate."
+
+[[module]]
+rust = "crates/katago-core/src/game/graphhash.rs"
+upstream = ["cpp/game/graphhash.cpp", "cpp/game/graphhash.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Graph search hashing."
+
+[[module]]
+rust = "crates/katago-core/src/search/search.rs"
+upstream = ["cpp/search/search.cpp", "cpp/search/search.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Search, SearchThread, runWholeSearch, runSinglePlayout, tree reuse. Divergence: search threads -> N playout futures on a local executor (virtual threads, plan §6); atomics/mutexes -> Cell/RefCell. Pattern bonus, eval cache, antimirror call sites stay but are deferred (see [[ignored]] deferred)."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchnode.rs"
+upstream = ["cpp/search/searchnode.cpp", "cpp/search/searchnode.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "SearchNode, SearchChildPointer, NodeStats; virtual loss and node state machine ported as-is. Raw child pointers -> arena indices (OWNERSHIP.tsv)."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchnodetable.rs"
+upstream = ["cpp/search/searchnodetable.cpp", "cpp/search/searchnodetable.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Graph-search node table; per-shard mutexes dropped (single-threaded)."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchparams.rs"
+upstream = ["cpp/search/searchparams.cpp", "cpp/search/searchparams.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "serde(rename_all=camelCase) so cfg keys and overrideSettings work unchanged; defaults checked against data/<tag>/searchparams_defaults.json (xtask gen-params, deny_unknown_fields)."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchexplorehelpers.rs"
+upstream = ["cpp/search/searchexplorehelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "PUCT selection, FPU, explore scaling. High upstream churn."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchpuct.rs"
+upstream = ["cpp/search/searchpuct.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Empty in v1.16.5 (includes only); kept so a future upstream body lands at a mapped path."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchupdatehelpers.rs"
+upstream = ["cpp/search/searchupdatehelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Backup / recompute stats, value weight exponent, noise pruning."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchnnhelpers.rs"
+upstream = ["cpp/search/searchnnhelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "NN eval of nodes; becomes the await point of a playout future."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchhelpers.rs"
+upstream = ["cpp/search/searchhelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Utility, score utility, ending bonus, passing hacks, root pruning helpers."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchmultithreadhelpers.rs"
+upstream = ["cpp/search/searchmultithreadhelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "enumerateTreePostOrder and applyRecursively* (tree walks used after search). Divergence: single-threaded; spawn/kill/respawnThreads and performTaskWithThreads run the task inline on thread index 0."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchtimehelpers.rs"
+upstream = ["cpp/search/searchtimehelpers.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "numVisitsNeededToBeNonFutile etc. recomputeSearchTimeLimit is only reached with limited TimeControls (never in analysis)."
+
+[[module]]
+rust = "crates/katago-core/src/search/timecontrols.rs"
+upstream = ["cpp/search/timecontrols.cpp", "cpp/search/timecontrols.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Analysis always passes TimeControls() (unlimited), so only the default ctor + isEffectivelyUnlimitedTime are on the parity path; the rest (getTime, byo-yomi) is pure arithmetic, port it faithfully rather than stubbing. Plan §2.2 listed timecontrols as ignored; mapped instead because search.cpp/searchtimehelpers.cpp take it as a parameter."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchresults.rs"
+upstream = ["cpp/search/searchresults.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "getAnalysisData, PV, ownership/ownershipStdev, LCB selection, printTree, getPolicySurpriseAndEntropy, JSON helpers. High upstream churn."
+
+[[module]]
+rust = "crates/katago-core/src/search/searchprint.rs"
+upstream = ["cpp/search/searchprint.cpp", "cpp/search/searchprint.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "PrintTreeOptions (printTree itself is in searchresults.cpp); needed for upstream search test outputs."
+
+[[module]]
+rust = "crates/katago-core/src/search/subtreevaluebiastable.rs"
+upstream = ["cpp/search/subtreevaluebiastable.cpp", "cpp/search/subtreevaluebiastable.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Subtree value bias (parity-essential). Shard mutexes dropped."
+
+[[module]]
+rust = "crates/katago-core/src/search/localpattern.rs"
+upstream = ["cpp/search/localpattern.cpp", "cpp/search/localpattern.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "LocalPatternHasher, used by subtreevaluebiastable and searchnodetable."
+
+[[module]]
+rust = "crates/katago-core/src/search/distributiontable.rs"
+upstream = ["cpp/search/distributiontable.cpp", "cpp/search/distributiontable.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Tabulated t-distribution for valueWeightDistribution (value weight exponent)."
+
+[[module]]
+rust = "crates/katago-core/src/search/analysisdata.rs"
+upstream = ["cpp/search/analysisdata.cpp", "cpp/search/analysisdata.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+
+[[module]]
+rust = "crates/katago-core/src/search/reportedsearchvalues.rs"
+upstream = ["cpp/search/reportedsearchvalues.cpp", "cpp/search/reportedsearchvalues.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+
+[[module]]
+rust = "crates/katago-core/src/search/asyncbot.rs"
+upstream = ["cpp/search/asyncbot.cpp", "cpp/search/asyncbot.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Only the path analysis.cpp uses: setPosition/setParams/setAlwaysIncludeOwnerMap/setAvoidMoveUntilByLoc, genMoveSynchronousAnalyze (callbackPeriod / firstCallbackAfter drive reportDuringSearchEvery), stopWithoutWait, clearSearch. Divergence: no bot thread/condvar; an async driver over Search. genMove/ponder/time-control paths not ported."
+
+[[module]]
+rust = "crates/katago-core/src/program/setup.rs"
+upstream = ["cpp/program/setup.cpp", "cpp/program/setup.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Only what analysis.cpp calls: loadSingleParams / loadParams for SETUP_FOR_ANALYSIS (cfg key -> SearchParams, analysis defaults), parseReportAnalysisWinrates, maybeWarnHumanSLParams. initializeNNEvaluator(s) -> katago-nn-burn; initializeSession, loadAvoidSgfPatternBonusTables (deferred) not ported. xtask fails if the SETUP_FOR_ANALYSIS branches change (plan §2.4)."
+
+[[module]]
+rust = "crates/katago-core/src/program/playutils.rs"
+upstream = ["cpp/program/playutils.cpp", "cpp/program/playutils.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Only PlayUtils::getHackedLCBForWinrate (called by searchresults.cpp). Everything else (game init, printGenmoveLog, ownership/score helpers for gtp/selfplay) is not ported."
+
+[[module]]
+rust = "crates/katago-core/src/command/analysis.rs"
+upstream = ["cpp/command/analysis.cpp"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M3"
+notes = "Query parsing, actions (terminate, clear_cache, query_version), response JSON. No stdin loop / analysis threads / priority queue (katago-cli and katago-wasm own I/O). query_version strings come from [upstream].tag. JSON number formatting (nlohmann vs serde_json) must be checked against tests/results/analysis/*.stdout."
+
+# ---------------------------------------------------------------------------------------
+# M8: human SL
+# ---------------------------------------------------------------------------------------
+
+[[module]]
+rust = "crates/katago-core/src/neuralnet/sgfmetadata.rs"
+upstream = ["cpp/neuralnet/sgfmetadata.cpp", "cpp/neuralnet/sgfmetadata.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M8"
+notes = "fillMetadataRow, getProfile, human SL. The SGFMetadata struct and METADATA_INPUT_NUM_CHANNELS are needed from M2 (desc.rs, nneval.rs take Option<&SGFMetadata>); port them with M2."
+
+[[module]]
+rust = "crates/katago-core/src/core/datetime.rs"
+upstream = ["cpp/core/datetime.cpp", "cpp/core/datetime.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "planned"
+phase = "M8"
+notes = "Only SimpleDate (sgfmetadata gameDate, numDaysAfter). Wall-clock / localtime / timestamp-string functions are not ported."
+
+# =======================================================================================
+# Not ported
+# =======================================================================================
+
+# --- NN backends: replaced by tools/bin2onnx + burn-onnx (katago-nn-burn) ---------------
+
+[[ignored]]
+kind = "backend"
+paths = [
+  "cpp/neuralnet/cudabackend.cpp", "cpp/neuralnet/cudaerrorcheck.h", "cpp/neuralnet/cudahelpers.cu",
+  "cpp/neuralnet/cudahelpers.h", "cpp/neuralnet/cudaincludes.h", "cpp/neuralnet/cudautils.cpp",
+  "cpp/neuralnet/cudautils.h",
+]
+reason = "CUDA backend; GPU inference is burn + wgpu."
+
+[[ignored]]
+kind = "backend"
+paths = ["cpp/neuralnet/trtbackend.cpp"]
+reason = "TensorRT backend; GPU inference is burn + wgpu."
+
+[[ignored]]
+kind = "backend"
+paths = [
+  "cpp/neuralnet/openclbackend.cpp", "cpp/neuralnet/openclhelpers.cpp", "cpp/neuralnet/openclhelpers.h",
+  "cpp/neuralnet/openclincludes.h", "cpp/neuralnet/openclkernels.cpp", "cpp/neuralnet/openclkernels.h",
+  "cpp/neuralnet/opencltuner.cpp", "cpp/neuralnet/opencltuner.h", "cpp/neuralnet/hgemm_wmma*.opencl",
+]
+reason = "OpenCL backend and its kernels/tuner; GPU inference is burn + wgpu."
+
+[[ignored]]
+kind = "backend"
+paths = [
+  "cpp/neuralnet/metalbackend.cpp", "cpp/neuralnet/metalbackend.h", "cpp/neuralnet/metalbackend.swift",
+  "cpp/neuralnet/metallayers.swift",
+]
+reason = "Metal/CoreML backend (macOS); GPU inference is burn + wgpu."
+
+[[ignored]]
+kind = "backend"
+paths = ["cpp/neuralnet/dummybackend.cpp"]
+reason = "NN-less stub backend for builds without a backend; katago-nn-burn is our only backend."
+
+# --- external libraries -----------------------------------------------------------------
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/nlohmann_json/**"]
+reason = "nlohmann::json -> serde_json (default sorted Map, matching nlohmann's std::map key order)."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/tclap-1.2.5/**"]
+reason = "TCLAP command-line parsing -> clap in katago-cli (only the analysis subcommand flags)."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/filesystem-1.5.8/**"]
+reason = "ghc::filesystem -> std::fs/std::path in katago-cli; katago-core does no file IO."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/half-2.2.0/**"]
+reason = "fp16 host conversions for GPU backends; not needed (burn handles precision; `half` crate if ever needed)."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/clblast/**"]
+reason = "CLBlast, OpenCL backend only."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/katagocoreml/**", "cpp/external/macos/**"]
+reason = "CoreML converter and macOS/Swift CMake helpers for the Metal backend."
+
+[[ignored]]
+kind = "external"
+paths = ["cpp/external/httplib/**", "cpp/external/mozilla-cacerts/**"]
+reason = "HTTP client + CA bundle for distributed training only."
+
+# --- core/ pieces not needed or replaced --------------------------------------------------
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/core/sha2.cpp", "cpp/core/sha2.h"]
+reason = "SHA-256 -> sha2 crate (identical digests; rand.cpp's self-test vector checks it)."
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/core/md5.cpp", "cpp/core/md5.h"]
+reason = "MD5 (Rand seeding) -> md-5 crate (identical digests)."
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/core/logger.cpp", "cpp/core/logger.h"]
+reason = "Logger -> `log` crate macros at the same call sites (message text kept); no log files in wasm."
+
+[[ignored]]
+kind = "replaced"
+paths = [
+  "cpp/core/multithread.cpp", "cpp/core/multithread.h", "cpp/core/threadsafecounter.cpp",
+  "cpp/core/threadsafecounter.h", "cpp/core/threadsafequeue.cpp", "cpp/core/threadsafequeue.h",
+  "cpp/core/prioritymutex.h", "cpp/core/throttle.h", "cpp/core/parallel.cpp", "cpp/core/parallel.h",
+  "cpp/core/threadtest.cpp", "cpp/core/threadtest.h",
+]
+reason = "Thread/mutex/queue primitives; single-threaded wasm: Cell/RefCell and async virtual threads (plan §6)."
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/core/fileutils.cpp", "cpp/core/fileutils.h", "cpp/core/makedir.cpp", "cpp/core/makedir.h"]
+reason = "File IO helpers; katago-core takes bytes/&str, katago-cli uses std::fs (gz via flate2)."
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/core/mainargs.cpp", "cpp/core/mainargs.h", "cpp/core/commandloop.cpp", "cpp/core/commandloop.h",
+  "cpp/core/os.h", "cpp/core/using.h",
+]
+reason = "argv/stdin-loop plumbing, platform macros, `using std::` declarations: no Rust equivalent needed."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/core/base64.cpp", "cpp/core/base64.h", "cpp/core/elo.cpp", "cpp/core/elo.h"]
+reason = "Only used by runtests / match statistics."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/core/simpleallocator.h"]
+reason = "Scratch allocator used only by the cuda/opencl/eigen backends."
+
+# --- search/ pieces -------------------------------------------------------------------
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/search/mutexpool.cpp", "cpp/search/mutexpool.h"]
+reason = "Sharded mutex pool; single-threaded (shards keep their indexing, locks dropped)."
+
+[[ignored]]
+kind = "deferred"
+paths = ["cpp/search/evalcache.cpp", "cpp/search/evalcache.h"]
+reason = "Eval cache (useEvalCache, off by default) deferred (plan §6); call sites in search.rs stay, marked TODO(port): deferred. tests/analysis/evalcache.txt is skipped until ported."
+
+[[ignored]]
+kind = "deferred"
+paths = ["cpp/search/patternbonustable.cpp", "cpp/search/patternbonustable.h"]
+reason = "Pattern bonus / avoidSgfPatterns deferred (plan §6); also needs dataio/sgf. Call sites stay, marked TODO(port): deferred."
+
+[[ignored]]
+kind = "deferred"
+paths = ["cpp/search/searchmirror.cpp"]
+reason = "Antimirror (antiMirror param, off by default) deferred (plan §6); call sites stay, marked TODO(port): deferred."
+
+# --- other programs, commands, data IO ----------------------------------------------------
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/command/benchmark.cpp", "cpp/command/contribute.cpp", "cpp/command/evalsgf.cpp",
+  "cpp/command/gatekeeper.cpp", "cpp/command/genbook.cpp", "cpp/command/gputest.cpp",
+  "cpp/command/gtp.cpp", "cpp/command/match.cpp", "cpp/command/misc.cpp", "cpp/command/sandbox.cpp",
+  "cpp/command/selfplay.cpp", "cpp/command/startposes.cpp", "cpp/command/tune.cpp",
+  "cpp/command/writetrainingdata.cpp",
+]
+reason = "Subcommands other than `analysis` (gtp, benchmark, match, selfplay/training, book, tuning, misc)."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/command/runtests.cpp"]
+reason = "Unit-test driver; its test cases are consumed as fixtures, not ported."
+
+[[ignored]]
+kind = "replaced"
+paths = ["cpp/command/commandline.cpp", "cpp/command/commandline.h"]
+reason = "KataGoCommandLine (TCLAP) -> clap flags in katago-cli (-model, -config, -override-config)."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/main.cpp", "cpp/main.h"]
+reason = "Subcommand dispatcher and Version:: strings; query_version uses [upstream].tag."
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/program/play.cpp", "cpp/program/play.h", "cpp/program/playsettings.cpp", "cpp/program/playsettings.h",
+  "cpp/program/selfplaymanager.cpp", "cpp/program/selfplaymanager.h", "cpp/program/gtpconfig.cpp",
+  "cpp/program/gtpconfig.h", "cpp/program/gitinfotemplate.h",
+]
+reason = "Selfplay/match game loop, GTP config generator, build-time git info (analysis.cpp includes play.h but uses nothing from it)."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/dataio/**"]
+reason = "SGF parsing, training-data/numpy writers, model-file lookup, home dir: queries carry GTP moves and the model arrives as bytes."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/book/**"]
+reason = "Opening book generation/HTML export."
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/distributed/**"]
+reason = "Distributed training client."
+
+# --- build files, scripts, configs --------------------------------------------------------
+
+[[ignored]]
+kind = "not-needed"
+paths = ["cpp/CMakeLists.txt", "cpp/README.md"]
+reason = "Upstream build/readme; CMakeLists is only used by `just katago-eigen` to build the reference binary."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/runcmdtests.sh"]
+reason = "Source of the overrideSettings for the deterministic analysis runs whose outputs are search-parity fixtures (plan Verification, Search tier)."
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/runoutputtests.sh", "cpp/runsearchtests.sh", "cpp/runsearchtestsfp16.sh",
+  "cpp/runsearchtestslimited.sh", "cpp/rungpuerrortest.sh",
+]
+reason = "Upstream test-runner scripts for GPU/fp16/gtp runs; not used by our fixtures."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/configs/analysis_example.cfg"]
+reason = "Reference analysis config (katago-cli default, fixture generation); read, not ported."
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/configs/gtp_example.cfg", "cpp/configs/gtp_human5k_example.cfg",
+  "cpp/configs/gtp_human9d_search_example.cfg", "cpp/configs/match_example.cfg",
+  "cpp/configs/contribute_example.cfg", "cpp/configs/task_example.cfg", "cpp/configs/book/**",
+  "cpp/configs/misc/**", "cpp/configs/training/**",
+]
+reason = "Configs for gtp/match/contribute/book/training."
+
+# --- tests: the oracle. Consumed as fixtures (xtask extract-tests, search parity), never ported.
+
+[[ignored]]
+kind = "fixture"
+paths = [
+  "cpp/tests/testboardbasic.cpp", "cpp/tests/testboardarea.cpp", "cpp/tests/testrules.cpp",
+  "cpp/tests/testownership.cpp", "cpp/tests/testscore.cpp", "cpp/tests/testnninputs.cpp",
+  "cpp/tests/testsymmetries.cpp", "cpp/tests/testcommon.cpp", "cpp/tests/tests.h",
+  "cpp/tests/testconfig.cpp", "cpp/tests/testtime.cpp",
+]
+reason = "Unit tests whose R\"%%(...)%%\" expected blocks / asserted values become M1-M3 fixtures (xtask extract-tests); testconfig and testtime cover config_parser.rs and timecontrols.rs."
+
+[[ignored]]
+kind = "fixture"
+paths = [
+  "cpp/tests/testsearch.cpp", "cpp/tests/testsearchcommon.cpp", "cpp/tests/testsearchcommon.h",
+  "cpp/tests/testsearchmisc.cpp", "cpp/tests/testsearchnonn.cpp", "cpp/tests/testsearchv3.cpp",
+  "cpp/tests/testsearchv8.cpp", "cpp/tests/testsearchv9.cpp", "cpp/tests/testnn.cpp",
+  "cpp/tests/testnnevalcanary.cpp",
+]
+reason = "Search/NN tests; expected outputs (tests/results/runSearchTests*, runNN*) are M2/M3 fixtures where they use the fp32 path."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/tests/analysis/**", "cpp/tests/results/analysis/**"]
+reason = "Analysis-protocol inputs and expected .stdout/.stderr: the Search-tier parity oracle, read straight from the submodule."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/tests/models/**"]
+reason = "Golden nets (g170 b6c96, g170e-b10c128, ...) and model-lookup test dirs; inputs for fixtures."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/tests/data/**"]
+reason = "Test SGFs/configs/books used by upstream tests; inputs for fixtures where relevant."
+
+[[ignored]]
+kind = "fixture"
+paths = ["cpp/tests/results/*.txt", "cpp/tests/results/cmd/**"]
+reason = "Expected outputs of upstream unit/NN/search test runs; the fp32/non-GPU ones back M1-M3 fixtures."
+
+[[ignored]]
+kind = "not-needed"
+paths = [
+  "cpp/tests/testbook.cpp", "cpp/tests/testmisc.cpp", "cpp/tests/testsgf.cpp",
+  "cpp/tests/testtrainingwrite.cpp", "cpp/tests/tinymodel.cpp",
+  "cpp/tests/tinymodel.h", "cpp/tests/tinymodeldata.cpp", "cpp/tests/gtp/**",
+  "cpp/tests/results/gtp/**", "cpp/tests/results/bookhtml/**", "cpp/tests/results/sampletest*/**",
+]
+reason = "Tests of unported subsystems (book, file collection/model lookup, sgf, training data, tiny embedded model, gtp, sample-test selfplay)."

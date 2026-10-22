@@ -1,0 +1,23 @@
+[package]
+name = "katago-web-bench"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "M0 spike: b10c128 forward pass in the browser (WebGPU and wasm CPU)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+katago-nn-burn = { path = "../katago-nn-burn", features = ["wgpu"] }
+burn = { workspace = true, features = ["std", "flex", "wgpu", "webgpu", "fusion"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Performance", "WorkerGlobalScope", "console"] }
+console_error_panic_hook = "0.1"
+
+# rand (via burn) needs the browser's crypto.getRandomValues on wasm32-unknown-unknown.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }

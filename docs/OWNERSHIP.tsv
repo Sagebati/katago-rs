@@ -1,0 +1,263 @@
+file	class	field	cpp_type	ownership	rust_type	notes
+cpp/game/board.h	Board	colors	Color[MAX_ARR_SIZE]	OWNED	[Color; Board::MAX_ARR_SIZE as usize]	inline array; index as colors[loc as usize]
+cpp/game/board.h	Board	chain_data	ChainData[MAX_ARR_SIZE]	OWNED	[ChainData; Board::MAX_ARR_SIZE as usize]	ChainData is #[derive(Clone, Copy, Default)]; only valid at chain heads
+cpp/game/board.h	Board	chain_head	Loc[MAX_ARR_SIZE]	OWNED	[Loc; Board::MAX_ARR_SIZE as usize]	Loc indices, not pointers
+cpp/game/board.h	Board	next_in_chain	Loc[MAX_ARR_SIZE]	OWNED	[Loc; Board::MAX_ARR_SIZE as usize]	circular linked list stored as Loc indices
+cpp/game/board.h	Board	adj_offsets	short[8]	OWNED	[i16; 8]	widen to i32 before adding to a Loc: (loc as i32 + self.adj_offsets[i] as i32) as Loc
+cpp/game/board.h	Board	IS_ZOBRIST_INITALIZED	static bool	STATIC	(removed)	PORT NOTE: replaced by BOARD_STATICS.get().is_some(); Board::init_hash() forces the OnceLock
+cpp/game/board.h	Board	ZOBRIST_SIZE_X_HASH	static Hash128[MAX_LEN+1]	STATIC	[Hash128; (Board::MAX_LEN + 1) as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_SIZE_X_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_SIZE_Y_HASH	static Hash128[MAX_LEN+1]	STATIC	[Hash128; (Board::MAX_LEN + 1) as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_SIZE_Y_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_BOARD_HASH	static Hash128[MAX_ARR_SIZE][4]	STATIC	[[Hash128; 4]; Board::MAX_ARR_SIZE as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_BOARD_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_BOARD_HASH2	static Hash128[MAX_ARR_SIZE][4]	STATIC	[[Hash128; 4]; Board::MAX_ARR_SIZE as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_BOARD_HASH2; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_PLAYER_HASH	static Hash128[4]	STATIC	[Hash128; 4]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_PLAYER_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_KO_LOC_HASH	static Hash128[MAX_ARR_SIZE]	STATIC	[Hash128; Board::MAX_ARR_SIZE as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_KO_LOC_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_KO_MARK_HASH	static Hash128[MAX_ARR_SIZE][4]	STATIC	[[Hash128; 4]; Board::MAX_ARR_SIZE as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_KO_MARK_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_ENCORE_HASH	static Hash128[3]	STATIC	[Hash128; 3]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_ENCORE_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_SECOND_ENCORE_START_HASH	static Hash128[MAX_ARR_SIZE][4]	STATIC	[[Hash128; 4]; Board::MAX_ARR_SIZE as usize]	field of BoardStatics in static BOARD_STATICS: OnceLock<BoardStatics>; read via Board::statics().ZOBRIST_SECOND_ENCORE_START_HASH; filled by the ported Board::initHash body in the same RNG call order
+cpp/game/board.h	Board	ZOBRIST_PASS_ENDS_PHASE	static const Hash128	STATIC	Hash128	pub const on Board: Hash128::new(0x853E097C279EBF4E, 0xE3153DEF9E14A62C)
+cpp/game/board.h	Board	ZOBRIST_GAME_IS_OVER	static const Hash128	STATIC	Hash128	pub const on Board: Hash128::new(0xb6f9e465597a77ee, 0xf1d583d960a4ce7f)
+cpp/game/board.h	Board	calculateArea(result)	Color*	BORROWED	&mut [Color]	param; buffer of MAX_ARR_SIZE
+cpp/game/board.h	Board	calculateIndependentLifeArea(result)	Color*	BORROWED	&mut [Color]	param
+cpp/game/board.h	Board	calculateIndependentLifeArea(whiteMinusBlackIndependentLifeRegionCount)	int&	BORROWED	&mut i32	out-param
+cpp/game/board.h	Board	isNonPassAliveSelfConnection(passAliveArea)	const Color*	BORROWED	&[Color]	param
+cpp/game/board.h	Board	searchIsLadderCaptured(buf)	std::vector<Loc>&	BORROWED	&mut Vec<Loc>	param; method itself is &mut self (mutates chains during search)
+cpp/game/board.h	Board	searchIsLadderCapturedAttackerFirst2Libs(workingMoves)	std::vector<Loc>&	BORROWED	&mut Vec<Loc>	param
+cpp/game/board.h	Board	setStonesFailIfNoLibs(placements)	const std::vector<Move>&	BORROWED	&[Move]	param
+cpp/game/board.h	Board	printBoard(out)	std::ostream&	BORROWED	&mut dyn std::fmt::Write	param
+cpp/game/board.h	Board	printBoard(hist)	const std::vector<Move>*	NULLABLE_BORROWED	Option<&[Move]>	param
+cpp/game/board.h	Board	countEmptyHelper(emptyCounted)	bool*	BORROWED	&mut [bool]	param
+cpp/game/board.h	Location	getAdjacentOffsets(adj_offsets)	short[8]	BORROWED	&mut [i16; 8]	param
+cpp/game/boardhistory.h	BoardHistory	initialBoard	Board	OWNED	Board	Board derives Clone (not Copy); every C++ copy is an explicit .clone()
+cpp/game/boardhistory.h	BoardHistory	recentBoards	Board[NUM_RECENT_BOARDS]	OWNED	[Board; BoardHistory::NUM_RECENT_BOARDS as usize]	inline
+cpp/game/boardhistory.h	BoardHistory	wasEverOccupiedOrPlayed	bool[Board::MAX_ARR_SIZE]	OWNED	[bool; Board::MAX_ARR_SIZE as usize]	inline
+cpp/game/boardhistory.h	BoardHistory	superKoBanned	bool[Board::MAX_ARR_SIZE]	OWNED	[bool; Board::MAX_ARR_SIZE as usize]	inline
+cpp/game/boardhistory.h	BoardHistory	koRecapBlocked	bool[Board::MAX_ARR_SIZE]	OWNED	[bool; Board::MAX_ARR_SIZE as usize]	inline
+cpp/game/boardhistory.h	BoardHistory	secondEncoreStartColors	Color[Board::MAX_ARR_SIZE]	OWNED	[Color; Board::MAX_ARR_SIZE as usize]	inline
+cpp/game/boardhistory.h	BoardHistory	preventEncoreHistory	std::vector<bool>	OWNED	Vec<bool>	
+cpp/game/boardhistory.h	BoardHistory	koCapturesInEncore	std::vector<EncoreKoCapture>	OWNED	Vec<EncoreKoCapture>	EncoreKoCapture (STRUCT_NAMED_TRIPLE) is #[derive(Clone, Copy, Default)] with new()
+cpp/game/boardhistory.h	BoardHistory	makeBoardMoveAssumeLegal(rootKoHashTable)	const KoHashTable*	NULLABLE_BORROWED	Option<&KoHashTable>	param; Search passes Some(&self.root_ko_hash_table)
+cpp/game/boardhistory.h	BoardHistory	numberOfKoHashOccurrencesInHistory(rootKoHashTable)	const KoHashTable*	NULLABLE_BORROWED	Option<&KoHashTable>	param
+cpp/game/boardhistory.h	BoardHistory	koHashOccursInHistory(rootKoHashTable)	const KoHashTable*	NULLABLE_BORROWED	Option<&KoHashTable>	param
+cpp/game/boardhistory.h	BoardHistory	endAndScoreGameNow(area)	Color[Board::MAX_ARR_SIZE]	BORROWED	&mut [Color; Board::MAX_ARR_SIZE as usize]	param; same for getAreaNow, countAreaScoreWhiteMinusBlack, countTerritoryAreaScoreWhiteMinusBlack
+cpp/game/boardhistory.h	BoardHistory	getRecentBoard(return)	const Board&	BORROWED	&Board	return value borrows self
+cpp/game/boardhistory.h	BoardHistory	printBasicInfo(out)	std::ostream&	BORROWED	&mut dyn std::fmt::Write	param; same for printDebugInfo
+cpp/game/boardhistory.h	KoHashTable	idxTable	uint32_t*	OWNED	Box<[u32; KoHashTable::TABLE_SIZE as usize]>	new uint32_t[TABLE_SIZE] in ctor, delete[] in dtor; copy ctor deleted, so no Clone
+cpp/game/boardhistory.h	KoHashTable	koHashHistorySortedByLowBits	std::vector<Hash128>	OWNED	Vec<Hash128>	recompute() sorts with sort_unstable_by (ties are identical hashes)
+cpp/game/rules.h	Rules	ZOBRIST_KO_RULE_HASH	static const Hash128[4]	STATIC	[Hash128; 4]	pub const on Rules; literal values copied from rules.cpp
+cpp/game/rules.h	Rules	ZOBRIST_SCORING_RULE_HASH	static const Hash128[2]	STATIC	[Hash128; 2]	pub const on Rules; literal values copied from rules.cpp
+cpp/game/rules.h	Rules	ZOBRIST_TAX_RULE_HASH	static const Hash128[3]	STATIC	[Hash128; 3]	pub const on Rules; literal values copied from rules.cpp
+cpp/game/rules.h	Rules	ZOBRIST_MULTI_STONE_SUICIDE_HASH	static const Hash128	STATIC	Hash128	pub const on Rules; literal values copied from rules.cpp
+cpp/game/rules.h	Rules	ZOBRIST_BUTTON_HASH	static const Hash128	STATIC	Hash128	pub const on Rules; literal values copied from rules.cpp
+cpp/game/rules.h	Rules	ZOBRIST_FRIENDLY_PASS_OK_HASH	static const Hash128	STATIC	Hash128	pub const on Rules; literal values copied from rules.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_CONSERVATIVE_PASS	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_FRIENDLY_PASS	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_PASSING_HACKS	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_PLAYOUT_DOUBLINGS	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_NN_POLICY_TEMP	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_AVOID_MYTDAGGER_HACK	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_POLICY_OPTIMISM	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	MiscNNInputParams	ZOBRIST_ZERO_HISTORY	static const Hash128	STATIC	Hash128	pub const on MiscNNInputParams; literal from nninputs.cpp
+cpp/neuralnet/nninputs.h	NNOutput	policyProbs	float[NNPos::MAX_NN_POLICY_SIZE]	OWNED	[f32; NNPos::MAX_NN_POLICY_SIZE as usize]	inline
+cpp/neuralnet/nninputs.h	NNOutput	whiteOwnerMap	float*	OWNED	Option<Vec<f32>>	new float[nnXLen*nnYLen] or NULL; deep-copied by Clone (= copy ctor); freed by Drop
+cpp/neuralnet/nninputs.h	NNOutput	noisedPolicyProbs	float*	OWNED	Option<Box<[f32; NNPos::MAX_NN_POLICY_SIZE as usize]>>	new float[MAX_NN_POLICY_SIZE] or NULL; getPolicyProbsMaybeNoised returns &[f32; ..] of this or policy_probs
+cpp/neuralnet/nninputs.h	NNOutput	NNOutput(others)	const std::vector<std::shared_ptr<NNOutput>>&	BORROWED	&[Rc<NNOutput>]	ctor param -> NNOutput::new_others; NNOutput() -> new() zero-initializes (PORT NOTE: C++ leaves fields uninitialized)
+cpp/neuralnet/nninputs.h	NNInputs	fillRowV7(rowBin)	float*	BORROWED	&mut [f32]	param; same shape for fillRowV3..V6 if ever ported
+cpp/neuralnet/nninputs.h	NNInputs	fillRowV7(rowGlobal)	float*	BORROWED	&mut [f32]	param
+cpp/neuralnet/nninputs.h	NNInputs	fillScoring(area)	const Color*	BORROWED	&[Color]	param
+cpp/neuralnet/nninputs.h	NNInputs	fillScoring(scoring)	float*	BORROWED	&mut [f32]	param
+cpp/neuralnet/nninputs.h	SymmetryHelpers	copyInputsWithSymmetry(src)	const float*	BORROWED	&[f32]	param; dst is &mut [f32]; same for copyOutputsWithSymmetry
+cpp/neuralnet/nninputs.h	SymmetryHelpers	markDuplicateMoveLocs(onlySymmetries)	const std::vector<int>*	NULLABLE_BORROWED	Option<&[i32]>	param
+cpp/neuralnet/nninputs.h	SymmetryHelpers	markDuplicateMoveLocs(isSymDupLoc)	bool*	BORROWED	&mut [bool]	param; Search passes &mut self.root_sym_dup_loc
+cpp/neuralnet/nninputs.h	SymmetryHelpers	markDuplicateMoveLocs(validSymmetries)	std::vector<int>&	BORROWED	&mut Vec<i32>	out-param
+cpp/neuralnet/nninputs.h	SymmetryHelpers	getSymmetryDifferences(symmetryDifferences)	double[NUM_SYMMETRIES]	BORROWED	&mut [f64; SymmetryHelpers::NUM_SYMMETRIES as usize]	out-param
+cpp/neuralnet/nninputs.cpp	ScoreValue	expectedSVTable	static double*	STATIC	Vec<f64>	field of ScoreValueStatics in static SCORE_VALUE_STATICS: OnceLock<ScoreValueStatics>; built by the initTables body; PORT NOTE: initTables idempotent, freeTables no-op
+cpp/neuralnet/nninputs.cpp	ScoreValue	scoreValueTablesInitialized	static bool	STATIC	(removed)	OnceLock state replaces it
+cpp/neuralnet/nneval.h	NNCacheTable	entries	Entry*	OWNED	RefCell<Box<[Entry]>>	new Entry[tableSize]; get/set take &self (called during search)
+cpp/neuralnet/nneval.h	NNCacheTable::Entry	ptr	std::shared_ptr<NNOutput>	SHARED	Option<Rc<NNOutput>>	
+cpp/neuralnet/nneval.h	NNCacheTable	mutexPool	MutexPool*	OWNED	(removed)	PORT NOTE: lock removed; nothing derived from it
+cpp/neuralnet/nneval.h	NNCacheTable	mutexPoolMask	uint32_t	OWNED	(removed)	only selected a lock
+cpp/neuralnet/nneval.h	NNResultBuf	clientWaitingForResult	std::condition_variable	OWNED	WakerList	port::executor::WakerList; client: client_waiting_for_result.wait_until(|| buf.has_result.get()).await; server: set has_result then notify_all() (section 11)
+cpp/neuralnet/nneval.h	NNResultBuf	resultMutex	std::mutex	OWNED	(removed)	
+cpp/neuralnet/nneval.h	NNResultBuf	hasResult	bool	OWNED	Cell<bool>	every NNResultBuf field is Cell/RefCell because the buf is shared as Rc<NNResultBuf> with the eval queue
+cpp/neuralnet/nneval.h	NNResultBuf	includeOwnerMap	bool	OWNED	Cell<bool>	
+cpp/neuralnet/nneval.h	NNResultBuf	boardXSizeForServer	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNResultBuf	boardYSizeForServer	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNResultBuf	rowSpatialBuf	std::vector<float>	OWNED	RefCell<Vec<f32>>	borrow_mut only while filling (evaluate) or reading (backend getOutput); never across await
+cpp/neuralnet/nneval.h	NNResultBuf	rowGlobalBuf	std::vector<float>	OWNED	RefCell<Vec<f32>>	
+cpp/neuralnet/nneval.h	NNResultBuf	rowMetaBuf	std::vector<float>	OWNED	RefCell<Vec<f32>>	
+cpp/neuralnet/nneval.h	NNResultBuf	hasRowMeta	bool	OWNED	Cell<bool>	
+cpp/neuralnet/nneval.h	NNResultBuf	result	std::shared_ptr<NNOutput>	SHARED	RefCell<Option<Rc<NNOutput>>>	postprocessing in evaluate mutates the fresh, unique result via Rc::get_mut(..).expect("unique")
+cpp/neuralnet/nneval.h	NNResultBuf	errorLogLockout	bool	OWNED	Cell<bool>	
+cpp/neuralnet/nneval.h	NNResultBuf	symmetry	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNResultBuf	policyOptimism	double	OWNED	Cell<f64>	
+cpp/neuralnet/nneval.h	NNServerBuf	inputBuffers	InputBuffers*	OWNED	Option<Box<dyn InputBuffers>>	created by backend create_input_buffers, NULL when no model; owned by the server task
+cpp/neuralnet/nneval.h	NNEvaluator	computeContext	ComputeContext*	OWNED	Option<Box<dyn ComputeContext>>	NULL when debugSkipNeuralNet
+cpp/neuralnet/nneval.h	NNEvaluator	loadedModel	LoadedModel*	OWNED	Option<Box<dyn LoadedModel>>	NULL when debugSkipNeuralNet
+cpp/neuralnet/nneval.h	NNEvaluator	nnCacheTable	NNCacheTable*	OWNED	Option<Box<NNCacheTable>>	NULL when nnCacheSizePowerOfTwo < 0
+cpp/neuralnet/nneval.h	NNEvaluator	logger	Logger*	NULLABLE_BORROWED	(removed)	log crate (manifest); ctor param dropped (PORT NOTE)
+cpp/neuralnet/nneval.h	NNEvaluator	(new) spawner	-	SHARED	Rc<dyn Spawner>	PORT NOTE: port::executor::Spawner injected by the host (new ctor param); used by spawnServerThreads to spawn serve tasks
+cpp/neuralnet/nneval.h	NNEvaluator	(new) backend	-	SHARED	Rc<dyn NeuralNet>	PORT NOTE: trait in nninterface.rs standing in for the NeuralNet:: free functions (new ctor param); implemented by katago-nn-burn
+cpp/neuralnet/nneval.h	NNEvaluator	serverThreads	std::vector<std::thread*>	OWNED	(removed)	server threads become tasks spawned via spawner; killServerThreads sets is_killed + closes queryQueue and does not join (PORT NOTE)
+cpp/neuralnet/nneval.h	NNEvaluator	bufferMutex	mutable std::mutex	OWNED	(removed)	the counters it guarded become Cell
+cpp/neuralnet/nneval.h	NNEvaluator	isKilled	bool	OWNED	Cell<bool>	
+cpp/neuralnet/nneval.h	NNEvaluator	numServerThreadsStartingUp	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	mainThreadWaitingForSpawn	std::condition_variable	OWNED	WakerList	port::executor::WakerList; spawnServerThreads awaits it
+cpp/neuralnet/nneval.h	NNEvaluator	serverThreadsIsUsingFP16	std::vector<int>	OWNED	RefCell<Vec<i32>>	written by server tasks at startup
+cpp/neuralnet/nneval.h	NNEvaluator	numOngoingEvals	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	numWaitingEvals	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	numEvalsToAwaken	int	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	waitingForFinish	std::condition_variable	OWNED	WakerList	port::executor::WakerList; waitForNextNNEvalIfAny awaits it
+cpp/neuralnet/nneval.h	NNEvaluator	m_numRowsProcessed	std::atomic<uint64_t>	OWNED	Cell<u64>	
+cpp/neuralnet/nneval.h	NNEvaluator	m_numBatchesProcessed	std::atomic<uint64_t>	OWNED	Cell<u64>	
+cpp/neuralnet/nneval.h	NNEvaluator	currentDoRandomize	std::atomic<bool>	OWNED	Cell<bool>	
+cpp/neuralnet/nneval.h	NNEvaluator	currentDefaultSymmetry	std::atomic<int>	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	currentBatchSize	std::atomic<int>	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	queryQueue	ThreadSafeQueue<NNResultBuf*>	SHARED	AsyncQueue<Rc<NNResultBuf>>	port::executor::AsyncQueue; elements are the SearchThread-owned bufs, shared while an eval is pending
+cpp/neuralnet/nneval.h	NNEvaluator	evaluate(buf)	NNResultBuf&	SHARED	&Rc<NNResultBuf>	param; evaluate is async and pushes buf.clone() onto query_queue
+cpp/neuralnet/nneval.h	NNEvaluator	evaluate(sgfMeta)	const SGFMetadata*	NULLABLE_BORROWED	Option<&SGFMetadata>	param
+cpp/neuralnet/nneval.h	NNEvaluator	averageMultipleSymmetries(return)	std::shared_ptr<NNOutput>*	OWNED	Rc<NNOutput>	caller-owned heap shared_ptr becomes a plain Rc
+cpp/neuralnet/nneval.h	NNEvaluator	averageMultipleSymmetries(rand)	Rand&	BORROWED	&mut Rand	param
+cpp/neuralnet/nneval.h	NNEvaluator	serve(buf)	NNServerBuf&	OWNED	NNServerBuf	moved into the spawned serve task, together with its Rand and Box<dyn ComputeHandle>; serve takes self: Rc<Self>
+cpp/neuralnet/nneval.h	NNEvaluator	serve local outputBuf	std::vector<NNOutput*>	OWNED	Vec<NNOutput>	each element moved into Rc::new(..) when delivered to its NNResultBuf
+cpp/neuralnet/nninterface.h	NeuralNet	loadModelFile(return)	LoadedModel*	OWNED	Box<dyn LoadedModel>	TODO(port): human decision: core has no file IO, so the backend loads from bytes (plan §5)
+cpp/neuralnet/nninterface.h	NeuralNet	createComputeContext(return)	ComputeContext*	OWNED	Box<dyn ComputeContext>	freeComputeContext becomes Drop
+cpp/neuralnet/nninterface.h	NeuralNet	createComputeHandle(return)	ComputeHandle*	OWNED	Box<dyn ComputeHandle>	owned by the serve task; freeComputeHandle becomes Drop
+cpp/neuralnet/nninterface.h	NeuralNet	createInputBuffers(return)	InputBuffers*	OWNED	Box<dyn InputBuffers>	freeInputBuffers becomes Drop
+cpp/neuralnet/nninterface.h	NeuralNet	getModelDesc(return)	const ModelDesc&	BORROWED	&ModelDesc	
+cpp/neuralnet/nninterface.h	NeuralNet	getOutput(computeHandle)	ComputeHandle*	BORROWED	&mut dyn ComputeHandle	param; getOutput is async
+cpp/neuralnet/nninterface.h	NeuralNet	getOutput(buffers)	InputBuffers*	BORROWED	&mut dyn InputBuffers	param
+cpp/neuralnet/nninterface.h	NeuralNet	getOutput(inputBufs)	NNResultBuf**	BORROWED	&[Rc<NNResultBuf>]	param
+cpp/neuralnet/nninterface.h	NeuralNet	getOutput(outputs)	std::vector<NNOutput*>&	BORROWED	&mut [NNOutput]	param; the caller pre-builds each NNOutput (nn_x_len, white_owner_map) as upstream does
+cpp/neuralnet/sgfmetadata.h	SGFMetadata	fillMetadataRow(sgfMeta)	const SGFMetadata*	NULLABLE_BORROWED	Option<&SGFMetadata>	param; rowMetadata float* -> &mut [f32]
+cpp/search/searchparams.h	SearchParams	humanSLProfile	SGFMetadata	OWNED	SGFMetadata	passed as &searchParams.humanSLProfile -> Some(&self.search_params.human_sl_profile)
+cpp/search/searchnode.h	NodeStatsAtomic	visits	std::atomic<int64_t>	OWNED	Cell<i64>	keep memory orders as comments
+cpp/search/searchnode.h	NodeStatsAtomic	winLossValueAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	noResultValueAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	scoreMeanAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	scoreMeanSqAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	leadAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	utilityAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	utilitySqAvg	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	weightSum	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	NodeStatsAtomic	weightSqSum	std::atomic<double>	OWNED	Cell<f64>	
+cpp/search/searchnode.h	SearchChildPointer	data	std::atomic<SearchNode*>	ARENA	Cell<Option<NodeIdx>>	get_if_allocated() -> Option<NodeIdx>; store(node.idx); store_if_null uses port::cpp::cell_cas
+cpp/search/searchnode.h	SearchChildPointer	edgeVisits	std::atomic<int64_t>	OWNED	Cell<i64>	compexweakEdgeVisits -> port::cpp::cell_cas
+cpp/search/searchnode.h	SearchChildPointer	moveLoc	std::atomic<Loc>	OWNED	Cell<Loc>	
+cpp/search/searchnode.h	SearchNodeChildrenReference	node	SearchNode*	BORROWED	&'a SearchNode	short-lived view; operator[] -> fn index(&self, i: i32) -> &'a SearchChildPointer
+cpp/search/searchnode.h	ConstSearchNodeChildrenReference	node	const SearchNode*	BORROWED	&'a SearchNode	PORT NOTE: pub type ConstSearchNodeChildrenReference<'a> = SearchNodeChildrenReference<'a>; its unused capacity field is dropped
+cpp/search/searchnode.h	SearchNode	(new) idx	-	ARENA	NodeIdx	PORT NOTE: first field, set by NodeArena::alloc; SearchNode::new takes it as first param; node identity (== rootNode, graphPath) uses it
+cpp/search/searchnode.h	SearchNode	statsLock	mutable std::atomic_flag	OWNED	(removed)	PORT NOTE: spin lock removed, body kept
+cpp/search/searchnode.h	SearchNode	nextPla	const Player	OWNED	Player	
+cpp/search/searchnode.h	SearchNode	forceNonTerminal	const bool	OWNED	bool	
+cpp/search/searchnode.h	SearchNode	patternBonusHash	Hash128	OWNED	Cell<Hash128>	written after construction (allocateOrFindNode, beginSearch)
+cpp/search/searchnode.h	SearchNode	mutexIdx	const uint32_t	OWNED	u32	still computed by createMutexIdxForNode, which consumes thread RNG
+cpp/search/searchnode.h	SearchNode	state	std::atomic<SearchNodeState>	OWNED	Cell<SearchNodeState>	compare_exchange_strong -> port::cpp::cell_cas
+cpp/search/searchnode.h	SearchNode	nnOutput	std::atomic<std::shared_ptr<NNOutput>*>	SHARED	RefCell<Option<Rc<NNOutput>>>	getNNOutput() -> Option<Rc<NNOutput>> (clone); storeNNOutput: replace() and push the old Rc onto thread.old_nn_outputs_to_clean_up; storeNNOutputIfNull: set only if None
+cpp/search/searchnode.h	SearchNode	humanOutput	std::atomic<std::shared_ptr<NNOutput>*>	SHARED	RefCell<Option<Rc<NNOutput>>>	same as nnOutput
+cpp/search/searchnode.h	SearchNode	nodeAge	std::atomic<uint32_t>	OWNED	Cell<u32>	
+cpp/search/searchnode.h	SearchNode	children0	SearchChildPointer*	OWNED	OnceCell<Box<[SearchChildPointer]>>	len SearchChildrenSizes::SIZE0OVERFLOW; set by initializeChildren; the child NODES are ARENA and are not freed with the array
+cpp/search/searchnode.h	SearchNode	children1	SearchChildPointer*	OWNED	OnceCell<Box<[SearchChildPointer]>>	len SIZE1OVERFLOW; set by tryExpandingChildrenCapacityAssumeFull; taken by collapseChildrenCapacity via NodeArena::with_mut (outside search only)
+cpp/search/searchnode.h	SearchNode	children2	SearchChildPointer*	OWNED	OnceCell<Box<[SearchChildPointer]>>	len SIZE2OVERFLOW; as children1
+cpp/search/searchnode.h	SearchNode	stats	NodeStatsAtomic	OWNED	NodeStatsAtomic	inline; NodeStatsAtomic(const&) -> new_copy
+cpp/search/searchnode.h	SearchNode	virtualLosses	std::atomic<int32_t>	OWNED	Cell<i32>	fetch_add -> port::cpp::cell_fetch_add
+cpp/search/searchnode.h	SearchNode	lastSubtreeValueBiasDeltaSum	double	OWNED	Cell<f64>	guarded by SubtreeValueBiasEntry::entryLock upstream
+cpp/search/searchnode.h	SearchNode	lastSubtreeValueBiasWeight	double	OWNED	Cell<f64>	guarded by entryLock upstream
+cpp/search/searchnode.h	SearchNode	subtreeValueBiasTableEntry	std::shared_ptr<SubtreeValueBiasEntry>	SHARED	RefCell<Option<Rc<SubtreeValueBiasEntry>>>	set in allocateOrFindNode, cleared by removeSubtreeValueBias; strong_count matters (clearUnusedSynchronous)
+cpp/search/searchnode.h	SearchNode	graphHash	Hash128	OWNED	Hash128	constant after construction
+cpp/search/searchnode.h	SearchNode	evalCacheEntry	std::shared_ptr<EvalCacheEntry>	SHARED	RefCell<Option<Rc<EvalCacheEntry>>>	evalcache deferred: EvalCacheEntry is an uninhabited placeholder enum until ported, so always None; TODO(port): deferred (evalcache.cpp)
+cpp/search/searchnode.h	SearchNode	dirtyCounter	std::atomic<int32_t>	OWNED	Cell<i32>	
+cpp/search/searchnode.h	SearchNode	storeNNOutput(newNNOutput)	std::shared_ptr<NNOutput>*	OWNED	Rc<NNOutput>	param, ownership transferred; same for storeHumanOutput / *IfNull
+cpp/search/searchnode.h	SearchNode	storeNNOutput(thread)	SearchThread&	BORROWED	&mut SearchThread	param
+cpp/search/searchnode.h	SearchNode	maybeExpandChildrenCapacityForNewChild(stateValue)	SearchNodeState&	BORROWED	&mut SearchNodeState	in/out param
+cpp/search/searchnodetable.h	SearchNodeTable	entries	std::vector<std::map<Hash128,SearchNode*>>	ARENA	RefCell<Vec<BTreeMap<Hash128, NodeIdx>>>	the arena owns the nodes; upstream `delete node` -> search.node_arena.free(idx) + map erase
+cpp/search/searchnodetable.h	SearchNodeTable	mutexPool	MutexPool*	OWNED	u32	PORT NOTE: renamed mutex_pool_num_mutexes (= numShards); Search's ctor reads it as nodeTable->mutexPool->getNumMutexes()
+cpp/search/search.h	SearchThread	board	Board	OWNED	Board	
+cpp/search/search.h	SearchThread	history	BoardHistory	OWNED	BoardHistory	
+cpp/search/search.h	SearchThread	graphPath	std::unordered_set<SearchNode*>	ARENA	HashSet<NodeIdx>	membership only, never iterated
+cpp/search/search.h	SearchThread	rand	Rand	OWNED	Rand	Rand is not Clone (copy ctor deleted)
+cpp/search/search.h	SearchThread	nnResultBuf	NNResultBuf	SHARED	Rc<NNResultBuf>	PORT NOTE: inline upstream; Rc so the NN query queue can hold it while this virtual thread awaits
+cpp/search/search.h	SearchThread	statsBuf	std::vector<MoreNodeStats>	OWNED	Vec<MoreNodeStats>	
+cpp/search/search.h	SearchThread	oldNNOutputsToCleanUp	std::vector<std::shared_ptr<NNOutput>*>	OWNED	Vec<Rc<NNOutput>>	kept so old outputs live as long as upstream's
+cpp/search/search.h	SearchThread	illegalMoveHashes	std::set<Hash128>	OWNED	BTreeSet<Hash128>	
+cpp/search/search.h	SearchThread	SearchThread(search)	const Search&	BORROWED	&Search	ctor param
+cpp/search/search.h	Search	rootSymDupLoc	bool[Board::MAX_ARR_SIZE]	OWNED	[bool; Board::MAX_ARR_SIZE as usize]	inline
+cpp/search/search.h	Search	rootSafeArea	Color*	OWNED	Box<[Color; Board::MAX_ARR_SIZE as usize]>	new Color[MAX_ARR_SIZE] in ctor, delete[] in dtor
+cpp/search/search.h	Search	rootKoHashTable	KoHashTable*	OWNED	Box<KoHashTable>	new in ctor, never NULL
+cpp/search/search.h	Search	valueWeightDistribution	DistributionTable*	OWNED	Box<DistributionTable>	new in ctor, never NULL
+cpp/search/search.h	Search	patternBonusTable	PatternBonusTable*	OWNED	Option<Box<PatternBonusTable>>	patternbonustable deferred: placeholder uninhabited type, so always None; TODO(port): deferred (patternbonustable.cpp)
+cpp/search/search.h	Search	externalPatternBonusTable	std::unique_ptr<PatternBonusTable>	OWNED	Option<Box<PatternBonusTable>>	deferred, as patternBonusTable
+cpp/search/search.h	Search	evalCache	std::shared_ptr<EvalCacheTable>	SHARED	Option<Rc<EvalCacheTable>>	shared across bots (analysis.cpp); deferred, so always None; TODO(port): deferred (evalcache.cpp)
+cpp/search/search.h	Search	nonSearchRand	Rand	OWNED	Rand	
+cpp/search/search.h	Search	logger	Logger*	BORROWED	(removed)	log crate; ctor param dropped (PORT NOTE)
+cpp/search/search.h	Search	nnEvaluator	NNEvaluator*	BORROWED	Rc<NNEvaluator>	owned by the host (setup/analysis), outlives Search; setNNEval replaces it
+cpp/search/search.h	Search	humanEvaluator	NNEvaluator*	NULLABLE_BORROWED	Option<Rc<NNEvaluator>>	
+cpp/search/search.h	Search	rootNode	SearchNode*	ARENA	Option<NodeIdx>	allocated directly (not in nodeTable); `delete rootNode` -> self.node_arena.free(idx)
+cpp/search/search.h	Search	(new) nodeArena	-	OWNED	NodeArena	PORT NOTE: port::node_arena::NodeArena owns every SearchNode (root and table nodes)
+cpp/search/search.h	Search	nodeTable	SearchNodeTable*	OWNED	Box<SearchNodeTable>	new in ctor, never NULL
+cpp/search/search.h	Search	mutexPool	MutexPool*	OWNED	u32	PORT NOTE: renamed mutex_pool_num_mutexes; createMutexIdxForNode = thread.rand.next_uint() & (self.mutex_pool_num_mutexes - 1)
+cpp/search/search.h	Search	subtreeValueBiasTable	SubtreeValueBiasTable*	OWNED	Option<Box<SubtreeValueBiasTable>>	created/deleted in beginSearch and computeRootValues (outside the playout loop)
+cpp/search/search.h	Search	numThreadsSpawned	int	OWNED	(removed)	no task threads (section 11)
+cpp/search/search.h	Search	threads	std::thread*	OWNED	(removed)	
+cpp/search/search.h	Search	threadTasks	ThreadSafeQueue<std::function<void(int)>*>*	OWNED	(removed)	
+cpp/search/search.h	Search	threadTasksRemaining	ThreadSafeCounter*	OWNED	(removed)	
+cpp/search/search.h	Search	oldNNOutputsToCleanUpMutex	std::mutex	OWNED	(removed)	
+cpp/search/search.h	Search	oldNNOutputsToCleanUp	std::vector<std::shared_ptr<NNOutput>*>	OWNED	RefCell<Vec<Rc<NNOutput>>>	transferOldNNOutputs runs at the end of each virtual thread, i.e. during search through &self
+cpp/search/search.h	Search	Search(nnEval)	NNEvaluator*	BORROWED	Rc<NNEvaluator>	ctor param; humanEval -> Option<Rc<NNEvaluator>>
+cpp/search/search.h	Search	runWholeSearch(searchBegun)	const std::function<void()>*	NULLABLE_BORROWED	Option<&dyn Fn()>	param
+cpp/search/search.h	Search	runWholeSearch(shouldStopEarly)	std::function<bool()>*	NULLABLE_BORROWED	Option<&dyn Fn() -> bool>	param; called by every virtual thread, so captured state lives in Cell
+cpp/search/search.h	Search	getRootNode(return)	const SearchNode*	ARENA	Option<Rc<SearchNode>>	same for getChildForMove
+cpp/search/search.h	Search	allocateOrFindNode(return)	SearchNode*	ARENA	Rc<SearchNode>	store into a child pointer with .idx
+cpp/search/search.h	Search	enumerateTreePostOrder(return)	std::vector<SearchNode*>	ARENA	Vec<NodeIdx>	
+cpp/search/search.h	Search	applyRecursivelyPostOrderMulithreaded(nodes)	const std::vector<SearchNode*>&	ARENA	&[NodeIdx]	param; same for applyRecursivelyAnyOrderMulithreaded
+cpp/search/search.h	Search	applyRecursivelyPostOrderMulithreaded(f)	std::function<void(SearchNode*,int)>*	NULLABLE_BORROWED	Option<&mut dyn FnMut(&SearchNode, i32)>	param; NULL = mark only
+cpp/search/search.h	Search	applyRecursivelyPostOrderMulithreadedHelper(rand)	PCG32*	BORROWED	&mut PCG32	param; same for the AnyOrder helper
+cpp/search/search.h	Search	applyRecursivelyPostOrderMulithreadedHelper(nodeBuf)	std::unordered_set<SearchNode*>&	ARENA	&mut HashSet<NodeIdx>	param
+cpp/search/search.h	Search	getSharpScoreHelper(graphPath)	std::unordered_set<const SearchNode*>&	ARENA	&mut HashSet<NodeIdx>	param; same for traverseTreeForOwnership* and getShallowAverageShorttermWLAndScoreErrorHelper
+cpp/search/search.h	Search	traverseTreeForOwnership(averaging)	Func&	BORROWED	&mut F (F: FnMut)	template param
+cpp/search/search.h	Search	performTaskWithThreads(task)	std::function<void(int)>*	BORROWED	&mut dyn FnMut(i32)	param; non-search tasks only (search loop uses join_all)
+cpp/search/search.h	Search	maybeAddPolicyNoiseAndTemp(return)	std::shared_ptr<NNOutput>*	OWNED	Option<Rc<NNOutput>>	NULL when no noise or temperature was applied
+cpp/search/search.h	Search	getPlaySelectionValues(retVisitCounts)	std::vector<double>*	NULLABLE_BORROWED	Option<&mut Vec<f64>>	param
+cpp/search/search.h	Search	getPlaySelectionValues(lcbBuf)	double[NNPos::MAX_NN_POLICY_SIZE]	BORROWED	&mut [f64; NNPos::MAX_NN_POLICY_SIZE as usize]	param; same for radiusBuf
+cpp/search/search.h	Search	getPolicy(policyProbs)	float[NNPos::MAX_NN_POLICY_SIZE]	BORROWED	&mut [f32; NNPos::MAX_NN_POLICY_SIZE as usize]	param
+cpp/search/search.h	Search	getAnalysisJson(ret)	nlohmann::json&	BORROWED	&mut serde_json::Value	param; serialize with port::nlohmann::dump
+cpp/search/analysisdata.h	AnalysisData	node	const SearchNode*	NULLABLE_BORROWED	Option<NodeIdx>	"ONLY valid so long as search is not cleared"; resolve with search.node_arena.get(idx)
+cpp/search/analysisdata.h	AnalysisData	pv	std::vector<Loc>	OWNED	Vec<Loc>	
+cpp/search/analysisdata.h	AnalysisData	pvVisits	std::vector<int64_t>	OWNED	Vec<i64>	
+cpp/search/analysisdata.h	AnalysisData	pvEdgeVisits	std::vector<int64_t>	OWNED	Vec<i64>	
+cpp/search/analysisdata.h	AnalysisData	writePV(out)	std::ostream&	BORROWED	&mut dyn std::fmt::Write	param; same for the other write* methods
+cpp/search/reportedsearchvalues.h	ReportedSearchValues	ReportedSearchValues(search)	const Search&	BORROWED	&Search	ctor param (new_search_...)
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasEntry	deltaUtilitySum	double	OWNED	Cell<f64>	guarded by entryLock upstream; the entry is shared via Rc
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasEntry	weightSum	double	OWNED	Cell<f64>	guarded by entryLock upstream
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasEntry	entryLock	mutable std::atomic_flag	OWNED	(removed)	PORT NOTE: spin lock removed
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasTable	entries	std::vector<std::map<Hash128,std::shared_ptr<SubtreeValueBiasEntry>>>	SHARED	RefCell<Vec<BTreeMap<Hash128, Rc<SubtreeValueBiasEntry>>>>	get() inserts with entry().or_insert_with(|| Rc::new(..)) (net effect of operator[] + null check); clearUnusedSynchronous: use_count() <= 1 -> Rc::strong_count(v) <= 1
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasTable	mutexPool	MutexPool*	OWNED	(removed)	PORT NOTE: shard index still computed by hash0 % entries.len()
+cpp/search/subtreevaluebiastable.h	SubtreeValueBiasTable	get(return)	std::shared_ptr<SubtreeValueBiasEntry>	SHARED	Rc<SubtreeValueBiasEntry>	
+cpp/search/subtreevaluebiastable.cpp	(file static)	patternHasher	static LocalPatternHasher	STATIC	LocalPatternHasher	field of SubtreeValueBiasTableStatics in static SUBTREEVALUEBIASTABLE_STATICS: OnceLock<SubtreeValueBiasTableStatics>; initIfNeeded() -> &'static SubtreeValueBiasTableStatics
+cpp/search/subtreevaluebiastable.cpp	(file static)	ZOBRIST_MOVE_LOCS	static Hash128[Board::MAX_ARR_SIZE][2]	STATIC	[[Hash128; 2]; Board::MAX_ARR_SIZE as usize]	field of SubtreeValueBiasTableStatics; same RNG seeds and call order
+cpp/search/subtreevaluebiastable.cpp	(file static)	ZOBRIST_KO_BAN	static Hash128[Board::MAX_ARR_SIZE]	STATIC	[Hash128; Board::MAX_ARR_SIZE as usize]	field of SubtreeValueBiasTableStatics
+cpp/search/subtreevaluebiastable.cpp	(file static)	isInited / initMutex	static std::atomic<bool> / static std::mutex	STATIC	(removed)	OnceLock state replaces both
+cpp/search/evalcache.h	EvalCacheEntry	firstExploreEvals	std::map<Loc,FirstExploreEval>	OWNED	BTreeMap<Loc, FirstExploreEval>	deferred module (manifest [[ignored]] deferred); type used once ported
+cpp/search/evalcache.h	EvalCacheTable	entries	std::vector<std::map<Hash128,std::shared_ptr<EvalCacheEntry>>>	SHARED	RefCell<Vec<BTreeMap<Hash128, Option<Rc<EvalCacheEntry>>>>>	deferred; Option because update() reads via operator[], which inserts a null
+cpp/search/evalcache.h	EvalCacheTable	mutexPool	MutexPool*	OWNED	(removed)	deferred
+cpp/search/evalcache.h	EvalCacheTable	update(node)	const SearchNode*	BORROWED	&SearchNode	deferred; PORT NOTE: gains a nodes: &NodeArena param to dereference children
+cpp/search/evalcache.h	EvalCacheTable	find(return)	std::shared_ptr<EvalCacheEntry>	SHARED	Option<Rc<EvalCacheEntry>>	deferred
+cpp/search/patternbonustable.h	PatternBonusTable	entries	std::vector<std::map<Hash128,PatternBonusEntry>>	OWNED	Vec<BTreeMap<Hash128, PatternBonusEntry>>	deferred; read-only during search
+cpp/search/patternbonustable.h	PatternBonusTable	addBonus(hashesThisGame)	std::set<Hash128>&	BORROWED	&mut BTreeSet<Hash128>	deferred; param
+cpp/search/patternbonustable.cpp	(file static)	patternHasher / ZOBRIST_MOVE_LOCS	static LocalPatternHasher / static Hash128[Board::MAX_ARR_SIZE]	STATIC	PatternBonusTableStatics { patternHasher: LocalPatternHasher, ZOBRIST_MOVE_LOCS: [Hash128; Board::MAX_ARR_SIZE as usize] }	deferred; static PATTERNBONUSTABLE_STATICS: OnceLock<PatternBonusTableStatics>
+cpp/search/distributiontable.h	DistributionTable	pdfTable	double*	OWNED	Box<[f64]>	new double[size] in ctor, delete[] in dtor
+cpp/search/distributiontable.h	DistributionTable	cdfTable	double*	OWNED	Box<[f64]>	new double[size] in ctor, delete[] in dtor
+cpp/search/distributiontable.h	DistributionTable	DistributionTable(pdf)	const std::function<double(double)>&	BORROWED	&dyn Fn(f64) -> f64	ctor param; same for cdf
+cpp/search/mutexpool.h	MutexPool	mutexes	std::mutex*	OWNED	(removed)	class not ported (manifest: replaced); holders keep only the count where it feeds a computation (SearchNodeTable, Search)
+cpp/search/asyncbot.h	AsyncBot	search	Search*	OWNED	Box<Search>	new in ctor, delete in dtor
+cpp/search/asyncbot.h	AsyncBot	controlMutex	std::mutex	OWNED	(removed)	no bot thread: an async driver over Search (manifest)
+cpp/search/asyncbot.h	AsyncBot	threadWaitingToSearch	std::condition_variable	OWNED	(removed)	
+cpp/search/asyncbot.h	AsyncBot	userWaitingForStop	std::condition_variable	OWNED	(removed)	the caller awaits the search future
+cpp/search/asyncbot.h	AsyncBot	searchThread	std::thread	OWNED	(removed)	
+cpp/search/asyncbot.h	AsyncBot	shouldStopNow	std::atomic<bool>	SHARED	Rc<Cell<bool>>	set by stopWithoutWait from the host (terminate) while the search future runs; read by the shouldStopEarly closure
+cpp/search/asyncbot.h	AsyncBot	queuedOnMove	std::function<void(Loc,int,Search*)>	OWNED	Option<Box<dyn FnMut(Loc, i32, &mut Search)>>	genMove path not ported (manifest)
+cpp/search/asyncbot.h	AsyncBot	analyzeCallback	std::function<void(const Search*)>	OWNED	Option<Box<dyn Fn(&Search)>>	
+cpp/search/asyncbot.h	AsyncBot	searchBegunCallback	std::function<void()>	OWNED	Option<Box<dyn Fn()>>	
+cpp/search/asyncbot.h	AsyncBot	AsyncBot(nnEval)	NNEvaluator*	BORROWED	Rc<NNEvaluator>	ctor param; humanEval -> Option<Rc<NNEvaluator>>; Logger* param dropped
+cpp/search/asyncbot.h	AsyncBot	getSearch(return)	const Search*	BORROWED	&Search	
+cpp/command/analysis.cpp	AnalyzeRequest	status	std::atomic<int>	SHARED	Cell<i32>	the request is shared between the request handler and the search driver as Rc<AnalyzeRequest>
+cpp/command/analysis.cpp	(local)	openRequests	std::map<int64_t,AnalyzeRequest*>	SHARED	BTreeMap<i64, Rc<AnalyzeRequest>>	request loop not ported (manifest); for katago-wasm / katago-cli drivers

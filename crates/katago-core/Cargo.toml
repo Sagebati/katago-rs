@@ -1,0 +1,26 @@
+[package]
+name = "katago-core"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "File-by-file port of KataGo's cpp/ (upstream v1.16.5). No burn dependency; wasm-safe."
+
+[dependencies]
+log = "0.4"
+md-5 = "0.10"
+sha2 = "0.10"
+# No `preserve_order`: serde_json's Map must be a BTreeMap so keys sort like nlohmann's std::map (PORTING.md §9).
+# `float_roundtrip`: correctly rounded float parsing wherever serde_json parses (`just check-features`).
+serde_json = { version = "1", features = ["float_roundtrip"] }
+getrandom = "0.4"
+
+# Unseeded Rand::init() entropy needs the browser's crypto.getRandomValues on wasm32-unknown-unknown.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+
+# `just test-wasm`: the oracle tests also run on wasm32-unknown-unknown under node
+# (wasm-bindgen-test-runner 0.2.129). Versions must match the installed runner.
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-test = "=0.3.79"

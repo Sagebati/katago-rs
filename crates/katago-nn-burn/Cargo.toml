@@ -1,0 +1,27 @@
+[package]
+name = "katago-nn-burn"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["flex", "net-b10c128"]
+net-b10c128 = []
+net-b18c384nbt = []
+# CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
+flex = ["burn/flex", "dep:burn-flex"]
+# GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser.
+wgpu = ["burn/wgpu", "burn/autotune"]
+# Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
+vulkan = ["wgpu", "burn/vulkan"]
+fusion = ["burn/fusion"]
+
+[dependencies]
+burn = { workspace = true, features = ["std"] }
+burn-store.workspace = true
+# burn enables flex without its SIMD kernels (macerator, gemm's wasm simd128).
+burn-flex = { version = "0.22.1", default-features = false, features = ["std", "simd"], optional = true }
+
+[build-dependencies]
+burn-onnx.workspace = true
