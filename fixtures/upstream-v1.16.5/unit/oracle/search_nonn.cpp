@@ -35,7 +35,9 @@
 //   R:<pla>   B                runWholeSearch(pla) (prints lastSearchNumPlayouts) / beginSearch(false) only
 //   RS                         root summary: root visits, every root child in children-array order, getRootValues,
 //                              getPrunedRootValues, getRootRawNNValues, policy surprise/entropy, sharp score,
-//                              shallow short-term errors, node table size, enumerateTreePostOrder().size()
+//                              shallow short-term errors, node table size, enumerateTreePostOrder().size(), and
+//                              "ntkeys": count + FNV-1a 64 of the node table's keys in table order (shard by shard, each
+//                              shard's map in Hash128 order; "<shard> <hash1> <hash0>" lines), also at the end of HS
 //   PT:<depth>:<persp>:<flags> printTree (flags bits: 1 printSqs, 2 printAvgShorttermError, 4 minVisitsPropToExpand(0.1),
 //                              8 maxChildrenToShow(5))
 //   PV:<depth>                 printPV(root)
@@ -52,16 +54,24 @@
 //   M:<loc>:<pla>:<prevent>    makeMove(loc, pla, preventEncore)
 //   SPN:<k=v,...>  SP:<k=v,...>  setParamsNoClearing / setParams with the current params + overrides
 //   CL  KOMI:<f32 bits>  PIN:<pla>  PCH:<pla>   clearSearch, setKomiIfNew, setPlayerIfNew, setPlayerAndClearHistory
+//   XO                         the root's nnOutput replaced by a copy whose whiteOwnerMap is scaled by 6 and clamped to
+//                              [-0.999, 0.999] (float math); prints the number of entries beyond +-0.95 ("noxo" if none)
+//   ECT:<f64 bits|->           sets effectiveSearchTimeCarriedOver (unless "-") and prints it. After a search it holds
+//                              real elapsed time upstream, so the generators set it before every print they compare
 // A thrown exception prints "EXC" and ends the case (the message goes to stderr only). Inputs that trip an upstream
 // testAssert (a fatal exit, not an exception) are avoided by the generators: a root player other than the history's
 // presumed next one (nneval.cpp), getChosenMoveLoc after beginSearch alone, chosenMoveTemperatureOnlyBelowProb.
-// Cases (341), by the generator named in "kind": random (85: random legal games, 5..13 odd/even/non-square, every named
+// Cases (341 + 41), by the generator named in "kind": random (85: random legal games, 5..13 odd/even/non-square, every named
 // ruleset plus random ko/suicide/whb/friendlyPassOk, out-of-turn moves), endgame (28: games ended by pass pairs: encore
 // phases 1/2 and finished games), ko (27: hand-built kos, plain and in encore phases), passy (6: rootPruneUselessMoves
 // applies), sym (15: empty boards / center stone with root symmetry pruning), big/big19 (10: 11..13 and 19 wide boards
 // with captures), lowvisits (18: 1 and 2 visits, beginSearch only), avoid (18: avoided root moves, up to all moves
 // and pass), stress (130: compact HS reports, up to 3 follow-up searches: makeMove/tree reuse, setParams*, clearSearch,
 // setPlayerAndClearHistory, setKomiIfNew), wide (4: 900..1500 visits, nodes with more than 64 children).
+// Appended later (M3 wave-2a fixes; cases 0..340 kept their inputs and outputs, plus the ntkeys lines): widereuse (3:
+// makeMove into a child with more than 64 children), ownext (24: XO, ending score bonus / pass suppression / noise
+// pruning cap), collapse (6: root children filtered by rootSymmetryPruning in a reused tree, then regrown), timecarry
+// (8: ECT around makeMove with treeReuseCarryOverTimeFactor). 382 cases in all.
 // For exploration only (not the fixture): ORACLE_SEED=<str> ORACLE_STRESS_ONLY=<n> prints n stress cases for another
 // seed; the Rust test replays such a file when SEARCH_ORACLE_FILE names it; ORACLE_TRACE=1 echoes the ops to stderr.
 // The search's Logger writes into the same buffer (": <message>" lines, as testsearchnonn's does).
@@ -161,6 +171,7 @@ static bool setParam(SearchParams& p, const string& k, const string& v) {
   D(playoutDoublingAdvantage) Bo(ignorePreRootHistory)
   D(subtreeValueBiasFactor) D(subtreeValueBiasFreeProp) D(subtreeValueBiasWeightExponent)
   I(nodeTableShardsPowerOfTwo) L(maxVisits) L(maxPlayouts) D(futileVisitsThreshold) D(searchFactorAfterOnePass) D(searchFactorAfterTwoPass)
+  D(treeReuseCarryOverTimeFactor)
 #undef D
 #undef I
 #undef L
@@ -277,6 +288,23 @@ static void printLong(const string& s) {
   if(s.size() <= 1500) { O << s << "\n"; return; }
   O << s.substr(0, 800) << "\n";
   pf("...[len=%d fnv=%016llX]\n", (int)s.size(), (unsigned long long)fnv64(s));
+}
+
+// The node table's keys in table order (shard by shard, each shard's std::map in Hash128 order), one
+// "<shard> <hash1> <hash0>" line each, as a count and FNV-1a 64: checks the child hashes (Hash128(rand,rand)
+// argument order in tree search, the graph hash otherwise) and the shard each node went to.
+static void printNodeTableKeys(const Search* search) {
+  string text;
+  size_t n = 0;
+  for(size_t i = 0; i < search->nodeTable->entries.size(); i++) {
+    for(const auto& kv : search->nodeTable->entries[i]) {
+      char line[64];
+      snprintf(line, sizeof line, "%d %016llX %016llX\n", (int)i, (unsigned long long)kv.first.hash1, (unsigned long long)kv.first.hash0);
+      text += line;
+      n++;
+    }
+  }
+  pf("ntkeys n=%d fnv=%016llX\n", (int)n, (unsigned long long)fnv64(text));
 }
 
 static Player parsePersp(const string& s) {
@@ -425,6 +453,35 @@ struct Runner {
       if(name == "SPN") search->setParamsNoClearing(np);
       else search->setParams(np);
     }
+    else if(name == "XO") {
+      // The root's nnOutput becomes a copy whose whiteOwnerMap is scaled by 6 and clamped to [-0.999, 0.999] (float
+      // math), so getEndingWhiteScoreBonus / shouldSuppressPass see owned spots beyond +-0.95. The old output is
+      // leaked (storeNNOutput would park it in a SearchThread until the search ends).
+      SearchNode* root = search->rootNode;
+      NNOutput* old = root == NULL ? NULL : root->getNNOutput();
+      if(old == NULL || old->whiteOwnerMap == NULL) { pf("noxo\n"); return; }
+      NNOutput* copy = new NNOutput(*old);
+      int n = copy->nnXLen * copy->nnYLen;
+      int numExtreme = 0;
+      for(int i = 0; i < n; i++) {
+        float v = copy->whiteOwnerMap[i] * 6.0f;
+        if(v > 0.999f) v = 0.999f;
+        if(v < -0.999f) v = -0.999f;
+        copy->whiteOwnerMap[i] = v;
+        if(v >= 0.95f || v <= -0.95f) numExtreme++;
+      }
+      root->nnOutput.store(new std::shared_ptr<NNOutput>(copy), std::memory_order_release);
+      pf("xo extreme=%d of %d\n", numExtreme, n);
+    }
+    else if(name == "ECT") {
+      if(t[1] != "-") {
+        uint64_t u = strtoull(t[1].c_str(), NULL, 16);
+        double d;
+        memcpy(&d, &u, 8);
+        search->effectiveSearchTimeCarriedOver = d;
+      }
+      pf("ect %016llX\n", DB(search->effectiveSearchTimeCarriedOver));
+    }
     else if(name == "CL") search->clearSearch();
     else if(name == "KOMI") search->setKomiIfNew(fromBits((uint32_t)strtoul(t[1].c_str(), NULL, 16)));
     else if(name == "PIN") search->setPlayerIfNew((Player)atoi(t[1].c_str()));
@@ -502,6 +559,7 @@ struct Runner {
     size_t tableSize = 0;
     for(size_t i = 0; i < search->nodeTable->entries.size(); i++) tableSize += search->nodeTable->entries[i].size();
     pf("nodetable=%d postorder=%d\n", (int)tableSize, (int)search->enumerateTreePostOrder().size());
+    printNodeTableKeys(search);
   }
 
   void dumpRoot() {
@@ -547,6 +605,7 @@ struct Runner {
       size_t tableSize = 0;
       for(size_t i = 0; i < search->nodeTable->entries.size(); i++) tableSize += search->nodeTable->entries[i].size();
       pf("nodetable=%d postorder=%d\n", (int)tableSize, (int)search->enumerateTreePostOrder().size());
+      printNodeTableKeys(search);
     }
   }
 };
@@ -1427,6 +1486,226 @@ int main() {
     addParams(c, ys, false);
     c.maxVisits = visits[i];
     finishCase(c, p, FLOW_BASIC, i == 3, false, true, true);
+  }
+
+  // Sections 11-14 were added after the first 341 cases (M3 wave-2a fixes); they only append, so cases 0..340 kept
+  // their inputs (the generator's Rand draws for them are unchanged).
+
+  // 11. Tree reuse into nodes with more than 64 children: makeMove copies a child in STATE_EXPANDED2 (children2)
+  // into the new root (from the M3 core review's probe/search_nonn_widereuse.cpp). The root player may only play a
+  // few moves (avoidMoveUntilByLoc, depth 3), so the visits concentrate on few root children, whose own children
+  // (the opponent is unrestricted) spread past 64.
+  for(int i = 0; detailed && i < 3; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int xs = (i % 3 == 0) ? 19 : ((i % 3 == 1) ? 13 : 11);
+    c.kind = "widereuse-" + rname;
+    setSizes(c, xs, xs);
+    c.initialPla = P_BLACK;
+    Pos p(xs, xs, c.rules, c.initialPla);
+    randomMoves(p, xs, xs, rnd(30), 3, 0);
+    addParams(c, xs, false);
+    c.params.push_back(make_pair("cpuctExploration", i % 2 ? "6.0" : "3.0"));
+    c.maxVisits = 1200 + rnd(600);
+    c.moves = p.moves;
+    c.pla = p.nextPla();
+    if(c.pla != P_BLACK && c.pla != P_WHITE) c.pla = P_BLACK;
+    c.idx = numCases;
+    c.sseed = "oracleSearch" + to_string(c.idx);
+    c.nnSeed = "oracle" + to_string(c.idx);
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      string spec = avoidSpec(c, Board(c.xs, c.ys), 1, c.pla);
+      g.run(c.pla == P_BLACK ? "V:" + spec + ":-" : "V:-:" + spec);
+      g.run("R:" + to_string((int)c.pla));
+      g.run("RS");
+      for(int k = 0; k < 2; k++) {
+        Player rp = g.r->search->getRootPla();
+        Loc mv = bestRootChild(g);
+        if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+        g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");
+        g.run("RS");
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        g.run("RS");
+        g.run(hsOp(false, c.xs, c.ys));
+      }
+    });
+  }
+
+  // 12. Extreme root ownership (op XO): getEndingWhiteScoreBonus (area and territory branches, button, a fresh ko,
+  // encore phase 1) and shouldSuppressPass (fillDameBeforePass, territory scoring, main phase) on owned spots beyond
+  // +-0.95, which the NN-less evaluator (tanh of Gaussian * 0.2) practically never produces; half of them with noise
+  // pruning forced on and a binding noisePruningCap. Root params that recompute the root output from the NN cache
+  // (and would drop the crafted ownership) are forced off.
+  for(int i = 0; detailed && i < 24; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    bool territory = i % 2 == 1;
+    if(territory) {
+      Rules t = Rules::parseRules(prob(0.5) ? "japanese" : "korean");
+      t.komi = c.rules.komi;
+      c.rules = t;
+      rname = "territory";
+    }
+    else if(i % 4 == 0) {
+      bool button = prob(0.6);
+      Rules t = Rules::parseRules(button ? "agabutton" : "chinese");
+      t.komi = c.rules.komi;
+      c.rules = t;
+      rname = button ? "agabutton" : "chinese";
+    }
+    int xs = 5 + rnd(5);
+    int ys = prob(0.3) ? 5 + rnd(5) : xs;
+    c.kind = "ownext-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    int mode = rnd(4);
+    if(mode == 0) koMoves(p, xs, ys, 0, 0, 1, 0, 0);  // black just captured: a ko at the root (white to move)
+    else randomMoves(p, xs, ys, xs * ys / 3 + rnd(xs * ys / 2), 4, 0);
+    if(territory && mode == 3) passPair(p);  // encore phase 1: no pass suppression, territory branch of the bonus
+    addParams(c, ys, xs * ys <= 49);
+    static const char* bonus[] = {"0.5", "1.0", "2.0", "-0.5"};
+    c.params.push_back(make_pair("rootEndingBonusPoints", pick(bonus)));
+    if(prob(0.75)) c.params.push_back(make_pair("fillDameBeforePass", "1"));
+    if(prob(0.5)) {
+      static const char* caps[] = {"0.5", "2.0", "0.05"};
+      c.params.push_back(make_pair("useNoisePruning", "1"));
+      c.params.push_back(make_pair("noisePruningCap", pick(caps)));
+      if(prob(0.5)) c.params.push_back(make_pair("noisePruneUtilityScale", prob(0.5) ? "0.05" : "0.15"));
+    }
+    c.params.push_back(make_pair("rootNumSymmetriesToSample", "1"));
+    c.params.push_back(make_pair("policyOptimism", "0"));
+    c.params.push_back(make_pair("rootPolicyOptimism", "0"));
+    c.params.push_back(make_pair("ignorePreRootHistory", "0"));
+    c.params.push_back(make_pair("conservativePass", "0"));
+    c.maxVisits = 30 + rnd(150);
+    bool ownerOn = prob(0.4);
+    c.moves = p.moves;
+    c.pla = p.nextPla();
+    if(c.pla != P_BLACK && c.pla != P_WHITE) c.pla = P_BLACK;
+    c.idx = numCases;
+    c.sseed = "oracleSearch" + to_string(c.idx);
+    c.nnSeed = "oracle" + to_string(c.idx);
+    runCase(c, [&](Gen& g) {
+      string rp = to_string((int)c.pla);
+      g.run("P");
+      if(ownerOn) g.run("O");
+      g.run("R:" + rp);
+      g.run("XO");
+      g.run("PM");
+      g.run("PSV");
+      g.run("AD:" + to_string(rnd(3)) + ":1:0");
+      g.run("CM:2");
+      g.run("SPN:maxVisits=" + to_string((long long)(c.maxVisits * (2 + rnd(2)))));
+      g.run("R:" + rp);
+      report(g, true, c.maxVisits <= 30, ownerOn, c.xs, c.ys);
+      if(prob(0.5)) {
+        Loc mv = bestRootChild(g);
+        if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+        g.run("M:" + to_string((int)mv) + ":" + rp + ":0");
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        g.run("XO");
+        g.run("PM");
+        g.run(hsOp(ownerOn, c.xs, c.ys));
+      }
+    });
+  }
+
+  // 13. Root children filtered out of a reused tree, then grown again: rootSymmetryPruning switched on by
+  // setParamsNoClearing on a symmetric root that already has more than 8 children (beginSearch's filtering and
+  // collapseChildrenCapacity), then off again with more visits (the root regrows past 8 and 64 children).
+  for(int i = 0; detailed && i < 6; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int xs = 5 + 2 * rnd(3);
+    c.kind = "collapse-" + rname;
+    setSizes(c, xs, xs);
+    c.initialPla = P_BLACK;
+    Pos p(xs, xs, c.rules, c.initialPla);
+    Loc center = Location::getLoc(xs / 2, xs / 2, xs);
+    if(i % 3 == 1) p.play(center, P_BLACK);
+    bool viaMove = i % 3 == 2;
+    addParams(c, xs, xs * xs <= 49);
+    c.params.push_back(make_pair("rootSymmetryPruning", "0"));
+    c.maxVisits = 150 + rnd(200);
+    c.moves = p.moves;
+    c.pla = p.nextPla();
+    if(c.pla != P_BLACK && c.pla != P_WHITE) c.pla = P_BLACK;
+    c.idx = numCases;
+    c.sseed = "oracleSearch" + to_string(c.idx);
+    c.nnSeed = "oracle" + to_string(c.idx);
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      g.run("R:" + to_string((int)c.pla));
+      g.run("RS");
+      if(viaMove) {
+        g.run("M:" + to_string((int)center) + ":" + to_string((int)c.pla) + ":0");
+        g.run("RS");
+      }
+      string rp = to_string((int)g.r->search->getRootPla());
+      g.run("SPN:rootSymmetryPruning=1");
+      g.run("R:" + rp);
+      g.run("RS");
+      g.run(hsOp(false, c.xs, c.ys));
+      g.run("SPN:rootSymmetryPruning=0,maxVisits=" + to_string((long long)(c.maxVisits * 4)));
+      g.run("R:" + rp);
+      g.run("RS");
+      g.run(hsOp(false, c.xs, c.ys));
+    });
+  }
+
+  // 14. Time carried over by tree reuse (op ECT): makeMove scales effectiveSearchTimeCarriedOver by the new root's
+  // share of the visits and treeReuseCarryOverTimeFactor (0 without reuse); clearSearch and friends reset it. ECT
+  // sets it before every printed makeMove: after a search it holds real elapsed time, which is never printed.
+  for(int i = 0; detailed && i < 8; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int xs = 7 + rnd(5);
+    int ys = prob(0.3) ? 7 + rnd(5) : xs;
+    c.kind = "timecarry-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    randomMoves(p, xs, ys, rnd(xs * ys / 2), 3, 0);
+    addParams(c, ys, xs * ys <= 49);
+    static const char* factors[] = {"1.0", "0.5", "0.75", "0.3"};
+    c.params.push_back(make_pair("treeReuseCarryOverTimeFactor", pick(factors)));
+    c.maxVisits = 40 + rnd(120);
+    c.moves = p.moves;
+    c.pla = p.nextPla();
+    if(c.pla != P_BLACK && c.pla != P_WHITE) c.pla = P_BLACK;
+    c.idx = numCases;
+    c.sseed = "oracleSearch" + to_string(c.idx);
+    c.nnSeed = "oracle" + to_string(c.idx);
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      g.run("R:" + to_string((int)c.pla));
+      int rounds = 2 + rnd(2);
+      for(int k = 0; k < rounds; k++) {
+        char buf[32];
+        snprintf(buf, sizeof buf, "%016llX", DB(0.25 + rnd(4000) / 100.0));
+        g.run(string("ECT:") + buf);
+        Player mp = g.r->search->getRootPla();
+        int kind = rnd(10);
+        if(kind < 6) {
+          Loc mv = kind < 4 ? bestRootChild(g) : randomLegalRootMove(g, mp);
+          if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)mp) + ":0");
+        }
+        else if(kind == 6) g.run("M:" + to_string((int)Board::PASS_LOC) + ":" + to_string((int)mp) + ":0");
+        else if(kind == 7) g.run("CL");
+        else if(kind == 8) g.run("PCH:" + to_string((int)getOpp(mp)));
+        else g.run("SP:maxVisits=" + to_string((long long)c.maxVisits) + ",cpuctExploration=1.4");
+        g.run("ECT:-");
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        if(prob(0.5)) g.run("RS");
+      }
+    });
   }
 
   fprintf(stderr, "cases: %d\n", numCases);
