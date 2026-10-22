@@ -1,0 +1,1 @@
+reps 6000 moves 62998 passadj 3422 535 mismatch 0 movefnv 9AAAD503476AD1C0 final 4AAC628819701592

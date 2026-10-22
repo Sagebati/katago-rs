@@ -1,0 +1,1035 @@
+charToString 0 0 []
+charToString 97 1 [a]
+charToString 32 1 [ ]
+charToString 126 1 [~]
+charToString 48 1 [0]
+chopPrefix [abcdef][abc] -> [def]
+chopSuffix [abcdef][abc] -> chopSuffix [abcdef][abc] throws [Global::chopSuffix: 
+abc
+is not a suffix of
+abcdef]
+chopPrefix [abcdef][] -> [abcdef]
+chopSuffix [abcdef][] -> [abcdef]
+chopPrefix [abc][abcdef] -> chopPrefix [abc][abcdef] throws [Global::chopPrefix: 
+abcdef
+is not a prefix of
+abc]
+chopSuffix [abc][abcdef] -> chopSuffix [abc][abcdef] throws [Global::chopSuffix: 
+abcdef
+is not a suffix of
+abc]
+chopPrefix [abcdef][bcd] -> chopPrefix [abcdef][bcd] throws [Global::chopPrefix: 
+bcd
+is not a prefix of
+abcdef]
+chopSuffix [abcdef][bcd] -> chopSuffix [abcdef][bcd] throws [Global::chopSuffix: 
+bcd
+is not a suffix of
+abcdef]
+chopPrefix [][] -> []
+chopSuffix [][] -> []
+chopPrefix [abcdef][abcdef] -> []
+chopSuffix [abcdef][abcdef] -> []
+chopPrefix [abcdef][def] -> chopPrefix [abcdef][def] throws [Global::chopPrefix: 
+def
+is not a prefix of
+abcdef]
+chopSuffix [abcdef][def] -> [abc]
+concat_len 0 [] []
+concat_len 1 [a] [a]
+concat_len 2 [a, ] [a]
+concat_len 3 [a, , bc] [abc]
+concat_len 4 [a, , bc, def] [abcdef]
+concat [x|yy||zzz] []
+concat_start_end 0 0 []
+concat_start_end 0 1 [x]
+concat_start_end 0 2 [x-yy]
+concat_start_end 0 3 [x-yy-]
+concat_start_end 0 4 [x-yy--zzz]
+concat_start_end 1 1 []
+concat_start_end 1 2 [yy]
+concat_start_end 1 3 [yy-]
+concat_start_end 1 4 [yy--zzz]
+concat_start_end 2 2 []
+concat_start_end 2 3 []
+concat_start_end 2 4 [-zzz]
+concat_start_end 3 3 []
+concat_start_end 3 4 [zzz]
+concat_start_end 4 4 []
+concat_set [B,a,aa,b,c] []
+isDigits [] 0 parseDigits  parseDigits throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [] 0 1 1 parseDigits_se 0
+isDigits [0] 1 parseDigits 0
+isDigits_se [0] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0] 0 1 1 parseDigits_se 0
+isDigits_se [0] 0 2 1 parseDigits_se 0
+isDigits_se [0] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0] 1 2 1 parseDigits_se 0
+isDigits [7] 1 parseDigits 7
+isDigits_se [7] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [7] 0 1 1 parseDigits_se 7
+isDigits_se [7] 0 2 1 parseDigits_se 7
+isDigits_se [7] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [7] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [7] 1 2 1 parseDigits_se 0
+isDigits [123] 1 parseDigits 123
+isDigits_se [123] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 0 1 1 parseDigits_se 1
+isDigits_se [123] 0 2 1 parseDigits_se 12
+isDigits_se [123] 0 3 1 parseDigits_se 123
+isDigits_se [123] 0 4 1 parseDigits_se 123
+isDigits_se [123] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 1 2 1 parseDigits_se 2
+isDigits_se [123] 1 3 1 parseDigits_se 23
+isDigits_se [123] 1 4 1 parseDigits_se 23
+isDigits_se [123] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 2 3 1 parseDigits_se 3
+isDigits_se [123] 2 4 1 parseDigits_se 3
+isDigits_se [123] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [123] 3 4 1 parseDigits_se 0
+isDigits [000000000] 1 parseDigits 0
+isDigits_se [000000000] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 0 1 1 parseDigits_se 0
+isDigits_se [000000000] 0 2 1 parseDigits_se 0
+isDigits_se [000000000] 0 3 1 parseDigits_se 0
+isDigits_se [000000000] 0 4 1 parseDigits_se 0
+isDigits_se [000000000] 0 5 1 parseDigits_se 0
+isDigits_se [000000000] 0 6 1 parseDigits_se 0
+isDigits_se [000000000] 0 7 1 parseDigits_se 0
+isDigits_se [000000000] 0 8 1 parseDigits_se 0
+isDigits_se [000000000] 0 9 1 parseDigits_se 0
+isDigits_se [000000000] 0 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 000000000]
+isDigits_se [000000000] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 1 2 1 parseDigits_se 0
+isDigits_se [000000000] 1 3 1 parseDigits_se 0
+isDigits_se [000000000] 1 4 1 parseDigits_se 0
+isDigits_se [000000000] 1 5 1 parseDigits_se 0
+isDigits_se [000000000] 1 6 1 parseDigits_se 0
+isDigits_se [000000000] 1 7 1 parseDigits_se 0
+isDigits_se [000000000] 1 8 1 parseDigits_se 0
+isDigits_se [000000000] 1 9 1 parseDigits_se 0
+isDigits_se [000000000] 1 10 1 parseDigits_se 0
+isDigits_se [000000000] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 2 3 1 parseDigits_se 0
+isDigits_se [000000000] 2 4 1 parseDigits_se 0
+isDigits_se [000000000] 2 5 1 parseDigits_se 0
+isDigits_se [000000000] 2 6 1 parseDigits_se 0
+isDigits_se [000000000] 2 7 1 parseDigits_se 0
+isDigits_se [000000000] 2 8 1 parseDigits_se 0
+isDigits_se [000000000] 2 9 1 parseDigits_se 0
+isDigits_se [000000000] 2 10 1 parseDigits_se 0
+isDigits_se [000000000] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 3 4 1 parseDigits_se 0
+isDigits_se [000000000] 3 5 1 parseDigits_se 0
+isDigits_se [000000000] 3 6 1 parseDigits_se 0
+isDigits_se [000000000] 3 7 1 parseDigits_se 0
+isDigits_se [000000000] 3 8 1 parseDigits_se 0
+isDigits_se [000000000] 3 9 1 parseDigits_se 0
+isDigits_se [000000000] 3 10 1 parseDigits_se 0
+isDigits_se [000000000] 4 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 4 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 4 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 4 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 4 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 4 5 1 parseDigits_se 0
+isDigits_se [000000000] 4 6 1 parseDigits_se 0
+isDigits_se [000000000] 4 7 1 parseDigits_se 0
+isDigits_se [000000000] 4 8 1 parseDigits_se 0
+isDigits_se [000000000] 4 9 1 parseDigits_se 0
+isDigits_se [000000000] 4 10 1 parseDigits_se 0
+isDigits_se [000000000] 5 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 5 6 1 parseDigits_se 0
+isDigits_se [000000000] 5 7 1 parseDigits_se 0
+isDigits_se [000000000] 5 8 1 parseDigits_se 0
+isDigits_se [000000000] 5 9 1 parseDigits_se 0
+isDigits_se [000000000] 5 10 1 parseDigits_se 0
+isDigits_se [000000000] 6 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 6 7 1 parseDigits_se 0
+isDigits_se [000000000] 6 8 1 parseDigits_se 0
+isDigits_se [000000000] 6 9 1 parseDigits_se 0
+isDigits_se [000000000] 6 10 1 parseDigits_se 0
+isDigits_se [000000000] 7 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 7 8 1 parseDigits_se 0
+isDigits_se [000000000] 7 9 1 parseDigits_se 0
+isDigits_se [000000000] 7 10 1 parseDigits_se 0
+isDigits_se [000000000] 8 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 8 9 1 parseDigits_se 0
+isDigits_se [000000000] 8 10 1 parseDigits_se 0
+isDigits_se [000000000] 9 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [000000000] 9 10 1 parseDigits_se 0
+isDigits [999999999] 1 parseDigits 999999999
+isDigits_se [999999999] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 0 1 1 parseDigits_se 9
+isDigits_se [999999999] 0 2 1 parseDigits_se 99
+isDigits_se [999999999] 0 3 1 parseDigits_se 999
+isDigits_se [999999999] 0 4 1 parseDigits_se 9999
+isDigits_se [999999999] 0 5 1 parseDigits_se 99999
+isDigits_se [999999999] 0 6 1 parseDigits_se 999999
+isDigits_se [999999999] 0 7 1 parseDigits_se 9999999
+isDigits_se [999999999] 0 8 1 parseDigits_se 99999999
+isDigits_se [999999999] 0 9 1 parseDigits_se 999999999
+isDigits_se [999999999] 0 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 999999999]
+isDigits_se [999999999] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 1 2 1 parseDigits_se 9
+isDigits_se [999999999] 1 3 1 parseDigits_se 99
+isDigits_se [999999999] 1 4 1 parseDigits_se 999
+isDigits_se [999999999] 1 5 1 parseDigits_se 9999
+isDigits_se [999999999] 1 6 1 parseDigits_se 99999
+isDigits_se [999999999] 1 7 1 parseDigits_se 999999
+isDigits_se [999999999] 1 8 1 parseDigits_se 9999999
+isDigits_se [999999999] 1 9 1 parseDigits_se 99999999
+isDigits_se [999999999] 1 10 1 parseDigits_se 99999999
+isDigits_se [999999999] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 2 3 1 parseDigits_se 9
+isDigits_se [999999999] 2 4 1 parseDigits_se 99
+isDigits_se [999999999] 2 5 1 parseDigits_se 999
+isDigits_se [999999999] 2 6 1 parseDigits_se 9999
+isDigits_se [999999999] 2 7 1 parseDigits_se 99999
+isDigits_se [999999999] 2 8 1 parseDigits_se 999999
+isDigits_se [999999999] 2 9 1 parseDigits_se 9999999
+isDigits_se [999999999] 2 10 1 parseDigits_se 9999999
+isDigits_se [999999999] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 3 4 1 parseDigits_se 9
+isDigits_se [999999999] 3 5 1 parseDigits_se 99
+isDigits_se [999999999] 3 6 1 parseDigits_se 999
+isDigits_se [999999999] 3 7 1 parseDigits_se 9999
+isDigits_se [999999999] 3 8 1 parseDigits_se 99999
+isDigits_se [999999999] 3 9 1 parseDigits_se 999999
+isDigits_se [999999999] 3 10 1 parseDigits_se 999999
+isDigits_se [999999999] 4 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 4 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 4 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 4 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 4 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 4 5 1 parseDigits_se 9
+isDigits_se [999999999] 4 6 1 parseDigits_se 99
+isDigits_se [999999999] 4 7 1 parseDigits_se 999
+isDigits_se [999999999] 4 8 1 parseDigits_se 9999
+isDigits_se [999999999] 4 9 1 parseDigits_se 99999
+isDigits_se [999999999] 4 10 1 parseDigits_se 99999
+isDigits_se [999999999] 5 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 5 6 1 parseDigits_se 9
+isDigits_se [999999999] 5 7 1 parseDigits_se 99
+isDigits_se [999999999] 5 8 1 parseDigits_se 999
+isDigits_se [999999999] 5 9 1 parseDigits_se 9999
+isDigits_se [999999999] 5 10 1 parseDigits_se 9999
+isDigits_se [999999999] 6 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 6 7 1 parseDigits_se 9
+isDigits_se [999999999] 6 8 1 parseDigits_se 99
+isDigits_se [999999999] 6 9 1 parseDigits_se 999
+isDigits_se [999999999] 6 10 1 parseDigits_se 999
+isDigits_se [999999999] 7 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 7 8 1 parseDigits_se 9
+isDigits_se [999999999] 7 9 1 parseDigits_se 99
+isDigits_se [999999999] 7 10 1 parseDigits_se 99
+isDigits_se [999999999] 8 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 8 9 1 parseDigits_se 9
+isDigits_se [999999999] 8 10 1 parseDigits_se 9
+isDigits_se [999999999] 9 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [999999999] 9 10 1 parseDigits_se 0
+isDigits [1234567890] 0 parseDigits  parseDigits throws [Could not parse digits, overflow: 1234567890]
+isDigits_se [1234567890] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 0 1 1 parseDigits_se 1
+isDigits_se [1234567890] 0 2 1 parseDigits_se 12
+isDigits_se [1234567890] 0 3 1 parseDigits_se 123
+isDigits_se [1234567890] 0 4 1 parseDigits_se 1234
+isDigits_se [1234567890] 0 5 1 parseDigits_se 12345
+isDigits_se [1234567890] 0 6 1 parseDigits_se 123456
+isDigits_se [1234567890] 0 7 1 parseDigits_se 1234567
+isDigits_se [1234567890] 0 8 1 parseDigits_se 12345678
+isDigits_se [1234567890] 0 9 1 parseDigits_se 123456789
+isDigits_se [1234567890] 0 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 1234567890]
+isDigits_se [1234567890] 0 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 1234567890]
+isDigits_se [1234567890] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 1 2 1 parseDigits_se 2
+isDigits_se [1234567890] 1 3 1 parseDigits_se 23
+isDigits_se [1234567890] 1 4 1 parseDigits_se 234
+isDigits_se [1234567890] 1 5 1 parseDigits_se 2345
+isDigits_se [1234567890] 1 6 1 parseDigits_se 23456
+isDigits_se [1234567890] 1 7 1 parseDigits_se 234567
+isDigits_se [1234567890] 1 8 1 parseDigits_se 2345678
+isDigits_se [1234567890] 1 9 1 parseDigits_se 23456789
+isDigits_se [1234567890] 1 10 1 parseDigits_se 234567890
+isDigits_se [1234567890] 1 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 234567890]
+isDigits_se [1234567890] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 2 3 1 parseDigits_se 3
+isDigits_se [1234567890] 2 4 1 parseDigits_se 34
+isDigits_se [1234567890] 2 5 1 parseDigits_se 345
+isDigits_se [1234567890] 2 6 1 parseDigits_se 3456
+isDigits_se [1234567890] 2 7 1 parseDigits_se 34567
+isDigits_se [1234567890] 2 8 1 parseDigits_se 345678
+isDigits_se [1234567890] 2 9 1 parseDigits_se 3456789
+isDigits_se [1234567890] 2 10 1 parseDigits_se 34567890
+isDigits_se [1234567890] 2 11 1 parseDigits_se 34567890
+isDigits_se [1234567890] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 3 4 1 parseDigits_se 4
+isDigits_se [1234567890] 3 5 1 parseDigits_se 45
+isDigits_se [1234567890] 3 6 1 parseDigits_se 456
+isDigits_se [1234567890] 3 7 1 parseDigits_se 4567
+isDigits_se [1234567890] 3 8 1 parseDigits_se 45678
+isDigits_se [1234567890] 3 9 1 parseDigits_se 456789
+isDigits_se [1234567890] 3 10 1 parseDigits_se 4567890
+isDigits_se [1234567890] 3 11 1 parseDigits_se 4567890
+isDigits_se [1234567890] 4 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 4 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 4 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 4 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 4 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 4 5 1 parseDigits_se 5
+isDigits_se [1234567890] 4 6 1 parseDigits_se 56
+isDigits_se [1234567890] 4 7 1 parseDigits_se 567
+isDigits_se [1234567890] 4 8 1 parseDigits_se 5678
+isDigits_se [1234567890] 4 9 1 parseDigits_se 56789
+isDigits_se [1234567890] 4 10 1 parseDigits_se 567890
+isDigits_se [1234567890] 4 11 1 parseDigits_se 567890
+isDigits_se [1234567890] 5 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 5 6 1 parseDigits_se 6
+isDigits_se [1234567890] 5 7 1 parseDigits_se 67
+isDigits_se [1234567890] 5 8 1 parseDigits_se 678
+isDigits_se [1234567890] 5 9 1 parseDigits_se 6789
+isDigits_se [1234567890] 5 10 1 parseDigits_se 67890
+isDigits_se [1234567890] 5 11 1 parseDigits_se 67890
+isDigits_se [1234567890] 6 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 6 7 1 parseDigits_se 7
+isDigits_se [1234567890] 6 8 1 parseDigits_se 78
+isDigits_se [1234567890] 6 9 1 parseDigits_se 789
+isDigits_se [1234567890] 6 10 1 parseDigits_se 7890
+isDigits_se [1234567890] 6 11 1 parseDigits_se 7890
+isDigits_se [1234567890] 7 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 7 8 1 parseDigits_se 8
+isDigits_se [1234567890] 7 9 1 parseDigits_se 89
+isDigits_se [1234567890] 7 10 1 parseDigits_se 890
+isDigits_se [1234567890] 7 11 1 parseDigits_se 890
+isDigits_se [1234567890] 8 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 8 9 1 parseDigits_se 9
+isDigits_se [1234567890] 8 10 1 parseDigits_se 90
+isDigits_se [1234567890] 8 11 1 parseDigits_se 90
+isDigits_se [1234567890] 9 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 9 10 1 parseDigits_se 0
+isDigits_se [1234567890] 9 11 1 parseDigits_se 0
+isDigits_se [1234567890] 10 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1234567890] 10 11 1 parseDigits_se 0
+isDigits [2147483647] 0 parseDigits  parseDigits throws [Could not parse digits, overflow: 2147483647]
+isDigits_se [2147483647] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 0 1 1 parseDigits_se 2
+isDigits_se [2147483647] 0 2 1 parseDigits_se 21
+isDigits_se [2147483647] 0 3 1 parseDigits_se 214
+isDigits_se [2147483647] 0 4 1 parseDigits_se 2147
+isDigits_se [2147483647] 0 5 1 parseDigits_se 21474
+isDigits_se [2147483647] 0 6 1 parseDigits_se 214748
+isDigits_se [2147483647] 0 7 1 parseDigits_se 2147483
+isDigits_se [2147483647] 0 8 1 parseDigits_se 21474836
+isDigits_se [2147483647] 0 9 1 parseDigits_se 214748364
+isDigits_se [2147483647] 0 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 2147483647]
+isDigits_se [2147483647] 0 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 2147483647]
+isDigits_se [2147483647] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 1 2 1 parseDigits_se 1
+isDigits_se [2147483647] 1 3 1 parseDigits_se 14
+isDigits_se [2147483647] 1 4 1 parseDigits_se 147
+isDigits_se [2147483647] 1 5 1 parseDigits_se 1474
+isDigits_se [2147483647] 1 6 1 parseDigits_se 14748
+isDigits_se [2147483647] 1 7 1 parseDigits_se 147483
+isDigits_se [2147483647] 1 8 1 parseDigits_se 1474836
+isDigits_se [2147483647] 1 9 1 parseDigits_se 14748364
+isDigits_se [2147483647] 1 10 1 parseDigits_se 147483647
+isDigits_se [2147483647] 1 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 147483647]
+isDigits_se [2147483647] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 2 3 1 parseDigits_se 4
+isDigits_se [2147483647] 2 4 1 parseDigits_se 47
+isDigits_se [2147483647] 2 5 1 parseDigits_se 474
+isDigits_se [2147483647] 2 6 1 parseDigits_se 4748
+isDigits_se [2147483647] 2 7 1 parseDigits_se 47483
+isDigits_se [2147483647] 2 8 1 parseDigits_se 474836
+isDigits_se [2147483647] 2 9 1 parseDigits_se 4748364
+isDigits_se [2147483647] 2 10 1 parseDigits_se 47483647
+isDigits_se [2147483647] 2 11 1 parseDigits_se 47483647
+isDigits_se [2147483647] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 3 4 1 parseDigits_se 7
+isDigits_se [2147483647] 3 5 1 parseDigits_se 74
+isDigits_se [2147483647] 3 6 1 parseDigits_se 748
+isDigits_se [2147483647] 3 7 1 parseDigits_se 7483
+isDigits_se [2147483647] 3 8 1 parseDigits_se 74836
+isDigits_se [2147483647] 3 9 1 parseDigits_se 748364
+isDigits_se [2147483647] 3 10 1 parseDigits_se 7483647
+isDigits_se [2147483647] 3 11 1 parseDigits_se 7483647
+isDigits_se [2147483647] 4 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 4 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 4 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 4 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 4 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 4 5 1 parseDigits_se 4
+isDigits_se [2147483647] 4 6 1 parseDigits_se 48
+isDigits_se [2147483647] 4 7 1 parseDigits_se 483
+isDigits_se [2147483647] 4 8 1 parseDigits_se 4836
+isDigits_se [2147483647] 4 9 1 parseDigits_se 48364
+isDigits_se [2147483647] 4 10 1 parseDigits_se 483647
+isDigits_se [2147483647] 4 11 1 parseDigits_se 483647
+isDigits_se [2147483647] 5 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 5 6 1 parseDigits_se 8
+isDigits_se [2147483647] 5 7 1 parseDigits_se 83
+isDigits_se [2147483647] 5 8 1 parseDigits_se 836
+isDigits_se [2147483647] 5 9 1 parseDigits_se 8364
+isDigits_se [2147483647] 5 10 1 parseDigits_se 83647
+isDigits_se [2147483647] 5 11 1 parseDigits_se 83647
+isDigits_se [2147483647] 6 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 6 7 1 parseDigits_se 3
+isDigits_se [2147483647] 6 8 1 parseDigits_se 36
+isDigits_se [2147483647] 6 9 1 parseDigits_se 364
+isDigits_se [2147483647] 6 10 1 parseDigits_se 3647
+isDigits_se [2147483647] 6 11 1 parseDigits_se 3647
+isDigits_se [2147483647] 7 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 7 8 1 parseDigits_se 6
+isDigits_se [2147483647] 7 9 1 parseDigits_se 64
+isDigits_se [2147483647] 7 10 1 parseDigits_se 647
+isDigits_se [2147483647] 7 11 1 parseDigits_se 647
+isDigits_se [2147483647] 8 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 8 9 1 parseDigits_se 4
+isDigits_se [2147483647] 8 10 1 parseDigits_se 47
+isDigits_se [2147483647] 8 11 1 parseDigits_se 47
+isDigits_se [2147483647] 9 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 9 10 1 parseDigits_se 7
+isDigits_se [2147483647] 9 11 1 parseDigits_se 7
+isDigits_se [2147483647] 10 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [2147483647] 10 11 1 parseDigits_se 0
+isDigits [12a] 0 parseDigits 0
+isDigits_se [12a] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 0 1 1 parseDigits_se 1
+isDigits_se [12a] 0 2 1 parseDigits_se 12
+isDigits_se [12a] 0 3 0 parseDigits_se 0
+isDigits_se [12a] 0 4 0 parseDigits_se 0
+isDigits_se [12a] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 1 2 1 parseDigits_se 2
+isDigits_se [12a] 1 3 0 parseDigits_se 0
+isDigits_se [12a] 1 4 0 parseDigits_se 0
+isDigits_se [12a] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 2 3 0 parseDigits_se 0
+isDigits_se [12a] 2 4 0 parseDigits_se 0
+isDigits_se [12a] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [12a] 3 4 1 parseDigits_se 0
+isDigits [a12] 0 parseDigits 0
+isDigits_se [a12] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 0 1 0 parseDigits_se 0
+isDigits_se [a12] 0 2 0 parseDigits_se 0
+isDigits_se [a12] 0 3 0 parseDigits_se 0
+isDigits_se [a12] 0 4 0 parseDigits_se 0
+isDigits_se [a12] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 1 2 1 parseDigits_se 1
+isDigits_se [a12] 1 3 1 parseDigits_se 12
+isDigits_se [a12] 1 4 1 parseDigits_se 12
+isDigits_se [a12] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 2 3 1 parseDigits_se 2
+isDigits_se [a12] 2 4 1 parseDigits_se 2
+isDigits_se [a12] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [a12] 3 4 1 parseDigits_se 0
+isDigits [-1] 0 parseDigits 0
+isDigits_se [-1] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 0 1 0 parseDigits_se 0
+isDigits_se [-1] 0 2 0 parseDigits_se 0
+isDigits_se [-1] 0 3 0 parseDigits_se 0
+isDigits_se [-1] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 1 2 1 parseDigits_se 1
+isDigits_se [-1] 1 3 1 parseDigits_se 1
+isDigits_se [-1] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [-1] 2 3 1 parseDigits_se 0
+isDigits [ 1] 0 parseDigits 0
+isDigits_se [ 1] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 0 1 0 parseDigits_se 0
+isDigits_se [ 1] 0 2 0 parseDigits_se 0
+isDigits_se [ 1] 0 3 0 parseDigits_se 0
+isDigits_se [ 1] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 1 2 1 parseDigits_se 1
+isDigits_se [ 1] 1 3 1 parseDigits_se 1
+isDigits_se [ 1] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [ 1] 2 3 1 parseDigits_se 0
+isDigits [1 ] 0 parseDigits 0
+isDigits_se [1 ] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 0 1 1 parseDigits_se 1
+isDigits_se [1 ] 0 2 0 parseDigits_se 0
+isDigits_se [1 ] 0 3 0 parseDigits_se 0
+isDigits_se [1 ] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 1 2 0 parseDigits_se 0
+isDigits_se [1 ] 1 3 0 parseDigits_se 0
+isDigits_se [1 ] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [1 ] 2 3 1 parseDigits_se 0
+isDigits [00000000000] 0 parseDigits  parseDigits throws [Could not parse digits, overflow: 00000000000]
+isDigits_se [00000000000] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 0 1 1 parseDigits_se 0
+isDigits_se [00000000000] 0 2 1 parseDigits_se 0
+isDigits_se [00000000000] 0 3 1 parseDigits_se 0
+isDigits_se [00000000000] 0 4 1 parseDigits_se 0
+isDigits_se [00000000000] 0 5 1 parseDigits_se 0
+isDigits_se [00000000000] 0 6 1 parseDigits_se 0
+isDigits_se [00000000000] 0 7 1 parseDigits_se 0
+isDigits_se [00000000000] 0 8 1 parseDigits_se 0
+isDigits_se [00000000000] 0 9 1 parseDigits_se 0
+isDigits_se [00000000000] 0 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 0000000000]
+isDigits_se [00000000000] 0 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 00000000000]
+isDigits_se [00000000000] 0 12 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 00000000000]
+isDigits_se [00000000000] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 1 2 1 parseDigits_se 0
+isDigits_se [00000000000] 1 3 1 parseDigits_se 0
+isDigits_se [00000000000] 1 4 1 parseDigits_se 0
+isDigits_se [00000000000] 1 5 1 parseDigits_se 0
+isDigits_se [00000000000] 1 6 1 parseDigits_se 0
+isDigits_se [00000000000] 1 7 1 parseDigits_se 0
+isDigits_se [00000000000] 1 8 1 parseDigits_se 0
+isDigits_se [00000000000] 1 9 1 parseDigits_se 0
+isDigits_se [00000000000] 1 10 1 parseDigits_se 0
+isDigits_se [00000000000] 1 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 0000000000]
+isDigits_se [00000000000] 1 12 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 0000000000]
+isDigits_se [00000000000] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 2 3 1 parseDigits_se 0
+isDigits_se [00000000000] 2 4 1 parseDigits_se 0
+isDigits_se [00000000000] 2 5 1 parseDigits_se 0
+isDigits_se [00000000000] 2 6 1 parseDigits_se 0
+isDigits_se [00000000000] 2 7 1 parseDigits_se 0
+isDigits_se [00000000000] 2 8 1 parseDigits_se 0
+isDigits_se [00000000000] 2 9 1 parseDigits_se 0
+isDigits_se [00000000000] 2 10 1 parseDigits_se 0
+isDigits_se [00000000000] 2 11 1 parseDigits_se 0
+isDigits_se [00000000000] 2 12 0 parseDigits_se  parseDigits_se throws [Could not parse digits, overflow: 000000000]
+isDigits_se [00000000000] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 3 4 1 parseDigits_se 0
+isDigits_se [00000000000] 3 5 1 parseDigits_se 0
+isDigits_se [00000000000] 3 6 1 parseDigits_se 0
+isDigits_se [00000000000] 3 7 1 parseDigits_se 0
+isDigits_se [00000000000] 3 8 1 parseDigits_se 0
+isDigits_se [00000000000] 3 9 1 parseDigits_se 0
+isDigits_se [00000000000] 3 10 1 parseDigits_se 0
+isDigits_se [00000000000] 3 11 1 parseDigits_se 0
+isDigits_se [00000000000] 3 12 1 parseDigits_se 0
+isDigits_se [00000000000] 4 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 4 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 4 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 4 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 4 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 4 5 1 parseDigits_se 0
+isDigits_se [00000000000] 4 6 1 parseDigits_se 0
+isDigits_se [00000000000] 4 7 1 parseDigits_se 0
+isDigits_se [00000000000] 4 8 1 parseDigits_se 0
+isDigits_se [00000000000] 4 9 1 parseDigits_se 0
+isDigits_se [00000000000] 4 10 1 parseDigits_se 0
+isDigits_se [00000000000] 4 11 1 parseDigits_se 0
+isDigits_se [00000000000] 4 12 1 parseDigits_se 0
+isDigits_se [00000000000] 5 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 5 6 1 parseDigits_se 0
+isDigits_se [00000000000] 5 7 1 parseDigits_se 0
+isDigits_se [00000000000] 5 8 1 parseDigits_se 0
+isDigits_se [00000000000] 5 9 1 parseDigits_se 0
+isDigits_se [00000000000] 5 10 1 parseDigits_se 0
+isDigits_se [00000000000] 5 11 1 parseDigits_se 0
+isDigits_se [00000000000] 5 12 1 parseDigits_se 0
+isDigits_se [00000000000] 6 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 6 7 1 parseDigits_se 0
+isDigits_se [00000000000] 6 8 1 parseDigits_se 0
+isDigits_se [00000000000] 6 9 1 parseDigits_se 0
+isDigits_se [00000000000] 6 10 1 parseDigits_se 0
+isDigits_se [00000000000] 6 11 1 parseDigits_se 0
+isDigits_se [00000000000] 6 12 1 parseDigits_se 0
+isDigits_se [00000000000] 7 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 7 8 1 parseDigits_se 0
+isDigits_se [00000000000] 7 9 1 parseDigits_se 0
+isDigits_se [00000000000] 7 10 1 parseDigits_se 0
+isDigits_se [00000000000] 7 11 1 parseDigits_se 0
+isDigits_se [00000000000] 7 12 1 parseDigits_se 0
+isDigits_se [00000000000] 8 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 8 9 1 parseDigits_se 0
+isDigits_se [00000000000] 8 10 1 parseDigits_se 0
+isDigits_se [00000000000] 8 11 1 parseDigits_se 0
+isDigits_se [00000000000] 8 12 1 parseDigits_se 0
+isDigits_se [00000000000] 9 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 9 10 1 parseDigits_se 0
+isDigits_se [00000000000] 9 11 1 parseDigits_se 0
+isDigits_se [00000000000] 9 12 1 parseDigits_se 0
+isDigits_se [00000000000] 10 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 10 11 1 parseDigits_se 0
+isDigits_se [00000000000] 10 12 1 parseDigits_se 0
+isDigits_se [00000000000] 11 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 4 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 5 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 6 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 7 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 8 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 9 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 10 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 11 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [00000000000] 11 12 1 parseDigits_se 0
+isDigits [0x1] 0 parseDigits 0
+isDigits_se [0x1] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 0 1 1 parseDigits_se 0
+isDigits_se [0x1] 0 2 0 parseDigits_se 0
+isDigits_se [0x1] 0 3 0 parseDigits_se 0
+isDigits_se [0x1] 0 4 0 parseDigits_se 0
+isDigits_se [0x1] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 1 2 0 parseDigits_se 0
+isDigits_se [0x1] 1 3 0 parseDigits_se 0
+isDigits_se [0x1] 1 4 0 parseDigits_se 0
+isDigits_se [0x1] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 2 3 1 parseDigits_se 1
+isDigits_se [0x1] 2 4 1 parseDigits_se 1
+isDigits_se [0x1] 3 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 3 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 3 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 3 3 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [0x1] 3 4 1 parseDigits_se 0
+isDigits [١] 0 parseDigits 0
+isDigits_se [١] 0 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 0 1 0 parseDigits_se 0
+isDigits_se [١] 0 2 0 parseDigits_se 0
+isDigits_se [١] 0 3 0 parseDigits_se 0
+isDigits_se [١] 1 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 1 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 1 2 0 parseDigits_se 0
+isDigits_se [١] 1 3 0 parseDigits_se 0
+isDigits_se [١] 2 0 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 2 1 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 2 2 0 parseDigits_se  parseDigits_se throws [Could not parse digits, end <= start, or empty string]
+isDigits_se [١] 2 3 1 parseDigits_se 0
+stringCharsAllAllowed [abc][abc] 1
+stringCharsAllAllowed [abc][ab] 0
+stringCharsAllAllowed [][x] 1
+stringCharsAllAllowed [aaa][a] 1
+stringCharsAllAllowed [a b][ab ] 1
+stringCharsAllAllowed [xyz][] 0
+stripComments [] -> []
+stripComments [abc] -> [abc]
+stripComments [a#b] -> [a
+]
+stripComments [#] -> [
+]
+stripComments [x = 1 # c
+y = 2
+#full
+
+z=3] -> [x = 1 
+y = 2
+
+
+z=3
+]
+stripComments [no newline # end] -> [no newline 
+]
+stripComments [a
+b#
+] -> [a
+b
+]
+stripComments [
+
+#
+] -> [
+
+
+]
+readKeyValues [] ->
+readKeyValues [a=1] -> [a]=[1]
+readKeyValues [a = 1, b= 2
+c=3] -> [a]=[1] [b]=[2] [c]=[3]
+readKeyValues [a=1
+a=2] -> throws [readKeyValues: duplicate key: a]
+readKeyValues [=1] -> throws [readKeyValues: key value pair without key: =1]
+readKeyValues [a=] -> throws [readKeyValues: key value pair without value: a=]
+readKeyValues [a] ->
+readKeyValues [a=1,,b=2] -> [a]=[1] [b]=[2]
+readKeyValues [x=y=z] -> [x]=[y=z]
+readKeyValues [ k = v w , m=n
+
+,
+p=q] -> [k]=[v w] [m]=[n] [p]=[q]
+readKeyValues [a=1
+b=2] -> [a]=[1] [b]=[2]
+readKeyValues [a=1,b] -> [a]=[1]
+readMem []  throws [Global::readMem: Could not parse amount of memory: ]
+readMem [1]  throws [Global::readMem: Could not parse amount of memory: 1]
+readMem [12] 12
+readMem [16G] 17179869184
+readMem [16GB] 17179869184
+readMem [256K] 262144
+readMem [256KB] 262144
+readMem [3M] 3145728
+readMem [3MB] 3145728
+readMem [1T] 1099511627776
+readMem [1TB] 1099511627776
+readMem [2P] 2251799813685248
+readMem [2PB] 2251799813685248
+readMem [100B] 100
+readMem [100] 100
+readMem [K]  throws [Global::readMem: Could not parse amount of memory: K]
+readMem [KB]  throws [Global::readMem: Could not parse amount of memory: KB]
+readMem [1.5G]  throws [Global::readMem: Could not parse amount of memory: 1.5G]
+readMem [-1G]  throws [Global::readMem: Could not parse amount of memory: -1G]
+readMem [999999999P]  throws [Global::readMem: Could not parse amount of memory (too large): 999999999P]
+readMem [8191P] 9222246136947933184
+readMem [8192P] 9223372036854775808
+readMem [16383T] 18013298997854208
+readMem [1GG] 1073741824
+readMem [1BK]  throws [Global::readMem: Could not parse amount of memory: 1BK]
+readMem [123456789] 123456789
+readMem [1234567890]  throws [Global::readMem: Could not parse amount of memory: 1234567890]
+readMem [1kB]  throws [Global::readMem: Could not parse amount of memory: 1kB]
+readMem [G1]  throws [Global::readMem: Could not parse amount of memory: G1]
+roundStatic 0 1 0
+roundStatic 0 10 0
+roundStatic 0 100 0
+roundStatic 0 1000 0
+roundStatic 0 0.1 0
+roundStatic 0 4 0
+roundStatic 1 1 1
+roundStatic 1 10 1
+roundStatic 1 100 1
+roundStatic 1 1000 1
+roundStatic 1 0.1 0
+roundStatic 1 4 1
+roundStatic -1 1 -1
+roundStatic -1 10 -1
+roundStatic -1 100 -1
+roundStatic -1 1000 -1
+roundStatic -1 0.1 -0
+roundStatic -1 4 -1
+roundStatic 0.5 1 1
+roundStatic 0.5 10 0.5
+roundStatic 0.5 100 0.5
+roundStatic 0.5 1000 0.5
+roundStatic 0.5 0.1 0
+roundStatic 0.5 4 0.5
+roundStatic -0.5 1 -1
+roundStatic -0.5 10 -0.5
+roundStatic -0.5 100 -0.5
+roundStatic -0.5 1000 -0.5
+roundStatic -0.5 0.1 -0
+roundStatic -0.5 4 -0.5
+roundStatic 1.25 1 1
+roundStatic 1.25 10 1.3
+roundStatic 1.25 100 1.25
+roundStatic 1.25 1000 1.25
+roundStatic 1.25 0.1 0
+roundStatic 1.25 4 1.25
+roundStatic 2.6749999999999998 1 3
+roundStatic 2.6749999999999998 10 2.7000000000000002
+roundStatic 2.6749999999999998 100 2.6800000000000002
+roundStatic 2.6749999999999998 1000 2.6749999999999998
+roundStatic 2.6749999999999998 0.1 0
+roundStatic 2.6749999999999998 4 2.75
+roundStatic -2.6749999999999998 1 -3
+roundStatic -2.6749999999999998 10 -2.7000000000000002
+roundStatic -2.6749999999999998 100 -2.6800000000000002
+roundStatic -2.6749999999999998 1000 -2.6749999999999998
+roundStatic -2.6749999999999998 0.1 -0
+roundStatic -2.6749999999999998 4 -2.75
+roundStatic 123.456789 1 123
+roundStatic 123.456789 10 123.5
+roundStatic 123.456789 100 123.45999999999999
+roundStatic 123.456789 1000 123.45699999999999
+roundStatic 123.456789 0.1 120
+roundStatic 123.456789 4 123.5
+roundStatic 1.0000000000000001e-09 1 0
+roundStatic 1.0000000000000001e-09 10 0
+roundStatic 1.0000000000000001e-09 100 0
+roundStatic 1.0000000000000001e-09 1000 0
+roundStatic 1.0000000000000001e-09 0.1 0
+roundStatic 1.0000000000000001e-09 4 0
+roundStatic 3.1415926500000002 1 3
+roundStatic 3.1415926500000002 10 3.1000000000000001
+roundStatic 3.1415926500000002 100 3.1400000000000001
+roundStatic 3.1415926500000002 1000 3.1419999999999999
+roundStatic 3.1415926500000002 0.1 0
+roundStatic 3.1415926500000002 4 3.25
+contains_vec 1101
+indexOf 0 2 1
+contains_vec_int 10 indexOf 1 4
+contains_set 101
+contains_map 101
+map_get 7 8 -1 7
+containsChar 1011
+nul_contains 0110
+nul_allowed 0111
+nul_concat_len 3 612C63
+nul_concat_len_delim 3 613B63
+nul_concat 5 7800792B7A
+nul_concat_start_end 5 7800792B7A
+nul_concat_set 3 702B71
+nul_trim 2 7800
+nul_trim2 3 007800
+nul_trim3 3 007800
+nul_map_get 7
+nul_strprintf 1 61
+lossy trim0 1 C3
+bytes trim1 2 C3A9
+bytes trim2 0 
+lossy trim3 2 61C3
+bytes trim4 1 61
+lossy trim5 2 A961
+lossy trim6 1 82
+bytes trim7 3 E282AC
+bytes chopPrefix 1 78
+bytes chopSuffix 1 78
