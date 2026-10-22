@@ -23,3 +23,4 @@ pub mod port;
 pub mod core;
 pub mod game;
 pub mod neuralnet;
+pub mod search;
