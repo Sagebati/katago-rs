@@ -75,7 +75,9 @@ impl Search {
   }
 
   /// upstream: Search::getExploreSelectionValue (searchexplorehelpers.cpp)
-  pub(crate) fn get_explore_selection_value(&self, explore_scaling: f64, nn_policy_prob: f64, child_weight: f64, child_utility: f64, pla: Player) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_explore_selection_value(&self, explore_scaling: f64, nn_policy_prob: f64, child_weight: f64, child_utility: f64, pla: Player) -> f64 {
     if nn_policy_prob < 0.0 {
       return Search::POLICY_ILLEGAL_SELECTION_VALUE;
     }
@@ -94,7 +96,9 @@ impl Search {
   /// PORT NOTE: search.h declares the first two parameters as (exploreScaling, exploreSelectionValue)
   /// but searchexplorehelpers.cpp defines them as (exploreSelectionValue, exploreScaling), and the body
   /// and the caller use the definition's order; the Rust names follow the definition.
-  pub(crate) fn get_explore_selection_value_inverse(
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_explore_selection_value_inverse(
     &self,
     explore_selection_value: f64,
     explore_scaling: f64,

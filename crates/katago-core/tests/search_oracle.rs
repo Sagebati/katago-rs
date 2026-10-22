@@ -6,7 +6,8 @@
 //! locs, SearchParams overrides, search rand seed, maxVisits, nnXLen/nnYLen, and the op stream) followed
 //! by what the ops printed (root visits, every root child, getRootValues/getPrunedRootValues/..., all
 //! AnalysisData fields, printTree/printPV text, getAnalysisJson dumps, chosen moves, play selection
-//! values, ownership, node table sizes ...; floats as IEEE-754 hex bits) and "END <n>".
+//! values, ownership, node table sizes and key hashes, crafted extreme root ownership (XO), time carried over by
+//! tree reuse (ECT) ...; floats as IEEE-754 hex bits) and "END <n>".
 //! This test rebuilds each case from its CASE line alone, executes the same op stream through the
 //! port on a futures LocalPool and compares the text with `common::compare_lines`, per case: every
 //! mismatching case is reported with its first differing line (the test fails at the end if any).
@@ -21,7 +22,7 @@
 //! Timing dependence: none (no maxTime/time controls; the injected clock is a constant).
 //! Not a port of upstream code.
 
-#![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::write_with_newline)]
+#![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::write_with_newline, clippy::manual_clamp)]
 
 mod common;
 
@@ -460,6 +461,7 @@ fn set_param(p: &mut SearchParams, k: &str, v: &str) -> bool {
     "searchFactorAfterOnePass" => p.search_factor_after_one_pass = d,
     "searchFactorAfterTwoPass" => p.search_factor_after_two_pass = d,
     "futileVisitsThreshold" => p.futile_visits_threshold = d,
+    "treeReuseCarryOverTimeFactor" => p.tree_reuse_carry_over_time_factor = d,
     "avoidMYTDaggerHackPla" => p.avoid_myt_dagger_hack_pla = l as Player,
     "playoutDoublingAdvantagePla" => p.playout_doubling_advantage_pla = l as Player,
     "nnPolicyTemperature" => p.nn_policy_temperature = v.parse::<f32>().unwrap_or(0.0),
@@ -486,6 +488,20 @@ fn fnv64(s: &str) -> u64 {
     h = h.wrapping_mul(0x100000001b3);
   }
   h
+}
+
+/// upstream mirror: printNodeTableKeys (search_nonn.cpp): the node table's keys in table order (shard by shard,
+/// each shard's map in Hash128 order), "<shard> <hash1> <hash0>" per entry, as a count and FNV-1a 64.
+fn print_node_table_keys(search: &Search) {
+  let mut text = String::new();
+  let mut n: usize = 0;
+  for (i, shard) in search.node_table.entries.borrow().iter().enumerate() {
+    for k in shard.keys() {
+      let _ = writeln!(text, "{} {:016X} {:016X}", i, k.hash1, k.hash0);
+      n += 1;
+    }
+  }
+  coutln!("ntkeys n={} fnv={:016X}", n, fnv64(&text));
 }
 
 fn parse_persp(s: &str) -> Player {
@@ -807,6 +823,44 @@ impl<'a> Runner<'a> {
           self.search.set_params(&np);
         }
       }
+      "XO" => {
+        // upstream mirror: op XO (search_nonn.cpp): the root's nnOutput becomes a copy whose whiteOwnerMap is
+        // scaled by 6 and clamped to [-0.999, 0.999] (f32 math).
+        let root: Option<Rc<SearchNode>> = self.search.get_root_node();
+        let old: Option<Rc<NNOutput>> = root.as_ref().and_then(|r| r.get_nn_output());
+        let (root, old) = match (root, old) {
+          (Some(r), Some(o)) if o.white_owner_map.is_some() => (r, o),
+          _ => {
+            coutln!("noxo");
+            return Ok(());
+          }
+        };
+        let mut copy: NNOutput = (*old).clone();
+        let n = (copy.nn_x_len * copy.nn_y_len) as usize;
+        let mut num_extreme = 0;
+        let map = copy.white_owner_map.as_mut().expect("checked above");
+        for v in map.iter_mut().take(n) {
+          let mut x: f32 = *v * 6.0f32;
+          if x > 0.999f32 {
+            x = 0.999f32;
+          }
+          if x < -0.999f32 {
+            x = -0.999f32;
+          }
+          *v = x;
+          if x >= 0.95f32 || x <= -0.95f32 {
+            num_extreme += 1;
+          }
+        }
+        *root.nn_output.borrow_mut() = Some(Rc::new(copy));
+        coutln!("xo extreme={} of {}", num_extreme, n);
+      }
+      "ECT" => {
+        if t[1] != "-" {
+          self.search.effective_search_time_carried_over = f64::from_bits(u64::from_str_radix(t[1], 16).unwrap());
+        }
+        coutln!("ect {:016X}", self.search.effective_search_time_carried_over.to_bits());
+      }
       "CL" => self.search.clear_search(),
       "KOMI" => self.search.set_komi_if_new(f32::from_bits(u32::from_str_radix(t[1], 16).unwrap())),
       "PIN" => self.search.set_player_if_new(int(1) as Player)?,
@@ -907,6 +961,7 @@ impl<'a> Runner<'a> {
     }
     let table_size: usize = search.node_table.entries.borrow().iter().map(|m| m.len()).sum();
     coutln!("nodetable={} postorder={}", table_size, search.enumerate_tree_post_order().len());
+    print_node_table_keys(search);
   }
 
   fn dump_root(&mut self) {
@@ -967,6 +1022,7 @@ impl<'a> Runner<'a> {
       coutln!("shallow {:016X} {:016X}", st.0.to_bits(), st.1.to_bits());
       let table_size: usize = search.node_table.entries.borrow().iter().map(|m| m.len()).sum();
       coutln!("nodetable={} postorder={}", table_size, search.enumerate_tree_post_order().len());
+      print_node_table_keys(search);
     }
   }
 }
@@ -1032,7 +1088,7 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
 // ScoreValue's table arguments (DECISIONS.md D13), so the bit-exact comparison holds there too. On wasm32 a panic
 // cannot be caught (`try_catch`), so the first mismatching case aborts the test instead of being collected.
 
-const NUM_CASES: usize = 341;
+const NUM_CASES: usize = 382;
 
 /// Cases of the multi-thread test taken from the fixture (spread over all generators).
 const NUM_MT_CASES: usize = 36;

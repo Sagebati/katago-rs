@@ -799,10 +799,31 @@ impl Search {
   /// shared borrow of the Search) and dropped as soon as they all finish (upstream: callbackLoopShouldStop,
   /// notify and join, right after runWholeSearch returns). If it fails, the search threads are stopped
   /// through shouldStopNow and awaited (never dropped, §11) before its error is returned.
+  /// PORT NOTE: on any error (an exception upstream, which ends the process there: nothing catches it
+  /// around runWholeSearch), the tree is discarded with clearSearch before the error is returned. A
+  /// failed playout leaves virtual losses, EVALUATING nodes and half-updated stats behind, and the
+  /// next search would reuse that tree; after the error the Search is as after clearSearch.
   pub async fn run_whole_search_full(
     &mut self,
     search_begun: Option<&dyn Fn(&Search)>, //If not null, will be called once search has begun and tree inspection is safe
     should_stop_early: Option<&dyn Fn() -> bool>, //If not null and returns true, search will stop soon after
+    pondering: bool,
+    tc: &TimeControls,
+    search_factor: f64,
+    concurrent_task: Option<ConcurrentTask<'_>>,
+  ) -> Result<(), KataError> {
+    let result: Result<(), KataError> = self.run_whole_search_full_body(search_begun, should_stop_early, pondering, tc, search_factor, concurrent_task).await;
+    if result.is_err() {
+      self.clear_search();
+    }
+    result
+  }
+
+  /// The body of runWholeSearch(const std::function<void()>*, ...) (search.cpp): see run_whole_search_full.
+  async fn run_whole_search_full_body(
+    &mut self,
+    search_begun: Option<&dyn Fn(&Search)>,
+    should_stop_early: Option<&dyn Fn() -> bool>,
     pondering: bool,
     tc: &TimeControls,
     mut search_factor: f64,
@@ -1244,10 +1265,8 @@ impl Search {
 
       if children_capacity_before > 0 && any_filtered {
         //Fix up the node state and child arrays.
-        // PORT NOTE: collapseChildrenCapacity is "not thread-safe": it runs through NodeArena::with_mut,
-        // which needs the root's Rc to be unique, so the borrows above end first (PORTING.md §4).
-        self.node_arena.with_mut(root_node_idx, |n| n.collapse_children_capacity(num_good_children));
         let node: Rc<SearchNode> = self.node_arena.get(root_node_idx);
+        node.collapse_children_capacity(num_good_children);
         let children: SearchNodeChildrenReference = node.get_children();
         let children_capacity: i32 = children.get_capacity();
 

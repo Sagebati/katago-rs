@@ -4,8 +4,9 @@
 // Search); every stored `SearchNode*` is a `NodeIdx` and `SearchNode` gains a first field `idx`.
 // Atomics are `Cell`s (memory orders kept as comments), the `statsLock` spin lock is removed (its
 // bodies kept), `std::atomic<std::shared_ptr<NNOutput>*>` is `RefCell<Option<Rc<NNOutput>>>`, and
-// the children arrays are `OnceCell<Box<[SearchChildPointer]>>`, set once during search and only
-// taken by `collapseChildrenCapacity` through `NodeArena::with_mut` (outside search).
+// the children arrays are `OnceCell<Box<[SearchChildPointer]>>`, allocated once and never freed while
+// the node lives: `collapseChildrenCapacity` (through `&self`) lowers the state and keeps the emptied
+// array, which `tryExpandingChildrenCapacityAssumeFull` reuses (PORTING.md §4).
 
 use std::cell::Cell;
 use std::cell::OnceCell;
@@ -387,6 +388,27 @@ fn new_child_array(n: i32) -> Box<[SearchChildPointer]> {
   v.into_boxed_slice()
 }
 
+/// `childrenN = new SearchChildPointer[n]` in tryExpandingChildrenCapacityAssumeFull.
+/// PORT NOTE (PORTING.md §4): collapseChildrenCapacity cannot free an array through `&self` (and the
+/// node may be shared), so it leaves the emptied array in its OnceCell; growing again reuses it, every
+/// slot reset to a fresh SearchChildPointer, which is what the new array would hold.
+fn install_child_array(cell: &OnceCell<Box<[SearchChildPointer]>>, n: i32) {
+  match cell.get() {
+    None => {
+      let r = cell.set(new_child_array(n));
+      debug_assert!(r.is_ok());
+    }
+    Some(kept) => {
+      debug_assert!(kept.len() == n as usize);
+      let fresh: SearchChildPointer = SearchChildPointer::new();
+      for slot in kept.iter() {
+        testAssert!(slot.get_if_allocated_relaxed().is_none());
+        slot.store_all(&fresh);
+      }
+    }
+  }
+}
+
 /// upstream: SearchNode (searchnode.h)
 pub struct SearchNode {
   /// PORT NOTE (OWNERSHIP.tsv): new first field, the node's arena index (= its identity, what
@@ -606,10 +628,7 @@ impl SearchNode {
       }
       *state_value = SearchNode::STATE_GROWING1;
 
-      let children: Box<[SearchChildPointer]> = new_child_array(SearchChildrenSizes::SIZE1OVERFLOW);
-      debug_assert!(self.children1.get().is_none());
-      let r = self.children1.set(children);
-      debug_assert!(r.is_ok());
+      install_child_array(&self.children1, SearchChildrenSizes::SIZE1OVERFLOW);
       self.state.set(SearchNode::STATE_EXPANDED1) /*release*/;
       *state_value = SearchNode::STATE_EXPANDED1;
     } else if *state_value < SearchNode::STATE_EXPANDED2 {
@@ -623,10 +642,7 @@ impl SearchNode {
       }
       *state_value = SearchNode::STATE_GROWING2;
 
-      let children: Box<[SearchChildPointer]> = new_child_array(SearchChildrenSizes::SIZE2OVERFLOW);
-      debug_assert!(self.children2.get().is_none());
-      let r = self.children2.set(children);
-      debug_assert!(r.is_ok());
+      install_child_array(&self.children2, SearchChildrenSizes::SIZE2OVERFLOW);
       self.state.set(SearchNode::STATE_EXPANDED2) /*release*/;
       *state_value = SearchNode::STATE_EXPANDED2;
     } else {
@@ -639,8 +655,9 @@ impl SearchNode {
   //If we pruned some of the child nodes, collapse down the arrays and the node state to fit.
   //This preserves the invariant that the level of expansion is only the minimum needed to hold those child nodes.
   //Not thread-safe.
-  /// PORT NOTE: `&mut self`, reached through NodeArena::with_mut (PORTING.md §4).
-  pub fn collapse_children_capacity(&mut self, num_good_children: i32) {
+  /// PORT NOTE (PORTING.md §4): `&self`; `delete[] childrenN; childrenN = NULL;` leaves the emptied array
+  /// in its OnceCell (see install_child_array): only the state says which arrays are in use.
+  pub fn collapse_children_capacity(&self, num_good_children: i32) {
     let mut state_value: i32 = self.state.get() /*acquire*/;
     if num_good_children <= SearchChildrenSizes::SIZE1TOTAL && state_value > SearchNode::STATE_EXPANDED1 {
       debug_assert!(state_value == SearchNode::STATE_EXPANDED2);
@@ -651,7 +668,7 @@ impl SearchNode {
           testAssert!(children2[i as usize].get_if_allocated_relaxed().is_none());
         }
       }
-      drop(self.children2.take());
+      // delete[] children2; children2 = NULL; (PORT NOTE: kept, see above)
       state_value = SearchNode::STATE_EXPANDED1;
       self.state.set(state_value) /*release*/;
     }
@@ -664,7 +681,7 @@ impl SearchNode {
           testAssert!(children1[i as usize].get_if_allocated_relaxed().is_none());
         }
       }
-      drop(self.children1.take());
+      // delete[] children1; children1 = NULL; (PORT NOTE: kept, see above)
       state_value = SearchNode::STATE_EXPANDED0;
       self.state.set(state_value) /*release*/;
     }

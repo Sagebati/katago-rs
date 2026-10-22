@@ -772,11 +772,16 @@ impl Global {
     }
     // PORT NOTE: C++ UB for infinite/NaN x; x86-64 gives INT_MIN (PORTING.md §6 item 5).
     let order_of_magnitude: i32 = crate::port::cpp::static_cast_i32_f64(crate::port::math::log10(absx).floor());
+    // PORT NOTE (PORTING.md §6b): with orderOfMagnitude = INT_MIN (x infinite or NaN) the subtraction
+    // overflows (C++ UB). GCC folds `orderOfMagnitude - precision >= 0` into `orderOfMagnitude >= precision`
+    // (no overflow is assumed), so the test is made on the operands, and the difference and its negation
+    // below wrap like x86-64: an infinite x reaches roundStatic(x, pow(10, ...) = 0) and returns NaN
+    // (checked against the fixture build by oracle/search_select_diff.cpp, R rows).
     let rounding_magnitude: i32 = order_of_magnitude.wrapping_sub(precision);
-    if rounding_magnitude >= 0 {
+    if order_of_magnitude >= precision {
       return x.round();
     }
-    let inverse_scale: f64 = crate::port::math::powf(10.0, -rounding_magnitude as f64);
+    let inverse_scale: f64 = crate::port::math::powf(10.0, rounding_magnitude.wrapping_neg() as f64);
     Global::round_static(x, inverse_scale)
   }
 }

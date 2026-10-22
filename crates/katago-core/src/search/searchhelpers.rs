@@ -320,7 +320,9 @@ impl Search {
   }
 
   /// upstream: Search::getScoreUtility (searchhelpers.cpp)
-  pub(crate) fn get_score_utility(&self, score_mean_avg: f64, score_mean_sq_avg: f64) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_score_utility(&self, score_mean_avg: f64, score_mean_sq_avg: f64) -> f64 {
     let score_mean: f64 = score_mean_avg;
     let score_mean_sq: f64 = score_mean_sq_avg;
     let score_stdev: f64 = ScoreValue::get_score_stdev(score_mean, score_mean_sq);
@@ -332,7 +334,9 @@ impl Search {
   }
 
   /// upstream: Search::getScoreUtilityDiff (searchhelpers.cpp)
-  pub(crate) fn get_score_utility_diff(&self, score_mean_avg: f64, score_mean_sq_avg: f64, delta: f64) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_score_utility_diff(&self, score_mean_avg: f64, score_mean_sq_avg: f64, delta: f64) -> f64 {
     let score_mean: f64 = score_mean_avg;
     let score_mean_sq: f64 = score_mean_sq_avg;
     let score_stdev: f64 = ScoreValue::get_score_stdev(score_mean, score_mean_sq);
@@ -351,7 +355,9 @@ impl Search {
 
   /// upstream: Search::getApproxScoreUtilityDerivative (searchhelpers.cpp)
   //Ignores scoreMeanSq's effect on the utility, since that's complicated
-  pub(crate) fn get_approx_score_utility_derivative(&self, score_mean: f64) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_approx_score_utility_derivative(&self, score_mean: f64) -> f64 {
     let sqrt_board_area: f64 = self.root_board.sqrt_board_area();
     let static_score_value_derivative: f64 = ScoreValue::white_d_score_value_d_score_smooth_no_draw_adjust(score_mean, 0.0, 2.0, sqrt_board_area);
     let dynamic_score_value_derivative: f64 = ScoreValue::white_d_score_value_d_score_smooth_no_draw_adjust(
@@ -506,7 +512,9 @@ impl Search {
 
   /// upstream: Search::shouldSuppressPass (searchhelpers.cpp)
   //Hack to encourage well-behaved dame filling behavior under territory scoring
-  pub(crate) fn should_suppress_pass(&self, n: Option<&SearchNode>) -> bool {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn should_suppress_pass(&self, n: Option<&SearchNode>) -> bool {
     let n: &SearchNode = match n {
       None => return false,
       Some(n) => n,
@@ -643,7 +651,9 @@ impl Search {
   }
 
   /// upstream: Search::getSelfUtilityLCBAndRadiusZeroVisits (searchhelpers.cpp)
-  pub(crate) fn get_self_utility_lcb_and_radius_zero_visits(&self, lcb_buf: &mut f64, radius_buf: &mut f64) {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn get_self_utility_lcb_and_radius_zero_visits(&self, lcb_buf: &mut f64, radius_buf: &mut f64) {
     // Max radius of the entire utility range
     let utility_range_radius: f64 =
       self.search_params.win_loss_utility_factor + self.search_params.static_score_utility_factor + self.search_params.dynamic_score_utility_factor;

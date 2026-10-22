@@ -133,17 +133,19 @@ into the search node arena) and **STATIC** (process-wide). Rules behind the colu
 - **Search nodes live in `port::node_arena::NodeArena`**, a field of `Search`. A `SearchNode*`
   stored anywhere (child pointers, node table, `rootNode`, `graphPath`, `AnalysisData::node`)
   is a `NodeIdx(u32)`. `arena.get(idx) -> Rc<SearchNode>`, `arena.alloc(|idx| SearchNode::new(idx, …)) -> NodeIdx`,
-  `arena.free(idx)` (= `delete node`), `arena.with_mut(idx, |n| …)` (panics if the node is shared:
-  only for `collapseChildrenCapacity`, which upstream calls "not thread-safe").
-  All of them take `&self`. `SearchNode` gains a first field `idx: NodeIdx` (PORT NOTE), and
+  `arena.free(idx)` (= `delete node`). All of them take `&self`; nodes are never mutated through the
+  arena, so a host may hold a node's `Rc` across any Search call. A stale index (its node freed) panics
+  in `get`; debug builds also tag every `NodeIdx` with the slot's generation, so a stale index panics
+  even after its slot was reused. `SearchNode` gains a first field `idx: NodeIdx` (PORT NOTE), and
   pointer comparisons such as `&node == rootNode` become `node.idx == root_idx`.
   Code outside `Search` that dereferences children (`EvalCacheTable::update`) gets an extra
   `nodes: &NodeArena` parameter (PORT NOTE).
 - **`SearchNode` and everything reachable during search is mutated through `&`.** Every field
   that upstream writes during search (atomics, fields under `statsLock`/`entryLock`/a mutex,
   fields set after construction) is `Cell`/`RefCell`/`OnceCell` as the TSV says. Children
-  arrays are `OnceCell<Box<[SearchChildPointer]>>`: set once while searching, taken only via
-  `with_mut`. `ConstSearchNodeChildrenReference` becomes `pub type … = SearchNodeChildrenReference<'a>`.
+  arrays are `OnceCell<Box<[SearchChildPointer]>>`: allocated once and kept while the node lives.
+  `collapseChildrenCapacity` (`&self`) only lowers the state and leaves the emptied array, which
+  `tryExpandingChildrenCapacityAssumeFull` reuses (reset to fresh slots) instead of allocating (PORT NOTE). `ConstSearchNodeChildrenReference` becomes `pub type … = SearchNodeChildrenReference<'a>`.
 - **`NNOutput` is immutable once shared** (`Rc<NNOutput>`). Upstream only mutates copies
   (noise, antimirror) or still-unique results (postprocess in `evaluate`).
 
@@ -226,7 +228,7 @@ port were in this category.
 
 ## 6b. Undefined behaviour that upstream actually reaches
 
-Some upstream code or tests hit UB (e.g. `isAdjacentToPla(PASS_LOC)` reads `colors[-9]` from `testboardbasic`'s replay test via `chooseRandomLegalMove`). Rule: if the UB is a **cast or arithmetic overflow** with deterministic x86-64/GCC behaviour, emulate it (`port::cpp::static_cast_*`, `wrapping_*`) with a PORT NOTE. If it is an **out-of-bounds or uninitialised read**, don't emulate memory: make the case explicit at the call site with the behaviour that keeps every *asserted* upstream result unchanged, add `// PORT NOTE: upstream UB (<what>)`, and list it in the manifest notes of the module. Evidence: an oracle build that runs the real UB call next to the substitute and counts disagreements (as `oracle/boardreplay_rng.cpp` does). That evidence holds for the fixture compiler and flags only.
+Some upstream code or tests hit UB (e.g. `isAdjacentToPla(PASS_LOC)` reads `colors[-9]` from `testboardbasic`'s replay test via `chooseRandomLegalMove`). Rule: if the UB is a **cast or arithmetic overflow** with deterministic x86-64/GCC behaviour, emulate it (`port::cpp::static_cast_*`, `wrapping_*`) with a PORT NOTE. If it is an **out-of-bounds or uninitialised read**, don't emulate memory: make the case explicit at the call site with the behaviour that keeps every *asserted* upstream result unchanged, add `// PORT NOTE: upstream UB (<what>)`, and list it in the manifest notes of the module. Evidence: an oracle build that runs the real UB call next to the substitute and counts disagreements (as `oracle/boardreplay_rng.cpp` does). That evidence holds for the fixture compiler and flags only. Signed overflow that feeds a comparison is not always a wrap: GCC folds `a - b >= 0` into `a >= b` (it assumes no overflow), so compare the operands and wrap only the value that is used afterwards (`Global::roundDynamic` with an infinite or NaN argument, checked by `oracle/search_select_diff.cpp`).
 
 ## 7. Errors and assertions
 
@@ -427,7 +429,7 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 
 **Async tests** drive pools through `tests/common::run_or_stall_panic`, which panics when the pool stalls while the future is pending and unwoken, so a lost wakeup fails fast instead of hanging.
 
-**Search oracles (M3).** `tests/testsearchnonn.rs` replays upstream `runNNLessSearchTests` (debugSkipNeuralNet: backend-independent, byte-exact). Upstream's `Logger` lines (`: ` prefix) are part of upstream test stdout; tests that compare such output install a `log::Log` that writes `": " + msg` into the same thread-local buffer as the test's own `cout` text, and run the pool until stalled after `kill_server_threads()` where upstream's `delete nnEval` joins (the serve task logs `GPU 0 finishing...` as it ends). `tests/search_oracle.rs` is a differential oracle against `oracle/search_nonn.cpp` (op-stream cases, floats as hex bits, 1 search thread) plus a Rust-only multi-virtual-thread determinism/invariant test. Real-net searches are compared with tolerances by `katago-nn-burn/tests/search_smoke.rs` (`just search-smoke`, release only). Edition 2024 reserves `gen`: don't name test helpers `gen`.
+**Search oracles (M3).** `tests/testsearchnonn.rs` replays upstream `runNNLessSearchTests` (debugSkipNeuralNet: backend-independent, byte-exact). Upstream's `Logger` lines (`: ` prefix) are part of upstream test stdout; tests that compare such output install a `log::Log` that writes `": " + msg` into the same thread-local buffer as the test's own `cout` text, and run the pool until stalled after `kill_server_threads()` where upstream's `delete nnEval` joins (the serve task logs `GPU 0 finishing...` as it ends). `tests/search_oracle.rs` is a differential oracle against `oracle/search_nonn.cpp` (op-stream cases, floats as hex bits, 1 search thread) plus a Rust-only multi-virtual-thread determinism/invariant test. Paths a NN-less search cannot reach (extreme ownership, binding caps, zero-visit LCBs, infinite arguments) get a crafted-input oracle instead: `tests/search_select_diff.rs` vs `oracle/search_select_diff.cpp` (upstream's private helpers through `#define private public` on the C++ side; the Rust fns are `pub` with a PORT NOTE), or an op in search_nonn that overrides state the way a net would (XO: extreme root ownership). Port-only behaviour with no C++ counterpart (a host holding node `Rc`s, the error path of `runWholeSearch`) is in `tests/search_robustness.rs`. Real-net searches are compared with tolerances by `katago-nn-burn/tests/search_smoke.rs` (`just search-smoke`, release only). Edition 2024 reserves `gen`: don't name test helpers `gen`.
 
 **Random-game generators** for oracles include out-of-turn (board-legal) moves, odd×even board sizes, finished games where pass dominates, and hand-built encore ko fights: plain legal play never reaches those states.
 
@@ -494,7 +496,7 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::nlohmann::{parse, sax_parse, Sax, Exception}` | `json::parse(s)` / `json::sax_parse(s, &sax)`: port of nlohmann 3.8.0's lexer + parser (§9 Input); errors are `KataError::NlohmannJson(e.what())` |
 | `port::nlohmann::{get_string, get_bool, get_f32, get_i32, get_i64, get_f64, get_vector_i32, get_vector_i64, is_number_integer, static_cast_i32_f64}` | nlohmann `get<T>` semantics (e.g. `get<float>`/`get<int>` accept booleans, `get<int64_t>`/`get<double>` do not; `get<int>` of an out-of-range/NaN float is `INT_MIN`, `get<int64_t>` of a u64 above i64::MAX wraps; `get<std::vector<T>>` needs an array); errors are `KataError::NlohmannJson` |
 | `port::nlohmann::dump` | `fn(&serde_json::Value) -> String`, equal to `nlohmann::json::dump()` |
-| `port::node_arena::{NodeIdx, NodeArena<T>}` | §4. Generic over the node type (`Search::node_arena: NodeArena<SearchNode>`): `alloc(\|idx\| T) -> NodeIdx`, `get(idx) -> Rc<T>` (panics on a freed index), `free(idx)` (the index may be reused, like freed memory; held `Rc`s stay valid), `with_mut(idx, f)` (panics if shared), plus `is_allocated` / `num_allocated` for tests. Unit tests in the module |
+| `port::node_arena::{NodeIdx, NodeArena<T>}` | §4. Generic over the node type (`Search::node_arena: NodeArena<SearchNode>`): `alloc(\|idx\| T) -> NodeIdx`, `get(idx) -> Rc<T>` (panics on a freed index), `free(idx)` (the slot may be reused, like freed memory; held `Rc`s stay valid), plus `is_allocated` / `num_allocated` / `NodeIdx::slot` for tests. Debug builds: `NodeIdx` carries the slot's generation and `get`/`free` of a stale index panic. Unit tests in the module |
 | `port::executor` | `yield_now`, `WakerList { wait_until, notify_all }`, `AsyncQueue<T>` (`ThreadSafeQueue` names: `force_push`, `try_pop`, async `wait_pop` (`waitPop`, `None` = false), async `wait_pop_up_to_n`, `set_read_only`, `unset_read_only`, `close`, `reserve`, `size`; no `maxSize`/`waitPush`, unused on ported paths; plus `any(f)`, for debug assertions only), `AsyncPriorityQueue<K, V>` (`ThreadSafePriorityQueue`: max-heap on the key, equal keys in insertion order; `force_push(key, value)`, `try_pop`, async `wait_pop`, `set_read_only`, `close`, `size`), `set_sleep(fn(f64) -> LocalBoxFuture<'static, ()>)` / `sleep(secs)` (the host's timed wait, first install wins, fatal if missing; AsyncBot's analyze-callback loop), `trait Spawner { fn spawn_local(&self, f: LocalBoxFuture<'static, ()>) }` (implemented for `futures::executor::LocalSpawner`), re-export `LocalBoxFuture`. Unit tests in the module |
 
 ## Appendix B: name overrides (win over the overload rules)

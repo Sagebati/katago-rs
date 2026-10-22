@@ -137,7 +137,9 @@ impl Search {
   }
 
   /// upstream: Search::computeWeightFromNNOutput (searchupdatehelpers.cpp)
-  pub(crate) fn compute_weight_from_nn_output(&self, nn_output: &NNOutput) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn compute_weight_from_nn_output(&self, nn_output: &NNOutput) -> f64 {
     if !self.search_params.use_uncertainty {
       return 1.0;
     }
@@ -423,7 +425,9 @@ impl Search {
   }
 
   /// upstream: Search::downweightBadChildrenAndNormalizeWeight (searchupdatehelpers.cpp)
-  pub(crate) fn downweight_bad_children_and_normalize_weight(
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn downweight_bad_children_and_normalize_weight(
     &self,
     num_children: i32,
     mut current_total_weight: f64, //The current sum of statsBuf[i].weightAdjusted
@@ -521,7 +525,9 @@ impl Search {
 
   /// upstream: Search::pruneNoiseWeight (searchupdatehelpers.cpp)
   //Returns the new sum of weightAdjusted
-  pub(crate) fn prune_noise_weight(&self, stats_buf: &mut Vec<MoreNodeStats>, num_children: i32, total_child_weight: f64, policy_probs_buf: &[f64]) -> f64 {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_select_diff.rs can call it.
+  pub fn prune_noise_weight(&self, stats_buf: &mut Vec<MoreNodeStats>, num_children: i32, total_child_weight: f64, policy_probs_buf: &[f64]) -> f64 {
     if num_children <= 1 || total_child_weight <= 0.00001 {
       return total_child_weight;
     }

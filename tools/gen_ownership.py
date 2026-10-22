@@ -189,7 +189,7 @@ r(f,"SearchNode","nnOutput","std::atomic<std::shared_ptr<NNOutput>*>","SHARED","
 r(f,"SearchNode","humanOutput","std::atomic<std::shared_ptr<NNOutput>*>","SHARED","RefCell<Option<Rc<NNOutput>>>","same as nnOutput")
 r(f,"SearchNode","nodeAge","std::atomic<uint32_t>","OWNED","Cell<u32>","")
 r(f,"SearchNode","children0","SearchChildPointer*","OWNED","OnceCell<Box<[SearchChildPointer]>>","len SearchChildrenSizes::SIZE0OVERFLOW; set by initializeChildren; the child NODES are ARENA and are not freed with the array")
-r(f,"SearchNode","children1","SearchChildPointer*","OWNED","OnceCell<Box<[SearchChildPointer]>>","len SIZE1OVERFLOW; set by tryExpandingChildrenCapacityAssumeFull; taken by collapseChildrenCapacity via NodeArena::with_mut (outside search only)")
+r(f,"SearchNode","children1","SearchChildPointer*","OWNED","OnceCell<Box<[SearchChildPointer]>>","len SIZE1OVERFLOW; set by tryExpandingChildrenCapacityAssumeFull; PORT NOTE: collapseChildrenCapacity (&self) lowers the state and keeps the emptied array (not freed: no &mut through a shared node), which tryExpandingChildrenCapacityAssumeFull reuses, reset to fresh slots")
 r(f,"SearchNode","children2","SearchChildPointer*","OWNED","OnceCell<Box<[SearchChildPointer]>>","len SIZE2OVERFLOW; as children1")
 r(f,"SearchNode","stats","NodeStatsAtomic","OWNED","NodeStatsAtomic","inline; NodeStatsAtomic(const&) -> new_copy")
 r(f,"SearchNode","virtualLosses","std::atomic<int32_t>","OWNED","Cell<i32>","fetch_add -> port::cpp::cell_fetch_add")

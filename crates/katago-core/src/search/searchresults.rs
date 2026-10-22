@@ -2225,19 +2225,21 @@ impl Search {
   //Safe to call DURING search, but NOT necessarily safe to call multithreadedly when updating the root position
   //or changing parameters or clearing search.
   //If node is not provided, defaults to using the root node.
-  /// PORT NOTE: throws -> Result. With no node and no root, upstream dereferences NULL (UB); here a panic.
+  /// PORT NOTE: throws -> Result. With no node and no root, upstream dereferences NULL (UB) once past the
+  /// alwaysIncludeOwnerMap check; here a panic there.
   pub fn get_average_tree_ownership(&self, node: Option<&SearchNode>) -> Result<Vec<f64>, KataError> {
     let root_holder: Option<Rc<SearchNode>>;
-    let node: &SearchNode = match node {
-      Some(n) => n,
+    let node: Option<&SearchNode> = match node {
+      Some(n) => Some(n),
       None => {
         root_holder = self.get_root_node();
-        root_holder.as_deref().expect("getAverageTreeOwnership: upstream dereferences a NULL root (UB)")
+        root_holder.as_deref()
       }
     };
     if !self.always_include_owner_map {
       return Err(KataError::StringError("Called Search::getAverageTreeOwnership when alwaysIncludeOwnerMap is false".to_string()));
     }
+    let node: &SearchNode = node.expect("getAverageTreeOwnership: upstream dereferences a NULL root (UB)");
     let mut vec: Vec<f64> = vec![0.0; (self.nn_x_len * self.nn_y_len) as usize];
     let nn_area: i32 = self.nn_x_len * self.nn_y_len;
     let mut accumulate = |ownership: &[f32], self_prop: f64| {
