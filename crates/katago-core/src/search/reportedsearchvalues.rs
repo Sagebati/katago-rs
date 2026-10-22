@@ -2,10 +2,8 @@
 
 use crate::port::fmt::cpp_ostream_f64;
 
-// TODO(port): needs search::Search (M3 wave 2a): `struct Search;` forward declaration in
-// reportedsearchvalues.h, and `#include "../search/search.h"` + `../neuralnet/nninputs.h` in the .cpp
-// (the `use crate::neuralnet::nninputs::ScoreValue;` and `use crate::search::search::Search;` that
-// the constructor below needs are added together with it).
+use crate::neuralnet::nninputs::ScoreValue;
+use crate::search::search::Search;
 
 /// upstream: ReportedSearchValues (reportedsearchvalues.h)
 #[derive(Clone, Debug, Default)]
@@ -45,65 +43,75 @@ impl ReportedSearchValues {
     }
   }
 
-  // TODO(port): needs search::Search (M3 wave 2a). The constructor below is the verbatim port, kept
-  // commented because its first parameter and the three `search.` reads (rootBoard,
-  // recentScoreCenter, searchParams) cannot compile until search.rs exists. Name per
-  // PORTING.md §1 rule 3 is `new_search_win_loss_value_avg_...` (all nine parameters differ from the
-  // default constructor), far over the ~40 character limit: needs an Appendix B entry,
-  // proposed `ReportedSearchValues::new_search`.
-  //
-  // /// upstream: ReportedSearchValues::ReportedSearchValues (reportedsearchvalues.cpp)
-  // pub fn new_search(
-  //   search: &Search, // TODO(port): needs search::Search (M3 wave 2a)
-  //   win_loss_value_avg: f64,
-  //   no_result_value_avg: f64,
-  //   score_mean_avg: f64,
-  //   score_mean_sq_avg: f64,
-  //   lead_avg: f64,
-  //   utility_avg: f64,
-  //   total_weight: f64,
-  //   total_visits: i64,
-  // ) -> ReportedSearchValues {
-  //   // PORT NOTE: the C++ constructor assigns the fields in its body; start from zeros (see `new`).
-  //   let mut s: ReportedSearchValues = ReportedSearchValues::new();
-  //   s.win_loss_value = win_loss_value_avg;
-  //   s.no_result_value = no_result_value_avg;
-  //   let score_mean: f64 = score_mean_avg;
-  //   let score_mean_sq: f64 = score_mean_sq_avg;
-  //   let score_stdev: f64 = ScoreValue::get_score_stdev(score_mean, score_mean_sq);
-  //   let sqrt_board_area: f64 = search.root_board.sqrt_board_area(); // TODO(port): needs search::Search (M3 wave 2a)
-  //   s.static_score_value = ScoreValue::expected_white_score_value(score_mean, score_stdev, 0.0, 2.0, sqrt_board_area);
-  //   s.dynamic_score_value = ScoreValue::expected_white_score_value(
-  //     score_mean,
-  //     score_stdev,
-  //     search.recent_score_center, // TODO(port): needs search::Search (M3 wave 2a); adjust if it becomes a Cell
-  //     search.search_params.dynamic_score_center_scale,
-  //     sqrt_board_area,
-  //   );
-  //   s.expected_score = score_mean;
-  //   s.expected_score_stdev = score_stdev;
-  //   s.lead = lead_avg;
-  //   s.utility = utility_avg;
-  //
-  //   //Clamp. Due to tiny floating point errors, these could be outside range.
-  //   if s.win_loss_value < -1.0 { s.win_loss_value = -1.0; }
-  //   if s.win_loss_value > 1.0 { s.win_loss_value = 1.0; }
-  //   if s.no_result_value < 0.0 { s.no_result_value = 0.0; }
-  //   if s.no_result_value > 1.0 - s.win_loss_value.abs() { s.no_result_value = 1.0 - s.win_loss_value.abs(); }
-  //
-  //   s.win_value = 0.5 * (s.win_loss_value + (1.0 - s.no_result_value));
-  //   s.loss_value = 0.5 * (-s.win_loss_value + (1.0 - s.no_result_value));
-  //
-  //   //Handle float imprecision
-  //   if s.win_value < 0.0 { s.win_value = 0.0; }
-  //   if s.win_value > 1.0 { s.win_value = 1.0; }
-  //   if s.loss_value < 0.0 { s.loss_value = 0.0; }
-  //   if s.loss_value > 1.0 { s.loss_value = 1.0; }
-  //
-  //   s.weight = total_weight;
-  //   s.visits = total_visits;
-  //   s
-  // }
+  /// upstream: ReportedSearchValues::ReportedSearchValues(const Search&, double, ...) (reportedsearchvalues.cpp)
+  /// PORT NOTE: name from PORTING.md Appendix B.
+  pub fn new_search(
+    search: &Search,
+    win_loss_value_avg: f64,
+    no_result_value_avg: f64,
+    score_mean_avg: f64,
+    score_mean_sq_avg: f64,
+    lead_avg: f64,
+    utility_avg: f64,
+    total_weight: f64,
+    total_visits: i64,
+  ) -> ReportedSearchValues {
+    // PORT NOTE: the C++ constructor assigns the fields in its body; start from zeros (see `new`).
+    let mut s: ReportedSearchValues = ReportedSearchValues::new();
+    s.win_loss_value = win_loss_value_avg;
+    s.no_result_value = no_result_value_avg;
+    let score_mean: f64 = score_mean_avg;
+    let score_mean_sq: f64 = score_mean_sq_avg;
+    let score_stdev: f64 = ScoreValue::get_score_stdev(score_mean, score_mean_sq);
+    let sqrt_board_area: f64 = search.root_board.sqrt_board_area();
+    s.static_score_value = ScoreValue::expected_white_score_value(score_mean, score_stdev, 0.0, 2.0, sqrt_board_area);
+    s.dynamic_score_value = ScoreValue::expected_white_score_value(
+      score_mean,
+      score_stdev,
+      search.recent_score_center,
+      search.search_params.dynamic_score_center_scale,
+      sqrt_board_area,
+    );
+    s.expected_score = score_mean;
+    s.expected_score_stdev = score_stdev;
+    s.lead = lead_avg;
+    s.utility = utility_avg;
+
+    //Clamp. Due to tiny floating point errors, these could be outside range.
+    if s.win_loss_value < -1.0 {
+      s.win_loss_value = -1.0;
+    }
+    if s.win_loss_value > 1.0 {
+      s.win_loss_value = 1.0;
+    }
+    if s.no_result_value < 0.0 {
+      s.no_result_value = 0.0;
+    }
+    if s.no_result_value > 1.0 - s.win_loss_value.abs() {
+      s.no_result_value = 1.0 - s.win_loss_value.abs();
+    }
+
+    s.win_value = 0.5 * (s.win_loss_value + (1.0 - s.no_result_value));
+    s.loss_value = 0.5 * (-s.win_loss_value + (1.0 - s.no_result_value));
+
+    //Handle float imprecision
+    if s.win_value < 0.0 {
+      s.win_value = 0.0;
+    }
+    if s.win_value > 1.0 {
+      s.win_value = 1.0;
+    }
+    if s.loss_value < 0.0 {
+      s.loss_value = 0.0;
+    }
+    if s.loss_value > 1.0 {
+      s.loss_value = 1.0;
+    }
+
+    s.weight = total_weight;
+    s.visits = total_visits;
+    s
+  }
 }
 
 // ~ReportedSearchValues() is an empty destructor: omitted (PORTING.md §5).

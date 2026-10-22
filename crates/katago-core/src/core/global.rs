@@ -1,7 +1,7 @@
 // Ported from KataGo cpp/core/global.cpp, cpp/core/global.h @ ba938676d7f42d70950b3a535af2466fb642008c
 //
 // Not ported (port-manifest.toml notes): getDateString (declared, never defined upstream),
-// pauseForKey (console IO), roundDynamic (needs port::math::log10).
+// pauseForKey (console IO).
 
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
@@ -763,11 +763,22 @@ impl Global {
     (x * inverse_scale).round() / inverse_scale
   }
 
-  // upstream: Global::roundDynamic (global.cpp)
+  /// upstream: Global::roundDynamic (global.cpp)
   //Round x to this many decimal digits of precision
-  // TODO(port): needs port::math::log10 (`(int)floor(log10(absx))`) and then
-  // `pow(10.0,-roundingMagnitude)` -> port::math::powf; not ported until port::math has log10
-  // (PORTING.md §6 item 3). Only caller: search/searchresults.cpp (M3).
+  pub fn round_dynamic(x: f64, precision: i32) -> f64 {
+    let absx: f64 = x.abs();
+    if absx <= 1e-60 {
+      return x;
+    }
+    // PORT NOTE: C++ UB for infinite/NaN x; x86-64 gives INT_MIN (PORTING.md §6 item 5).
+    let order_of_magnitude: i32 = crate::port::cpp::static_cast_i32_f64(crate::port::math::log10(absx).floor());
+    let rounding_magnitude: i32 = order_of_magnitude.wrapping_sub(precision);
+    if rounding_magnitude >= 0 {
+      return x.round();
+    }
+    let inverse_scale: f64 = crate::port::math::powf(10.0, -rounding_magnitude as f64);
+    Global::round_static(x, inverse_scale)
+  }
 }
 
 /// upstream: contains (global.cpp)

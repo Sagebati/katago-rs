@@ -58,7 +58,7 @@ check-features:
 # yields to the JS event loop between batches (PORTING.md §11).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
@@ -66,3 +66,9 @@ test-wasm:
 # b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
 nn-parity *flags="":
     cargo test --release -p katago-nn-burn --test nn_parity {{flags}} -- --nocapture
+
+# Search smoke (real net): ported Search + NNEvaluator over burn flex (g170-b6c96) vs upstream Search over the Eigen
+# NNEvaluator (fixtures/upstream-v1.16.5/search/oracle/search_eigen_b6c96.txt, ~40 searches). Tolerance comparison:
+# prints visit-vector / top-move / value-diff statistics by maxVisits. Release only (debug burn is very slow).
+search-smoke *flags="":
+    cargo test --release -p katago-nn-burn --test search_smoke {{flags}} -- --nocapture

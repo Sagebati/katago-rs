@@ -37,8 +37,8 @@
 //! (CORE-MATH, MIT, correctly rounded) are a port of glibc's copy in math/lgamma.rs. `expm1`
 //! (fdlibm, `__expm1_fma`) is ported with glibc's FMA contractions like the ARM routines (see
 //! its section). `atan`, `tan` (IBM Accurate Mathematical Library, LGPL) wrap the platform
-//! libm (D13). `tanh`, `atanf` (CORE-MATH) and `log10` (fdlibm) are not here yet: see the
-//! TODO(port) at the end of the file. `sqrt` is correctly rounded everywhere and stays
+//! libm (D13). `log10` (fdlibm) is [`log10`]. `tanh`, `atanf` (CORE-MATH) are not here yet: see
+//! the TODO(port) at the end of the file. `sqrt` is correctly rounded everywhere and stays
 //! `f64::sqrt`.
 
 // ---------------------------------------------------------------------------------------
@@ -1025,6 +1025,64 @@ pub fn lgamma(x: f64) -> f64 {
   lgamma_r(x, &mut signgam)
 }
 
+// ---------------------------------------------------------------------------------------
+// e_log10.c
+// ---------------------------------------------------------------------------------------
+//
+// Ported from glibc 2.44 sysdeps/ieee754/dbl-64/e_log10.c (fdlibm, `__ieee754_log10`), as built
+// into the x86-64 libm (no multiarch/FMA variant of log10). Its notice, kept as it asks:
+//
+//   Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+//
+//   Developed at SunPro, a Sun Microsystems, Inc. business.
+//   Permission to use, copy, modify, and distribute this
+//   software is freely granted, provided that this notice
+//   is preserved.
+//
+// It calls `__ieee754_log`, which on the fixture machine is the FMA build of the ARM log ([`ln`]).
+// A C transcription of this function calling the host `log` matched the installed glibc 2.44
+// `log10` on 2*10^7 inputs (random bits, powers of ten and their neighbours), with and without
+// fused multiply-adds for its two `y*c + z` steps (no case where fusing changes the result was
+// found; plain `*`/`+` are used, as the x86-64 build has no FMA here). Fixture oracle on every
+// target: tests/math_log10.rs vs oracle/math_log10.txt.
+
+const LOG10_TWO54: f64 = 1.80143985094819840000e+16; /* 0x43500000, 0x00000000 */
+const LOG10_IVLN10: f64 = 4.34294481903251816668e-01; /* 0x3FDBCB7B, 0x1526E50E */
+const LOG10_2HI: f64 = 3.01029995663611771306e-01; /* 0x3FD34413, 0x509F6000 */
+const LOG10_2LO: f64 = 3.69423907715893078616e-13; /* 0x3D59FEF3, 0x11F12B36 */
+
+/// C `log10(double)` (glibc 2.44 `__ieee754_log10`), bit-identical on every target. Use instead
+/// of `f64::log10`.
+// `(x - x) / (x - x)` is fdlibm's NaN for negative input, kept verbatim.
+#[allow(clippy::eq_op)]
+pub fn log10(mut x: f64) -> f64 {
+  let mut hx: i32 = (asuint64(x) >> 32) as u32 as i32;
+  let lx: u32 = asuint64(x) as u32;
+  let mut k: i32 = 0;
+  if hx < 0x00100000 {
+    /* x < 2**-1022  */
+    if ((hx & 0x7fffffff) as u32 | lx) == 0 {
+      return -1.0 / x.abs(); /* log(+-0)=-inf  [fabs(x) = +0.0] */
+    }
+    if hx < 0 {
+      return (x - x) / (x - x); /* log(-#) = NaN */
+    }
+    k -= 54;
+    x *= LOG10_TWO54; /* subnormal number, scale up x */
+    hx = (asuint64(x) >> 32) as u32 as i32;
+  }
+  if hx >= 0x7ff00000 {
+    return x + x;
+  }
+  k += (hx >> 20) - 1023;
+  let i: i32 = ((k as u32 & 0x80000000) >> 31) as i32;
+  hx = (hx & 0x000fffff) | ((0x3ff - i) << 20);
+  let y: f64 = (k + i) as f64;
+  x = set_high_word(x, hx as u32);
+  let z: f64 = y * LOG10_2LO + LOG10_IVLN10 * ln(x);
+  z + y * LOG10_2HI
+}
+
 // TODO(port): glibc does not use optimized-routines for the other transcendentals the
 // upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
 // 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0%, expm1 0.24%,
@@ -1036,7 +1094,7 @@ pub fn lgamma(x: f64) -> f64 {
 //   - tanhf (nneval.cpp ownership): done above.
 //   - lgamma, expm1 (fancymath.cpp): done (lgamma: CORE-MATH port in math/lgamma.rs; expm1:
 //     fdlibm with glibc's FMA contractions, above).
-//   - log10 (global.cpp roundDynamic): fdlibm, no FMA variant in glibc.
+//   - log10 (global.cpp roundDynamic): done above (fdlibm, no FMA variant in glibc).
 //   - atan, tan (nninputs.cpp ScoreValue): done above as platform-libm wrappers (D13: glibc's
 //     are LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).
 

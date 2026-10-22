@@ -12,7 +12,7 @@ disallowed-methods = [
   { path = "f64::ln_1p", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::log", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::log2", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
-  { path = "f64::log10", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
+  { path = "f64::log10", reason = "use port::math::log10 (PORTING.md §6)" },
   { path = "f64::cbrt", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::hypot", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },
   { path = "f64::sin", reason = "not in port::math yet: TODO(port) (PORTING.md §6)" },

@@ -210,6 +210,8 @@ r(f,"SearchNodeTable","mutexPool","MutexPool*","OWNED","u32","PORT NOTE: renamed
 
 # ---------------- search/search.h ----------------
 f = "cpp/search/search.h"
+r(f,"Search","searchNodeAge","uint32_t","OWNED","Cell<u32>","tree walks run through &self while their callbacks borrow the Search")
+r(f,"Search","nonSearchRand","Rand","OWNED","RefCell<Rand>","applyRecursively* run through &self; never borrowed across an await")
 r(f,"SearchThread","board","Board","OWNED","Board","")
 r(f,"SearchThread","history","BoardHistory","OWNED","BoardHistory","")
 r(f,"SearchThread","graphPath","std::unordered_set<SearchNode*>","ARENA","HashSet<NodeIdx>","membership only, never iterated")

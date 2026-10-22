@@ -175,6 +175,8 @@ cpp/search/searchnode.h	SearchNode	storeNNOutput(thread)	SearchThread&	BORROWED	
 cpp/search/searchnode.h	SearchNode	maybeExpandChildrenCapacityForNewChild(stateValue)	SearchNodeState&	BORROWED	&mut SearchNodeState	in/out param
 cpp/search/searchnodetable.h	SearchNodeTable	entries	std::vector<std::map<Hash128,SearchNode*>>	ARENA	RefCell<Vec<BTreeMap<Hash128, NodeIdx>>>	the arena owns the nodes; upstream `delete node` -> search.node_arena.free(idx) + map erase
 cpp/search/searchnodetable.h	SearchNodeTable	mutexPool	MutexPool*	OWNED	u32	PORT NOTE: renamed mutex_pool_num_mutexes (= numShards); Search's ctor reads it as nodeTable->mutexPool->getNumMutexes()
+cpp/search/search.h	Search	searchNodeAge	uint32_t	OWNED	Cell<u32>	tree walks run through &self while their callbacks borrow the Search
+cpp/search/search.h	Search	nonSearchRand	Rand	OWNED	RefCell<Rand>	applyRecursively* run through &self; never borrowed across an await
 cpp/search/search.h	SearchThread	board	Board	OWNED	Board	
 cpp/search/search.h	SearchThread	history	BoardHistory	OWNED	BoardHistory	
 cpp/search/search.h	SearchThread	graphPath	std::unordered_set<SearchNode*>	ARENA	HashSet<NodeIdx>	membership only, never iterated

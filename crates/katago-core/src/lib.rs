@@ -16,6 +16,13 @@
          clippy::needless_late_init, clippy::int_plus_one, clippy::manual_clamp, clippy::neg_cmp_op_on_partial_ord,
          clippy::inherent_to_string, clippy::wrong_self_convention,
          clippy::write_with_newline)]
+// Added in M3 wave 2a: upstream literals (0x3fffFFFF), the mirrored module path search::search,
+// and statement shapes kept verbatim (is_some() checks before expect, `mh[last_idx - 0]`,
+// `vector<T>&` params as &mut Vec<T> per PORTING.md §3, the TSV-prescribed
+// SearchNodeChildrenReference::index, `&*box` reborrows, unreachable!() inside deferred conditions).
+#![allow(clippy::mixed_case_hex_literals, clippy::module_inception, clippy::unnecessary_unwrap,
+         clippy::should_implement_trait, clippy::ptr_arg, clippy::identity_op, clippy::borrow_deref_ref,
+         clippy::diverging_sub_expression)]
 #![deny(clippy::await_holding_refcell_ref)]
 // PORTING.md §6 item 3: transcendentals only through port::math (list in clippy.toml).
 #![deny(clippy::disallowed_methods)]
@@ -25,3 +32,4 @@ pub mod core;
 pub mod game;
 pub mod neuralnet;
 pub mod search;
+pub mod program;

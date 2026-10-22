@@ -56,7 +56,7 @@ upstream = ["cpp/core/global.cpp", "cpp/core/global.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
 status = "partial"
 phase = "M1"
-notes = "Everything except roundDynamic. Pilot: fatalError, boolToString, intToString, floatToString, doubleToString, doubleToStringHighPrecision, int64ToString, uint32ToString, uint64ToString, uint32ToHexString, uint64ToHexString, sizeToString, tryStringToInt/stringToInt, tryStringToInt64/stringToInt64, tryStringToBool/stringToBool, tryStringToUInt64/stringToUInt64, tryHexStringToUInt64/hexStringToUInt64, tryStringToFloat/stringToFloat, tryStringToDouble/stringToDouble, isWhitespace (both), isPrefix, isSuffix, trim, split (both: split / split_delim), toUpper, toLower, isEqualCaseInsensitive, isDigit, isAlpha, contains(const char*|const std::string&, char) as contains_str_char, strprintf (macro, port::fmt). M1: charToString, chopPrefix/chopSuffix (Result), concat (concat / concat_len / concat_start_end / concat_set), isDigits / is_digits_start_end, parseDigits / parse_digits_start_end (Result), stringCharsAllAllowed, stripComments, readKeyValues (Result, BTreeMap), readMem (Result; const char* and string overloads collapse), roundStatic, templates as generics: contains_vector / contains_set / contains_map (each also covers its const char* overload via Borrow/PartialEq<str>; the generic compares whole &strs, so a caller porting a const char* argument that may hold a NUL passes port::cpp::c_str), index_of (+ NPOS = usize::MAX), map_get / map_get_str (the map<string,B>+const char* overload, own message) / map_get_defaulting, unique_ptr_void = Box<dyn Any> + make_unique_void, WrappedWithDeleter (deleter fn-pointer template param -> field; operator T&/T/= -> get_mut/get/assign; Drop), Global::CustomScopeGuard (module-level, Drop). STRUCT_NAMED_* stay hand-written per struct; PUREFUNC dropped. Not ported: roundDynamic (TODO(port): needs port::math::log10; only caller search/searchresults.cpp, M3), pauseForKey (stdin; no console IO in core, PORTING.md §12), getDateString (declared in global.h but never defined; DateTime::getDateString is the live one). StringError/IOError/ConfigParsingError/ValueError/CommandError + nlohmann exception -> KataError. istream >> parsing -> port::cpp::istream_parse_*. fatalError panics instead of quick_exit. trim's default delims -> Global::TRIM_DEFAULT_DELIM (PORTING.md §5 exception). KataError::what() stops at the first NUL like e.what() = message.c_str(). const char* parameters stop at their first NUL via port::cpp::c_str (PORT NOTE): trim's delims, concat_len's strings and delim, the concat* delims, contains_str_char's string (both overloads search .c_str()), stringCharsAllAllowed's allowedChars, map_get_str's key, strprintf!'s format; readMem and fatalError keep the std::string overload's semantics. std::string is bytes: trim cuts by byte and never panics on non-ASCII; a result that is not valid UTF-8 (only with non-ASCII delims, e.g. trim(\"é\",\"©\") = \"\\xC3\" in C++) becomes U+FFFD in the String (TODO(port): raw-byte output). chopPrefix/chopSuffix slice at boundaries that are always char boundaries. parseDigits: substr(start,..) with start > size() throws std::out_of_range upstream, clamps here (TODO(port), unreachable from upstream callers). Parity: tests/global.rs vs oracle/global.cpp (global.txt: all M1 additions incl. error texts, NUL-in-const-char* and non-ASCII byte cases; the 'lossy' lines are checked as Rust == from_utf8_lossy(C++ bytes)); RAII helpers by a semantic test (no C++ output)."
+notes = "Everything. M3: roundDynamic (log10 via port::math::log10, pow via port::math::powf; (int)floor of an inf/NaN log10 is UB upstream -> static_cast_i32_f64). Pilot: fatalError, boolToString, intToString, floatToString, doubleToString, doubleToStringHighPrecision, int64ToString, uint32ToString, uint64ToString, uint32ToHexString, uint64ToHexString, sizeToString, tryStringToInt/stringToInt, tryStringToInt64/stringToInt64, tryStringToBool/stringToBool, tryStringToUInt64/stringToUInt64, tryHexStringToUInt64/hexStringToUInt64, tryStringToFloat/stringToFloat, tryStringToDouble/stringToDouble, isWhitespace (both), isPrefix, isSuffix, trim, split (both: split / split_delim), toUpper, toLower, isEqualCaseInsensitive, isDigit, isAlpha, contains(const char*|const std::string&, char) as contains_str_char, strprintf (macro, port::fmt). M1: charToString, chopPrefix/chopSuffix (Result), concat (concat / concat_len / concat_start_end / concat_set), isDigits / is_digits_start_end, parseDigits / parse_digits_start_end (Result), stringCharsAllAllowed, stripComments, readKeyValues (Result, BTreeMap), readMem (Result; const char* and string overloads collapse), roundStatic, templates as generics: contains_vector / contains_set / contains_map (each also covers its const char* overload via Borrow/PartialEq<str>; the generic compares whole &strs, so a caller porting a const char* argument that may hold a NUL passes port::cpp::c_str), index_of (+ NPOS = usize::MAX), map_get / map_get_str (the map<string,B>+const char* overload, own message) / map_get_defaulting, unique_ptr_void = Box<dyn Any> + make_unique_void, WrappedWithDeleter (deleter fn-pointer template param -> field; operator T&/T/= -> get_mut/get/assign; Drop), Global::CustomScopeGuard (module-level, Drop). STRUCT_NAMED_* stay hand-written per struct; PUREFUNC dropped. Not ported: pauseForKey (stdin; no console IO in core, PORTING.md §12), getDateString (declared in global.h but never defined; DateTime::getDateString is the live one). StringError/IOError/ConfigParsingError/ValueError/CommandError + nlohmann exception -> KataError. istream >> parsing -> port::cpp::istream_parse_*. fatalError panics instead of quick_exit. trim's default delims -> Global::TRIM_DEFAULT_DELIM (PORTING.md §5 exception). KataError::what() stops at the first NUL like e.what() = message.c_str(). const char* parameters stop at their first NUL via port::cpp::c_str (PORT NOTE): trim's delims, concat_len's strings and delim, the concat* delims, contains_str_char's string (both overloads search .c_str()), stringCharsAllAllowed's allowedChars, map_get_str's key, strprintf!'s format; readMem and fatalError keep the std::string overload's semantics. std::string is bytes: trim cuts by byte and never panics on non-ASCII; a result that is not valid UTF-8 (only with non-ASCII delims, e.g. trim(\"é\",\"©\") = \"\\xC3\" in C++) becomes U+FFFD in the String (TODO(port): raw-byte output). chopPrefix/chopSuffix slice at boundaries that are always char boundaries. parseDigits: substr(start,..) with start > size() throws std::out_of_range upstream, clamps here (TODO(port), unreachable from upstream callers). Parity: tests/global.rs vs oracle/global.cpp (global.txt: all M1 additions incl. error texts, NUL-in-const-char* and non-ASCII byte cases; the 'lossy' lines are checked as Rust == from_utf8_lossy(C++ bytes)); RAII helpers by a semantic test (no C++ output)."
 
 [[module]]
 rust = "crates/katago-core/src/core/hash.rs"
@@ -232,25 +232,25 @@ notes = "IO-skipped: the two file constructors have no Rust fn. File access (ini
 rust = "crates/katago-core/src/search/search.rs"
 upstream = ["cpp/search/search.cpp", "cpp/search/search.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Search, SearchThread, runWholeSearch, runSinglePlayout, tree reuse. Divergence: search threads -> N playout futures on a local executor (virtual threads, plan §6); atomics/mutexes -> Cell/RefCell. Pattern bonus, eval cache, antimirror call sites stay but are deferred (see [[ignored]] deferred)."
+notes = "Search, SearchThread, every fn of search.cpp. Divergences: search threads -> virtual threads (search_loop futures joined with join_all in run_whole_search_full; numPlayoutsShared/shouldStopNow/tcMaxTime/upperBoundVisitsLeftDueToTime are Cells; on an error a virtual thread also sets shouldStopNow so the join completes); runSinglePlayout, playoutDescend (boxed recursive future), beginSearch, computeRootValues, runWholeSearch* async and Result; setPosition/setPlayerAndClearHistory/setPlayerIfNew/makeMove return Result (KoHashTable::recompute throws); nodes in port::node_arena (NodeIdx, root freed via arena); mutexes/spin locks removed, createMutexIdxForNode still draws (D12); searchNodeAge is Cell<u32> and nonSearchRand RefCell<Rand> (tree walks run through &self); Logger -> log; allocateOrFindNode's Hash128(rand,rand) follows GCC's right-to-left arg order; atomic_is_lock_free warnings dropped; collapseChildrenCapacity via NodeArena::with_mut. Overload names: run_whole_search / _should_stop_early / _pondering / _pondering_should_stop_early / run_whole_search_full (Appendix B), run_whole_search_and_get_move[_pondering], make_move / make_move_prevent_encore, new / new_human_eval. Deferred (D7, TODO(port)): eval cache (useEvalCache logs a warning and searches without it), pattern bonus tables (avoidRepeatedPatternUtility/external tables: warning, no bonus), anti-mirror (updateMirroring only resets mirroringPla=C_EMPTY etc.; antiMirror logs a warning). maybeRecomputeRootNNOutput is declared in search.h but never defined upstream: no Rust fn. Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchnode.rs"
 upstream = ["cpp/search/searchnode.cpp", "cpp/search/searchnode.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "SearchNode, SearchChildPointer, NodeStats; virtual loss and node state machine ported as-is. Raw child pointers -> arena indices (OWNERSHIP.tsv)."
+notes = "SearchNode, SearchChildPointer, NodeStats(Atomic), MoreNodeStats, SearchNodeChildrenReference (Const* is a type alias), SearchChildrenSizes. Divergences per OWNERSHIP.tsv: first field idx: NodeIdx; atomics -> Cell (orders as comments), statsLock removed, nnOutput/humanOutput RefCell<Option<Rc<NNOutput>>>, children arrays OnceCell<Box<[SearchChildPointer]>> (collapseChildrenCapacity takes &mut self via NodeArena::with_mut), store(NULL) -> store(Option<NodeIdx>), compexweak never fails spuriously; EvalCacheEntry is an uninhabited placeholder (D7). Overload names: get_children / get_children_state, get_child_weight[_child_visits], get_child_weight_sq[_child_visits], NodeStats::new_other, NodeStatsAtomic::new_copy, SearchNode::new_copy. Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchnodetable.rs"
 upstream = ["cpp/search/searchnodetable.cpp", "cpp/search/searchnodetable.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Graph-search node table; per-shard mutexes dropped (single-threaded)."
+notes = "All of it. Per-shard mutexes dropped: MutexPool* -> mutex_pool_num_mutexes (read by Search's ctor); entries map to NodeIdx in a RefCell (the arena owns the nodes). Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchparams.rs"
@@ -264,57 +264,57 @@ notes = "plain struct with snake_case fields; operator== is PartialEq (humanSLPr
 rust = "crates/katago-core/src/search/searchexplorehelpers.rs"
 upstream = ["cpp/search/searchexplorehelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "PUCT selection, FPU, explore scaling. High upstream churn."
+notes = "Every fn. getExploreSelectionValueInverse follows the .cpp definition's parameter order (search.h declares a different one; PORT NOTE). Nullable SearchThread* -> Option<&mut SearchThread>; child params are &SearchNode (never NULL at upstream callers). Deferred (TODO(port), unreachable): anti-mirror policy/forced explore and isMirroringSinceSearchStart (mirroringPla is always C_EMPTY), the eval-cache firstExploreEvals loop. Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchpuct.rs"
 upstream = ["cpp/search/searchpuct.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Empty in v1.16.5 (includes only); kept so a future upstream body lands at a mapped path."
+notes = "Empty in v1.16.5 (includes only); the file exists so a future upstream body lands at its mapped path."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchupdatehelpers.rs"
 upstream = ["cpp/search/searchupdatehelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Backup / recompute stats, value weight exponent, noise pruning."
+notes = "Every fn. statsLock / entryLock spin locks removed (bodies kept). adjustEvalsFromCacheHelper is deferred (evalcache.cpp; takes the uninhabited EvalCacheEntry, body summarised in a TODO(port)). Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchnnhelpers.rs"
 upstream = ["cpp/search/searchnnhelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "NN eval of nodes; becomes the await point of a playout future."
+notes = "Every fn; computeRootNNEvaluation, initNodeNNOutput, maybeRecomputeExistingNNOutput are async (the await point of a playout) and return Result. shared_ptr<NNOutput>* -> Rc<NNOutput>, unused results are drops. Deferred (TODO(port), unreachable): the anti-mirror branch (isMirroringSinceSearchStart, hackNNOutputForMirror). Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchhelpers.rs"
 upstream = ["cpp/search/searchhelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "Utility, score utility, ending bonus, passing hacks, root pruning helpers."
+notes = "Every fn. maybeAddPolicyNoiseAndTemp returns Result<Option<Rc<NNOutput>>> (addDirichletNoise -> Rand::next_gamma is fallible) and takes &NNOutput (its null early-return is unreachable from every caller). getPatternBonus: the table lookup is deferred (patternbonustable.cpp), the null-table path returns 0 as upstream. Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchmultithreadhelpers.rs"
 upstream = ["cpp/search/searchmultithreadhelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "enumerateTreePostOrder and applyRecursively* (tree walks used after search). Divergence: single-threaded; spawn/kill/respawnThreads and performTaskWithThreads run the task inline on thread index 0."
+notes = "enumerateTreePostOrder and applyRecursively* (tree walks, &self, callbacks &mut dyn FnMut(&SearchNode, i32), Option = NULL). Divergence (PORTING.md §11): numAdditionalThreadsToUseForTasks() returns 0, so tasks run on thread index 0 only and no PCG32 is drawn from nonSearchRand for extra threads (upstream with numSearchThreads>1 draws one per extra thread and shuffles child order; outputs of upstream multi-threaded runs are nondeterministic anyway); spawnThreadsIfNeeded/killThreads/respawnThreads are prescribed no-ops; threadTaskLoop has no Rust fn; performTaskWithThreads runs the task inline. Parity: tests/testsearchnonn.rs (upstream runNNLessSearchTests, 43/44 sections byte-exact; the last needs GameInitializer) and tests/search_oracle.rs (341 differential cases vs oracle/search_nonn.cpp, byte-exact incl. hex floats, plus a Rust-only multi-virtual-thread determinism/invariant test); real-net smoke katago-nn-burn/tests/search_smoke.rs (39/39 identical root visit vectors vs Eigen)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchtimehelpers.rs"
 upstream = ["cpp/search/searchtimehelpers.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "compiles"
 phase = "M3"
-notes = "numVisitsNeededToBeNonFutile etc. recomputeSearchTimeLimit is only reached with limited TimeControls (never in analysis)."
+notes = "All three fns, &self (thread 0's search loop calls them); recomputeSearchTimeLimit returns Result (TimeControls::getTime). Not parity-tested yet: no oracle sets a time limit or time controls (the paths only run with maxTime < 1e12 or a TimeControls); wave 2b (testsearchv8 / GTP time tests)."
 
 [[module]]
 rust = "crates/katago-core/src/search/timecontrols.rs"
@@ -328,17 +328,17 @@ notes = "All kinds ported and oracle-checked (tests/timecontrols.rs incl. upstre
 rust = "crates/katago-core/src/search/searchresults.rs"
 upstream = ["cpp/search/searchresults.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "getAnalysisData, PV, ownership/ownershipStdev, LCB selection, printTree, getPolicySurpriseAndEntropy, JSON helpers. High upstream churn."
+notes = "All functions ported (getRootVisits, the 4 getPlaySelectionValues overloads, root/node/raw/pruned values, getRootNode/getChildForMove, getChosenMoveLoc, getPolicy*, getPolicySurprise*, print{RootOwnershipMap,RootPolicyMap,RootEndingScoreValueBonus,PV,PVForMove,Tree,TreeHelper}, appendPV*, getAnalysisData*, getShallowAverageShorttermWLAndScoreError*, getSharpScore*, (getAverage|getAverageAndStandardDeviation)TreeOwnership both overloads, traverseTreeForOwnership* as generics over FnMut(&[f32], f64), getAnalysisJson, debugPrintChildrenSummary). Overload names in PORTING.md Appendix B. Divergences: nodes via node_arena (NodeIdx in AnalysisData, Option<Rc<SearchNode>> returns, HashSet<NodeIdx> graph paths); getChosenMoveLoc and debugPrintChildrenSummary take &self (nonSearchRand is a RefCell); getAnalysisJson fills a serde_json::Value (dump with port::nlohmann) and returns Result (getAverageTreeOwnership throws); the RequireSuccess getters return Result; lcbBuf/radiusBuf are Option<&mut [f64]> (NULL with neverUseLcb); %d of int64 in printRootEndingScoreValueBonus prints the low 32 bits (x86-64 UB behaviour); policyProbs NULL derefs and NULL-root derefs (getAverage*TreeOwnership with no root) are expects. Parity: tests/testsearchnonn.rs, tests/search_oracle.rs (getAnalysisData, printTree/PV, values, JSON dumps, ownership, sharp score, chosen moves byte-exact over 341 cases); analysis goldens in wave 2b. Not exercised by any oracle: debugPrintChildrenSummary (illegal-move warning path)."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchprint.rs"
 upstream = ["cpp/search/searchprint.cpp", "cpp/search/searchprint.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
-notes = "PrintTreeOptions (printTree itself is in searchresults.cpp); needed for upstream search test outputs."
+notes = "PrintTreeOptions (all of searchprint.h; searchprint.cpp only includes it). Fields keep the trailing underscore so builder methods keep their names (Appendix B); onlyBranch/alsoBranch return Result (Location::parseSequence throws). printTree itself is in searchresults.rs. Parity: tests/testsearchnonn.rs and tests/search_oracle.rs (byte-exact)."
 
 [[module]]
 rust = "crates/katago-core/src/search/subtreevaluebiastable.rs"
@@ -368,16 +368,17 @@ notes = "All of it; oracle tests/distributiontable.rs. (int)d is UB for NaN or z
 rust = "crates/katago-core/src/search/analysisdata.rs"
 upstream = ["cpp/search/analysisdata.cpp", "cpp/search/analysisdata.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "done"
 phase = "M3"
+notes = "All of it. Copy ctor/assignment -> Clone, move ctor/assignment -> Rust moves; field `move` -> `move_` (keyword, Appendix B); `node` is Option<NodeIdx>; operator< -> operator_lt, used with a stable sort_by(cmp_from_lt). Parity: tests/testsearchnonn.rs and tests/search_oracle.rs (byte-exact)."
 
 [[module]]
 rust = "crates/katago-core/src/search/reportedsearchvalues.rs"
 upstream = ["cpp/search/reportedsearchvalues.cpp", "cpp/search/reportedsearchvalues.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "compiles"
+status = "done"
 phase = "M3"
-notes = "struct, default ctor and operator<< ported; the const Search& constructor (new_search) is deferred to wave 2a (TODO(port) in place). Oracle tests/reportedsearchvalues_oracle.rs."
+notes = "All of it: struct, default ctor (zero-initialized, PORT NOTE), the const Search& ctor as new_search (Appendix B), operator<< as Display. Oracle tests/reportedsearchvalues_oracle.rs. Parity: tests/testsearchnonn.rs and tests/search_oracle.rs (byte-exact)."
 
 [[module]]
 rust = "crates/katago-core/src/search/asyncbot.rs"
@@ -399,7 +400,7 @@ notes = "Only what analysis.cpp calls: loadSingleParams / loadParams for SETUP_F
 rust = "crates/katago-core/src/program/playutils.rs"
 upstream = ["cpp/program/playutils.cpp", "cpp/program/playutils.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "planned"
+status = "partial"
 phase = "M3"
 notes = "Only PlayUtils::getHackedLCBForWinrate (called by searchresults.cpp). Everything else (game init, printGenmoveLog, ownership/score helpers for gtp/selfplay) is not ported."
 

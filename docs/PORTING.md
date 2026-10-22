@@ -20,6 +20,7 @@ is used only at the API edges (`katago-wasm`, `katago-cli`), never inside ported
 | Type, struct, enum and enum value names stay verbatim. | `Board`, `NNOutput`, `SearchNodeChildrenReference`, `enabled_t::Auto` |
 | **Nested types** (`Board::ChainData`, `Board::MoveRecord`) become module-level types in the outer class's file, named without the prefix, tagged `/// upstream: Board::ChainData (board.h)`. Other modules import them by path (`crate::game::board::MoveRecord`). | `struct ChainData` in `game/board.rs` |
 | **`crate::core` shadows Rust's `core`.** Inside katago-core, `use core::…` means *our* module; write `::core::…` for the language crate. | `::core::cmp::Ordering` |
+| **Reserved words.** Edition 2024 reserves `gen`; upstream identifiers that collide with Rust keywords get a trailing `_`. | `gen` → `gen_`, `move` → `move_` |
 | Function, method, field and local names use snake_case: `heck` 0.5 `to_snake_case`, **except** that `UInt` is one word (`nextUInt` → `next_uint`, `hexStringToUInt64` → `hex_string_to_uint64`, not heck's `next_u_int`). When heck and this exception disagree, the exception wins. | `searchIsLadderCaptured` → `search_is_ladder_captured`, `getNNOutput` → `get_nn_output`, `nnXLen` → `nn_x_len` |
 | Constants, statics and macros-as-constants stay verbatim, including SCREAMING_CASE. Add `#[allow(non_upper_case_globals)]` where needed. | `NNInputs::NUM_FEATURES_SPATIAL_V7`, `Board::MAX_ARR_SIZE`, `SearchNode::STATE_EXPANDED0` |
 | A namespace becomes a unit struct with associated fns and consts, so call sites read the same. | `namespace Location {…}` → `pub struct Location; impl Location { pub fn get_loc(…) }` → `Location::get_loc(x, y, x_size)` |
@@ -44,7 +45,7 @@ or static. Overloads get the same qualified name. For file-scope statics use
 (3) Of the remaining overloads, the one with the fewest parameters keeps the base name (ties: first
 declared in the header). Each other overload appends `_` + the snake_case names of its
 parameters that are not in the base overload, in declaration order. (4) If that still
-collides, the overload declared later appends the snake_case of its first differing parameter's C++ type (`std::ostringstream&` → `_ostringstream`, `const std::string&` → `_string`, `uint64_t` → `_u64`). Parameter names come from the **header** declaration when header and `.cpp` disagree. (4b) For a constructor whose parameters all have defaults, the base `new` is the all-defaulted call (e.g. `ConfigParser(bool=false, bool=true)` → `new(ko, kfi)` with callers passing the values). (5) **Appendix B overrides rules 3–4**; add an entry there whenever a generated name is longer than ~40 characters or reads badly. Constructors use the same
+collides, the overload declared later appends the snake_case of its first differing parameter's C++ type (`std::ostringstream&` → `_ostringstream`, `const std::string&` → `_string`, `uint64_t` → `_u64`). Parameter names come from the **header** declaration when header and `.cpp` disagree. (4c) When a header declaration and the `.cpp` definition name or order parameters differ, the **definition** wins (it is what the body uses); note it in a PORT NOTE. (4b) For a constructor whose parameters all have defaults, the base `new` is the all-defaulted call (e.g. `ConfigParser(bool=false, bool=true)` → `new(ko, kfi)` with callers passing the values). (5) **Appendix B overrides rules 3–4**; add an entry there whenever a generated name is longer than ~40 characters or reads badly. Constructors use the same
 rule with base `new`. A copy constructor becomes `impl Clone`, or `new_copy` when it takes
 extra arguments. Examples: `Rand::nextUInt()` → `next_uint`, `nextUInt(n)` → `next_uint_n`,
 `nextUInt(freq,n)` → `next_uint_freq_n`; `Rand(seed: string)` → `new_seed`, `Rand(uint64_t seed)`
@@ -115,6 +116,7 @@ They don't read the implementer's summary.
 | `enum` / `enum class` | `#[repr(i32)] enum` with verbatim variant names, or `pub const` ints when upstream uses plain `static const int` (`Rules::KO_SIMPLE`) | Don't convert int constants into an enum. |
 | `StringError`, `IOError`, `ValueError`, `ConfigParsingError`, `CommandError` | `KataError` variants of the same names (`core/global.rs`) | §7. |
 | `std::ostream&` param | `&mut dyn std::fmt::Write` | `out << x` → `write!(out, …).unwrap()`, and `out << x << endl` → `writeln!(out, …).unwrap()` (not `write!` with `\n`) (writing to a `String` can't fail; this is the only allowed bare unwrap). `cout`/`cerr` → `log` macros. |
+| `std::cout << …` written directly (not via a passed `ostream&`) | `log::info!`, and tests that compare console text must know which lines bypassed the logger prefix (`SearchParams::printParams` writes two) | Keep a list of such lines next to the test that captures them. |
 | `Logger*` / `logger->write(s)` | removed / `log::info!("{}", s)` | Manifest: logger replaced by the `log` crate. `if(logger != NULL) logger->write(..)` → just log. Keep the message text. |
 | iterators | indices or slice iterators | `it = m.erase(it)` loops → `BTreeMap::retain`, only if visit order and side effects stay identical; otherwise collect the keys first. |
 
@@ -195,7 +197,7 @@ port were in this category.
    desyncs `Rand`'s accept/reject loops and every later draw). `port::math` reproduces the glibc
    2.44 x86-64/FMA results bit for bit on every target (Appendix). C `exp`/`log`/`pow`/`expf` →
    `math::exp`/`ln`/`powf`/`expf`; `atan`/`tan` → `math::atan`/`tan` (platform libm, ≤ 1 ulp on
-   wasm, DECISIONS.md D13). `expm1` → `math::expm1`, `lgamma` → `math::lgamma` (`lgamma_r` for the sign), `tanhf` → `math::tanhf`. A C function it lacks (`tanh`, `atanf`, `log10`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
+   wasm, DECISIONS.md D13). `expm1` → `math::expm1`, `lgamma` → `math::lgamma` (`lgamma_r` for the sign), `tanhf` → `math::tanhf`, `log10` → `math::log10`. A C function it lacks (`tanh`, `atanf`, `logf`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
    `crates/katago-core/clippy.toml` lists the std methods under `disallowed_methods`, which
    `lib.rs` denies. `sqrt`, `abs`, `floor`, `round`… are exact everywhere and stay std methods.
 4. **No FMA.** Rust never contracts and upstream is built without `-march`/FMA. Don't use
@@ -264,6 +266,7 @@ Some upstream code or tests hit UB (e.g. `isAdjacentToPla(PASS_LOC)` reads `colo
   `float` it's the same after widening. `Global::doubleToString`/`floatToString` use it.
   `ss.precision(17)` → `port::fmt::cpp_ostream_f64_prec(x, 17)`. `std::to_string(double)` → `%f`.
   Integers and `Hash128` → `Display`. `endl` → `"\n"` (`writeln!` when it ends a `write!`).
+- **`%d`/`%i` with an `int64_t` argument** prints the low 32 bits on x86-64 (varargs read an `int`): reproduce with `as i32`, PORT NOTE.
 - **JSON output must equal nlohmann's `dump()` byte for byte.** The goldens prove it
   (`tests/results/analysis/*.stdout`): keys **sorted** (`"edgeVisits","edgeWeight","lcb","move",…`),
   compact separators, doubles printed nlohmann-style (`9.0`, `0.65662659`, `4.12549165e-05`,
@@ -377,6 +380,10 @@ The fidelity rules trigger lints that are not bugs here. `crates/katago-core/src
          clippy::bool_comparison, clippy::needless_late_init, clippy::int_plus_one,
          clippy::manual_clamp, clippy::neg_cmp_op_on_partial_ord, clippy::inherent_to_string,
          clippy::wrong_self_convention)]
+// M3: upstream literals (0x3fffFFFF), the mirrored path search::search, and kept statement shapes
+#![allow(clippy::mixed_case_hex_literals, clippy::module_inception, clippy::unnecessary_unwrap,
+         clippy::should_implement_trait, clippy::ptr_arg, clippy::identity_op, clippy::borrow_deref_ref,
+         clippy::diverging_sub_expression)]
 #![deny(clippy::await_holding_refcell_ref)]
 ```
 
@@ -416,6 +423,8 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 **Comparisons.** Unit blocks use `TestCommon::expect` (upstream's per-line trim). Oracle-program outputs are compared **byte-exact** by `tests/common::compare_lines` (line endings and trailing newline included). `tests/fixture_coverage.rs` fails if an extracted expected block is consumed by no test and isn't on its allowlist with a reason.
 
 **Async tests** drive pools through `tests/common::run_or_stall_panic`, which panics when the pool stalls while the future is pending and unwoken, so a lost wakeup fails fast instead of hanging.
+
+**Search oracles (M3).** `tests/testsearchnonn.rs` replays upstream `runNNLessSearchTests` (debugSkipNeuralNet: backend-independent, byte-exact). Upstream's `Logger` lines (`: ` prefix) are part of upstream test stdout; tests that compare such output install a `log::Log` that writes `": " + msg` into the same thread-local buffer as the test's own `cout` text, and run the pool until stalled after `kill_server_threads()` where upstream's `delete nnEval` joins (the serve task logs `GPU 0 finishing...` as it ends). `tests/search_oracle.rs` is a differential oracle against `oracle/search_nonn.cpp` (op-stream cases, floats as hex bits, 1 search thread) plus a Rust-only multi-virtual-thread determinism/invariant test. Real-net searches are compared with tolerances by `katago-nn-burn/tests/search_smoke.rs` (`just search-smoke`, release only). Edition 2024 reserves `gen`: don't name test helpers `gen`.
 
 **Random-game generators** for oracles include out-of-turn (board-legal) moves, odd×even board sizes, finished games where pass dominates, and hand-built encore ko fights: plain legal play never reaches those states.
 
@@ -471,7 +480,8 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::cpp::cmp_from_lt` | `fn(lt: impl Fn(&T,&T)->bool) -> impl Fn(&T,&T)->Ordering` |
 | `port::cpp::cell_cas`, `cell_fetch_add` | `fn<T: Copy+PartialEq>(c: &Cell<T>, expected: &mut T, desired: T) -> bool`; `fn<T: Copy+Add<Output=T>>(c: &Cell<T>, d: T) -> T` |
 | `port::fmt` | `printf`, `printf_bytes`, `cpp_ostream_f64`, `cpp_ostream_f64_prec`, `cpp_to_string_f64`, `PrintfArg` (keeps C width and signedness so `%u`/`%x` of an int is right; `char`/`short` promote to `int`). `printf_bytes` has C byte semantics (`%c` one raw byte, `%.Ns` may cut a UTF-8 character, `%s` stops at NUL); `printf` is its `String` form, with U+FFFD where the bytes are not UTF-8 |
-| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). `port::math::tanhf`: C `tanhf`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every target; our double-double evaluation + one rounding, checked against glibc on all 2^32 inputs; oracle `tests/math_tanhf.rs` vs `oracle/math_tanhf.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `tanh`, `atanf`, `log10`, float `logf`/`powf` |
+| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). `port::math::tanhf`: C `tanhf`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every target; our double-double evaluation + one rounding, checked against glibc on all 2^32 inputs; oracle `tests/math_tanhf.rs` vs `oracle/math_tanhf.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `tanh`, `atanf`, float `logf`/`powf` |
+| `port::math::log10` | C `log10`: port of glibc 2.44's fdlibm `__ieee754_log10` (no FMA variant on x86-64) over `port::math::ln`, bit-identical on every target. Oracle: `tests/math_log10.rs` vs `oracle/math_log10.txt` (2^20 inputs + every power of ten and its neighbours; also under `just test-wasm`). Used by `Global::roundDynamic` |
 | `port::math::{lgamma, lgamma_r, expm1}` | C `lgamma` (ln\|Γ(x)\|), `lgamma_r(x, &mut signgam)` (also the sign of Γ(x), what glibc stores in `signgam`), `expm1`: bit-identical to glibc 2.44 (x86-64, FMA) on every target. `lgamma`: port of glibc's CORE-MATH code (MIT, correctly rounded) in `port/math/lgamma.rs`. `expm1`: fdlibm `s_expm1.c` as built into `__expm1_fma`, GCC's FMA contractions as explicit `mul_add`. Oracle: `tests/math_lgamma.rs` vs `oracle/math_lgamma.cpp` (also under `just test-wasm`); 1.2·10^9 inputs each matched the host glibc |
 | `port::cpp::static_cast_i32_f64`, `static_cast_i32_f32` | `(int)x` with x86-64 `cvtts*2si` results: truncation in range, `i32::MIN` for NaN/out of range (§6 item 5) |
 | `port::cpp::static_cast_i64_f64`, `static_cast_i64_f32` | same for `int64_t` targets: `i64::MIN` for NaN/out of range |
@@ -481,7 +491,7 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `port::nlohmann::{parse, sax_parse, Sax, Exception}` | `json::parse(s)` / `json::sax_parse(s, &sax)`: port of nlohmann 3.8.0's lexer + parser (§9 Input); errors are `KataError::NlohmannJson(e.what())` |
 | `port::nlohmann::{get_string, get_bool, get_f32, get_i32, static_cast_i32_f64}` | nlohmann `get<T>` semantics (e.g. `get<float>` accepts booleans; `get<int>` of an out-of-range/NaN float is `INT_MIN`); errors are `KataError::NlohmannJson` |
 | `port::nlohmann::dump` | `fn(&serde_json::Value) -> String`, equal to `nlohmann::json::dump()` |
-| `port::node_arena::{NodeIdx, NodeArena}` | §4 |
+| `port::node_arena::{NodeIdx, NodeArena<T>}` | §4. Generic over the node type (`Search::node_arena: NodeArena<SearchNode>`): `alloc(\|idx\| T) -> NodeIdx`, `get(idx) -> Rc<T>` (panics on a freed index), `free(idx)` (the index may be reused, like freed memory; held `Rc`s stay valid), `with_mut(idx, f)` (panics if shared), plus `is_allocated` / `num_allocated` for tests. Unit tests in the module |
 | `port::executor` | `yield_now`, `WakerList { wait_until, notify_all }`, `AsyncQueue<T>` (`ThreadSafeQueue` names: `force_push`, `try_pop`, async `wait_pop_up_to_n`, `set_read_only`, `unset_read_only`, `close`, `reserve`, `size`; no `maxSize`/`waitPush`, unused on ported paths; plus `any(f)`, for debug assertions only), `trait Spawner { fn spawn_local(&self, f: LocalBoxFuture<'static, ()>) }` (implemented for `futures::executor::LocalSpawner`), re-export `LocalBoxFuture`. Unit tests in the module |
 
 ## Appendix B: name overrides (win over the overload rules)
@@ -496,3 +506,24 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `Global::contains(const std::vector<A>&, const A&)` / `(const std::set<A>&, …)` / `(const std::map<A,B>&, …)` | `contains_vector` / `contains_set` / `contains_map` |
 | `Global::concat(const char*, int len)` / `concat(const std::set<std::string>&, …)` | `concat_len` / `concat_set` |
 | `ReportedSearchValues::ReportedSearchValues(const Search&, double winLossValue, …)` | `ReportedSearchValues::new_search` |
+| `AnalysisData::move` (field; `move` is a Rust keyword) | `AnalysisData::move_` (also used for `Loc move` parameters in searchresults.rs) |
+| `PrintTreeOptions` fields `maxDepth_` … `alsoBranch_` / builder methods `maxDepth(int)` … | fields keep the trailing underscore (`max_depth_`, `branch_`, `also_branch_`), methods take the plain names (`max_depth(..)`) |
+| `Search::getPlaySelectionValues(vector<Loc>&, vector<double>&, double)` | `get_play_selection_values` |
+| `Search::getPlaySelectionValues(vector<Loc>&, vector<double>&, vector<double>*, double)` | `get_play_selection_values_ret_visit_counts` |
+| `Search::getPlaySelectionValues(const SearchNode&, …, bool allowDirectPolicyMoves)` | `get_play_selection_values_node` |
+| `Search::getPlaySelectionValues(const SearchNode&, …, bool alwaysComputeLcb, bool neverUseLcb, double lcbBuf[], double radiusBuf[])` | `get_play_selection_values_node_lcb` |
+| `Search::getPolicy(const SearchNode*, float[])` | `get_policy_node` |
+| `Search::getPolicySurpriseAndEntropy(double&, double&, double&, const SearchNode*)` | `get_policy_surprise_and_entropy_node` |
+| `Search::printPV(ostream&, const vector<Loc>&)` | `print_pv_buf` |
+| `Search::getAnalysisData(const SearchNode&, vector<AnalysisData>&, …)` | `get_analysis_data_node` |
+| `Search::getAverageTreeOwnership(const Player, const SearchNode*, int)` | `get_average_tree_ownership_perspective` |
+| `Search::getAverageAndStandardDeviationTreeOwnership(const Player, const SearchNode*, int)` | `get_average_and_standard_deviation_tree_ownership_perspective` |
+| `Search::Search(params, nnEval, logger, randSeed)` / `(params, nnEval, humanEval, logger, randSeed)` | `Search::new` / `Search::new_human_eval` (Result) |
+| `Search::runWholeSearch(Player)` / `(Player, std::function<bool()>*)` / `(Player, bool pondering)` / `(Player, bool, std::function<bool()>*)` | `run_whole_search` / `run_whole_search_should_stop_early` / `run_whole_search_pondering` / `run_whole_search_pondering_should_stop_early` |
+| `Search::runWholeSearch(const std::function<void()>* searchBegun, std::function<bool()>* shouldStopEarly, bool pondering, const TimeControls&, double searchFactor)` | `run_whole_search_full` |
+| `Search::runWholeSearchAndGetMove(Player, bool pondering)` | `run_whole_search_and_get_move_pondering` |
+| `Search::makeMove(Loc, Player, bool preventEncore)` | `make_move_prevent_encore` |
+| `SearchNode::getChildren(SearchNodeState)` | `get_children_state` |
+| `NodeStats::NodeStats(const NodeStatsAtomic&)` / `NodeStatsAtomic::NodeStatsAtomic(const NodeStatsAtomic&)` | `NodeStats::new_other` / `NodeStatsAtomic::new_copy` |
+| `NodeStatsAtomic::getChildWeight(int64_t, int64_t)` / `getChildWeightSq(int64_t, int64_t)` | `get_child_weight_child_visits` / `get_child_weight_sq_child_visits` |
+| the `searchLoop` lambda of `Search::runWholeSearch` | private `async fn search_loop(&self, thread_idx, &SearchLoopCaptures)` (its by-reference captures as one struct of `&Cell`s) |
