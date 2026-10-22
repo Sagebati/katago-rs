@@ -667,6 +667,27 @@ pub fn expf(x: f32) -> f32 {
   y as f32
 }
 
+/// upstream: C `atan` (double), as called by `ScoreValue` (nninputs.cpp).
+///
+/// PORT NOTE (DECISIONS.md D13): delegates to the platform libm. Natively that is glibc
+/// (identical); on wasm32 it is compiler-builtins' libm, which differs from glibc by at most
+/// 1 ulp (6.1% of inputs). glibc's atan is LGPL-2.1+ IBM code, so it is not ported; ScoreValue
+/// only feeds score utility, which fixtures compare with a tolerance.
+/// Oracle: `tests/math.rs` vs `oracle/math_ulp.txt` (≤ 1 ulp, also under `just test-wasm`).
+#[allow(clippy::disallowed_methods)]
+pub fn atan(x: f64) -> f64 {
+  x.atan()
+}
+
+/// upstream: C `tan` (double), as called by `inverse_atan` (nninputs.cpp).
+///
+/// PORT NOTE (DECISIONS.md D13): same as [`atan`]: platform libm, ≤ 1 ulp from glibc on wasm32
+/// (3.8% of inputs differ).
+#[allow(clippy::disallowed_methods)]
+pub fn tan(x: f64) -> f64 {
+  x.tan()
+}
+
 // TODO(port): glibc does not use optimized-routines for the other transcendentals the
 // upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
 // 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0%, expm1 0.24%,
@@ -677,8 +698,8 @@ pub fn expf(x: f32) -> f32 {
 //   - lgamma, expm1 (fancymath.cpp): lgamma is CORE-MATH (MIT, ~2000 lines); expm1 is fdlibm
 //     compiled with FMA contraction (s_expm1-fma.c): replicate the contraction like above.
 //   - log10 (global.cpp roundDynamic): fdlibm, no FMA variant in glibc.
-//   - atan, tan (nninputs.cpp ScoreValue): glibc's are the IBM Accurate Mathematical Library,
-//     licensed LGPL-2.1+. Porting them into this MIT crate needs a licensing decision.
+//   - atan, tan (nninputs.cpp ScoreValue): done above as platform-libm wrappers (D13: glibc's
+//     are LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).
 
 // ---------------------------------------------------------------------------------------
 // Tables (generated; see the module docs)

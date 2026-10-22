@@ -194,8 +194,9 @@ port were in this category.
    compiler-builtins' libm, which differs from glibc in the last ulp for 3–10% of inputs (that
    desyncs `Rand`'s accept/reject loops and every later draw). `port::math` reproduces the glibc
    2.44 x86-64/FMA results bit for bit on every target (Appendix). C `exp`/`log`/`pow`/`expf` →
-   `math::exp`/`ln`/`powf`/`expf`. A C function it lacks (`atan`, `tan`, `tanh`, `tanhf`, `atanf`,
-   `expm1`, `log10`, `lgamma`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
+   `math::exp`/`ln`/`powf`/`expf`; `atan`/`tan` → `math::atan`/`tan` (platform libm, ≤ 1 ulp on
+   wasm, DECISIONS.md D13). A C function it lacks (`tanh`, `tanhf`, `atanf`, `expm1`, `log10`,
+   `lgamma`…) is a `TODO(port): needs port::math::<fn>`, not a std call.
    `crates/katago-core/clippy.toml` lists the std methods under `disallowed_methods`, which
    `lib.rs` denies. `sqrt`, `abs`, `floor`, `round`… are exact everywhere and stay std methods.
 4. **No FMA.** Rust never contracts and upstream is built without `-march`/FMA. Don't use
@@ -437,7 +438,7 @@ Only the pilot owner and humans edit `port/`. Agents who need a helper that is m
 | `port::cpp::cmp_from_lt` | `fn(lt: impl Fn(&T,&T)->bool) -> impl Fn(&T,&T)->Ordering` |
 | `port::cpp::cell_cas`, `cell_fetch_add` | `fn<T: Copy+PartialEq>(c: &Cell<T>, expected: &mut T, desired: T) -> bool`; `fn<T: Copy+Add<Output=T>>(c: &Cell<T>, d: T) -> T` |
 | `port::fmt` | `printf`, `printf_bytes`, `cpp_ostream_f64`, `cpp_ostream_f64_prec`, `cpp_to_string_f64`, `PrintfArg` (keeps C width and signedness so `%u`/`%x` of an int is right; `char`/`short` promote to `int`). `printf_bytes` has C byte semantics (`%c` one raw byte, `%.Ns` may cut a UTF-8 character, `%s` stops at NUL); `printf` is its `String` form, with U+FFFD where the bytes are not UTF-8 |
-| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). Not provided yet (TODO(port) list in the file): `atan`, `tan`, `tanh`, `tanhf`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
+| `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). Not provided yet (TODO(port) list in the file): `tanh`, `tanhf`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
 | `port::cpp::static_cast_i32_f64`, `static_cast_i32_f32` | `(int)x` with x86-64 `cvtts*2si` results: truncation in range, `i32::MIN` for NaN/out of range (§6 item 5) |
 | `port::cpp::istream_parse_{i32,i64,u64,hex_u64,f32,f64}_whole` | `istream >>` semantics for `Global::tryStringTo*` |
 | `port::digest` | sha2/md5 glue: C-string NUL cut-off, big-endian u64 words, hex, `get512` |

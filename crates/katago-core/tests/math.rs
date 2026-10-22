@@ -209,3 +209,32 @@ fn math_vs_host_glibc() {
   assert_eq!(bad, 0, "port::math differs from host glibc");
   eprintln!("math_vs_host_glibc: {} inputs x 4 functions", n);
 }
+
+/// D13: `atan`/`tan` use the platform libm, so they must be within 1 ulp of glibc (exact natively).
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[test]
+fn atan_tan_within_one_ulp_of_glibc() {
+  common::init();
+  let table = common::fixture("oracle", "math_ulp.txt");
+  let (mut n, mut differ) = (0, 0);
+  for line in table.lines() {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    let x = f64::from_bits(hex(parts[1]));
+    let want = f64::from_bits(hex(parts[2]));
+    let got = match parts[0] {
+      "atan" => katago_core::port::math::atan(x),
+      "tan" => katago_core::port::math::tan(x),
+      other => panic!("unknown fn {other}"),
+    };
+    let ulps = (got.to_bits() as i64 - want.to_bits() as i64).abs();
+    assert!(ulps <= 1, "{line}: got {:016X} ({ulps} ulp)", got.to_bits());
+    if ulps != 0 {
+      differ += 1;
+    }
+    n += 1;
+  }
+  assert_eq!(n, 4096, "math_ulp.txt cases");
+  report!("atan/tan: {n} cases, {differ} differ by 1 ulp");
+  #[cfg(not(target_arch = "wasm32"))]
+  assert_eq!(differ, 0, "native must be glibc itself");
+}

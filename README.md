@@ -7,7 +7,7 @@ following upstream releases stays cheap.
 Status: **M0 spike done** ([docs/M0-report.md](docs/M0-report.md)); **M0.5 pilot done**: porting
 guide ([docs/PORTING.md](docs/PORTING.md)), ownership table, upstream manifest, and a pilot port of
 `core/hash`, `core/rand`, `game/rules`, `game/board` (`crates/katago-core`) that matches upstream
-bit for bit natively and on wasm32. Open decisions: [docs/DECISIONS.md](docs/DECISIONS.md) (D4, D13).
+bit for bit natively and on wasm32. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Layout
 
