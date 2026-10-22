@@ -1,0 +1,5597 @@
+# S1: single-line matrix: pre + key + sep + value + post, stream constructor, default flags
+new	m	0	1	\n
+new	m	0	1	v\n
+new	m	0	1	v w\n
+new	m	0	1	"q"\n
+new	m	0	1	"q w"\n
+new	m	0	1	""\n
+new	m	0	1	"a\\"b"\n
+new	m	0	1	"a\\\\b"\n
+new	m	0	1	"a\\\n
+new	m	0	1	"abc\n
+new	m	0	1	x"y"\n
+new	m	0	1	# c\n
+new	m	0	1	v # c\n
+new	m	0	1	v#c\n
+new	m	0	1	"q" # c\n
+new	m	0	1	"q"#c\n
+new	m	0	1	"q" x\n
+new	m	0	1	"q""r"\n
+new	m	0	1	a=b\n
+new	m	0	1	\xc3\xa9\n
+new	m	0	1	"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	'sq'\n
+new	m	0	1	v \\\n
+new	m	0	1	\\#\n
+new	m	0	1	"\\\n
+new	m	0	1	"q"  \n
+new	m	0	1	 "q"\n
+new	m	0	1	"#"\n
+new	m	0	1	" # "\n
+new	m	0	1	"a#b" #c\n
+new	m	0	1	1 2 3\n
+new	m	0	1	\x0b\n
+new	m	0	1	v\x0c\n
+new	m	0	1	=\n
+new	m	0	1	=v\n
+new	m	0	1	=v w\n
+new	m	0	1	="q"\n
+new	m	0	1	="q w"\n
+new	m	0	1	=""\n
+new	m	0	1	="a\\"b"\n
+new	m	0	1	="a\\\\b"\n
+new	m	0	1	="a\\\n
+new	m	0	1	="abc\n
+new	m	0	1	=x"y"\n
+new	m	0	1	=# c\n
+new	m	0	1	=v # c\n
+new	m	0	1	=v#c\n
+new	m	0	1	="q" # c\n
+new	m	0	1	="q"#c\n
+new	m	0	1	="q" x\n
+new	m	0	1	="q""r"\n
+new	m	0	1	=a=b\n
+new	m	0	1	=\xc3\xa9\n
+new	m	0	1	="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	='sq'\n
+new	m	0	1	=v \\\n
+new	m	0	1	=\\#\n
+new	m	0	1	="\\\n
+new	m	0	1	="q"  \n
+new	m	0	1	= "q"\n
+new	m	0	1	="#"\n
+new	m	0	1	=" # "\n
+new	m	0	1	="a#b" #c\n
+new	m	0	1	=1 2 3\n
+new	m	0	1	=\x0b\n
+new	m	0	1	=v\x0c\n
+new	m	0	1	 = \n
+new	m	0	1	 = v\n
+new	m	0	1	 = v w\n
+new	m	0	1	 = "q"\n
+new	m	0	1	 = "q w"\n
+new	m	0	1	 = ""\n
+new	m	0	1	 = "a\\"b"\n
+new	m	0	1	 = "a\\\\b"\n
+new	m	0	1	 = "a\\\n
+new	m	0	1	 = "abc\n
+new	m	0	1	 = x"y"\n
+new	m	0	1	 = # c\n
+new	m	0	1	 = v # c\n
+new	m	0	1	 = v#c\n
+new	m	0	1	 = "q" # c\n
+new	m	0	1	 = "q"#c\n
+new	m	0	1	 = "q" x\n
+new	m	0	1	 = "q""r"\n
+new	m	0	1	 = a=b\n
+new	m	0	1	 = \xc3\xa9\n
+new	m	0	1	 = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	 = 'sq'\n
+new	m	0	1	 = v \\\n
+new	m	0	1	 = \\#\n
+new	m	0	1	 = "\\\n
+new	m	0	1	 = "q"  \n
+new	m	0	1	 =  "q"\n
+new	m	0	1	 = "#"\n
+new	m	0	1	 = " # "\n
+new	m	0	1	 = "a#b" #c\n
+new	m	0	1	 = 1 2 3\n
+new	m	0	1	 = \x0b\n
+new	m	0	1	 = v\x0c\n
+new	m	0	1	=  \n
+new	m	0	1	=  v\n
+new	m	0	1	=  v w\n
+new	m	0	1	=  "q"\n
+new	m	0	1	=  "q w"\n
+new	m	0	1	=  ""\n
+new	m	0	1	=  "a\\"b"\n
+new	m	0	1	=  "a\\\\b"\n
+new	m	0	1	=  "a\\\n
+new	m	0	1	=  "abc\n
+new	m	0	1	=  x"y"\n
+new	m	0	1	=  # c\n
+new	m	0	1	=  v # c\n
+new	m	0	1	=  v#c\n
+new	m	0	1	=  "q" # c\n
+new	m	0	1	=  "q"#c\n
+new	m	0	1	=  "q" x\n
+new	m	0	1	=  "q""r"\n
+new	m	0	1	=  a=b\n
+new	m	0	1	=  \xc3\xa9\n
+new	m	0	1	=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	=  'sq'\n
+new	m	0	1	=  v \\\n
+new	m	0	1	=  \\#\n
+new	m	0	1	=  "\\\n
+new	m	0	1	=  "q"  \n
+new	m	0	1	=   "q"\n
+new	m	0	1	=  "#"\n
+new	m	0	1	=  " # "\n
+new	m	0	1	=  "a#b" #c\n
+new	m	0	1	=  1 2 3\n
+new	m	0	1	=  \x0b\n
+new	m	0	1	=  v\x0c\n
+new	m	0	1	  =\n
+new	m	0	1	  =v\n
+new	m	0	1	  =v w\n
+new	m	0	1	  ="q"\n
+new	m	0	1	  ="q w"\n
+new	m	0	1	  =""\n
+new	m	0	1	  ="a\\"b"\n
+new	m	0	1	  ="a\\\\b"\n
+new	m	0	1	  ="a\\\n
+new	m	0	1	  ="abc\n
+new	m	0	1	  =x"y"\n
+new	m	0	1	  =# c\n
+new	m	0	1	  =v # c\n
+new	m	0	1	  =v#c\n
+new	m	0	1	  ="q" # c\n
+new	m	0	1	  ="q"#c\n
+new	m	0	1	  ="q" x\n
+new	m	0	1	  ="q""r"\n
+new	m	0	1	  =a=b\n
+new	m	0	1	  =\xc3\xa9\n
+new	m	0	1	  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	  ='sq'\n
+new	m	0	1	  =v \\\n
+new	m	0	1	  =\\#\n
+new	m	0	1	  ="\\\n
+new	m	0	1	  ="q"  \n
+new	m	0	1	  = "q"\n
+new	m	0	1	  ="#"\n
+new	m	0	1	  =" # "\n
+new	m	0	1	  ="a#b" #c\n
+new	m	0	1	  =1 2 3\n
+new	m	0	1	  =\x0b\n
+new	m	0	1	  =v\x0c\n
+new	m	0	1	 \t= \t\n
+new	m	0	1	 \t= \tv\n
+new	m	0	1	 \t= \tv w\n
+new	m	0	1	 \t= \t"q"\n
+new	m	0	1	 \t= \t"q w"\n
+new	m	0	1	 \t= \t""\n
+new	m	0	1	 \t= \t"a\\"b"\n
+new	m	0	1	 \t= \t"a\\\\b"\n
+new	m	0	1	 \t= \t"a\\\n
+new	m	0	1	 \t= \t"abc\n
+new	m	0	1	 \t= \tx"y"\n
+new	m	0	1	 \t= \t# c\n
+new	m	0	1	 \t= \tv # c\n
+new	m	0	1	 \t= \tv#c\n
+new	m	0	1	 \t= \t"q" # c\n
+new	m	0	1	 \t= \t"q"#c\n
+new	m	0	1	 \t= \t"q" x\n
+new	m	0	1	 \t= \t"q""r"\n
+new	m	0	1	 \t= \ta=b\n
+new	m	0	1	 \t= \t\xc3\xa9\n
+new	m	0	1	 \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	 \t= \t'sq'\n
+new	m	0	1	 \t= \tv \\\n
+new	m	0	1	 \t= \t\\#\n
+new	m	0	1	 \t= \t"\\\n
+new	m	0	1	 \t= \t"q"  \n
+new	m	0	1	 \t= \t "q"\n
+new	m	0	1	 \t= \t"#"\n
+new	m	0	1	 \t= \t" # "\n
+new	m	0	1	 \t= \t"a#b" #c\n
+new	m	0	1	 \t= \t1 2 3\n
+new	m	0	1	 \t= \t\x0b\n
+new	m	0	1	 \t= \tv\x0c\n
+new	m	0	1	==\n
+new	m	0	1	==v\n
+new	m	0	1	==v w\n
+new	m	0	1	=="q"\n
+new	m	0	1	=="q w"\n
+new	m	0	1	==""\n
+new	m	0	1	=="a\\"b"\n
+new	m	0	1	=="a\\\\b"\n
+new	m	0	1	=="a\\\n
+new	m	0	1	=="abc\n
+new	m	0	1	==x"y"\n
+new	m	0	1	==# c\n
+new	m	0	1	==v # c\n
+new	m	0	1	==v#c\n
+new	m	0	1	=="q" # c\n
+new	m	0	1	=="q"#c\n
+new	m	0	1	=="q" x\n
+new	m	0	1	=="q""r"\n
+new	m	0	1	==a=b\n
+new	m	0	1	==\xc3\xa9\n
+new	m	0	1	=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	=='sq'\n
+new	m	0	1	==v \\\n
+new	m	0	1	==\\#\n
+new	m	0	1	=="\\\n
+new	m	0	1	=="q"  \n
+new	m	0	1	== "q"\n
+new	m	0	1	=="#"\n
+new	m	0	1	==" # "\n
+new	m	0	1	=="a#b" #c\n
+new	m	0	1	==1 2 3\n
+new	m	0	1	==\x0b\n
+new	m	0	1	==v\x0c\n
+new	m	0	1	: \n
+new	m	0	1	: v\n
+new	m	0	1	: v w\n
+new	m	0	1	: "q"\n
+new	m	0	1	: "q w"\n
+new	m	0	1	: ""\n
+new	m	0	1	: "a\\"b"\n
+new	m	0	1	: "a\\\\b"\n
+new	m	0	1	: "a\\\n
+new	m	0	1	: "abc\n
+new	m	0	1	: x"y"\n
+new	m	0	1	: # c\n
+new	m	0	1	: v # c\n
+new	m	0	1	: v#c\n
+new	m	0	1	: "q" # c\n
+new	m	0	1	: "q"#c\n
+new	m	0	1	: "q" x\n
+new	m	0	1	: "q""r"\n
+new	m	0	1	: a=b\n
+new	m	0	1	: \xc3\xa9\n
+new	m	0	1	: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	: 'sq'\n
+new	m	0	1	: v \\\n
+new	m	0	1	: \\#\n
+new	m	0	1	: "\\\n
+new	m	0	1	: "q"  \n
+new	m	0	1	:  "q"\n
+new	m	0	1	: "#"\n
+new	m	0	1	: " # "\n
+new	m	0	1	: "a#b" #c\n
+new	m	0	1	: 1 2 3\n
+new	m	0	1	: \x0b\n
+new	m	0	1	: v\x0c\n
+new	m	0	1	 \n
+new	m	0	1	 v\n
+new	m	0	1	 v w\n
+new	m	0	1	 "q"\n
+new	m	0	1	 "q w"\n
+new	m	0	1	 ""\n
+new	m	0	1	 "a\\"b"\n
+new	m	0	1	 "a\\\\b"\n
+new	m	0	1	 "a\\\n
+new	m	0	1	 "abc\n
+new	m	0	1	 x"y"\n
+new	m	0	1	 # c\n
+new	m	0	1	 v # c\n
+new	m	0	1	 v#c\n
+new	m	0	1	 "q" # c\n
+new	m	0	1	 "q"#c\n
+new	m	0	1	 "q" x\n
+new	m	0	1	 "q""r"\n
+new	m	0	1	 a=b\n
+new	m	0	1	 \xc3\xa9\n
+new	m	0	1	 "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	 'sq'\n
+new	m	0	1	 v \\\n
+new	m	0	1	 \\#\n
+new	m	0	1	 "\\\n
+new	m	0	1	 "q"  \n
+new	m	0	1	  "q"\n
+new	m	0	1	 "#"\n
+new	m	0	1	 " # "\n
+new	m	0	1	 "a#b" #c\n
+new	m	0	1	 1 2 3\n
+new	m	0	1	 \x0b\n
+new	m	0	1	 v\x0c\n
+new	m	0	1	k\n
+new	m	0	1	kv\n
+new	m	0	1	kv w\n
+new	m	0	1	k"q"\n
+new	m	0	1	k"q w"\n
+new	m	0	1	k""\n
+new	m	0	1	k"a\\"b"\n
+new	m	0	1	k"a\\\\b"\n
+new	m	0	1	k"a\\\n
+new	m	0	1	k"abc\n
+new	m	0	1	kx"y"\n
+new	m	0	1	k# c\n
+new	m	0	1	kv # c\n
+new	m	0	1	kv#c\n
+new	m	0	1	k"q" # c\n
+new	m	0	1	k"q"#c\n
+new	m	0	1	k"q" x\n
+new	m	0	1	k"q""r"\n
+new	m	0	1	ka=b\n
+new	m	0	1	k\xc3\xa9\n
+new	m	0	1	k"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k'sq'\n
+new	m	0	1	kv \\\n
+new	m	0	1	k\\#\n
+new	m	0	1	k"\\\n
+new	m	0	1	k"q"  \n
+new	m	0	1	k "q"\n
+new	m	0	1	k"#"\n
+new	m	0	1	k" # "\n
+new	m	0	1	k"a#b" #c\n
+new	m	0	1	k1 2 3\n
+new	m	0	1	k\x0b\n
+new	m	0	1	kv\x0c\n
+new	m	0	1	k=\n
+new	m	0	1	k=v\n
+new	m	0	1	k=v w\n
+new	m	0	1	k="q"\n
+new	m	0	1	k="q w"\n
+new	m	0	1	k=""\n
+new	m	0	1	k="a\\"b"\n
+new	m	0	1	k="a\\\\b"\n
+new	m	0	1	k="a\\\n
+new	m	0	1	k="abc\n
+new	m	0	1	k=x"y"\n
+new	m	0	1	k=# c\n
+new	m	0	1	k=v # c\n
+new	m	0	1	k=v#c\n
+new	m	0	1	k="q" # c\n
+new	m	0	1	k="q"#c\n
+new	m	0	1	k="q" x\n
+new	m	0	1	k="q""r"\n
+new	m	0	1	k=a=b\n
+new	m	0	1	k=\xc3\xa9\n
+new	m	0	1	k="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k='sq'\n
+new	m	0	1	k=v \\\n
+new	m	0	1	k=\\#\n
+new	m	0	1	k="\\\n
+new	m	0	1	k="q"  \n
+new	m	0	1	k= "q"\n
+new	m	0	1	k="#"\n
+new	m	0	1	k=" # "\n
+new	m	0	1	k="a#b" #c\n
+new	m	0	1	k=1 2 3\n
+new	m	0	1	k=\x0b\n
+new	m	0	1	k=v\x0c\n
+new	m	0	1	k = \n
+new	m	0	1	k = v\n
+new	m	0	1	k = v w\n
+new	m	0	1	k = "q"\n
+new	m	0	1	k = "q w"\n
+new	m	0	1	k = ""\n
+new	m	0	1	k = "a\\"b"\n
+new	m	0	1	k = "a\\\\b"\n
+new	m	0	1	k = "a\\\n
+new	m	0	1	k = "abc\n
+new	m	0	1	k = x"y"\n
+new	m	0	1	k = # c\n
+new	m	0	1	k = v # c\n
+new	m	0	1	k = v#c\n
+new	m	0	1	k = "q" # c\n
+new	m	0	1	k = "q"#c\n
+new	m	0	1	k = "q" x\n
+new	m	0	1	k = "q""r"\n
+new	m	0	1	k = a=b\n
+new	m	0	1	k = \xc3\xa9\n
+new	m	0	1	k = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k = 'sq'\n
+new	m	0	1	k = v \\\n
+new	m	0	1	k = \\#\n
+new	m	0	1	k = "\\\n
+new	m	0	1	k = "q"  \n
+new	m	0	1	k =  "q"\n
+new	m	0	1	k = "#"\n
+new	m	0	1	k = " # "\n
+new	m	0	1	k = "a#b" #c\n
+new	m	0	1	k = 1 2 3\n
+new	m	0	1	k = \x0b\n
+new	m	0	1	k = v\x0c\n
+new	m	0	1	k=  \n
+new	m	0	1	k=  v\n
+new	m	0	1	k=  v w\n
+new	m	0	1	k=  "q"\n
+new	m	0	1	k=  "q w"\n
+new	m	0	1	k=  ""\n
+new	m	0	1	k=  "a\\"b"\n
+new	m	0	1	k=  "a\\\\b"\n
+new	m	0	1	k=  "a\\\n
+new	m	0	1	k=  "abc\n
+new	m	0	1	k=  x"y"\n
+new	m	0	1	k=  # c\n
+new	m	0	1	k=  v # c\n
+new	m	0	1	k=  v#c\n
+new	m	0	1	k=  "q" # c\n
+new	m	0	1	k=  "q"#c\n
+new	m	0	1	k=  "q" x\n
+new	m	0	1	k=  "q""r"\n
+new	m	0	1	k=  a=b\n
+new	m	0	1	k=  \xc3\xa9\n
+new	m	0	1	k=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k=  'sq'\n
+new	m	0	1	k=  v \\\n
+new	m	0	1	k=  \\#\n
+new	m	0	1	k=  "\\\n
+new	m	0	1	k=  "q"  \n
+new	m	0	1	k=   "q"\n
+new	m	0	1	k=  "#"\n
+new	m	0	1	k=  " # "\n
+new	m	0	1	k=  "a#b" #c\n
+new	m	0	1	k=  1 2 3\n
+new	m	0	1	k=  \x0b\n
+new	m	0	1	k=  v\x0c\n
+new	m	0	1	k  =\n
+new	m	0	1	k  =v\n
+new	m	0	1	k  =v w\n
+new	m	0	1	k  ="q"\n
+new	m	0	1	k  ="q w"\n
+new	m	0	1	k  =""\n
+new	m	0	1	k  ="a\\"b"\n
+new	m	0	1	k  ="a\\\\b"\n
+new	m	0	1	k  ="a\\\n
+new	m	0	1	k  ="abc\n
+new	m	0	1	k  =x"y"\n
+new	m	0	1	k  =# c\n
+new	m	0	1	k  =v # c\n
+new	m	0	1	k  =v#c\n
+new	m	0	1	k  ="q" # c\n
+new	m	0	1	k  ="q"#c\n
+new	m	0	1	k  ="q" x\n
+new	m	0	1	k  ="q""r"\n
+new	m	0	1	k  =a=b\n
+new	m	0	1	k  =\xc3\xa9\n
+new	m	0	1	k  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k  ='sq'\n
+new	m	0	1	k  =v \\\n
+new	m	0	1	k  =\\#\n
+new	m	0	1	k  ="\\\n
+new	m	0	1	k  ="q"  \n
+new	m	0	1	k  = "q"\n
+new	m	0	1	k  ="#"\n
+new	m	0	1	k  =" # "\n
+new	m	0	1	k  ="a#b" #c\n
+new	m	0	1	k  =1 2 3\n
+new	m	0	1	k  =\x0b\n
+new	m	0	1	k  =v\x0c\n
+new	m	0	1	k \t= \t\n
+new	m	0	1	k \t= \tv\n
+new	m	0	1	k \t= \tv w\n
+new	m	0	1	k \t= \t"q"\n
+new	m	0	1	k \t= \t"q w"\n
+new	m	0	1	k \t= \t""\n
+new	m	0	1	k \t= \t"a\\"b"\n
+new	m	0	1	k \t= \t"a\\\\b"\n
+new	m	0	1	k \t= \t"a\\\n
+new	m	0	1	k \t= \t"abc\n
+new	m	0	1	k \t= \tx"y"\n
+new	m	0	1	k \t= \t# c\n
+new	m	0	1	k \t= \tv # c\n
+new	m	0	1	k \t= \tv#c\n
+new	m	0	1	k \t= \t"q" # c\n
+new	m	0	1	k \t= \t"q"#c\n
+new	m	0	1	k \t= \t"q" x\n
+new	m	0	1	k \t= \t"q""r"\n
+new	m	0	1	k \t= \ta=b\n
+new	m	0	1	k \t= \t\xc3\xa9\n
+new	m	0	1	k \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k \t= \t'sq'\n
+new	m	0	1	k \t= \tv \\\n
+new	m	0	1	k \t= \t\\#\n
+new	m	0	1	k \t= \t"\\\n
+new	m	0	1	k \t= \t"q"  \n
+new	m	0	1	k \t= \t "q"\n
+new	m	0	1	k \t= \t"#"\n
+new	m	0	1	k \t= \t" # "\n
+new	m	0	1	k \t= \t"a#b" #c\n
+new	m	0	1	k \t= \t1 2 3\n
+new	m	0	1	k \t= \t\x0b\n
+new	m	0	1	k \t= \tv\x0c\n
+new	m	0	1	k==\n
+new	m	0	1	k==v\n
+new	m	0	1	k==v w\n
+new	m	0	1	k=="q"\n
+new	m	0	1	k=="q w"\n
+new	m	0	1	k==""\n
+new	m	0	1	k=="a\\"b"\n
+new	m	0	1	k=="a\\\\b"\n
+new	m	0	1	k=="a\\\n
+new	m	0	1	k=="abc\n
+new	m	0	1	k==x"y"\n
+new	m	0	1	k==# c\n
+new	m	0	1	k==v # c\n
+new	m	0	1	k==v#c\n
+new	m	0	1	k=="q" # c\n
+new	m	0	1	k=="q"#c\n
+new	m	0	1	k=="q" x\n
+new	m	0	1	k=="q""r"\n
+new	m	0	1	k==a=b\n
+new	m	0	1	k==\xc3\xa9\n
+new	m	0	1	k=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k=='sq'\n
+new	m	0	1	k==v \\\n
+new	m	0	1	k==\\#\n
+new	m	0	1	k=="\\\n
+new	m	0	1	k=="q"  \n
+new	m	0	1	k== "q"\n
+new	m	0	1	k=="#"\n
+new	m	0	1	k==" # "\n
+new	m	0	1	k=="a#b" #c\n
+new	m	0	1	k==1 2 3\n
+new	m	0	1	k==\x0b\n
+new	m	0	1	k==v\x0c\n
+new	m	0	1	k: \n
+new	m	0	1	k: v\n
+new	m	0	1	k: v w\n
+new	m	0	1	k: "q"\n
+new	m	0	1	k: "q w"\n
+new	m	0	1	k: ""\n
+new	m	0	1	k: "a\\"b"\n
+new	m	0	1	k: "a\\\\b"\n
+new	m	0	1	k: "a\\\n
+new	m	0	1	k: "abc\n
+new	m	0	1	k: x"y"\n
+new	m	0	1	k: # c\n
+new	m	0	1	k: v # c\n
+new	m	0	1	k: v#c\n
+new	m	0	1	k: "q" # c\n
+new	m	0	1	k: "q"#c\n
+new	m	0	1	k: "q" x\n
+new	m	0	1	k: "q""r"\n
+new	m	0	1	k: a=b\n
+new	m	0	1	k: \xc3\xa9\n
+new	m	0	1	k: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k: 'sq'\n
+new	m	0	1	k: v \\\n
+new	m	0	1	k: \\#\n
+new	m	0	1	k: "\\\n
+new	m	0	1	k: "q"  \n
+new	m	0	1	k:  "q"\n
+new	m	0	1	k: "#"\n
+new	m	0	1	k: " # "\n
+new	m	0	1	k: "a#b" #c\n
+new	m	0	1	k: 1 2 3\n
+new	m	0	1	k: \x0b\n
+new	m	0	1	k: v\x0c\n
+new	m	0	1	k \n
+new	m	0	1	k v\n
+new	m	0	1	k v w\n
+new	m	0	1	k "q"\n
+new	m	0	1	k "q w"\n
+new	m	0	1	k ""\n
+new	m	0	1	k "a\\"b"\n
+new	m	0	1	k "a\\\\b"\n
+new	m	0	1	k "a\\\n
+new	m	0	1	k "abc\n
+new	m	0	1	k x"y"\n
+new	m	0	1	k # c\n
+new	m	0	1	k v # c\n
+new	m	0	1	k v#c\n
+new	m	0	1	k "q" # c\n
+new	m	0	1	k "q"#c\n
+new	m	0	1	k "q" x\n
+new	m	0	1	k "q""r"\n
+new	m	0	1	k a=b\n
+new	m	0	1	k \xc3\xa9\n
+new	m	0	1	k "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	k 'sq'\n
+new	m	0	1	k v \\\n
+new	m	0	1	k \\#\n
+new	m	0	1	k "\\\n
+new	m	0	1	k "q"  \n
+new	m	0	1	k  "q"\n
+new	m	0	1	k "#"\n
+new	m	0	1	k " # "\n
+new	m	0	1	k "a#b" #c\n
+new	m	0	1	k 1 2 3\n
+new	m	0	1	k \x0b\n
+new	m	0	1	k v\x0c\n
+new	m	0	1	K_1-x\n
+new	m	0	1	K_1-xv\n
+new	m	0	1	K_1-xv w\n
+new	m	0	1	K_1-x"q"\n
+new	m	0	1	K_1-x"q w"\n
+new	m	0	1	K_1-x""\n
+new	m	0	1	K_1-x"a\\"b"\n
+new	m	0	1	K_1-x"a\\\\b"\n
+new	m	0	1	K_1-x"a\\\n
+new	m	0	1	K_1-x"abc\n
+new	m	0	1	K_1-xx"y"\n
+new	m	0	1	K_1-x# c\n
+new	m	0	1	K_1-xv # c\n
+new	m	0	1	K_1-xv#c\n
+new	m	0	1	K_1-x"q" # c\n
+new	m	0	1	K_1-x"q"#c\n
+new	m	0	1	K_1-x"q" x\n
+new	m	0	1	K_1-x"q""r"\n
+new	m	0	1	K_1-xa=b\n
+new	m	0	1	K_1-x\xc3\xa9\n
+new	m	0	1	K_1-x"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x'sq'\n
+new	m	0	1	K_1-xv \\\n
+new	m	0	1	K_1-x\\#\n
+new	m	0	1	K_1-x"\\\n
+new	m	0	1	K_1-x"q"  \n
+new	m	0	1	K_1-x "q"\n
+new	m	0	1	K_1-x"#"\n
+new	m	0	1	K_1-x" # "\n
+new	m	0	1	K_1-x"a#b" #c\n
+new	m	0	1	K_1-x1 2 3\n
+new	m	0	1	K_1-x\x0b\n
+new	m	0	1	K_1-xv\x0c\n
+new	m	0	1	K_1-x=\n
+new	m	0	1	K_1-x=v\n
+new	m	0	1	K_1-x=v w\n
+new	m	0	1	K_1-x="q"\n
+new	m	0	1	K_1-x="q w"\n
+new	m	0	1	K_1-x=""\n
+new	m	0	1	K_1-x="a\\"b"\n
+new	m	0	1	K_1-x="a\\\\b"\n
+new	m	0	1	K_1-x="a\\\n
+new	m	0	1	K_1-x="abc\n
+new	m	0	1	K_1-x=x"y"\n
+new	m	0	1	K_1-x=# c\n
+new	m	0	1	K_1-x=v # c\n
+new	m	0	1	K_1-x=v#c\n
+new	m	0	1	K_1-x="q" # c\n
+new	m	0	1	K_1-x="q"#c\n
+new	m	0	1	K_1-x="q" x\n
+new	m	0	1	K_1-x="q""r"\n
+new	m	0	1	K_1-x=a=b\n
+new	m	0	1	K_1-x=\xc3\xa9\n
+new	m	0	1	K_1-x="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x='sq'\n
+new	m	0	1	K_1-x=v \\\n
+new	m	0	1	K_1-x=\\#\n
+new	m	0	1	K_1-x="\\\n
+new	m	0	1	K_1-x="q"  \n
+new	m	0	1	K_1-x= "q"\n
+new	m	0	1	K_1-x="#"\n
+new	m	0	1	K_1-x=" # "\n
+new	m	0	1	K_1-x="a#b" #c\n
+new	m	0	1	K_1-x=1 2 3\n
+new	m	0	1	K_1-x=\x0b\n
+new	m	0	1	K_1-x=v\x0c\n
+new	m	0	1	K_1-x = \n
+new	m	0	1	K_1-x = v\n
+new	m	0	1	K_1-x = v w\n
+new	m	0	1	K_1-x = "q"\n
+new	m	0	1	K_1-x = "q w"\n
+new	m	0	1	K_1-x = ""\n
+new	m	0	1	K_1-x = "a\\"b"\n
+new	m	0	1	K_1-x = "a\\\\b"\n
+new	m	0	1	K_1-x = "a\\\n
+new	m	0	1	K_1-x = "abc\n
+new	m	0	1	K_1-x = x"y"\n
+new	m	0	1	K_1-x = # c\n
+new	m	0	1	K_1-x = v # c\n
+new	m	0	1	K_1-x = v#c\n
+new	m	0	1	K_1-x = "q" # c\n
+new	m	0	1	K_1-x = "q"#c\n
+new	m	0	1	K_1-x = "q" x\n
+new	m	0	1	K_1-x = "q""r"\n
+new	m	0	1	K_1-x = a=b\n
+new	m	0	1	K_1-x = \xc3\xa9\n
+new	m	0	1	K_1-x = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x = 'sq'\n
+new	m	0	1	K_1-x = v \\\n
+new	m	0	1	K_1-x = \\#\n
+new	m	0	1	K_1-x = "\\\n
+new	m	0	1	K_1-x = "q"  \n
+new	m	0	1	K_1-x =  "q"\n
+new	m	0	1	K_1-x = "#"\n
+new	m	0	1	K_1-x = " # "\n
+new	m	0	1	K_1-x = "a#b" #c\n
+new	m	0	1	K_1-x = 1 2 3\n
+new	m	0	1	K_1-x = \x0b\n
+new	m	0	1	K_1-x = v\x0c\n
+new	m	0	1	K_1-x=  \n
+new	m	0	1	K_1-x=  v\n
+new	m	0	1	K_1-x=  v w\n
+new	m	0	1	K_1-x=  "q"\n
+new	m	0	1	K_1-x=  "q w"\n
+new	m	0	1	K_1-x=  ""\n
+new	m	0	1	K_1-x=  "a\\"b"\n
+new	m	0	1	K_1-x=  "a\\\\b"\n
+new	m	0	1	K_1-x=  "a\\\n
+new	m	0	1	K_1-x=  "abc\n
+new	m	0	1	K_1-x=  x"y"\n
+new	m	0	1	K_1-x=  # c\n
+new	m	0	1	K_1-x=  v # c\n
+new	m	0	1	K_1-x=  v#c\n
+new	m	0	1	K_1-x=  "q" # c\n
+new	m	0	1	K_1-x=  "q"#c\n
+new	m	0	1	K_1-x=  "q" x\n
+new	m	0	1	K_1-x=  "q""r"\n
+new	m	0	1	K_1-x=  a=b\n
+new	m	0	1	K_1-x=  \xc3\xa9\n
+new	m	0	1	K_1-x=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x=  'sq'\n
+new	m	0	1	K_1-x=  v \\\n
+new	m	0	1	K_1-x=  \\#\n
+new	m	0	1	K_1-x=  "\\\n
+new	m	0	1	K_1-x=  "q"  \n
+new	m	0	1	K_1-x=   "q"\n
+new	m	0	1	K_1-x=  "#"\n
+new	m	0	1	K_1-x=  " # "\n
+new	m	0	1	K_1-x=  "a#b" #c\n
+new	m	0	1	K_1-x=  1 2 3\n
+new	m	0	1	K_1-x=  \x0b\n
+new	m	0	1	K_1-x=  v\x0c\n
+new	m	0	1	K_1-x  =\n
+new	m	0	1	K_1-x  =v\n
+new	m	0	1	K_1-x  =v w\n
+new	m	0	1	K_1-x  ="q"\n
+new	m	0	1	K_1-x  ="q w"\n
+new	m	0	1	K_1-x  =""\n
+new	m	0	1	K_1-x  ="a\\"b"\n
+new	m	0	1	K_1-x  ="a\\\\b"\n
+new	m	0	1	K_1-x  ="a\\\n
+new	m	0	1	K_1-x  ="abc\n
+new	m	0	1	K_1-x  =x"y"\n
+new	m	0	1	K_1-x  =# c\n
+new	m	0	1	K_1-x  =v # c\n
+new	m	0	1	K_1-x  =v#c\n
+new	m	0	1	K_1-x  ="q" # c\n
+new	m	0	1	K_1-x  ="q"#c\n
+new	m	0	1	K_1-x  ="q" x\n
+new	m	0	1	K_1-x  ="q""r"\n
+new	m	0	1	K_1-x  =a=b\n
+new	m	0	1	K_1-x  =\xc3\xa9\n
+new	m	0	1	K_1-x  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x  ='sq'\n
+new	m	0	1	K_1-x  =v \\\n
+new	m	0	1	K_1-x  =\\#\n
+new	m	0	1	K_1-x  ="\\\n
+new	m	0	1	K_1-x  ="q"  \n
+new	m	0	1	K_1-x  = "q"\n
+new	m	0	1	K_1-x  ="#"\n
+new	m	0	1	K_1-x  =" # "\n
+new	m	0	1	K_1-x  ="a#b" #c\n
+new	m	0	1	K_1-x  =1 2 3\n
+new	m	0	1	K_1-x  =\x0b\n
+new	m	0	1	K_1-x  =v\x0c\n
+new	m	0	1	K_1-x \t= \t\n
+new	m	0	1	K_1-x \t= \tv\n
+new	m	0	1	K_1-x \t= \tv w\n
+new	m	0	1	K_1-x \t= \t"q"\n
+new	m	0	1	K_1-x \t= \t"q w"\n
+new	m	0	1	K_1-x \t= \t""\n
+new	m	0	1	K_1-x \t= \t"a\\"b"\n
+new	m	0	1	K_1-x \t= \t"a\\\\b"\n
+new	m	0	1	K_1-x \t= \t"a\\\n
+new	m	0	1	K_1-x \t= \t"abc\n
+new	m	0	1	K_1-x \t= \tx"y"\n
+new	m	0	1	K_1-x \t= \t# c\n
+new	m	0	1	K_1-x \t= \tv # c\n
+new	m	0	1	K_1-x \t= \tv#c\n
+new	m	0	1	K_1-x \t= \t"q" # c\n
+new	m	0	1	K_1-x \t= \t"q"#c\n
+new	m	0	1	K_1-x \t= \t"q" x\n
+new	m	0	1	K_1-x \t= \t"q""r"\n
+new	m	0	1	K_1-x \t= \ta=b\n
+new	m	0	1	K_1-x \t= \t\xc3\xa9\n
+new	m	0	1	K_1-x \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x \t= \t'sq'\n
+new	m	0	1	K_1-x \t= \tv \\\n
+new	m	0	1	K_1-x \t= \t\\#\n
+new	m	0	1	K_1-x \t= \t"\\\n
+new	m	0	1	K_1-x \t= \t"q"  \n
+new	m	0	1	K_1-x \t= \t "q"\n
+new	m	0	1	K_1-x \t= \t"#"\n
+new	m	0	1	K_1-x \t= \t" # "\n
+new	m	0	1	K_1-x \t= \t"a#b" #c\n
+new	m	0	1	K_1-x \t= \t1 2 3\n
+new	m	0	1	K_1-x \t= \t\x0b\n
+new	m	0	1	K_1-x \t= \tv\x0c\n
+new	m	0	1	K_1-x==\n
+new	m	0	1	K_1-x==v\n
+new	m	0	1	K_1-x==v w\n
+new	m	0	1	K_1-x=="q"\n
+new	m	0	1	K_1-x=="q w"\n
+new	m	0	1	K_1-x==""\n
+new	m	0	1	K_1-x=="a\\"b"\n
+new	m	0	1	K_1-x=="a\\\\b"\n
+new	m	0	1	K_1-x=="a\\\n
+new	m	0	1	K_1-x=="abc\n
+new	m	0	1	K_1-x==x"y"\n
+new	m	0	1	K_1-x==# c\n
+new	m	0	1	K_1-x==v # c\n
+new	m	0	1	K_1-x==v#c\n
+new	m	0	1	K_1-x=="q" # c\n
+new	m	0	1	K_1-x=="q"#c\n
+new	m	0	1	K_1-x=="q" x\n
+new	m	0	1	K_1-x=="q""r"\n
+new	m	0	1	K_1-x==a=b\n
+new	m	0	1	K_1-x==\xc3\xa9\n
+new	m	0	1	K_1-x=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x=='sq'\n
+new	m	0	1	K_1-x==v \\\n
+new	m	0	1	K_1-x==\\#\n
+new	m	0	1	K_1-x=="\\\n
+new	m	0	1	K_1-x=="q"  \n
+new	m	0	1	K_1-x== "q"\n
+new	m	0	1	K_1-x=="#"\n
+new	m	0	1	K_1-x==" # "\n
+new	m	0	1	K_1-x=="a#b" #c\n
+new	m	0	1	K_1-x==1 2 3\n
+new	m	0	1	K_1-x==\x0b\n
+new	m	0	1	K_1-x==v\x0c\n
+new	m	0	1	K_1-x: \n
+new	m	0	1	K_1-x: v\n
+new	m	0	1	K_1-x: v w\n
+new	m	0	1	K_1-x: "q"\n
+new	m	0	1	K_1-x: "q w"\n
+new	m	0	1	K_1-x: ""\n
+new	m	0	1	K_1-x: "a\\"b"\n
+new	m	0	1	K_1-x: "a\\\\b"\n
+new	m	0	1	K_1-x: "a\\\n
+new	m	0	1	K_1-x: "abc\n
+new	m	0	1	K_1-x: x"y"\n
+new	m	0	1	K_1-x: # c\n
+new	m	0	1	K_1-x: v # c\n
+new	m	0	1	K_1-x: v#c\n
+new	m	0	1	K_1-x: "q" # c\n
+new	m	0	1	K_1-x: "q"#c\n
+new	m	0	1	K_1-x: "q" x\n
+new	m	0	1	K_1-x: "q""r"\n
+new	m	0	1	K_1-x: a=b\n
+new	m	0	1	K_1-x: \xc3\xa9\n
+new	m	0	1	K_1-x: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x: 'sq'\n
+new	m	0	1	K_1-x: v \\\n
+new	m	0	1	K_1-x: \\#\n
+new	m	0	1	K_1-x: "\\\n
+new	m	0	1	K_1-x: "q"  \n
+new	m	0	1	K_1-x:  "q"\n
+new	m	0	1	K_1-x: "#"\n
+new	m	0	1	K_1-x: " # "\n
+new	m	0	1	K_1-x: "a#b" #c\n
+new	m	0	1	K_1-x: 1 2 3\n
+new	m	0	1	K_1-x: \x0b\n
+new	m	0	1	K_1-x: v\x0c\n
+new	m	0	1	K_1-x \n
+new	m	0	1	K_1-x v\n
+new	m	0	1	K_1-x v w\n
+new	m	0	1	K_1-x "q"\n
+new	m	0	1	K_1-x "q w"\n
+new	m	0	1	K_1-x ""\n
+new	m	0	1	K_1-x "a\\"b"\n
+new	m	0	1	K_1-x "a\\\\b"\n
+new	m	0	1	K_1-x "a\\\n
+new	m	0	1	K_1-x "abc\n
+new	m	0	1	K_1-x x"y"\n
+new	m	0	1	K_1-x # c\n
+new	m	0	1	K_1-x v # c\n
+new	m	0	1	K_1-x v#c\n
+new	m	0	1	K_1-x "q" # c\n
+new	m	0	1	K_1-x "q"#c\n
+new	m	0	1	K_1-x "q" x\n
+new	m	0	1	K_1-x "q""r"\n
+new	m	0	1	K_1-x a=b\n
+new	m	0	1	K_1-x \xc3\xa9\n
+new	m	0	1	K_1-x "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	K_1-x 'sq'\n
+new	m	0	1	K_1-x v \\\n
+new	m	0	1	K_1-x \\#\n
+new	m	0	1	K_1-x "\\\n
+new	m	0	1	K_1-x "q"  \n
+new	m	0	1	K_1-x  "q"\n
+new	m	0	1	K_1-x "#"\n
+new	m	0	1	K_1-x " # "\n
+new	m	0	1	K_1-x "a#b" #c\n
+new	m	0	1	K_1-x 1 2 3\n
+new	m	0	1	K_1-x \x0b\n
+new	m	0	1	K_1-x v\x0c\n
+new	m	0	1	0a\n
+new	m	0	1	0av\n
+new	m	0	1	0av w\n
+new	m	0	1	0a"q"\n
+new	m	0	1	0a"q w"\n
+new	m	0	1	0a""\n
+new	m	0	1	0a"a\\"b"\n
+new	m	0	1	0a"a\\\\b"\n
+new	m	0	1	0a"a\\\n
+new	m	0	1	0a"abc\n
+new	m	0	1	0ax"y"\n
+new	m	0	1	0a# c\n
+new	m	0	1	0av # c\n
+new	m	0	1	0av#c\n
+new	m	0	1	0a"q" # c\n
+new	m	0	1	0a"q"#c\n
+new	m	0	1	0a"q" x\n
+new	m	0	1	0a"q""r"\n
+new	m	0	1	0aa=b\n
+new	m	0	1	0a\xc3\xa9\n
+new	m	0	1	0a"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a'sq'\n
+new	m	0	1	0av \\\n
+new	m	0	1	0a\\#\n
+new	m	0	1	0a"\\\n
+new	m	0	1	0a"q"  \n
+new	m	0	1	0a "q"\n
+new	m	0	1	0a"#"\n
+new	m	0	1	0a" # "\n
+new	m	0	1	0a"a#b" #c\n
+new	m	0	1	0a1 2 3\n
+new	m	0	1	0a\x0b\n
+new	m	0	1	0av\x0c\n
+new	m	0	1	0a=\n
+new	m	0	1	0a=v\n
+new	m	0	1	0a=v w\n
+new	m	0	1	0a="q"\n
+new	m	0	1	0a="q w"\n
+new	m	0	1	0a=""\n
+new	m	0	1	0a="a\\"b"\n
+new	m	0	1	0a="a\\\\b"\n
+new	m	0	1	0a="a\\\n
+new	m	0	1	0a="abc\n
+new	m	0	1	0a=x"y"\n
+new	m	0	1	0a=# c\n
+new	m	0	1	0a=v # c\n
+new	m	0	1	0a=v#c\n
+new	m	0	1	0a="q" # c\n
+new	m	0	1	0a="q"#c\n
+new	m	0	1	0a="q" x\n
+new	m	0	1	0a="q""r"\n
+new	m	0	1	0a=a=b\n
+new	m	0	1	0a=\xc3\xa9\n
+new	m	0	1	0a="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a='sq'\n
+new	m	0	1	0a=v \\\n
+new	m	0	1	0a=\\#\n
+new	m	0	1	0a="\\\n
+new	m	0	1	0a="q"  \n
+new	m	0	1	0a= "q"\n
+new	m	0	1	0a="#"\n
+new	m	0	1	0a=" # "\n
+new	m	0	1	0a="a#b" #c\n
+new	m	0	1	0a=1 2 3\n
+new	m	0	1	0a=\x0b\n
+new	m	0	1	0a=v\x0c\n
+new	m	0	1	0a = \n
+new	m	0	1	0a = v\n
+new	m	0	1	0a = v w\n
+new	m	0	1	0a = "q"\n
+new	m	0	1	0a = "q w"\n
+new	m	0	1	0a = ""\n
+new	m	0	1	0a = "a\\"b"\n
+new	m	0	1	0a = "a\\\\b"\n
+new	m	0	1	0a = "a\\\n
+new	m	0	1	0a = "abc\n
+new	m	0	1	0a = x"y"\n
+new	m	0	1	0a = # c\n
+new	m	0	1	0a = v # c\n
+new	m	0	1	0a = v#c\n
+new	m	0	1	0a = "q" # c\n
+new	m	0	1	0a = "q"#c\n
+new	m	0	1	0a = "q" x\n
+new	m	0	1	0a = "q""r"\n
+new	m	0	1	0a = a=b\n
+new	m	0	1	0a = \xc3\xa9\n
+new	m	0	1	0a = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a = 'sq'\n
+new	m	0	1	0a = v \\\n
+new	m	0	1	0a = \\#\n
+new	m	0	1	0a = "\\\n
+new	m	0	1	0a = "q"  \n
+new	m	0	1	0a =  "q"\n
+new	m	0	1	0a = "#"\n
+new	m	0	1	0a = " # "\n
+new	m	0	1	0a = "a#b" #c\n
+new	m	0	1	0a = 1 2 3\n
+new	m	0	1	0a = \x0b\n
+new	m	0	1	0a = v\x0c\n
+new	m	0	1	0a=  \n
+new	m	0	1	0a=  v\n
+new	m	0	1	0a=  v w\n
+new	m	0	1	0a=  "q"\n
+new	m	0	1	0a=  "q w"\n
+new	m	0	1	0a=  ""\n
+new	m	0	1	0a=  "a\\"b"\n
+new	m	0	1	0a=  "a\\\\b"\n
+new	m	0	1	0a=  "a\\\n
+new	m	0	1	0a=  "abc\n
+new	m	0	1	0a=  x"y"\n
+new	m	0	1	0a=  # c\n
+new	m	0	1	0a=  v # c\n
+new	m	0	1	0a=  v#c\n
+new	m	0	1	0a=  "q" # c\n
+new	m	0	1	0a=  "q"#c\n
+new	m	0	1	0a=  "q" x\n
+new	m	0	1	0a=  "q""r"\n
+new	m	0	1	0a=  a=b\n
+new	m	0	1	0a=  \xc3\xa9\n
+new	m	0	1	0a=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a=  'sq'\n
+new	m	0	1	0a=  v \\\n
+new	m	0	1	0a=  \\#\n
+new	m	0	1	0a=  "\\\n
+new	m	0	1	0a=  "q"  \n
+new	m	0	1	0a=   "q"\n
+new	m	0	1	0a=  "#"\n
+new	m	0	1	0a=  " # "\n
+new	m	0	1	0a=  "a#b" #c\n
+new	m	0	1	0a=  1 2 3\n
+new	m	0	1	0a=  \x0b\n
+new	m	0	1	0a=  v\x0c\n
+new	m	0	1	0a  =\n
+new	m	0	1	0a  =v\n
+new	m	0	1	0a  =v w\n
+new	m	0	1	0a  ="q"\n
+new	m	0	1	0a  ="q w"\n
+new	m	0	1	0a  =""\n
+new	m	0	1	0a  ="a\\"b"\n
+new	m	0	1	0a  ="a\\\\b"\n
+new	m	0	1	0a  ="a\\\n
+new	m	0	1	0a  ="abc\n
+new	m	0	1	0a  =x"y"\n
+new	m	0	1	0a  =# c\n
+new	m	0	1	0a  =v # c\n
+new	m	0	1	0a  =v#c\n
+new	m	0	1	0a  ="q" # c\n
+new	m	0	1	0a  ="q"#c\n
+new	m	0	1	0a  ="q" x\n
+new	m	0	1	0a  ="q""r"\n
+new	m	0	1	0a  =a=b\n
+new	m	0	1	0a  =\xc3\xa9\n
+new	m	0	1	0a  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a  ='sq'\n
+new	m	0	1	0a  =v \\\n
+new	m	0	1	0a  =\\#\n
+new	m	0	1	0a  ="\\\n
+new	m	0	1	0a  ="q"  \n
+new	m	0	1	0a  = "q"\n
+new	m	0	1	0a  ="#"\n
+new	m	0	1	0a  =" # "\n
+new	m	0	1	0a  ="a#b" #c\n
+new	m	0	1	0a  =1 2 3\n
+new	m	0	1	0a  =\x0b\n
+new	m	0	1	0a  =v\x0c\n
+new	m	0	1	0a \t= \t\n
+new	m	0	1	0a \t= \tv\n
+new	m	0	1	0a \t= \tv w\n
+new	m	0	1	0a \t= \t"q"\n
+new	m	0	1	0a \t= \t"q w"\n
+new	m	0	1	0a \t= \t""\n
+new	m	0	1	0a \t= \t"a\\"b"\n
+new	m	0	1	0a \t= \t"a\\\\b"\n
+new	m	0	1	0a \t= \t"a\\\n
+new	m	0	1	0a \t= \t"abc\n
+new	m	0	1	0a \t= \tx"y"\n
+new	m	0	1	0a \t= \t# c\n
+new	m	0	1	0a \t= \tv # c\n
+new	m	0	1	0a \t= \tv#c\n
+new	m	0	1	0a \t= \t"q" # c\n
+new	m	0	1	0a \t= \t"q"#c\n
+new	m	0	1	0a \t= \t"q" x\n
+new	m	0	1	0a \t= \t"q""r"\n
+new	m	0	1	0a \t= \ta=b\n
+new	m	0	1	0a \t= \t\xc3\xa9\n
+new	m	0	1	0a \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a \t= \t'sq'\n
+new	m	0	1	0a \t= \tv \\\n
+new	m	0	1	0a \t= \t\\#\n
+new	m	0	1	0a \t= \t"\\\n
+new	m	0	1	0a \t= \t"q"  \n
+new	m	0	1	0a \t= \t "q"\n
+new	m	0	1	0a \t= \t"#"\n
+new	m	0	1	0a \t= \t" # "\n
+new	m	0	1	0a \t= \t"a#b" #c\n
+new	m	0	1	0a \t= \t1 2 3\n
+new	m	0	1	0a \t= \t\x0b\n
+new	m	0	1	0a \t= \tv\x0c\n
+new	m	0	1	0a==\n
+new	m	0	1	0a==v\n
+new	m	0	1	0a==v w\n
+new	m	0	1	0a=="q"\n
+new	m	0	1	0a=="q w"\n
+new	m	0	1	0a==""\n
+new	m	0	1	0a=="a\\"b"\n
+new	m	0	1	0a=="a\\\\b"\n
+new	m	0	1	0a=="a\\\n
+new	m	0	1	0a=="abc\n
+new	m	0	1	0a==x"y"\n
+new	m	0	1	0a==# c\n
+new	m	0	1	0a==v # c\n
+new	m	0	1	0a==v#c\n
+new	m	0	1	0a=="q" # c\n
+new	m	0	1	0a=="q"#c\n
+new	m	0	1	0a=="q" x\n
+new	m	0	1	0a=="q""r"\n
+new	m	0	1	0a==a=b\n
+new	m	0	1	0a==\xc3\xa9\n
+new	m	0	1	0a=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a=='sq'\n
+new	m	0	1	0a==v \\\n
+new	m	0	1	0a==\\#\n
+new	m	0	1	0a=="\\\n
+new	m	0	1	0a=="q"  \n
+new	m	0	1	0a== "q"\n
+new	m	0	1	0a=="#"\n
+new	m	0	1	0a==" # "\n
+new	m	0	1	0a=="a#b" #c\n
+new	m	0	1	0a==1 2 3\n
+new	m	0	1	0a==\x0b\n
+new	m	0	1	0a==v\x0c\n
+new	m	0	1	0a: \n
+new	m	0	1	0a: v\n
+new	m	0	1	0a: v w\n
+new	m	0	1	0a: "q"\n
+new	m	0	1	0a: "q w"\n
+new	m	0	1	0a: ""\n
+new	m	0	1	0a: "a\\"b"\n
+new	m	0	1	0a: "a\\\\b"\n
+new	m	0	1	0a: "a\\\n
+new	m	0	1	0a: "abc\n
+new	m	0	1	0a: x"y"\n
+new	m	0	1	0a: # c\n
+new	m	0	1	0a: v # c\n
+new	m	0	1	0a: v#c\n
+new	m	0	1	0a: "q" # c\n
+new	m	0	1	0a: "q"#c\n
+new	m	0	1	0a: "q" x\n
+new	m	0	1	0a: "q""r"\n
+new	m	0	1	0a: a=b\n
+new	m	0	1	0a: \xc3\xa9\n
+new	m	0	1	0a: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a: 'sq'\n
+new	m	0	1	0a: v \\\n
+new	m	0	1	0a: \\#\n
+new	m	0	1	0a: "\\\n
+new	m	0	1	0a: "q"  \n
+new	m	0	1	0a:  "q"\n
+new	m	0	1	0a: "#"\n
+new	m	0	1	0a: " # "\n
+new	m	0	1	0a: "a#b" #c\n
+new	m	0	1	0a: 1 2 3\n
+new	m	0	1	0a: \x0b\n
+new	m	0	1	0a: v\x0c\n
+new	m	0	1	0a \n
+new	m	0	1	0a v\n
+new	m	0	1	0a v w\n
+new	m	0	1	0a "q"\n
+new	m	0	1	0a "q w"\n
+new	m	0	1	0a ""\n
+new	m	0	1	0a "a\\"b"\n
+new	m	0	1	0a "a\\\\b"\n
+new	m	0	1	0a "a\\\n
+new	m	0	1	0a "abc\n
+new	m	0	1	0a x"y"\n
+new	m	0	1	0a # c\n
+new	m	0	1	0a v # c\n
+new	m	0	1	0a v#c\n
+new	m	0	1	0a "q" # c\n
+new	m	0	1	0a "q"#c\n
+new	m	0	1	0a "q" x\n
+new	m	0	1	0a "q""r"\n
+new	m	0	1	0a a=b\n
+new	m	0	1	0a \xc3\xa9\n
+new	m	0	1	0a "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	0a 'sq'\n
+new	m	0	1	0a v \\\n
+new	m	0	1	0a \\#\n
+new	m	0	1	0a "\\\n
+new	m	0	1	0a "q"  \n
+new	m	0	1	0a  "q"\n
+new	m	0	1	0a "#"\n
+new	m	0	1	0a " # "\n
+new	m	0	1	0a "a#b" #c\n
+new	m	0	1	0a 1 2 3\n
+new	m	0	1	0a \x0b\n
+new	m	0	1	0a v\x0c\n
+new	m	0	1	a b\n
+new	m	0	1	a bv\n
+new	m	0	1	a bv w\n
+new	m	0	1	a b"q"\n
+new	m	0	1	a b"q w"\n
+new	m	0	1	a b""\n
+new	m	0	1	a b"a\\"b"\n
+new	m	0	1	a b"a\\\\b"\n
+new	m	0	1	a b"a\\\n
+new	m	0	1	a b"abc\n
+new	m	0	1	a bx"y"\n
+new	m	0	1	a b# c\n
+new	m	0	1	a bv # c\n
+new	m	0	1	a bv#c\n
+new	m	0	1	a b"q" # c\n
+new	m	0	1	a b"q"#c\n
+new	m	0	1	a b"q" x\n
+new	m	0	1	a b"q""r"\n
+new	m	0	1	a ba=b\n
+new	m	0	1	a b\xc3\xa9\n
+new	m	0	1	a b"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b'sq'\n
+new	m	0	1	a bv \\\n
+new	m	0	1	a b\\#\n
+new	m	0	1	a b"\\\n
+new	m	0	1	a b"q"  \n
+new	m	0	1	a b "q"\n
+new	m	0	1	a b"#"\n
+new	m	0	1	a b" # "\n
+new	m	0	1	a b"a#b" #c\n
+new	m	0	1	a b1 2 3\n
+new	m	0	1	a b\x0b\n
+new	m	0	1	a bv\x0c\n
+new	m	0	1	a b=\n
+new	m	0	1	a b=v\n
+new	m	0	1	a b=v w\n
+new	m	0	1	a b="q"\n
+new	m	0	1	a b="q w"\n
+new	m	0	1	a b=""\n
+new	m	0	1	a b="a\\"b"\n
+new	m	0	1	a b="a\\\\b"\n
+new	m	0	1	a b="a\\\n
+new	m	0	1	a b="abc\n
+new	m	0	1	a b=x"y"\n
+new	m	0	1	a b=# c\n
+new	m	0	1	a b=v # c\n
+new	m	0	1	a b=v#c\n
+new	m	0	1	a b="q" # c\n
+new	m	0	1	a b="q"#c\n
+new	m	0	1	a b="q" x\n
+new	m	0	1	a b="q""r"\n
+new	m	0	1	a b=a=b\n
+new	m	0	1	a b=\xc3\xa9\n
+new	m	0	1	a b="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b='sq'\n
+new	m	0	1	a b=v \\\n
+new	m	0	1	a b=\\#\n
+new	m	0	1	a b="\\\n
+new	m	0	1	a b="q"  \n
+new	m	0	1	a b= "q"\n
+new	m	0	1	a b="#"\n
+new	m	0	1	a b=" # "\n
+new	m	0	1	a b="a#b" #c\n
+new	m	0	1	a b=1 2 3\n
+new	m	0	1	a b=\x0b\n
+new	m	0	1	a b=v\x0c\n
+new	m	0	1	a b = \n
+new	m	0	1	a b = v\n
+new	m	0	1	a b = v w\n
+new	m	0	1	a b = "q"\n
+new	m	0	1	a b = "q w"\n
+new	m	0	1	a b = ""\n
+new	m	0	1	a b = "a\\"b"\n
+new	m	0	1	a b = "a\\\\b"\n
+new	m	0	1	a b = "a\\\n
+new	m	0	1	a b = "abc\n
+new	m	0	1	a b = x"y"\n
+new	m	0	1	a b = # c\n
+new	m	0	1	a b = v # c\n
+new	m	0	1	a b = v#c\n
+new	m	0	1	a b = "q" # c\n
+new	m	0	1	a b = "q"#c\n
+new	m	0	1	a b = "q" x\n
+new	m	0	1	a b = "q""r"\n
+new	m	0	1	a b = a=b\n
+new	m	0	1	a b = \xc3\xa9\n
+new	m	0	1	a b = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b = 'sq'\n
+new	m	0	1	a b = v \\\n
+new	m	0	1	a b = \\#\n
+new	m	0	1	a b = "\\\n
+new	m	0	1	a b = "q"  \n
+new	m	0	1	a b =  "q"\n
+new	m	0	1	a b = "#"\n
+new	m	0	1	a b = " # "\n
+new	m	0	1	a b = "a#b" #c\n
+new	m	0	1	a b = 1 2 3\n
+new	m	0	1	a b = \x0b\n
+new	m	0	1	a b = v\x0c\n
+new	m	0	1	a b=  \n
+new	m	0	1	a b=  v\n
+new	m	0	1	a b=  v w\n
+new	m	0	1	a b=  "q"\n
+new	m	0	1	a b=  "q w"\n
+new	m	0	1	a b=  ""\n
+new	m	0	1	a b=  "a\\"b"\n
+new	m	0	1	a b=  "a\\\\b"\n
+new	m	0	1	a b=  "a\\\n
+new	m	0	1	a b=  "abc\n
+new	m	0	1	a b=  x"y"\n
+new	m	0	1	a b=  # c\n
+new	m	0	1	a b=  v # c\n
+new	m	0	1	a b=  v#c\n
+new	m	0	1	a b=  "q" # c\n
+new	m	0	1	a b=  "q"#c\n
+new	m	0	1	a b=  "q" x\n
+new	m	0	1	a b=  "q""r"\n
+new	m	0	1	a b=  a=b\n
+new	m	0	1	a b=  \xc3\xa9\n
+new	m	0	1	a b=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b=  'sq'\n
+new	m	0	1	a b=  v \\\n
+new	m	0	1	a b=  \\#\n
+new	m	0	1	a b=  "\\\n
+new	m	0	1	a b=  "q"  \n
+new	m	0	1	a b=   "q"\n
+new	m	0	1	a b=  "#"\n
+new	m	0	1	a b=  " # "\n
+new	m	0	1	a b=  "a#b" #c\n
+new	m	0	1	a b=  1 2 3\n
+new	m	0	1	a b=  \x0b\n
+new	m	0	1	a b=  v\x0c\n
+new	m	0	1	a b  =\n
+new	m	0	1	a b  =v\n
+new	m	0	1	a b  =v w\n
+new	m	0	1	a b  ="q"\n
+new	m	0	1	a b  ="q w"\n
+new	m	0	1	a b  =""\n
+new	m	0	1	a b  ="a\\"b"\n
+new	m	0	1	a b  ="a\\\\b"\n
+new	m	0	1	a b  ="a\\\n
+new	m	0	1	a b  ="abc\n
+new	m	0	1	a b  =x"y"\n
+new	m	0	1	a b  =# c\n
+new	m	0	1	a b  =v # c\n
+new	m	0	1	a b  =v#c\n
+new	m	0	1	a b  ="q" # c\n
+new	m	0	1	a b  ="q"#c\n
+new	m	0	1	a b  ="q" x\n
+new	m	0	1	a b  ="q""r"\n
+new	m	0	1	a b  =a=b\n
+new	m	0	1	a b  =\xc3\xa9\n
+new	m	0	1	a b  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b  ='sq'\n
+new	m	0	1	a b  =v \\\n
+new	m	0	1	a b  =\\#\n
+new	m	0	1	a b  ="\\\n
+new	m	0	1	a b  ="q"  \n
+new	m	0	1	a b  = "q"\n
+new	m	0	1	a b  ="#"\n
+new	m	0	1	a b  =" # "\n
+new	m	0	1	a b  ="a#b" #c\n
+new	m	0	1	a b  =1 2 3\n
+new	m	0	1	a b  =\x0b\n
+new	m	0	1	a b  =v\x0c\n
+new	m	0	1	a b \t= \t\n
+new	m	0	1	a b \t= \tv\n
+new	m	0	1	a b \t= \tv w\n
+new	m	0	1	a b \t= \t"q"\n
+new	m	0	1	a b \t= \t"q w"\n
+new	m	0	1	a b \t= \t""\n
+new	m	0	1	a b \t= \t"a\\"b"\n
+new	m	0	1	a b \t= \t"a\\\\b"\n
+new	m	0	1	a b \t= \t"a\\\n
+new	m	0	1	a b \t= \t"abc\n
+new	m	0	1	a b \t= \tx"y"\n
+new	m	0	1	a b \t= \t# c\n
+new	m	0	1	a b \t= \tv # c\n
+new	m	0	1	a b \t= \tv#c\n
+new	m	0	1	a b \t= \t"q" # c\n
+new	m	0	1	a b \t= \t"q"#c\n
+new	m	0	1	a b \t= \t"q" x\n
+new	m	0	1	a b \t= \t"q""r"\n
+new	m	0	1	a b \t= \ta=b\n
+new	m	0	1	a b \t= \t\xc3\xa9\n
+new	m	0	1	a b \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b \t= \t'sq'\n
+new	m	0	1	a b \t= \tv \\\n
+new	m	0	1	a b \t= \t\\#\n
+new	m	0	1	a b \t= \t"\\\n
+new	m	0	1	a b \t= \t"q"  \n
+new	m	0	1	a b \t= \t "q"\n
+new	m	0	1	a b \t= \t"#"\n
+new	m	0	1	a b \t= \t" # "\n
+new	m	0	1	a b \t= \t"a#b" #c\n
+new	m	0	1	a b \t= \t1 2 3\n
+new	m	0	1	a b \t= \t\x0b\n
+new	m	0	1	a b \t= \tv\x0c\n
+new	m	0	1	a b==\n
+new	m	0	1	a b==v\n
+new	m	0	1	a b==v w\n
+new	m	0	1	a b=="q"\n
+new	m	0	1	a b=="q w"\n
+new	m	0	1	a b==""\n
+new	m	0	1	a b=="a\\"b"\n
+new	m	0	1	a b=="a\\\\b"\n
+new	m	0	1	a b=="a\\\n
+new	m	0	1	a b=="abc\n
+new	m	0	1	a b==x"y"\n
+new	m	0	1	a b==# c\n
+new	m	0	1	a b==v # c\n
+new	m	0	1	a b==v#c\n
+new	m	0	1	a b=="q" # c\n
+new	m	0	1	a b=="q"#c\n
+new	m	0	1	a b=="q" x\n
+new	m	0	1	a b=="q""r"\n
+new	m	0	1	a b==a=b\n
+new	m	0	1	a b==\xc3\xa9\n
+new	m	0	1	a b=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b=='sq'\n
+new	m	0	1	a b==v \\\n
+new	m	0	1	a b==\\#\n
+new	m	0	1	a b=="\\\n
+new	m	0	1	a b=="q"  \n
+new	m	0	1	a b== "q"\n
+new	m	0	1	a b=="#"\n
+new	m	0	1	a b==" # "\n
+new	m	0	1	a b=="a#b" #c\n
+new	m	0	1	a b==1 2 3\n
+new	m	0	1	a b==\x0b\n
+new	m	0	1	a b==v\x0c\n
+new	m	0	1	a b: \n
+new	m	0	1	a b: v\n
+new	m	0	1	a b: v w\n
+new	m	0	1	a b: "q"\n
+new	m	0	1	a b: "q w"\n
+new	m	0	1	a b: ""\n
+new	m	0	1	a b: "a\\"b"\n
+new	m	0	1	a b: "a\\\\b"\n
+new	m	0	1	a b: "a\\\n
+new	m	0	1	a b: "abc\n
+new	m	0	1	a b: x"y"\n
+new	m	0	1	a b: # c\n
+new	m	0	1	a b: v # c\n
+new	m	0	1	a b: v#c\n
+new	m	0	1	a b: "q" # c\n
+new	m	0	1	a b: "q"#c\n
+new	m	0	1	a b: "q" x\n
+new	m	0	1	a b: "q""r"\n
+new	m	0	1	a b: a=b\n
+new	m	0	1	a b: \xc3\xa9\n
+new	m	0	1	a b: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b: 'sq'\n
+new	m	0	1	a b: v \\\n
+new	m	0	1	a b: \\#\n
+new	m	0	1	a b: "\\\n
+new	m	0	1	a b: "q"  \n
+new	m	0	1	a b:  "q"\n
+new	m	0	1	a b: "#"\n
+new	m	0	1	a b: " # "\n
+new	m	0	1	a b: "a#b" #c\n
+new	m	0	1	a b: 1 2 3\n
+new	m	0	1	a b: \x0b\n
+new	m	0	1	a b: v\x0c\n
+new	m	0	1	a b \n
+new	m	0	1	a b v\n
+new	m	0	1	a b v w\n
+new	m	0	1	a b "q"\n
+new	m	0	1	a b "q w"\n
+new	m	0	1	a b ""\n
+new	m	0	1	a b "a\\"b"\n
+new	m	0	1	a b "a\\\\b"\n
+new	m	0	1	a b "a\\\n
+new	m	0	1	a b "abc\n
+new	m	0	1	a b x"y"\n
+new	m	0	1	a b # c\n
+new	m	0	1	a b v # c\n
+new	m	0	1	a b v#c\n
+new	m	0	1	a b "q" # c\n
+new	m	0	1	a b "q"#c\n
+new	m	0	1	a b "q" x\n
+new	m	0	1	a b "q""r"\n
+new	m	0	1	a b a=b\n
+new	m	0	1	a b \xc3\xa9\n
+new	m	0	1	a b "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a b 'sq'\n
+new	m	0	1	a b v \\\n
+new	m	0	1	a b \\#\n
+new	m	0	1	a b "\\\n
+new	m	0	1	a b "q"  \n
+new	m	0	1	a b  "q"\n
+new	m	0	1	a b "#"\n
+new	m	0	1	a b " # "\n
+new	m	0	1	a b "a#b" #c\n
+new	m	0	1	a b 1 2 3\n
+new	m	0	1	a b \x0b\n
+new	m	0	1	a b v\x0c\n
+new	m	0	1	a$\n
+new	m	0	1	a$v\n
+new	m	0	1	a$v w\n
+new	m	0	1	a$"q"\n
+new	m	0	1	a$"q w"\n
+new	m	0	1	a$""\n
+new	m	0	1	a$"a\\"b"\n
+new	m	0	1	a$"a\\\\b"\n
+new	m	0	1	a$"a\\\n
+new	m	0	1	a$"abc\n
+new	m	0	1	a$x"y"\n
+new	m	0	1	a$# c\n
+new	m	0	1	a$v # c\n
+new	m	0	1	a$v#c\n
+new	m	0	1	a$"q" # c\n
+new	m	0	1	a$"q"#c\n
+new	m	0	1	a$"q" x\n
+new	m	0	1	a$"q""r"\n
+new	m	0	1	a$a=b\n
+new	m	0	1	a$\xc3\xa9\n
+new	m	0	1	a$"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$'sq'\n
+new	m	0	1	a$v \\\n
+new	m	0	1	a$\\#\n
+new	m	0	1	a$"\\\n
+new	m	0	1	a$"q"  \n
+new	m	0	1	a$ "q"\n
+new	m	0	1	a$"#"\n
+new	m	0	1	a$" # "\n
+new	m	0	1	a$"a#b" #c\n
+new	m	0	1	a$1 2 3\n
+new	m	0	1	a$\x0b\n
+new	m	0	1	a$v\x0c\n
+new	m	0	1	a$=\n
+new	m	0	1	a$=v\n
+new	m	0	1	a$=v w\n
+new	m	0	1	a$="q"\n
+new	m	0	1	a$="q w"\n
+new	m	0	1	a$=""\n
+new	m	0	1	a$="a\\"b"\n
+new	m	0	1	a$="a\\\\b"\n
+new	m	0	1	a$="a\\\n
+new	m	0	1	a$="abc\n
+new	m	0	1	a$=x"y"\n
+new	m	0	1	a$=# c\n
+new	m	0	1	a$=v # c\n
+new	m	0	1	a$=v#c\n
+new	m	0	1	a$="q" # c\n
+new	m	0	1	a$="q"#c\n
+new	m	0	1	a$="q" x\n
+new	m	0	1	a$="q""r"\n
+new	m	0	1	a$=a=b\n
+new	m	0	1	a$=\xc3\xa9\n
+new	m	0	1	a$="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$='sq'\n
+new	m	0	1	a$=v \\\n
+new	m	0	1	a$=\\#\n
+new	m	0	1	a$="\\\n
+new	m	0	1	a$="q"  \n
+new	m	0	1	a$= "q"\n
+new	m	0	1	a$="#"\n
+new	m	0	1	a$=" # "\n
+new	m	0	1	a$="a#b" #c\n
+new	m	0	1	a$=1 2 3\n
+new	m	0	1	a$=\x0b\n
+new	m	0	1	a$=v\x0c\n
+new	m	0	1	a$ = \n
+new	m	0	1	a$ = v\n
+new	m	0	1	a$ = v w\n
+new	m	0	1	a$ = "q"\n
+new	m	0	1	a$ = "q w"\n
+new	m	0	1	a$ = ""\n
+new	m	0	1	a$ = "a\\"b"\n
+new	m	0	1	a$ = "a\\\\b"\n
+new	m	0	1	a$ = "a\\\n
+new	m	0	1	a$ = "abc\n
+new	m	0	1	a$ = x"y"\n
+new	m	0	1	a$ = # c\n
+new	m	0	1	a$ = v # c\n
+new	m	0	1	a$ = v#c\n
+new	m	0	1	a$ = "q" # c\n
+new	m	0	1	a$ = "q"#c\n
+new	m	0	1	a$ = "q" x\n
+new	m	0	1	a$ = "q""r"\n
+new	m	0	1	a$ = a=b\n
+new	m	0	1	a$ = \xc3\xa9\n
+new	m	0	1	a$ = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$ = 'sq'\n
+new	m	0	1	a$ = v \\\n
+new	m	0	1	a$ = \\#\n
+new	m	0	1	a$ = "\\\n
+new	m	0	1	a$ = "q"  \n
+new	m	0	1	a$ =  "q"\n
+new	m	0	1	a$ = "#"\n
+new	m	0	1	a$ = " # "\n
+new	m	0	1	a$ = "a#b" #c\n
+new	m	0	1	a$ = 1 2 3\n
+new	m	0	1	a$ = \x0b\n
+new	m	0	1	a$ = v\x0c\n
+new	m	0	1	a$=  \n
+new	m	0	1	a$=  v\n
+new	m	0	1	a$=  v w\n
+new	m	0	1	a$=  "q"\n
+new	m	0	1	a$=  "q w"\n
+new	m	0	1	a$=  ""\n
+new	m	0	1	a$=  "a\\"b"\n
+new	m	0	1	a$=  "a\\\\b"\n
+new	m	0	1	a$=  "a\\\n
+new	m	0	1	a$=  "abc\n
+new	m	0	1	a$=  x"y"\n
+new	m	0	1	a$=  # c\n
+new	m	0	1	a$=  v # c\n
+new	m	0	1	a$=  v#c\n
+new	m	0	1	a$=  "q" # c\n
+new	m	0	1	a$=  "q"#c\n
+new	m	0	1	a$=  "q" x\n
+new	m	0	1	a$=  "q""r"\n
+new	m	0	1	a$=  a=b\n
+new	m	0	1	a$=  \xc3\xa9\n
+new	m	0	1	a$=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$=  'sq'\n
+new	m	0	1	a$=  v \\\n
+new	m	0	1	a$=  \\#\n
+new	m	0	1	a$=  "\\\n
+new	m	0	1	a$=  "q"  \n
+new	m	0	1	a$=   "q"\n
+new	m	0	1	a$=  "#"\n
+new	m	0	1	a$=  " # "\n
+new	m	0	1	a$=  "a#b" #c\n
+new	m	0	1	a$=  1 2 3\n
+new	m	0	1	a$=  \x0b\n
+new	m	0	1	a$=  v\x0c\n
+new	m	0	1	a$  =\n
+new	m	0	1	a$  =v\n
+new	m	0	1	a$  =v w\n
+new	m	0	1	a$  ="q"\n
+new	m	0	1	a$  ="q w"\n
+new	m	0	1	a$  =""\n
+new	m	0	1	a$  ="a\\"b"\n
+new	m	0	1	a$  ="a\\\\b"\n
+new	m	0	1	a$  ="a\\\n
+new	m	0	1	a$  ="abc\n
+new	m	0	1	a$  =x"y"\n
+new	m	0	1	a$  =# c\n
+new	m	0	1	a$  =v # c\n
+new	m	0	1	a$  =v#c\n
+new	m	0	1	a$  ="q" # c\n
+new	m	0	1	a$  ="q"#c\n
+new	m	0	1	a$  ="q" x\n
+new	m	0	1	a$  ="q""r"\n
+new	m	0	1	a$  =a=b\n
+new	m	0	1	a$  =\xc3\xa9\n
+new	m	0	1	a$  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$  ='sq'\n
+new	m	0	1	a$  =v \\\n
+new	m	0	1	a$  =\\#\n
+new	m	0	1	a$  ="\\\n
+new	m	0	1	a$  ="q"  \n
+new	m	0	1	a$  = "q"\n
+new	m	0	1	a$  ="#"\n
+new	m	0	1	a$  =" # "\n
+new	m	0	1	a$  ="a#b" #c\n
+new	m	0	1	a$  =1 2 3\n
+new	m	0	1	a$  =\x0b\n
+new	m	0	1	a$  =v\x0c\n
+new	m	0	1	a$ \t= \t\n
+new	m	0	1	a$ \t= \tv\n
+new	m	0	1	a$ \t= \tv w\n
+new	m	0	1	a$ \t= \t"q"\n
+new	m	0	1	a$ \t= \t"q w"\n
+new	m	0	1	a$ \t= \t""\n
+new	m	0	1	a$ \t= \t"a\\"b"\n
+new	m	0	1	a$ \t= \t"a\\\\b"\n
+new	m	0	1	a$ \t= \t"a\\\n
+new	m	0	1	a$ \t= \t"abc\n
+new	m	0	1	a$ \t= \tx"y"\n
+new	m	0	1	a$ \t= \t# c\n
+new	m	0	1	a$ \t= \tv # c\n
+new	m	0	1	a$ \t= \tv#c\n
+new	m	0	1	a$ \t= \t"q" # c\n
+new	m	0	1	a$ \t= \t"q"#c\n
+new	m	0	1	a$ \t= \t"q" x\n
+new	m	0	1	a$ \t= \t"q""r"\n
+new	m	0	1	a$ \t= \ta=b\n
+new	m	0	1	a$ \t= \t\xc3\xa9\n
+new	m	0	1	a$ \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$ \t= \t'sq'\n
+new	m	0	1	a$ \t= \tv \\\n
+new	m	0	1	a$ \t= \t\\#\n
+new	m	0	1	a$ \t= \t"\\\n
+new	m	0	1	a$ \t= \t"q"  \n
+new	m	0	1	a$ \t= \t "q"\n
+new	m	0	1	a$ \t= \t"#"\n
+new	m	0	1	a$ \t= \t" # "\n
+new	m	0	1	a$ \t= \t"a#b" #c\n
+new	m	0	1	a$ \t= \t1 2 3\n
+new	m	0	1	a$ \t= \t\x0b\n
+new	m	0	1	a$ \t= \tv\x0c\n
+new	m	0	1	a$==\n
+new	m	0	1	a$==v\n
+new	m	0	1	a$==v w\n
+new	m	0	1	a$=="q"\n
+new	m	0	1	a$=="q w"\n
+new	m	0	1	a$==""\n
+new	m	0	1	a$=="a\\"b"\n
+new	m	0	1	a$=="a\\\\b"\n
+new	m	0	1	a$=="a\\\n
+new	m	0	1	a$=="abc\n
+new	m	0	1	a$==x"y"\n
+new	m	0	1	a$==# c\n
+new	m	0	1	a$==v # c\n
+new	m	0	1	a$==v#c\n
+new	m	0	1	a$=="q" # c\n
+new	m	0	1	a$=="q"#c\n
+new	m	0	1	a$=="q" x\n
+new	m	0	1	a$=="q""r"\n
+new	m	0	1	a$==a=b\n
+new	m	0	1	a$==\xc3\xa9\n
+new	m	0	1	a$=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$=='sq'\n
+new	m	0	1	a$==v \\\n
+new	m	0	1	a$==\\#\n
+new	m	0	1	a$=="\\\n
+new	m	0	1	a$=="q"  \n
+new	m	0	1	a$== "q"\n
+new	m	0	1	a$=="#"\n
+new	m	0	1	a$==" # "\n
+new	m	0	1	a$=="a#b" #c\n
+new	m	0	1	a$==1 2 3\n
+new	m	0	1	a$==\x0b\n
+new	m	0	1	a$==v\x0c\n
+new	m	0	1	a$: \n
+new	m	0	1	a$: v\n
+new	m	0	1	a$: v w\n
+new	m	0	1	a$: "q"\n
+new	m	0	1	a$: "q w"\n
+new	m	0	1	a$: ""\n
+new	m	0	1	a$: "a\\"b"\n
+new	m	0	1	a$: "a\\\\b"\n
+new	m	0	1	a$: "a\\\n
+new	m	0	1	a$: "abc\n
+new	m	0	1	a$: x"y"\n
+new	m	0	1	a$: # c\n
+new	m	0	1	a$: v # c\n
+new	m	0	1	a$: v#c\n
+new	m	0	1	a$: "q" # c\n
+new	m	0	1	a$: "q"#c\n
+new	m	0	1	a$: "q" x\n
+new	m	0	1	a$: "q""r"\n
+new	m	0	1	a$: a=b\n
+new	m	0	1	a$: \xc3\xa9\n
+new	m	0	1	a$: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$: 'sq'\n
+new	m	0	1	a$: v \\\n
+new	m	0	1	a$: \\#\n
+new	m	0	1	a$: "\\\n
+new	m	0	1	a$: "q"  \n
+new	m	0	1	a$:  "q"\n
+new	m	0	1	a$: "#"\n
+new	m	0	1	a$: " # "\n
+new	m	0	1	a$: "a#b" #c\n
+new	m	0	1	a$: 1 2 3\n
+new	m	0	1	a$: \x0b\n
+new	m	0	1	a$: v\x0c\n
+new	m	0	1	a$ \n
+new	m	0	1	a$ v\n
+new	m	0	1	a$ v w\n
+new	m	0	1	a$ "q"\n
+new	m	0	1	a$ "q w"\n
+new	m	0	1	a$ ""\n
+new	m	0	1	a$ "a\\"b"\n
+new	m	0	1	a$ "a\\\\b"\n
+new	m	0	1	a$ "a\\\n
+new	m	0	1	a$ "abc\n
+new	m	0	1	a$ x"y"\n
+new	m	0	1	a$ # c\n
+new	m	0	1	a$ v # c\n
+new	m	0	1	a$ v#c\n
+new	m	0	1	a$ "q" # c\n
+new	m	0	1	a$ "q"#c\n
+new	m	0	1	a$ "q" x\n
+new	m	0	1	a$ "q""r"\n
+new	m	0	1	a$ a=b\n
+new	m	0	1	a$ \xc3\xa9\n
+new	m	0	1	a$ "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a$ 'sq'\n
+new	m	0	1	a$ v \\\n
+new	m	0	1	a$ \\#\n
+new	m	0	1	a$ "\\\n
+new	m	0	1	a$ "q"  \n
+new	m	0	1	a$  "q"\n
+new	m	0	1	a$ "#"\n
+new	m	0	1	a$ " # "\n
+new	m	0	1	a$ "a#b" #c\n
+new	m	0	1	a$ 1 2 3\n
+new	m	0	1	a$ \x0b\n
+new	m	0	1	a$ v\x0c\n
+new	m	0	1	a#\n
+new	m	0	1	a#v\n
+new	m	0	1	a#v w\n
+new	m	0	1	a#"q"\n
+new	m	0	1	a#"q w"\n
+new	m	0	1	a#""\n
+new	m	0	1	a#"a\\"b"\n
+new	m	0	1	a#"a\\\\b"\n
+new	m	0	1	a#"a\\\n
+new	m	0	1	a#"abc\n
+new	m	0	1	a#x"y"\n
+new	m	0	1	a## c\n
+new	m	0	1	a#v # c\n
+new	m	0	1	a#v#c\n
+new	m	0	1	a#"q" # c\n
+new	m	0	1	a#"q"#c\n
+new	m	0	1	a#"q" x\n
+new	m	0	1	a#"q""r"\n
+new	m	0	1	a#a=b\n
+new	m	0	1	a#\xc3\xa9\n
+new	m	0	1	a#"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#'sq'\n
+new	m	0	1	a#v \\\n
+new	m	0	1	a#\\#\n
+new	m	0	1	a#"\\\n
+new	m	0	1	a#"q"  \n
+new	m	0	1	a# "q"\n
+new	m	0	1	a#"#"\n
+new	m	0	1	a#" # "\n
+new	m	0	1	a#"a#b" #c\n
+new	m	0	1	a#1 2 3\n
+new	m	0	1	a#\x0b\n
+new	m	0	1	a#v\x0c\n
+new	m	0	1	a#=\n
+new	m	0	1	a#=v\n
+new	m	0	1	a#=v w\n
+new	m	0	1	a#="q"\n
+new	m	0	1	a#="q w"\n
+new	m	0	1	a#=""\n
+new	m	0	1	a#="a\\"b"\n
+new	m	0	1	a#="a\\\\b"\n
+new	m	0	1	a#="a\\\n
+new	m	0	1	a#="abc\n
+new	m	0	1	a#=x"y"\n
+new	m	0	1	a#=# c\n
+new	m	0	1	a#=v # c\n
+new	m	0	1	a#=v#c\n
+new	m	0	1	a#="q" # c\n
+new	m	0	1	a#="q"#c\n
+new	m	0	1	a#="q" x\n
+new	m	0	1	a#="q""r"\n
+new	m	0	1	a#=a=b\n
+new	m	0	1	a#=\xc3\xa9\n
+new	m	0	1	a#="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#='sq'\n
+new	m	0	1	a#=v \\\n
+new	m	0	1	a#=\\#\n
+new	m	0	1	a#="\\\n
+new	m	0	1	a#="q"  \n
+new	m	0	1	a#= "q"\n
+new	m	0	1	a#="#"\n
+new	m	0	1	a#=" # "\n
+new	m	0	1	a#="a#b" #c\n
+new	m	0	1	a#=1 2 3\n
+new	m	0	1	a#=\x0b\n
+new	m	0	1	a#=v\x0c\n
+new	m	0	1	a# = \n
+new	m	0	1	a# = v\n
+new	m	0	1	a# = v w\n
+new	m	0	1	a# = "q"\n
+new	m	0	1	a# = "q w"\n
+new	m	0	1	a# = ""\n
+new	m	0	1	a# = "a\\"b"\n
+new	m	0	1	a# = "a\\\\b"\n
+new	m	0	1	a# = "a\\\n
+new	m	0	1	a# = "abc\n
+new	m	0	1	a# = x"y"\n
+new	m	0	1	a# = # c\n
+new	m	0	1	a# = v # c\n
+new	m	0	1	a# = v#c\n
+new	m	0	1	a# = "q" # c\n
+new	m	0	1	a# = "q"#c\n
+new	m	0	1	a# = "q" x\n
+new	m	0	1	a# = "q""r"\n
+new	m	0	1	a# = a=b\n
+new	m	0	1	a# = \xc3\xa9\n
+new	m	0	1	a# = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a# = 'sq'\n
+new	m	0	1	a# = v \\\n
+new	m	0	1	a# = \\#\n
+new	m	0	1	a# = "\\\n
+new	m	0	1	a# = "q"  \n
+new	m	0	1	a# =  "q"\n
+new	m	0	1	a# = "#"\n
+new	m	0	1	a# = " # "\n
+new	m	0	1	a# = "a#b" #c\n
+new	m	0	1	a# = 1 2 3\n
+new	m	0	1	a# = \x0b\n
+new	m	0	1	a# = v\x0c\n
+new	m	0	1	a#=  \n
+new	m	0	1	a#=  v\n
+new	m	0	1	a#=  v w\n
+new	m	0	1	a#=  "q"\n
+new	m	0	1	a#=  "q w"\n
+new	m	0	1	a#=  ""\n
+new	m	0	1	a#=  "a\\"b"\n
+new	m	0	1	a#=  "a\\\\b"\n
+new	m	0	1	a#=  "a\\\n
+new	m	0	1	a#=  "abc\n
+new	m	0	1	a#=  x"y"\n
+new	m	0	1	a#=  # c\n
+new	m	0	1	a#=  v # c\n
+new	m	0	1	a#=  v#c\n
+new	m	0	1	a#=  "q" # c\n
+new	m	0	1	a#=  "q"#c\n
+new	m	0	1	a#=  "q" x\n
+new	m	0	1	a#=  "q""r"\n
+new	m	0	1	a#=  a=b\n
+new	m	0	1	a#=  \xc3\xa9\n
+new	m	0	1	a#=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#=  'sq'\n
+new	m	0	1	a#=  v \\\n
+new	m	0	1	a#=  \\#\n
+new	m	0	1	a#=  "\\\n
+new	m	0	1	a#=  "q"  \n
+new	m	0	1	a#=   "q"\n
+new	m	0	1	a#=  "#"\n
+new	m	0	1	a#=  " # "\n
+new	m	0	1	a#=  "a#b" #c\n
+new	m	0	1	a#=  1 2 3\n
+new	m	0	1	a#=  \x0b\n
+new	m	0	1	a#=  v\x0c\n
+new	m	0	1	a#  =\n
+new	m	0	1	a#  =v\n
+new	m	0	1	a#  =v w\n
+new	m	0	1	a#  ="q"\n
+new	m	0	1	a#  ="q w"\n
+new	m	0	1	a#  =""\n
+new	m	0	1	a#  ="a\\"b"\n
+new	m	0	1	a#  ="a\\\\b"\n
+new	m	0	1	a#  ="a\\\n
+new	m	0	1	a#  ="abc\n
+new	m	0	1	a#  =x"y"\n
+new	m	0	1	a#  =# c\n
+new	m	0	1	a#  =v # c\n
+new	m	0	1	a#  =v#c\n
+new	m	0	1	a#  ="q" # c\n
+new	m	0	1	a#  ="q"#c\n
+new	m	0	1	a#  ="q" x\n
+new	m	0	1	a#  ="q""r"\n
+new	m	0	1	a#  =a=b\n
+new	m	0	1	a#  =\xc3\xa9\n
+new	m	0	1	a#  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#  ='sq'\n
+new	m	0	1	a#  =v \\\n
+new	m	0	1	a#  =\\#\n
+new	m	0	1	a#  ="\\\n
+new	m	0	1	a#  ="q"  \n
+new	m	0	1	a#  = "q"\n
+new	m	0	1	a#  ="#"\n
+new	m	0	1	a#  =" # "\n
+new	m	0	1	a#  ="a#b" #c\n
+new	m	0	1	a#  =1 2 3\n
+new	m	0	1	a#  =\x0b\n
+new	m	0	1	a#  =v\x0c\n
+new	m	0	1	a# \t= \t\n
+new	m	0	1	a# \t= \tv\n
+new	m	0	1	a# \t= \tv w\n
+new	m	0	1	a# \t= \t"q"\n
+new	m	0	1	a# \t= \t"q w"\n
+new	m	0	1	a# \t= \t""\n
+new	m	0	1	a# \t= \t"a\\"b"\n
+new	m	0	1	a# \t= \t"a\\\\b"\n
+new	m	0	1	a# \t= \t"a\\\n
+new	m	0	1	a# \t= \t"abc\n
+new	m	0	1	a# \t= \tx"y"\n
+new	m	0	1	a# \t= \t# c\n
+new	m	0	1	a# \t= \tv # c\n
+new	m	0	1	a# \t= \tv#c\n
+new	m	0	1	a# \t= \t"q" # c\n
+new	m	0	1	a# \t= \t"q"#c\n
+new	m	0	1	a# \t= \t"q" x\n
+new	m	0	1	a# \t= \t"q""r"\n
+new	m	0	1	a# \t= \ta=b\n
+new	m	0	1	a# \t= \t\xc3\xa9\n
+new	m	0	1	a# \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a# \t= \t'sq'\n
+new	m	0	1	a# \t= \tv \\\n
+new	m	0	1	a# \t= \t\\#\n
+new	m	0	1	a# \t= \t"\\\n
+new	m	0	1	a# \t= \t"q"  \n
+new	m	0	1	a# \t= \t "q"\n
+new	m	0	1	a# \t= \t"#"\n
+new	m	0	1	a# \t= \t" # "\n
+new	m	0	1	a# \t= \t"a#b" #c\n
+new	m	0	1	a# \t= \t1 2 3\n
+new	m	0	1	a# \t= \t\x0b\n
+new	m	0	1	a# \t= \tv\x0c\n
+new	m	0	1	a#==\n
+new	m	0	1	a#==v\n
+new	m	0	1	a#==v w\n
+new	m	0	1	a#=="q"\n
+new	m	0	1	a#=="q w"\n
+new	m	0	1	a#==""\n
+new	m	0	1	a#=="a\\"b"\n
+new	m	0	1	a#=="a\\\\b"\n
+new	m	0	1	a#=="a\\\n
+new	m	0	1	a#=="abc\n
+new	m	0	1	a#==x"y"\n
+new	m	0	1	a#==# c\n
+new	m	0	1	a#==v # c\n
+new	m	0	1	a#==v#c\n
+new	m	0	1	a#=="q" # c\n
+new	m	0	1	a#=="q"#c\n
+new	m	0	1	a#=="q" x\n
+new	m	0	1	a#=="q""r"\n
+new	m	0	1	a#==a=b\n
+new	m	0	1	a#==\xc3\xa9\n
+new	m	0	1	a#=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#=='sq'\n
+new	m	0	1	a#==v \\\n
+new	m	0	1	a#==\\#\n
+new	m	0	1	a#=="\\\n
+new	m	0	1	a#=="q"  \n
+new	m	0	1	a#== "q"\n
+new	m	0	1	a#=="#"\n
+new	m	0	1	a#==" # "\n
+new	m	0	1	a#=="a#b" #c\n
+new	m	0	1	a#==1 2 3\n
+new	m	0	1	a#==\x0b\n
+new	m	0	1	a#==v\x0c\n
+new	m	0	1	a#: \n
+new	m	0	1	a#: v\n
+new	m	0	1	a#: v w\n
+new	m	0	1	a#: "q"\n
+new	m	0	1	a#: "q w"\n
+new	m	0	1	a#: ""\n
+new	m	0	1	a#: "a\\"b"\n
+new	m	0	1	a#: "a\\\\b"\n
+new	m	0	1	a#: "a\\\n
+new	m	0	1	a#: "abc\n
+new	m	0	1	a#: x"y"\n
+new	m	0	1	a#: # c\n
+new	m	0	1	a#: v # c\n
+new	m	0	1	a#: v#c\n
+new	m	0	1	a#: "q" # c\n
+new	m	0	1	a#: "q"#c\n
+new	m	0	1	a#: "q" x\n
+new	m	0	1	a#: "q""r"\n
+new	m	0	1	a#: a=b\n
+new	m	0	1	a#: \xc3\xa9\n
+new	m	0	1	a#: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a#: 'sq'\n
+new	m	0	1	a#: v \\\n
+new	m	0	1	a#: \\#\n
+new	m	0	1	a#: "\\\n
+new	m	0	1	a#: "q"  \n
+new	m	0	1	a#:  "q"\n
+new	m	0	1	a#: "#"\n
+new	m	0	1	a#: " # "\n
+new	m	0	1	a#: "a#b" #c\n
+new	m	0	1	a#: 1 2 3\n
+new	m	0	1	a#: \x0b\n
+new	m	0	1	a#: v\x0c\n
+new	m	0	1	a# \n
+new	m	0	1	a# v\n
+new	m	0	1	a# v w\n
+new	m	0	1	a# "q"\n
+new	m	0	1	a# "q w"\n
+new	m	0	1	a# ""\n
+new	m	0	1	a# "a\\"b"\n
+new	m	0	1	a# "a\\\\b"\n
+new	m	0	1	a# "a\\\n
+new	m	0	1	a# "abc\n
+new	m	0	1	a# x"y"\n
+new	m	0	1	a# # c\n
+new	m	0	1	a# v # c\n
+new	m	0	1	a# v#c\n
+new	m	0	1	a# "q" # c\n
+new	m	0	1	a# "q"#c\n
+new	m	0	1	a# "q" x\n
+new	m	0	1	a# "q""r"\n
+new	m	0	1	a# a=b\n
+new	m	0	1	a# \xc3\xa9\n
+new	m	0	1	a# "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a# 'sq'\n
+new	m	0	1	a# v \\\n
+new	m	0	1	a# \\#\n
+new	m	0	1	a# "\\\n
+new	m	0	1	a# "q"  \n
+new	m	0	1	a#  "q"\n
+new	m	0	1	a# "#"\n
+new	m	0	1	a# " # "\n
+new	m	0	1	a# "a#b" #c\n
+new	m	0	1	a# 1 2 3\n
+new	m	0	1	a# \x0b\n
+new	m	0	1	a# v\x0c\n
+new	m	0	1	#k\n
+new	m	0	1	#kv\n
+new	m	0	1	#kv w\n
+new	m	0	1	#k"q"\n
+new	m	0	1	#k"q w"\n
+new	m	0	1	#k""\n
+new	m	0	1	#k"a\\"b"\n
+new	m	0	1	#k"a\\\\b"\n
+new	m	0	1	#k"a\\\n
+new	m	0	1	#k"abc\n
+new	m	0	1	#kx"y"\n
+new	m	0	1	#k# c\n
+new	m	0	1	#kv # c\n
+new	m	0	1	#kv#c\n
+new	m	0	1	#k"q" # c\n
+new	m	0	1	#k"q"#c\n
+new	m	0	1	#k"q" x\n
+new	m	0	1	#k"q""r"\n
+new	m	0	1	#ka=b\n
+new	m	0	1	#k\xc3\xa9\n
+new	m	0	1	#k"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k'sq'\n
+new	m	0	1	#kv \\\n
+new	m	0	1	#k\\#\n
+new	m	0	1	#k"\\\n
+new	m	0	1	#k"q"  \n
+new	m	0	1	#k "q"\n
+new	m	0	1	#k"#"\n
+new	m	0	1	#k" # "\n
+new	m	0	1	#k"a#b" #c\n
+new	m	0	1	#k1 2 3\n
+new	m	0	1	#k\x0b\n
+new	m	0	1	#kv\x0c\n
+new	m	0	1	#k=\n
+new	m	0	1	#k=v\n
+new	m	0	1	#k=v w\n
+new	m	0	1	#k="q"\n
+new	m	0	1	#k="q w"\n
+new	m	0	1	#k=""\n
+new	m	0	1	#k="a\\"b"\n
+new	m	0	1	#k="a\\\\b"\n
+new	m	0	1	#k="a\\\n
+new	m	0	1	#k="abc\n
+new	m	0	1	#k=x"y"\n
+new	m	0	1	#k=# c\n
+new	m	0	1	#k=v # c\n
+new	m	0	1	#k=v#c\n
+new	m	0	1	#k="q" # c\n
+new	m	0	1	#k="q"#c\n
+new	m	0	1	#k="q" x\n
+new	m	0	1	#k="q""r"\n
+new	m	0	1	#k=a=b\n
+new	m	0	1	#k=\xc3\xa9\n
+new	m	0	1	#k="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k='sq'\n
+new	m	0	1	#k=v \\\n
+new	m	0	1	#k=\\#\n
+new	m	0	1	#k="\\\n
+new	m	0	1	#k="q"  \n
+new	m	0	1	#k= "q"\n
+new	m	0	1	#k="#"\n
+new	m	0	1	#k=" # "\n
+new	m	0	1	#k="a#b" #c\n
+new	m	0	1	#k=1 2 3\n
+new	m	0	1	#k=\x0b\n
+new	m	0	1	#k=v\x0c\n
+new	m	0	1	#k = \n
+new	m	0	1	#k = v\n
+new	m	0	1	#k = v w\n
+new	m	0	1	#k = "q"\n
+new	m	0	1	#k = "q w"\n
+new	m	0	1	#k = ""\n
+new	m	0	1	#k = "a\\"b"\n
+new	m	0	1	#k = "a\\\\b"\n
+new	m	0	1	#k = "a\\\n
+new	m	0	1	#k = "abc\n
+new	m	0	1	#k = x"y"\n
+new	m	0	1	#k = # c\n
+new	m	0	1	#k = v # c\n
+new	m	0	1	#k = v#c\n
+new	m	0	1	#k = "q" # c\n
+new	m	0	1	#k = "q"#c\n
+new	m	0	1	#k = "q" x\n
+new	m	0	1	#k = "q""r"\n
+new	m	0	1	#k = a=b\n
+new	m	0	1	#k = \xc3\xa9\n
+new	m	0	1	#k = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k = 'sq'\n
+new	m	0	1	#k = v \\\n
+new	m	0	1	#k = \\#\n
+new	m	0	1	#k = "\\\n
+new	m	0	1	#k = "q"  \n
+new	m	0	1	#k =  "q"\n
+new	m	0	1	#k = "#"\n
+new	m	0	1	#k = " # "\n
+new	m	0	1	#k = "a#b" #c\n
+new	m	0	1	#k = 1 2 3\n
+new	m	0	1	#k = \x0b\n
+new	m	0	1	#k = v\x0c\n
+new	m	0	1	#k=  \n
+new	m	0	1	#k=  v\n
+new	m	0	1	#k=  v w\n
+new	m	0	1	#k=  "q"\n
+new	m	0	1	#k=  "q w"\n
+new	m	0	1	#k=  ""\n
+new	m	0	1	#k=  "a\\"b"\n
+new	m	0	1	#k=  "a\\\\b"\n
+new	m	0	1	#k=  "a\\\n
+new	m	0	1	#k=  "abc\n
+new	m	0	1	#k=  x"y"\n
+new	m	0	1	#k=  # c\n
+new	m	0	1	#k=  v # c\n
+new	m	0	1	#k=  v#c\n
+new	m	0	1	#k=  "q" # c\n
+new	m	0	1	#k=  "q"#c\n
+new	m	0	1	#k=  "q" x\n
+new	m	0	1	#k=  "q""r"\n
+new	m	0	1	#k=  a=b\n
+new	m	0	1	#k=  \xc3\xa9\n
+new	m	0	1	#k=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k=  'sq'\n
+new	m	0	1	#k=  v \\\n
+new	m	0	1	#k=  \\#\n
+new	m	0	1	#k=  "\\\n
+new	m	0	1	#k=  "q"  \n
+new	m	0	1	#k=   "q"\n
+new	m	0	1	#k=  "#"\n
+new	m	0	1	#k=  " # "\n
+new	m	0	1	#k=  "a#b" #c\n
+new	m	0	1	#k=  1 2 3\n
+new	m	0	1	#k=  \x0b\n
+new	m	0	1	#k=  v\x0c\n
+new	m	0	1	#k  =\n
+new	m	0	1	#k  =v\n
+new	m	0	1	#k  =v w\n
+new	m	0	1	#k  ="q"\n
+new	m	0	1	#k  ="q w"\n
+new	m	0	1	#k  =""\n
+new	m	0	1	#k  ="a\\"b"\n
+new	m	0	1	#k  ="a\\\\b"\n
+new	m	0	1	#k  ="a\\\n
+new	m	0	1	#k  ="abc\n
+new	m	0	1	#k  =x"y"\n
+new	m	0	1	#k  =# c\n
+new	m	0	1	#k  =v # c\n
+new	m	0	1	#k  =v#c\n
+new	m	0	1	#k  ="q" # c\n
+new	m	0	1	#k  ="q"#c\n
+new	m	0	1	#k  ="q" x\n
+new	m	0	1	#k  ="q""r"\n
+new	m	0	1	#k  =a=b\n
+new	m	0	1	#k  =\xc3\xa9\n
+new	m	0	1	#k  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k  ='sq'\n
+new	m	0	1	#k  =v \\\n
+new	m	0	1	#k  =\\#\n
+new	m	0	1	#k  ="\\\n
+new	m	0	1	#k  ="q"  \n
+new	m	0	1	#k  = "q"\n
+new	m	0	1	#k  ="#"\n
+new	m	0	1	#k  =" # "\n
+new	m	0	1	#k  ="a#b" #c\n
+new	m	0	1	#k  =1 2 3\n
+new	m	0	1	#k  =\x0b\n
+new	m	0	1	#k  =v\x0c\n
+new	m	0	1	#k \t= \t\n
+new	m	0	1	#k \t= \tv\n
+new	m	0	1	#k \t= \tv w\n
+new	m	0	1	#k \t= \t"q"\n
+new	m	0	1	#k \t= \t"q w"\n
+new	m	0	1	#k \t= \t""\n
+new	m	0	1	#k \t= \t"a\\"b"\n
+new	m	0	1	#k \t= \t"a\\\\b"\n
+new	m	0	1	#k \t= \t"a\\\n
+new	m	0	1	#k \t= \t"abc\n
+new	m	0	1	#k \t= \tx"y"\n
+new	m	0	1	#k \t= \t# c\n
+new	m	0	1	#k \t= \tv # c\n
+new	m	0	1	#k \t= \tv#c\n
+new	m	0	1	#k \t= \t"q" # c\n
+new	m	0	1	#k \t= \t"q"#c\n
+new	m	0	1	#k \t= \t"q" x\n
+new	m	0	1	#k \t= \t"q""r"\n
+new	m	0	1	#k \t= \ta=b\n
+new	m	0	1	#k \t= \t\xc3\xa9\n
+new	m	0	1	#k \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k \t= \t'sq'\n
+new	m	0	1	#k \t= \tv \\\n
+new	m	0	1	#k \t= \t\\#\n
+new	m	0	1	#k \t= \t"\\\n
+new	m	0	1	#k \t= \t"q"  \n
+new	m	0	1	#k \t= \t "q"\n
+new	m	0	1	#k \t= \t"#"\n
+new	m	0	1	#k \t= \t" # "\n
+new	m	0	1	#k \t= \t"a#b" #c\n
+new	m	0	1	#k \t= \t1 2 3\n
+new	m	0	1	#k \t= \t\x0b\n
+new	m	0	1	#k \t= \tv\x0c\n
+new	m	0	1	#k==\n
+new	m	0	1	#k==v\n
+new	m	0	1	#k==v w\n
+new	m	0	1	#k=="q"\n
+new	m	0	1	#k=="q w"\n
+new	m	0	1	#k==""\n
+new	m	0	1	#k=="a\\"b"\n
+new	m	0	1	#k=="a\\\\b"\n
+new	m	0	1	#k=="a\\\n
+new	m	0	1	#k=="abc\n
+new	m	0	1	#k==x"y"\n
+new	m	0	1	#k==# c\n
+new	m	0	1	#k==v # c\n
+new	m	0	1	#k==v#c\n
+new	m	0	1	#k=="q" # c\n
+new	m	0	1	#k=="q"#c\n
+new	m	0	1	#k=="q" x\n
+new	m	0	1	#k=="q""r"\n
+new	m	0	1	#k==a=b\n
+new	m	0	1	#k==\xc3\xa9\n
+new	m	0	1	#k=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k=='sq'\n
+new	m	0	1	#k==v \\\n
+new	m	0	1	#k==\\#\n
+new	m	0	1	#k=="\\\n
+new	m	0	1	#k=="q"  \n
+new	m	0	1	#k== "q"\n
+new	m	0	1	#k=="#"\n
+new	m	0	1	#k==" # "\n
+new	m	0	1	#k=="a#b" #c\n
+new	m	0	1	#k==1 2 3\n
+new	m	0	1	#k==\x0b\n
+new	m	0	1	#k==v\x0c\n
+new	m	0	1	#k: \n
+new	m	0	1	#k: v\n
+new	m	0	1	#k: v w\n
+new	m	0	1	#k: "q"\n
+new	m	0	1	#k: "q w"\n
+new	m	0	1	#k: ""\n
+new	m	0	1	#k: "a\\"b"\n
+new	m	0	1	#k: "a\\\\b"\n
+new	m	0	1	#k: "a\\\n
+new	m	0	1	#k: "abc\n
+new	m	0	1	#k: x"y"\n
+new	m	0	1	#k: # c\n
+new	m	0	1	#k: v # c\n
+new	m	0	1	#k: v#c\n
+new	m	0	1	#k: "q" # c\n
+new	m	0	1	#k: "q"#c\n
+new	m	0	1	#k: "q" x\n
+new	m	0	1	#k: "q""r"\n
+new	m	0	1	#k: a=b\n
+new	m	0	1	#k: \xc3\xa9\n
+new	m	0	1	#k: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k: 'sq'\n
+new	m	0	1	#k: v \\\n
+new	m	0	1	#k: \\#\n
+new	m	0	1	#k: "\\\n
+new	m	0	1	#k: "q"  \n
+new	m	0	1	#k:  "q"\n
+new	m	0	1	#k: "#"\n
+new	m	0	1	#k: " # "\n
+new	m	0	1	#k: "a#b" #c\n
+new	m	0	1	#k: 1 2 3\n
+new	m	0	1	#k: \x0b\n
+new	m	0	1	#k: v\x0c\n
+new	m	0	1	#k \n
+new	m	0	1	#k v\n
+new	m	0	1	#k v w\n
+new	m	0	1	#k "q"\n
+new	m	0	1	#k "q w"\n
+new	m	0	1	#k ""\n
+new	m	0	1	#k "a\\"b"\n
+new	m	0	1	#k "a\\\\b"\n
+new	m	0	1	#k "a\\\n
+new	m	0	1	#k "abc\n
+new	m	0	1	#k x"y"\n
+new	m	0	1	#k # c\n
+new	m	0	1	#k v # c\n
+new	m	0	1	#k v#c\n
+new	m	0	1	#k "q" # c\n
+new	m	0	1	#k "q"#c\n
+new	m	0	1	#k "q" x\n
+new	m	0	1	#k "q""r"\n
+new	m	0	1	#k a=b\n
+new	m	0	1	#k \xc3\xa9\n
+new	m	0	1	#k "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	#k 'sq'\n
+new	m	0	1	#k v \\\n
+new	m	0	1	#k \\#\n
+new	m	0	1	#k "\\\n
+new	m	0	1	#k "q"  \n
+new	m	0	1	#k  "q"\n
+new	m	0	1	#k "#"\n
+new	m	0	1	#k " # "\n
+new	m	0	1	#k "a#b" #c\n
+new	m	0	1	#k 1 2 3\n
+new	m	0	1	#k \x0b\n
+new	m	0	1	#k v\x0c\n
+new	m	0	1	\xc3\xa9\n
+new	m	0	1	\xc3\xa9v\n
+new	m	0	1	\xc3\xa9v w\n
+new	m	0	1	\xc3\xa9"q"\n
+new	m	0	1	\xc3\xa9"q w"\n
+new	m	0	1	\xc3\xa9""\n
+new	m	0	1	\xc3\xa9"a\\"b"\n
+new	m	0	1	\xc3\xa9"a\\\\b"\n
+new	m	0	1	\xc3\xa9"a\\\n
+new	m	0	1	\xc3\xa9"abc\n
+new	m	0	1	\xc3\xa9x"y"\n
+new	m	0	1	\xc3\xa9# c\n
+new	m	0	1	\xc3\xa9v # c\n
+new	m	0	1	\xc3\xa9v#c\n
+new	m	0	1	\xc3\xa9"q" # c\n
+new	m	0	1	\xc3\xa9"q"#c\n
+new	m	0	1	\xc3\xa9"q" x\n
+new	m	0	1	\xc3\xa9"q""r"\n
+new	m	0	1	\xc3\xa9a=b\n
+new	m	0	1	\xc3\xa9\xc3\xa9\n
+new	m	0	1	\xc3\xa9"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9'sq'\n
+new	m	0	1	\xc3\xa9v \\\n
+new	m	0	1	\xc3\xa9\\#\n
+new	m	0	1	\xc3\xa9"\\\n
+new	m	0	1	\xc3\xa9"q"  \n
+new	m	0	1	\xc3\xa9 "q"\n
+new	m	0	1	\xc3\xa9"#"\n
+new	m	0	1	\xc3\xa9" # "\n
+new	m	0	1	\xc3\xa9"a#b" #c\n
+new	m	0	1	\xc3\xa91 2 3\n
+new	m	0	1	\xc3\xa9\x0b\n
+new	m	0	1	\xc3\xa9v\x0c\n
+new	m	0	1	\xc3\xa9=\n
+new	m	0	1	\xc3\xa9=v\n
+new	m	0	1	\xc3\xa9=v w\n
+new	m	0	1	\xc3\xa9="q"\n
+new	m	0	1	\xc3\xa9="q w"\n
+new	m	0	1	\xc3\xa9=""\n
+new	m	0	1	\xc3\xa9="a\\"b"\n
+new	m	0	1	\xc3\xa9="a\\\\b"\n
+new	m	0	1	\xc3\xa9="a\\\n
+new	m	0	1	\xc3\xa9="abc\n
+new	m	0	1	\xc3\xa9=x"y"\n
+new	m	0	1	\xc3\xa9=# c\n
+new	m	0	1	\xc3\xa9=v # c\n
+new	m	0	1	\xc3\xa9=v#c\n
+new	m	0	1	\xc3\xa9="q" # c\n
+new	m	0	1	\xc3\xa9="q"#c\n
+new	m	0	1	\xc3\xa9="q" x\n
+new	m	0	1	\xc3\xa9="q""r"\n
+new	m	0	1	\xc3\xa9=a=b\n
+new	m	0	1	\xc3\xa9=\xc3\xa9\n
+new	m	0	1	\xc3\xa9="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9='sq'\n
+new	m	0	1	\xc3\xa9=v \\\n
+new	m	0	1	\xc3\xa9=\\#\n
+new	m	0	1	\xc3\xa9="\\\n
+new	m	0	1	\xc3\xa9="q"  \n
+new	m	0	1	\xc3\xa9= "q"\n
+new	m	0	1	\xc3\xa9="#"\n
+new	m	0	1	\xc3\xa9=" # "\n
+new	m	0	1	\xc3\xa9="a#b" #c\n
+new	m	0	1	\xc3\xa9=1 2 3\n
+new	m	0	1	\xc3\xa9=\x0b\n
+new	m	0	1	\xc3\xa9=v\x0c\n
+new	m	0	1	\xc3\xa9 = \n
+new	m	0	1	\xc3\xa9 = v\n
+new	m	0	1	\xc3\xa9 = v w\n
+new	m	0	1	\xc3\xa9 = "q"\n
+new	m	0	1	\xc3\xa9 = "q w"\n
+new	m	0	1	\xc3\xa9 = ""\n
+new	m	0	1	\xc3\xa9 = "a\\"b"\n
+new	m	0	1	\xc3\xa9 = "a\\\\b"\n
+new	m	0	1	\xc3\xa9 = "a\\\n
+new	m	0	1	\xc3\xa9 = "abc\n
+new	m	0	1	\xc3\xa9 = x"y"\n
+new	m	0	1	\xc3\xa9 = # c\n
+new	m	0	1	\xc3\xa9 = v # c\n
+new	m	0	1	\xc3\xa9 = v#c\n
+new	m	0	1	\xc3\xa9 = "q" # c\n
+new	m	0	1	\xc3\xa9 = "q"#c\n
+new	m	0	1	\xc3\xa9 = "q" x\n
+new	m	0	1	\xc3\xa9 = "q""r"\n
+new	m	0	1	\xc3\xa9 = a=b\n
+new	m	0	1	\xc3\xa9 = \xc3\xa9\n
+new	m	0	1	\xc3\xa9 = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9 = 'sq'\n
+new	m	0	1	\xc3\xa9 = v \\\n
+new	m	0	1	\xc3\xa9 = \\#\n
+new	m	0	1	\xc3\xa9 = "\\\n
+new	m	0	1	\xc3\xa9 = "q"  \n
+new	m	0	1	\xc3\xa9 =  "q"\n
+new	m	0	1	\xc3\xa9 = "#"\n
+new	m	0	1	\xc3\xa9 = " # "\n
+new	m	0	1	\xc3\xa9 = "a#b" #c\n
+new	m	0	1	\xc3\xa9 = 1 2 3\n
+new	m	0	1	\xc3\xa9 = \x0b\n
+new	m	0	1	\xc3\xa9 = v\x0c\n
+new	m	0	1	\xc3\xa9=  \n
+new	m	0	1	\xc3\xa9=  v\n
+new	m	0	1	\xc3\xa9=  v w\n
+new	m	0	1	\xc3\xa9=  "q"\n
+new	m	0	1	\xc3\xa9=  "q w"\n
+new	m	0	1	\xc3\xa9=  ""\n
+new	m	0	1	\xc3\xa9=  "a\\"b"\n
+new	m	0	1	\xc3\xa9=  "a\\\\b"\n
+new	m	0	1	\xc3\xa9=  "a\\\n
+new	m	0	1	\xc3\xa9=  "abc\n
+new	m	0	1	\xc3\xa9=  x"y"\n
+new	m	0	1	\xc3\xa9=  # c\n
+new	m	0	1	\xc3\xa9=  v # c\n
+new	m	0	1	\xc3\xa9=  v#c\n
+new	m	0	1	\xc3\xa9=  "q" # c\n
+new	m	0	1	\xc3\xa9=  "q"#c\n
+new	m	0	1	\xc3\xa9=  "q" x\n
+new	m	0	1	\xc3\xa9=  "q""r"\n
+new	m	0	1	\xc3\xa9=  a=b\n
+new	m	0	1	\xc3\xa9=  \xc3\xa9\n
+new	m	0	1	\xc3\xa9=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9=  'sq'\n
+new	m	0	1	\xc3\xa9=  v \\\n
+new	m	0	1	\xc3\xa9=  \\#\n
+new	m	0	1	\xc3\xa9=  "\\\n
+new	m	0	1	\xc3\xa9=  "q"  \n
+new	m	0	1	\xc3\xa9=   "q"\n
+new	m	0	1	\xc3\xa9=  "#"\n
+new	m	0	1	\xc3\xa9=  " # "\n
+new	m	0	1	\xc3\xa9=  "a#b" #c\n
+new	m	0	1	\xc3\xa9=  1 2 3\n
+new	m	0	1	\xc3\xa9=  \x0b\n
+new	m	0	1	\xc3\xa9=  v\x0c\n
+new	m	0	1	\xc3\xa9  =\n
+new	m	0	1	\xc3\xa9  =v\n
+new	m	0	1	\xc3\xa9  =v w\n
+new	m	0	1	\xc3\xa9  ="q"\n
+new	m	0	1	\xc3\xa9  ="q w"\n
+new	m	0	1	\xc3\xa9  =""\n
+new	m	0	1	\xc3\xa9  ="a\\"b"\n
+new	m	0	1	\xc3\xa9  ="a\\\\b"\n
+new	m	0	1	\xc3\xa9  ="a\\\n
+new	m	0	1	\xc3\xa9  ="abc\n
+new	m	0	1	\xc3\xa9  =x"y"\n
+new	m	0	1	\xc3\xa9  =# c\n
+new	m	0	1	\xc3\xa9  =v # c\n
+new	m	0	1	\xc3\xa9  =v#c\n
+new	m	0	1	\xc3\xa9  ="q" # c\n
+new	m	0	1	\xc3\xa9  ="q"#c\n
+new	m	0	1	\xc3\xa9  ="q" x\n
+new	m	0	1	\xc3\xa9  ="q""r"\n
+new	m	0	1	\xc3\xa9  =a=b\n
+new	m	0	1	\xc3\xa9  =\xc3\xa9\n
+new	m	0	1	\xc3\xa9  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9  ='sq'\n
+new	m	0	1	\xc3\xa9  =v \\\n
+new	m	0	1	\xc3\xa9  =\\#\n
+new	m	0	1	\xc3\xa9  ="\\\n
+new	m	0	1	\xc3\xa9  ="q"  \n
+new	m	0	1	\xc3\xa9  = "q"\n
+new	m	0	1	\xc3\xa9  ="#"\n
+new	m	0	1	\xc3\xa9  =" # "\n
+new	m	0	1	\xc3\xa9  ="a#b" #c\n
+new	m	0	1	\xc3\xa9  =1 2 3\n
+new	m	0	1	\xc3\xa9  =\x0b\n
+new	m	0	1	\xc3\xa9  =v\x0c\n
+new	m	0	1	\xc3\xa9 \t= \t\n
+new	m	0	1	\xc3\xa9 \t= \tv\n
+new	m	0	1	\xc3\xa9 \t= \tv w\n
+new	m	0	1	\xc3\xa9 \t= \t"q"\n
+new	m	0	1	\xc3\xa9 \t= \t"q w"\n
+new	m	0	1	\xc3\xa9 \t= \t""\n
+new	m	0	1	\xc3\xa9 \t= \t"a\\"b"\n
+new	m	0	1	\xc3\xa9 \t= \t"a\\\\b"\n
+new	m	0	1	\xc3\xa9 \t= \t"a\\\n
+new	m	0	1	\xc3\xa9 \t= \t"abc\n
+new	m	0	1	\xc3\xa9 \t= \tx"y"\n
+new	m	0	1	\xc3\xa9 \t= \t# c\n
+new	m	0	1	\xc3\xa9 \t= \tv # c\n
+new	m	0	1	\xc3\xa9 \t= \tv#c\n
+new	m	0	1	\xc3\xa9 \t= \t"q" # c\n
+new	m	0	1	\xc3\xa9 \t= \t"q"#c\n
+new	m	0	1	\xc3\xa9 \t= \t"q" x\n
+new	m	0	1	\xc3\xa9 \t= \t"q""r"\n
+new	m	0	1	\xc3\xa9 \t= \ta=b\n
+new	m	0	1	\xc3\xa9 \t= \t\xc3\xa9\n
+new	m	0	1	\xc3\xa9 \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9 \t= \t'sq'\n
+new	m	0	1	\xc3\xa9 \t= \tv \\\n
+new	m	0	1	\xc3\xa9 \t= \t\\#\n
+new	m	0	1	\xc3\xa9 \t= \t"\\\n
+new	m	0	1	\xc3\xa9 \t= \t"q"  \n
+new	m	0	1	\xc3\xa9 \t= \t "q"\n
+new	m	0	1	\xc3\xa9 \t= \t"#"\n
+new	m	0	1	\xc3\xa9 \t= \t" # "\n
+new	m	0	1	\xc3\xa9 \t= \t"a#b" #c\n
+new	m	0	1	\xc3\xa9 \t= \t1 2 3\n
+new	m	0	1	\xc3\xa9 \t= \t\x0b\n
+new	m	0	1	\xc3\xa9 \t= \tv\x0c\n
+new	m	0	1	\xc3\xa9==\n
+new	m	0	1	\xc3\xa9==v\n
+new	m	0	1	\xc3\xa9==v w\n
+new	m	0	1	\xc3\xa9=="q"\n
+new	m	0	1	\xc3\xa9=="q w"\n
+new	m	0	1	\xc3\xa9==""\n
+new	m	0	1	\xc3\xa9=="a\\"b"\n
+new	m	0	1	\xc3\xa9=="a\\\\b"\n
+new	m	0	1	\xc3\xa9=="a\\\n
+new	m	0	1	\xc3\xa9=="abc\n
+new	m	0	1	\xc3\xa9==x"y"\n
+new	m	0	1	\xc3\xa9==# c\n
+new	m	0	1	\xc3\xa9==v # c\n
+new	m	0	1	\xc3\xa9==v#c\n
+new	m	0	1	\xc3\xa9=="q" # c\n
+new	m	0	1	\xc3\xa9=="q"#c\n
+new	m	0	1	\xc3\xa9=="q" x\n
+new	m	0	1	\xc3\xa9=="q""r"\n
+new	m	0	1	\xc3\xa9==a=b\n
+new	m	0	1	\xc3\xa9==\xc3\xa9\n
+new	m	0	1	\xc3\xa9=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9=='sq'\n
+new	m	0	1	\xc3\xa9==v \\\n
+new	m	0	1	\xc3\xa9==\\#\n
+new	m	0	1	\xc3\xa9=="\\\n
+new	m	0	1	\xc3\xa9=="q"  \n
+new	m	0	1	\xc3\xa9== "q"\n
+new	m	0	1	\xc3\xa9=="#"\n
+new	m	0	1	\xc3\xa9==" # "\n
+new	m	0	1	\xc3\xa9=="a#b" #c\n
+new	m	0	1	\xc3\xa9==1 2 3\n
+new	m	0	1	\xc3\xa9==\x0b\n
+new	m	0	1	\xc3\xa9==v\x0c\n
+new	m	0	1	\xc3\xa9: \n
+new	m	0	1	\xc3\xa9: v\n
+new	m	0	1	\xc3\xa9: v w\n
+new	m	0	1	\xc3\xa9: "q"\n
+new	m	0	1	\xc3\xa9: "q w"\n
+new	m	0	1	\xc3\xa9: ""\n
+new	m	0	1	\xc3\xa9: "a\\"b"\n
+new	m	0	1	\xc3\xa9: "a\\\\b"\n
+new	m	0	1	\xc3\xa9: "a\\\n
+new	m	0	1	\xc3\xa9: "abc\n
+new	m	0	1	\xc3\xa9: x"y"\n
+new	m	0	1	\xc3\xa9: # c\n
+new	m	0	1	\xc3\xa9: v # c\n
+new	m	0	1	\xc3\xa9: v#c\n
+new	m	0	1	\xc3\xa9: "q" # c\n
+new	m	0	1	\xc3\xa9: "q"#c\n
+new	m	0	1	\xc3\xa9: "q" x\n
+new	m	0	1	\xc3\xa9: "q""r"\n
+new	m	0	1	\xc3\xa9: a=b\n
+new	m	0	1	\xc3\xa9: \xc3\xa9\n
+new	m	0	1	\xc3\xa9: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9: 'sq'\n
+new	m	0	1	\xc3\xa9: v \\\n
+new	m	0	1	\xc3\xa9: \\#\n
+new	m	0	1	\xc3\xa9: "\\\n
+new	m	0	1	\xc3\xa9: "q"  \n
+new	m	0	1	\xc3\xa9:  "q"\n
+new	m	0	1	\xc3\xa9: "#"\n
+new	m	0	1	\xc3\xa9: " # "\n
+new	m	0	1	\xc3\xa9: "a#b" #c\n
+new	m	0	1	\xc3\xa9: 1 2 3\n
+new	m	0	1	\xc3\xa9: \x0b\n
+new	m	0	1	\xc3\xa9: v\x0c\n
+new	m	0	1	\xc3\xa9 \n
+new	m	0	1	\xc3\xa9 v\n
+new	m	0	1	\xc3\xa9 v w\n
+new	m	0	1	\xc3\xa9 "q"\n
+new	m	0	1	\xc3\xa9 "q w"\n
+new	m	0	1	\xc3\xa9 ""\n
+new	m	0	1	\xc3\xa9 "a\\"b"\n
+new	m	0	1	\xc3\xa9 "a\\\\b"\n
+new	m	0	1	\xc3\xa9 "a\\\n
+new	m	0	1	\xc3\xa9 "abc\n
+new	m	0	1	\xc3\xa9 x"y"\n
+new	m	0	1	\xc3\xa9 # c\n
+new	m	0	1	\xc3\xa9 v # c\n
+new	m	0	1	\xc3\xa9 v#c\n
+new	m	0	1	\xc3\xa9 "q" # c\n
+new	m	0	1	\xc3\xa9 "q"#c\n
+new	m	0	1	\xc3\xa9 "q" x\n
+new	m	0	1	\xc3\xa9 "q""r"\n
+new	m	0	1	\xc3\xa9 a=b\n
+new	m	0	1	\xc3\xa9 \xc3\xa9\n
+new	m	0	1	\xc3\xa9 "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	\xc3\xa9 'sq'\n
+new	m	0	1	\xc3\xa9 v \\\n
+new	m	0	1	\xc3\xa9 \\#\n
+new	m	0	1	\xc3\xa9 "\\\n
+new	m	0	1	\xc3\xa9 "q"  \n
+new	m	0	1	\xc3\xa9  "q"\n
+new	m	0	1	\xc3\xa9 "#"\n
+new	m	0	1	\xc3\xa9 " # "\n
+new	m	0	1	\xc3\xa9 "a#b" #c\n
+new	m	0	1	\xc3\xa9 1 2 3\n
+new	m	0	1	\xc3\xa9 \x0b\n
+new	m	0	1	\xc3\xa9 v\x0c\n
+new	m	0	1	a.b\n
+new	m	0	1	a.bv\n
+new	m	0	1	a.bv w\n
+new	m	0	1	a.b"q"\n
+new	m	0	1	a.b"q w"\n
+new	m	0	1	a.b""\n
+new	m	0	1	a.b"a\\"b"\n
+new	m	0	1	a.b"a\\\\b"\n
+new	m	0	1	a.b"a\\\n
+new	m	0	1	a.b"abc\n
+new	m	0	1	a.bx"y"\n
+new	m	0	1	a.b# c\n
+new	m	0	1	a.bv # c\n
+new	m	0	1	a.bv#c\n
+new	m	0	1	a.b"q" # c\n
+new	m	0	1	a.b"q"#c\n
+new	m	0	1	a.b"q" x\n
+new	m	0	1	a.b"q""r"\n
+new	m	0	1	a.ba=b\n
+new	m	0	1	a.b\xc3\xa9\n
+new	m	0	1	a.b"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b'sq'\n
+new	m	0	1	a.bv \\\n
+new	m	0	1	a.b\\#\n
+new	m	0	1	a.b"\\\n
+new	m	0	1	a.b"q"  \n
+new	m	0	1	a.b "q"\n
+new	m	0	1	a.b"#"\n
+new	m	0	1	a.b" # "\n
+new	m	0	1	a.b"a#b" #c\n
+new	m	0	1	a.b1 2 3\n
+new	m	0	1	a.b\x0b\n
+new	m	0	1	a.bv\x0c\n
+new	m	0	1	a.b=\n
+new	m	0	1	a.b=v\n
+new	m	0	1	a.b=v w\n
+new	m	0	1	a.b="q"\n
+new	m	0	1	a.b="q w"\n
+new	m	0	1	a.b=""\n
+new	m	0	1	a.b="a\\"b"\n
+new	m	0	1	a.b="a\\\\b"\n
+new	m	0	1	a.b="a\\\n
+new	m	0	1	a.b="abc\n
+new	m	0	1	a.b=x"y"\n
+new	m	0	1	a.b=# c\n
+new	m	0	1	a.b=v # c\n
+new	m	0	1	a.b=v#c\n
+new	m	0	1	a.b="q" # c\n
+new	m	0	1	a.b="q"#c\n
+new	m	0	1	a.b="q" x\n
+new	m	0	1	a.b="q""r"\n
+new	m	0	1	a.b=a=b\n
+new	m	0	1	a.b=\xc3\xa9\n
+new	m	0	1	a.b="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b='sq'\n
+new	m	0	1	a.b=v \\\n
+new	m	0	1	a.b=\\#\n
+new	m	0	1	a.b="\\\n
+new	m	0	1	a.b="q"  \n
+new	m	0	1	a.b= "q"\n
+new	m	0	1	a.b="#"\n
+new	m	0	1	a.b=" # "\n
+new	m	0	1	a.b="a#b" #c\n
+new	m	0	1	a.b=1 2 3\n
+new	m	0	1	a.b=\x0b\n
+new	m	0	1	a.b=v\x0c\n
+new	m	0	1	a.b = \n
+new	m	0	1	a.b = v\n
+new	m	0	1	a.b = v w\n
+new	m	0	1	a.b = "q"\n
+new	m	0	1	a.b = "q w"\n
+new	m	0	1	a.b = ""\n
+new	m	0	1	a.b = "a\\"b"\n
+new	m	0	1	a.b = "a\\\\b"\n
+new	m	0	1	a.b = "a\\\n
+new	m	0	1	a.b = "abc\n
+new	m	0	1	a.b = x"y"\n
+new	m	0	1	a.b = # c\n
+new	m	0	1	a.b = v # c\n
+new	m	0	1	a.b = v#c\n
+new	m	0	1	a.b = "q" # c\n
+new	m	0	1	a.b = "q"#c\n
+new	m	0	1	a.b = "q" x\n
+new	m	0	1	a.b = "q""r"\n
+new	m	0	1	a.b = a=b\n
+new	m	0	1	a.b = \xc3\xa9\n
+new	m	0	1	a.b = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b = 'sq'\n
+new	m	0	1	a.b = v \\\n
+new	m	0	1	a.b = \\#\n
+new	m	0	1	a.b = "\\\n
+new	m	0	1	a.b = "q"  \n
+new	m	0	1	a.b =  "q"\n
+new	m	0	1	a.b = "#"\n
+new	m	0	1	a.b = " # "\n
+new	m	0	1	a.b = "a#b" #c\n
+new	m	0	1	a.b = 1 2 3\n
+new	m	0	1	a.b = \x0b\n
+new	m	0	1	a.b = v\x0c\n
+new	m	0	1	a.b=  \n
+new	m	0	1	a.b=  v\n
+new	m	0	1	a.b=  v w\n
+new	m	0	1	a.b=  "q"\n
+new	m	0	1	a.b=  "q w"\n
+new	m	0	1	a.b=  ""\n
+new	m	0	1	a.b=  "a\\"b"\n
+new	m	0	1	a.b=  "a\\\\b"\n
+new	m	0	1	a.b=  "a\\\n
+new	m	0	1	a.b=  "abc\n
+new	m	0	1	a.b=  x"y"\n
+new	m	0	1	a.b=  # c\n
+new	m	0	1	a.b=  v # c\n
+new	m	0	1	a.b=  v#c\n
+new	m	0	1	a.b=  "q" # c\n
+new	m	0	1	a.b=  "q"#c\n
+new	m	0	1	a.b=  "q" x\n
+new	m	0	1	a.b=  "q""r"\n
+new	m	0	1	a.b=  a=b\n
+new	m	0	1	a.b=  \xc3\xa9\n
+new	m	0	1	a.b=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b=  'sq'\n
+new	m	0	1	a.b=  v \\\n
+new	m	0	1	a.b=  \\#\n
+new	m	0	1	a.b=  "\\\n
+new	m	0	1	a.b=  "q"  \n
+new	m	0	1	a.b=   "q"\n
+new	m	0	1	a.b=  "#"\n
+new	m	0	1	a.b=  " # "\n
+new	m	0	1	a.b=  "a#b" #c\n
+new	m	0	1	a.b=  1 2 3\n
+new	m	0	1	a.b=  \x0b\n
+new	m	0	1	a.b=  v\x0c\n
+new	m	0	1	a.b  =\n
+new	m	0	1	a.b  =v\n
+new	m	0	1	a.b  =v w\n
+new	m	0	1	a.b  ="q"\n
+new	m	0	1	a.b  ="q w"\n
+new	m	0	1	a.b  =""\n
+new	m	0	1	a.b  ="a\\"b"\n
+new	m	0	1	a.b  ="a\\\\b"\n
+new	m	0	1	a.b  ="a\\\n
+new	m	0	1	a.b  ="abc\n
+new	m	0	1	a.b  =x"y"\n
+new	m	0	1	a.b  =# c\n
+new	m	0	1	a.b  =v # c\n
+new	m	0	1	a.b  =v#c\n
+new	m	0	1	a.b  ="q" # c\n
+new	m	0	1	a.b  ="q"#c\n
+new	m	0	1	a.b  ="q" x\n
+new	m	0	1	a.b  ="q""r"\n
+new	m	0	1	a.b  =a=b\n
+new	m	0	1	a.b  =\xc3\xa9\n
+new	m	0	1	a.b  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b  ='sq'\n
+new	m	0	1	a.b  =v \\\n
+new	m	0	1	a.b  =\\#\n
+new	m	0	1	a.b  ="\\\n
+new	m	0	1	a.b  ="q"  \n
+new	m	0	1	a.b  = "q"\n
+new	m	0	1	a.b  ="#"\n
+new	m	0	1	a.b  =" # "\n
+new	m	0	1	a.b  ="a#b" #c\n
+new	m	0	1	a.b  =1 2 3\n
+new	m	0	1	a.b  =\x0b\n
+new	m	0	1	a.b  =v\x0c\n
+new	m	0	1	a.b \t= \t\n
+new	m	0	1	a.b \t= \tv\n
+new	m	0	1	a.b \t= \tv w\n
+new	m	0	1	a.b \t= \t"q"\n
+new	m	0	1	a.b \t= \t"q w"\n
+new	m	0	1	a.b \t= \t""\n
+new	m	0	1	a.b \t= \t"a\\"b"\n
+new	m	0	1	a.b \t= \t"a\\\\b"\n
+new	m	0	1	a.b \t= \t"a\\\n
+new	m	0	1	a.b \t= \t"abc\n
+new	m	0	1	a.b \t= \tx"y"\n
+new	m	0	1	a.b \t= \t# c\n
+new	m	0	1	a.b \t= \tv # c\n
+new	m	0	1	a.b \t= \tv#c\n
+new	m	0	1	a.b \t= \t"q" # c\n
+new	m	0	1	a.b \t= \t"q"#c\n
+new	m	0	1	a.b \t= \t"q" x\n
+new	m	0	1	a.b \t= \t"q""r"\n
+new	m	0	1	a.b \t= \ta=b\n
+new	m	0	1	a.b \t= \t\xc3\xa9\n
+new	m	0	1	a.b \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b \t= \t'sq'\n
+new	m	0	1	a.b \t= \tv \\\n
+new	m	0	1	a.b \t= \t\\#\n
+new	m	0	1	a.b \t= \t"\\\n
+new	m	0	1	a.b \t= \t"q"  \n
+new	m	0	1	a.b \t= \t "q"\n
+new	m	0	1	a.b \t= \t"#"\n
+new	m	0	1	a.b \t= \t" # "\n
+new	m	0	1	a.b \t= \t"a#b" #c\n
+new	m	0	1	a.b \t= \t1 2 3\n
+new	m	0	1	a.b \t= \t\x0b\n
+new	m	0	1	a.b \t= \tv\x0c\n
+new	m	0	1	a.b==\n
+new	m	0	1	a.b==v\n
+new	m	0	1	a.b==v w\n
+new	m	0	1	a.b=="q"\n
+new	m	0	1	a.b=="q w"\n
+new	m	0	1	a.b==""\n
+new	m	0	1	a.b=="a\\"b"\n
+new	m	0	1	a.b=="a\\\\b"\n
+new	m	0	1	a.b=="a\\\n
+new	m	0	1	a.b=="abc\n
+new	m	0	1	a.b==x"y"\n
+new	m	0	1	a.b==# c\n
+new	m	0	1	a.b==v # c\n
+new	m	0	1	a.b==v#c\n
+new	m	0	1	a.b=="q" # c\n
+new	m	0	1	a.b=="q"#c\n
+new	m	0	1	a.b=="q" x\n
+new	m	0	1	a.b=="q""r"\n
+new	m	0	1	a.b==a=b\n
+new	m	0	1	a.b==\xc3\xa9\n
+new	m	0	1	a.b=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b=='sq'\n
+new	m	0	1	a.b==v \\\n
+new	m	0	1	a.b==\\#\n
+new	m	0	1	a.b=="\\\n
+new	m	0	1	a.b=="q"  \n
+new	m	0	1	a.b== "q"\n
+new	m	0	1	a.b=="#"\n
+new	m	0	1	a.b==" # "\n
+new	m	0	1	a.b=="a#b" #c\n
+new	m	0	1	a.b==1 2 3\n
+new	m	0	1	a.b==\x0b\n
+new	m	0	1	a.b==v\x0c\n
+new	m	0	1	a.b: \n
+new	m	0	1	a.b: v\n
+new	m	0	1	a.b: v w\n
+new	m	0	1	a.b: "q"\n
+new	m	0	1	a.b: "q w"\n
+new	m	0	1	a.b: ""\n
+new	m	0	1	a.b: "a\\"b"\n
+new	m	0	1	a.b: "a\\\\b"\n
+new	m	0	1	a.b: "a\\\n
+new	m	0	1	a.b: "abc\n
+new	m	0	1	a.b: x"y"\n
+new	m	0	1	a.b: # c\n
+new	m	0	1	a.b: v # c\n
+new	m	0	1	a.b: v#c\n
+new	m	0	1	a.b: "q" # c\n
+new	m	0	1	a.b: "q"#c\n
+new	m	0	1	a.b: "q" x\n
+new	m	0	1	a.b: "q""r"\n
+new	m	0	1	a.b: a=b\n
+new	m	0	1	a.b: \xc3\xa9\n
+new	m	0	1	a.b: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b: 'sq'\n
+new	m	0	1	a.b: v \\\n
+new	m	0	1	a.b: \\#\n
+new	m	0	1	a.b: "\\\n
+new	m	0	1	a.b: "q"  \n
+new	m	0	1	a.b:  "q"\n
+new	m	0	1	a.b: "#"\n
+new	m	0	1	a.b: " # "\n
+new	m	0	1	a.b: "a#b" #c\n
+new	m	0	1	a.b: 1 2 3\n
+new	m	0	1	a.b: \x0b\n
+new	m	0	1	a.b: v\x0c\n
+new	m	0	1	a.b \n
+new	m	0	1	a.b v\n
+new	m	0	1	a.b v w\n
+new	m	0	1	a.b "q"\n
+new	m	0	1	a.b "q w"\n
+new	m	0	1	a.b ""\n
+new	m	0	1	a.b "a\\"b"\n
+new	m	0	1	a.b "a\\\\b"\n
+new	m	0	1	a.b "a\\\n
+new	m	0	1	a.b "abc\n
+new	m	0	1	a.b x"y"\n
+new	m	0	1	a.b # c\n
+new	m	0	1	a.b v # c\n
+new	m	0	1	a.b v#c\n
+new	m	0	1	a.b "q" # c\n
+new	m	0	1	a.b "q"#c\n
+new	m	0	1	a.b "q" x\n
+new	m	0	1	a.b "q""r"\n
+new	m	0	1	a.b a=b\n
+new	m	0	1	a.b \xc3\xa9\n
+new	m	0	1	a.b "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	a.b 'sq'\n
+new	m	0	1	a.b v \\\n
+new	m	0	1	a.b \\#\n
+new	m	0	1	a.b "\\\n
+new	m	0	1	a.b "q"  \n
+new	m	0	1	a.b  "q"\n
+new	m	0	1	a.b "#"\n
+new	m	0	1	a.b " # "\n
+new	m	0	1	a.b "a#b" #c\n
+new	m	0	1	a.b 1 2 3\n
+new	m	0	1	a.b \x0b\n
+new	m	0	1	a.b v\x0c\n
+new	m	0	1	-\n
+new	m	0	1	-v\n
+new	m	0	1	-v w\n
+new	m	0	1	-"q"\n
+new	m	0	1	-"q w"\n
+new	m	0	1	-""\n
+new	m	0	1	-"a\\"b"\n
+new	m	0	1	-"a\\\\b"\n
+new	m	0	1	-"a\\\n
+new	m	0	1	-"abc\n
+new	m	0	1	-x"y"\n
+new	m	0	1	-# c\n
+new	m	0	1	-v # c\n
+new	m	0	1	-v#c\n
+new	m	0	1	-"q" # c\n
+new	m	0	1	-"q"#c\n
+new	m	0	1	-"q" x\n
+new	m	0	1	-"q""r"\n
+new	m	0	1	-a=b\n
+new	m	0	1	-\xc3\xa9\n
+new	m	0	1	-"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-'sq'\n
+new	m	0	1	-v \\\n
+new	m	0	1	-\\#\n
+new	m	0	1	-"\\\n
+new	m	0	1	-"q"  \n
+new	m	0	1	- "q"\n
+new	m	0	1	-"#"\n
+new	m	0	1	-" # "\n
+new	m	0	1	-"a#b" #c\n
+new	m	0	1	-1 2 3\n
+new	m	0	1	-\x0b\n
+new	m	0	1	-v\x0c\n
+new	m	0	1	-=\n
+new	m	0	1	-=v\n
+new	m	0	1	-=v w\n
+new	m	0	1	-="q"\n
+new	m	0	1	-="q w"\n
+new	m	0	1	-=""\n
+new	m	0	1	-="a\\"b"\n
+new	m	0	1	-="a\\\\b"\n
+new	m	0	1	-="a\\\n
+new	m	0	1	-="abc\n
+new	m	0	1	-=x"y"\n
+new	m	0	1	-=# c\n
+new	m	0	1	-=v # c\n
+new	m	0	1	-=v#c\n
+new	m	0	1	-="q" # c\n
+new	m	0	1	-="q"#c\n
+new	m	0	1	-="q" x\n
+new	m	0	1	-="q""r"\n
+new	m	0	1	-=a=b\n
+new	m	0	1	-=\xc3\xa9\n
+new	m	0	1	-="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-='sq'\n
+new	m	0	1	-=v \\\n
+new	m	0	1	-=\\#\n
+new	m	0	1	-="\\\n
+new	m	0	1	-="q"  \n
+new	m	0	1	-= "q"\n
+new	m	0	1	-="#"\n
+new	m	0	1	-=" # "\n
+new	m	0	1	-="a#b" #c\n
+new	m	0	1	-=1 2 3\n
+new	m	0	1	-=\x0b\n
+new	m	0	1	-=v\x0c\n
+new	m	0	1	- = \n
+new	m	0	1	- = v\n
+new	m	0	1	- = v w\n
+new	m	0	1	- = "q"\n
+new	m	0	1	- = "q w"\n
+new	m	0	1	- = ""\n
+new	m	0	1	- = "a\\"b"\n
+new	m	0	1	- = "a\\\\b"\n
+new	m	0	1	- = "a\\\n
+new	m	0	1	- = "abc\n
+new	m	0	1	- = x"y"\n
+new	m	0	1	- = # c\n
+new	m	0	1	- = v # c\n
+new	m	0	1	- = v#c\n
+new	m	0	1	- = "q" # c\n
+new	m	0	1	- = "q"#c\n
+new	m	0	1	- = "q" x\n
+new	m	0	1	- = "q""r"\n
+new	m	0	1	- = a=b\n
+new	m	0	1	- = \xc3\xa9\n
+new	m	0	1	- = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	- = 'sq'\n
+new	m	0	1	- = v \\\n
+new	m	0	1	- = \\#\n
+new	m	0	1	- = "\\\n
+new	m	0	1	- = "q"  \n
+new	m	0	1	- =  "q"\n
+new	m	0	1	- = "#"\n
+new	m	0	1	- = " # "\n
+new	m	0	1	- = "a#b" #c\n
+new	m	0	1	- = 1 2 3\n
+new	m	0	1	- = \x0b\n
+new	m	0	1	- = v\x0c\n
+new	m	0	1	-=  \n
+new	m	0	1	-=  v\n
+new	m	0	1	-=  v w\n
+new	m	0	1	-=  "q"\n
+new	m	0	1	-=  "q w"\n
+new	m	0	1	-=  ""\n
+new	m	0	1	-=  "a\\"b"\n
+new	m	0	1	-=  "a\\\\b"\n
+new	m	0	1	-=  "a\\\n
+new	m	0	1	-=  "abc\n
+new	m	0	1	-=  x"y"\n
+new	m	0	1	-=  # c\n
+new	m	0	1	-=  v # c\n
+new	m	0	1	-=  v#c\n
+new	m	0	1	-=  "q" # c\n
+new	m	0	1	-=  "q"#c\n
+new	m	0	1	-=  "q" x\n
+new	m	0	1	-=  "q""r"\n
+new	m	0	1	-=  a=b\n
+new	m	0	1	-=  \xc3\xa9\n
+new	m	0	1	-=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-=  'sq'\n
+new	m	0	1	-=  v \\\n
+new	m	0	1	-=  \\#\n
+new	m	0	1	-=  "\\\n
+new	m	0	1	-=  "q"  \n
+new	m	0	1	-=   "q"\n
+new	m	0	1	-=  "#"\n
+new	m	0	1	-=  " # "\n
+new	m	0	1	-=  "a#b" #c\n
+new	m	0	1	-=  1 2 3\n
+new	m	0	1	-=  \x0b\n
+new	m	0	1	-=  v\x0c\n
+new	m	0	1	-  =\n
+new	m	0	1	-  =v\n
+new	m	0	1	-  =v w\n
+new	m	0	1	-  ="q"\n
+new	m	0	1	-  ="q w"\n
+new	m	0	1	-  =""\n
+new	m	0	1	-  ="a\\"b"\n
+new	m	0	1	-  ="a\\\\b"\n
+new	m	0	1	-  ="a\\\n
+new	m	0	1	-  ="abc\n
+new	m	0	1	-  =x"y"\n
+new	m	0	1	-  =# c\n
+new	m	0	1	-  =v # c\n
+new	m	0	1	-  =v#c\n
+new	m	0	1	-  ="q" # c\n
+new	m	0	1	-  ="q"#c\n
+new	m	0	1	-  ="q" x\n
+new	m	0	1	-  ="q""r"\n
+new	m	0	1	-  =a=b\n
+new	m	0	1	-  =\xc3\xa9\n
+new	m	0	1	-  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-  ='sq'\n
+new	m	0	1	-  =v \\\n
+new	m	0	1	-  =\\#\n
+new	m	0	1	-  ="\\\n
+new	m	0	1	-  ="q"  \n
+new	m	0	1	-  = "q"\n
+new	m	0	1	-  ="#"\n
+new	m	0	1	-  =" # "\n
+new	m	0	1	-  ="a#b" #c\n
+new	m	0	1	-  =1 2 3\n
+new	m	0	1	-  =\x0b\n
+new	m	0	1	-  =v\x0c\n
+new	m	0	1	- \t= \t\n
+new	m	0	1	- \t= \tv\n
+new	m	0	1	- \t= \tv w\n
+new	m	0	1	- \t= \t"q"\n
+new	m	0	1	- \t= \t"q w"\n
+new	m	0	1	- \t= \t""\n
+new	m	0	1	- \t= \t"a\\"b"\n
+new	m	0	1	- \t= \t"a\\\\b"\n
+new	m	0	1	- \t= \t"a\\\n
+new	m	0	1	- \t= \t"abc\n
+new	m	0	1	- \t= \tx"y"\n
+new	m	0	1	- \t= \t# c\n
+new	m	0	1	- \t= \tv # c\n
+new	m	0	1	- \t= \tv#c\n
+new	m	0	1	- \t= \t"q" # c\n
+new	m	0	1	- \t= \t"q"#c\n
+new	m	0	1	- \t= \t"q" x\n
+new	m	0	1	- \t= \t"q""r"\n
+new	m	0	1	- \t= \ta=b\n
+new	m	0	1	- \t= \t\xc3\xa9\n
+new	m	0	1	- \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	- \t= \t'sq'\n
+new	m	0	1	- \t= \tv \\\n
+new	m	0	1	- \t= \t\\#\n
+new	m	0	1	- \t= \t"\\\n
+new	m	0	1	- \t= \t"q"  \n
+new	m	0	1	- \t= \t "q"\n
+new	m	0	1	- \t= \t"#"\n
+new	m	0	1	- \t= \t" # "\n
+new	m	0	1	- \t= \t"a#b" #c\n
+new	m	0	1	- \t= \t1 2 3\n
+new	m	0	1	- \t= \t\x0b\n
+new	m	0	1	- \t= \tv\x0c\n
+new	m	0	1	-==\n
+new	m	0	1	-==v\n
+new	m	0	1	-==v w\n
+new	m	0	1	-=="q"\n
+new	m	0	1	-=="q w"\n
+new	m	0	1	-==""\n
+new	m	0	1	-=="a\\"b"\n
+new	m	0	1	-=="a\\\\b"\n
+new	m	0	1	-=="a\\\n
+new	m	0	1	-=="abc\n
+new	m	0	1	-==x"y"\n
+new	m	0	1	-==# c\n
+new	m	0	1	-==v # c\n
+new	m	0	1	-==v#c\n
+new	m	0	1	-=="q" # c\n
+new	m	0	1	-=="q"#c\n
+new	m	0	1	-=="q" x\n
+new	m	0	1	-=="q""r"\n
+new	m	0	1	-==a=b\n
+new	m	0	1	-==\xc3\xa9\n
+new	m	0	1	-=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-=='sq'\n
+new	m	0	1	-==v \\\n
+new	m	0	1	-==\\#\n
+new	m	0	1	-=="\\\n
+new	m	0	1	-=="q"  \n
+new	m	0	1	-== "q"\n
+new	m	0	1	-=="#"\n
+new	m	0	1	-==" # "\n
+new	m	0	1	-=="a#b" #c\n
+new	m	0	1	-==1 2 3\n
+new	m	0	1	-==\x0b\n
+new	m	0	1	-==v\x0c\n
+new	m	0	1	-: \n
+new	m	0	1	-: v\n
+new	m	0	1	-: v w\n
+new	m	0	1	-: "q"\n
+new	m	0	1	-: "q w"\n
+new	m	0	1	-: ""\n
+new	m	0	1	-: "a\\"b"\n
+new	m	0	1	-: "a\\\\b"\n
+new	m	0	1	-: "a\\\n
+new	m	0	1	-: "abc\n
+new	m	0	1	-: x"y"\n
+new	m	0	1	-: # c\n
+new	m	0	1	-: v # c\n
+new	m	0	1	-: v#c\n
+new	m	0	1	-: "q" # c\n
+new	m	0	1	-: "q"#c\n
+new	m	0	1	-: "q" x\n
+new	m	0	1	-: "q""r"\n
+new	m	0	1	-: a=b\n
+new	m	0	1	-: \xc3\xa9\n
+new	m	0	1	-: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	-: 'sq'\n
+new	m	0	1	-: v \\\n
+new	m	0	1	-: \\#\n
+new	m	0	1	-: "\\\n
+new	m	0	1	-: "q"  \n
+new	m	0	1	-:  "q"\n
+new	m	0	1	-: "#"\n
+new	m	0	1	-: " # "\n
+new	m	0	1	-: "a#b" #c\n
+new	m	0	1	-: 1 2 3\n
+new	m	0	1	-: \x0b\n
+new	m	0	1	-: v\x0c\n
+new	m	0	1	- \n
+new	m	0	1	- v\n
+new	m	0	1	- v w\n
+new	m	0	1	- "q"\n
+new	m	0	1	- "q w"\n
+new	m	0	1	- ""\n
+new	m	0	1	- "a\\"b"\n
+new	m	0	1	- "a\\\\b"\n
+new	m	0	1	- "a\\\n
+new	m	0	1	- "abc\n
+new	m	0	1	- x"y"\n
+new	m	0	1	- # c\n
+new	m	0	1	- v # c\n
+new	m	0	1	- v#c\n
+new	m	0	1	- "q" # c\n
+new	m	0	1	- "q"#c\n
+new	m	0	1	- "q" x\n
+new	m	0	1	- "q""r"\n
+new	m	0	1	- a=b\n
+new	m	0	1	- \xc3\xa9\n
+new	m	0	1	- "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	- 'sq'\n
+new	m	0	1	- v \\\n
+new	m	0	1	- \\#\n
+new	m	0	1	- "\\\n
+new	m	0	1	- "q"  \n
+new	m	0	1	-  "q"\n
+new	m	0	1	- "#"\n
+new	m	0	1	- " # "\n
+new	m	0	1	- "a#b" #c\n
+new	m	0	1	- 1 2 3\n
+new	m	0	1	- \x0b\n
+new	m	0	1	- v\x0c\n
+new	m	0	1	_\n
+new	m	0	1	_v\n
+new	m	0	1	_v w\n
+new	m	0	1	_"q"\n
+new	m	0	1	_"q w"\n
+new	m	0	1	_""\n
+new	m	0	1	_"a\\"b"\n
+new	m	0	1	_"a\\\\b"\n
+new	m	0	1	_"a\\\n
+new	m	0	1	_"abc\n
+new	m	0	1	_x"y"\n
+new	m	0	1	_# c\n
+new	m	0	1	_v # c\n
+new	m	0	1	_v#c\n
+new	m	0	1	_"q" # c\n
+new	m	0	1	_"q"#c\n
+new	m	0	1	_"q" x\n
+new	m	0	1	_"q""r"\n
+new	m	0	1	_a=b\n
+new	m	0	1	_\xc3\xa9\n
+new	m	0	1	_"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_'sq'\n
+new	m	0	1	_v \\\n
+new	m	0	1	_\\#\n
+new	m	0	1	_"\\\n
+new	m	0	1	_"q"  \n
+new	m	0	1	_ "q"\n
+new	m	0	1	_"#"\n
+new	m	0	1	_" # "\n
+new	m	0	1	_"a#b" #c\n
+new	m	0	1	_1 2 3\n
+new	m	0	1	_\x0b\n
+new	m	0	1	_v\x0c\n
+new	m	0	1	_=\n
+new	m	0	1	_=v\n
+new	m	0	1	_=v w\n
+new	m	0	1	_="q"\n
+new	m	0	1	_="q w"\n
+new	m	0	1	_=""\n
+new	m	0	1	_="a\\"b"\n
+new	m	0	1	_="a\\\\b"\n
+new	m	0	1	_="a\\\n
+new	m	0	1	_="abc\n
+new	m	0	1	_=x"y"\n
+new	m	0	1	_=# c\n
+new	m	0	1	_=v # c\n
+new	m	0	1	_=v#c\n
+new	m	0	1	_="q" # c\n
+new	m	0	1	_="q"#c\n
+new	m	0	1	_="q" x\n
+new	m	0	1	_="q""r"\n
+new	m	0	1	_=a=b\n
+new	m	0	1	_=\xc3\xa9\n
+new	m	0	1	_="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_='sq'\n
+new	m	0	1	_=v \\\n
+new	m	0	1	_=\\#\n
+new	m	0	1	_="\\\n
+new	m	0	1	_="q"  \n
+new	m	0	1	_= "q"\n
+new	m	0	1	_="#"\n
+new	m	0	1	_=" # "\n
+new	m	0	1	_="a#b" #c\n
+new	m	0	1	_=1 2 3\n
+new	m	0	1	_=\x0b\n
+new	m	0	1	_=v\x0c\n
+new	m	0	1	_ = \n
+new	m	0	1	_ = v\n
+new	m	0	1	_ = v w\n
+new	m	0	1	_ = "q"\n
+new	m	0	1	_ = "q w"\n
+new	m	0	1	_ = ""\n
+new	m	0	1	_ = "a\\"b"\n
+new	m	0	1	_ = "a\\\\b"\n
+new	m	0	1	_ = "a\\\n
+new	m	0	1	_ = "abc\n
+new	m	0	1	_ = x"y"\n
+new	m	0	1	_ = # c\n
+new	m	0	1	_ = v # c\n
+new	m	0	1	_ = v#c\n
+new	m	0	1	_ = "q" # c\n
+new	m	0	1	_ = "q"#c\n
+new	m	0	1	_ = "q" x\n
+new	m	0	1	_ = "q""r"\n
+new	m	0	1	_ = a=b\n
+new	m	0	1	_ = \xc3\xa9\n
+new	m	0	1	_ = "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_ = 'sq'\n
+new	m	0	1	_ = v \\\n
+new	m	0	1	_ = \\#\n
+new	m	0	1	_ = "\\\n
+new	m	0	1	_ = "q"  \n
+new	m	0	1	_ =  "q"\n
+new	m	0	1	_ = "#"\n
+new	m	0	1	_ = " # "\n
+new	m	0	1	_ = "a#b" #c\n
+new	m	0	1	_ = 1 2 3\n
+new	m	0	1	_ = \x0b\n
+new	m	0	1	_ = v\x0c\n
+new	m	0	1	_=  \n
+new	m	0	1	_=  v\n
+new	m	0	1	_=  v w\n
+new	m	0	1	_=  "q"\n
+new	m	0	1	_=  "q w"\n
+new	m	0	1	_=  ""\n
+new	m	0	1	_=  "a\\"b"\n
+new	m	0	1	_=  "a\\\\b"\n
+new	m	0	1	_=  "a\\\n
+new	m	0	1	_=  "abc\n
+new	m	0	1	_=  x"y"\n
+new	m	0	1	_=  # c\n
+new	m	0	1	_=  v # c\n
+new	m	0	1	_=  v#c\n
+new	m	0	1	_=  "q" # c\n
+new	m	0	1	_=  "q"#c\n
+new	m	0	1	_=  "q" x\n
+new	m	0	1	_=  "q""r"\n
+new	m	0	1	_=  a=b\n
+new	m	0	1	_=  \xc3\xa9\n
+new	m	0	1	_=  "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_=  'sq'\n
+new	m	0	1	_=  v \\\n
+new	m	0	1	_=  \\#\n
+new	m	0	1	_=  "\\\n
+new	m	0	1	_=  "q"  \n
+new	m	0	1	_=   "q"\n
+new	m	0	1	_=  "#"\n
+new	m	0	1	_=  " # "\n
+new	m	0	1	_=  "a#b" #c\n
+new	m	0	1	_=  1 2 3\n
+new	m	0	1	_=  \x0b\n
+new	m	0	1	_=  v\x0c\n
+new	m	0	1	_  =\n
+new	m	0	1	_  =v\n
+new	m	0	1	_  =v w\n
+new	m	0	1	_  ="q"\n
+new	m	0	1	_  ="q w"\n
+new	m	0	1	_  =""\n
+new	m	0	1	_  ="a\\"b"\n
+new	m	0	1	_  ="a\\\\b"\n
+new	m	0	1	_  ="a\\\n
+new	m	0	1	_  ="abc\n
+new	m	0	1	_  =x"y"\n
+new	m	0	1	_  =# c\n
+new	m	0	1	_  =v # c\n
+new	m	0	1	_  =v#c\n
+new	m	0	1	_  ="q" # c\n
+new	m	0	1	_  ="q"#c\n
+new	m	0	1	_  ="q" x\n
+new	m	0	1	_  ="q""r"\n
+new	m	0	1	_  =a=b\n
+new	m	0	1	_  =\xc3\xa9\n
+new	m	0	1	_  ="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_  ='sq'\n
+new	m	0	1	_  =v \\\n
+new	m	0	1	_  =\\#\n
+new	m	0	1	_  ="\\\n
+new	m	0	1	_  ="q"  \n
+new	m	0	1	_  = "q"\n
+new	m	0	1	_  ="#"\n
+new	m	0	1	_  =" # "\n
+new	m	0	1	_  ="a#b" #c\n
+new	m	0	1	_  =1 2 3\n
+new	m	0	1	_  =\x0b\n
+new	m	0	1	_  =v\x0c\n
+new	m	0	1	_ \t= \t\n
+new	m	0	1	_ \t= \tv\n
+new	m	0	1	_ \t= \tv w\n
+new	m	0	1	_ \t= \t"q"\n
+new	m	0	1	_ \t= \t"q w"\n
+new	m	0	1	_ \t= \t""\n
+new	m	0	1	_ \t= \t"a\\"b"\n
+new	m	0	1	_ \t= \t"a\\\\b"\n
+new	m	0	1	_ \t= \t"a\\\n
+new	m	0	1	_ \t= \t"abc\n
+new	m	0	1	_ \t= \tx"y"\n
+new	m	0	1	_ \t= \t# c\n
+new	m	0	1	_ \t= \tv # c\n
+new	m	0	1	_ \t= \tv#c\n
+new	m	0	1	_ \t= \t"q" # c\n
+new	m	0	1	_ \t= \t"q"#c\n
+new	m	0	1	_ \t= \t"q" x\n
+new	m	0	1	_ \t= \t"q""r"\n
+new	m	0	1	_ \t= \ta=b\n
+new	m	0	1	_ \t= \t\xc3\xa9\n
+new	m	0	1	_ \t= \t"\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_ \t= \t'sq'\n
+new	m	0	1	_ \t= \tv \\\n
+new	m	0	1	_ \t= \t\\#\n
+new	m	0	1	_ \t= \t"\\\n
+new	m	0	1	_ \t= \t"q"  \n
+new	m	0	1	_ \t= \t "q"\n
+new	m	0	1	_ \t= \t"#"\n
+new	m	0	1	_ \t= \t" # "\n
+new	m	0	1	_ \t= \t"a#b" #c\n
+new	m	0	1	_ \t= \t1 2 3\n
+new	m	0	1	_ \t= \t\x0b\n
+new	m	0	1	_ \t= \tv\x0c\n
+new	m	0	1	_==\n
+new	m	0	1	_==v\n
+new	m	0	1	_==v w\n
+new	m	0	1	_=="q"\n
+new	m	0	1	_=="q w"\n
+new	m	0	1	_==""\n
+new	m	0	1	_=="a\\"b"\n
+new	m	0	1	_=="a\\\\b"\n
+new	m	0	1	_=="a\\\n
+new	m	0	1	_=="abc\n
+new	m	0	1	_==x"y"\n
+new	m	0	1	_==# c\n
+new	m	0	1	_==v # c\n
+new	m	0	1	_==v#c\n
+new	m	0	1	_=="q" # c\n
+new	m	0	1	_=="q"#c\n
+new	m	0	1	_=="q" x\n
+new	m	0	1	_=="q""r"\n
+new	m	0	1	_==a=b\n
+new	m	0	1	_==\xc3\xa9\n
+new	m	0	1	_=="\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_=='sq'\n
+new	m	0	1	_==v \\\n
+new	m	0	1	_==\\#\n
+new	m	0	1	_=="\\\n
+new	m	0	1	_=="q"  \n
+new	m	0	1	_== "q"\n
+new	m	0	1	_=="#"\n
+new	m	0	1	_==" # "\n
+new	m	0	1	_=="a#b" #c\n
+new	m	0	1	_==1 2 3\n
+new	m	0	1	_==\x0b\n
+new	m	0	1	_==v\x0c\n
+new	m	0	1	_: \n
+new	m	0	1	_: v\n
+new	m	0	1	_: v w\n
+new	m	0	1	_: "q"\n
+new	m	0	1	_: "q w"\n
+new	m	0	1	_: ""\n
+new	m	0	1	_: "a\\"b"\n
+new	m	0	1	_: "a\\\\b"\n
+new	m	0	1	_: "a\\\n
+new	m	0	1	_: "abc\n
+new	m	0	1	_: x"y"\n
+new	m	0	1	_: # c\n
+new	m	0	1	_: v # c\n
+new	m	0	1	_: v#c\n
+new	m	0	1	_: "q" # c\n
+new	m	0	1	_: "q"#c\n
+new	m	0	1	_: "q" x\n
+new	m	0	1	_: "q""r"\n
+new	m	0	1	_: a=b\n
+new	m	0	1	_: \xc3\xa9\n
+new	m	0	1	_: "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_: 'sq'\n
+new	m	0	1	_: v \\\n
+new	m	0	1	_: \\#\n
+new	m	0	1	_: "\\\n
+new	m	0	1	_: "q"  \n
+new	m	0	1	_:  "q"\n
+new	m	0	1	_: "#"\n
+new	m	0	1	_: " # "\n
+new	m	0	1	_: "a#b" #c\n
+new	m	0	1	_: 1 2 3\n
+new	m	0	1	_: \x0b\n
+new	m	0	1	_: v\x0c\n
+new	m	0	1	_ \n
+new	m	0	1	_ v\n
+new	m	0	1	_ v w\n
+new	m	0	1	_ "q"\n
+new	m	0	1	_ "q w"\n
+new	m	0	1	_ ""\n
+new	m	0	1	_ "a\\"b"\n
+new	m	0	1	_ "a\\\\b"\n
+new	m	0	1	_ "a\\\n
+new	m	0	1	_ "abc\n
+new	m	0	1	_ x"y"\n
+new	m	0	1	_ # c\n
+new	m	0	1	_ v # c\n
+new	m	0	1	_ v#c\n
+new	m	0	1	_ "q" # c\n
+new	m	0	1	_ "q"#c\n
+new	m	0	1	_ "q" x\n
+new	m	0	1	_ "q""r"\n
+new	m	0	1	_ a=b\n
+new	m	0	1	_ \xc3\xa9\n
+new	m	0	1	_ "\xc3\xa9\\\xc3\xa9"\n
+new	m	0	1	_ 'sq'\n
+new	m	0	1	_ v \\\n
+new	m	0	1	_ \\#\n
+new	m	0	1	_ "\\\n
+new	m	0	1	_ "q"  \n
+new	m	0	1	_  "q"\n
+new	m	0	1	_ "#"\n
+new	m	0	1	_ " # "\n
+new	m	0	1	_ "a#b" #c\n
+new	m	0	1	_ 1 2 3\n
+new	m	0	1	_ \x0b\n
+new	m	0	1	_ v\x0c\n
+# S1b: surrounding whitespace, line endings and trailing text around a few key/value shapes
+new	m	0	1	k=v
+new	m	0	1	k=v 
+new	m	0	1	k=v\r
+new	m	0	1	k=v\r\n
+new	m	0	1	k=v\n\n
+new	m	0	1	k=v # tail\n
+new	m	0	1	k=v\n#c
+new	m	0	1	k=v\n  \n
+new	m	0	1	k=v\nz=1
+new	m	0	1	k=v\nz=1\n
+new	m	0	1	k=v\n=
+new	m	0	1	k=v\n"x"
+new	m	0	1	k = "v w" # c
+new	m	0	1	k = "v w" # c 
+new	m	0	1	k = "v w" # c\r
+new	m	0	1	k = "v w" # c\r\n
+new	m	0	1	k = "v w" # c\n\n
+new	m	0	1	k = "v w" # c # tail\n
+new	m	0	1	k = "v w" # c\n#c
+new	m	0	1	k = "v w" # c\n  \n
+new	m	0	1	k = "v w" # c\nz=1
+new	m	0	1	k = "v w" # c\nz=1\n
+new	m	0	1	k = "v w" # c\n=
+new	m	0	1	k = "v w" # c\n"x"
+new	m	0	1	k =v#c
+new	m	0	1	k =v#c 
+new	m	0	1	k =v#c\r
+new	m	0	1	k =v#c\r\n
+new	m	0	1	k =v#c\n\n
+new	m	0	1	k =v#c # tail\n
+new	m	0	1	k =v#c\n#c
+new	m	0	1	k =v#c\n  \n
+new	m	0	1	k =v#c\nz=1
+new	m	0	1	k =v#c\nz=1\n
+new	m	0	1	k =v#c\n=
+new	m	0	1	k =v#c\n"x"
+new	m	0	1	"k"=v
+new	m	0	1	"k"=v 
+new	m	0	1	"k"=v\r
+new	m	0	1	"k"=v\r\n
+new	m	0	1	"k"=v\n\n
+new	m	0	1	"k"=v # tail\n
+new	m	0	1	"k"=v\n#c
+new	m	0	1	"k"=v\n  \n
+new	m	0	1	"k"=v\nz=1
+new	m	0	1	"k"=v\nz=1\n
+new	m	0	1	"k"=v\n=
+new	m	0	1	"k"=v\n"x"
+new	m	0	1	k=
+new	m	0	1	k= 
+new	m	0	1	k=\r
+new	m	0	1	k=\r\n
+new	m	0	1	k=\n\n
+new	m	0	1	k= # tail\n
+new	m	0	1	k=\n#c
+new	m	0	1	k=\n  \n
+new	m	0	1	k=\nz=1
+new	m	0	1	k=\nz=1\n
+new	m	0	1	k=\n=
+new	m	0	1	k=\n"x"
+new	m	0	1	#k=v
+new	m	0	1	#k=v 
+new	m	0	1	#k=v\r
+new	m	0	1	#k=v\r\n
+new	m	0	1	#k=v\n\n
+new	m	0	1	#k=v # tail\n
+new	m	0	1	#k=v\n#c
+new	m	0	1	#k=v\n  \n
+new	m	0	1	#k=v\nz=1
+new	m	0	1	#k=v\nz=1\n
+new	m	0	1	#k=v\n=
+new	m	0	1	#k=v\n"x"
+new	m	0	1	k
+new	m	0	1	k 
+new	m	0	1	k\r
+new	m	0	1	k\r\n
+new	m	0	1	k\n\n
+new	m	0	1	k # tail\n
+new	m	0	1	k\n#c
+new	m	0	1	k\n  \n
+new	m	0	1	k\nz=1
+new	m	0	1	k\nz=1\n
+new	m	0	1	k\n=
+new	m	0	1	k\n"x"
+new	m	0	1	k v
+new	m	0	1	k v 
+new	m	0	1	k v\r
+new	m	0	1	k v\r\n
+new	m	0	1	k v\n\n
+new	m	0	1	k v # tail\n
+new	m	0	1	k v\n#c
+new	m	0	1	k v\n  \n
+new	m	0	1	k v\nz=1
+new	m	0	1	k v\nz=1\n
+new	m	0	1	k v\n=
+new	m	0	1	k v\n"x"
+new	m	0	1	@include
+new	m	0	1	@include 
+new	m	0	1	@include\r
+new	m	0	1	@include\r\n
+new	m	0	1	@include\n\n
+new	m	0	1	@include # tail\n
+new	m	0	1	@include\n#c
+new	m	0	1	@include\n  \n
+new	m	0	1	@include\nz=1
+new	m	0	1	@include\nz=1\n
+new	m	0	1	@include\n=
+new	m	0	1	@include\n"x"
+new	m	0	1	 k=v
+new	m	0	1	 k=v 
+new	m	0	1	 k=v\r
+new	m	0	1	 k=v\r\n
+new	m	0	1	 k=v\n\n
+new	m	0	1	 k=v # tail\n
+new	m	0	1	 k=v\n#c
+new	m	0	1	 k=v\n  \n
+new	m	0	1	 k=v\nz=1
+new	m	0	1	 k=v\nz=1\n
+new	m	0	1	 k=v\n=
+new	m	0	1	 k=v\n"x"
+new	m	0	1	 k = "v w" # c
+new	m	0	1	 k = "v w" # c 
+new	m	0	1	 k = "v w" # c\r
+new	m	0	1	 k = "v w" # c\r\n
+new	m	0	1	 k = "v w" # c\n\n
+new	m	0	1	 k = "v w" # c # tail\n
+new	m	0	1	 k = "v w" # c\n#c
+new	m	0	1	 k = "v w" # c\n  \n
+new	m	0	1	 k = "v w" # c\nz=1
+new	m	0	1	 k = "v w" # c\nz=1\n
+new	m	0	1	 k = "v w" # c\n=
+new	m	0	1	 k = "v w" # c\n"x"
+new	m	0	1	 k =v#c
+new	m	0	1	 k =v#c 
+new	m	0	1	 k =v#c\r
+new	m	0	1	 k =v#c\r\n
+new	m	0	1	 k =v#c\n\n
+new	m	0	1	 k =v#c # tail\n
+new	m	0	1	 k =v#c\n#c
+new	m	0	1	 k =v#c\n  \n
+new	m	0	1	 k =v#c\nz=1
+new	m	0	1	 k =v#c\nz=1\n
+new	m	0	1	 k =v#c\n=
+new	m	0	1	 k =v#c\n"x"
+new	m	0	1	 "k"=v
+new	m	0	1	 "k"=v 
+new	m	0	1	 "k"=v\r
+new	m	0	1	 "k"=v\r\n
+new	m	0	1	 "k"=v\n\n
+new	m	0	1	 "k"=v # tail\n
+new	m	0	1	 "k"=v\n#c
+new	m	0	1	 "k"=v\n  \n
+new	m	0	1	 "k"=v\nz=1
+new	m	0	1	 "k"=v\nz=1\n
+new	m	0	1	 "k"=v\n=
+new	m	0	1	 "k"=v\n"x"
+new	m	0	1	 k=
+new	m	0	1	 k= 
+new	m	0	1	 k=\r
+new	m	0	1	 k=\r\n
+new	m	0	1	 k=\n\n
+new	m	0	1	 k= # tail\n
+new	m	0	1	 k=\n#c
+new	m	0	1	 k=\n  \n
+new	m	0	1	 k=\nz=1
+new	m	0	1	 k=\nz=1\n
+new	m	0	1	 k=\n=
+new	m	0	1	 k=\n"x"
+new	m	0	1	 #k=v
+new	m	0	1	 #k=v 
+new	m	0	1	 #k=v\r
+new	m	0	1	 #k=v\r\n
+new	m	0	1	 #k=v\n\n
+new	m	0	1	 #k=v # tail\n
+new	m	0	1	 #k=v\n#c
+new	m	0	1	 #k=v\n  \n
+new	m	0	1	 #k=v\nz=1
+new	m	0	1	 #k=v\nz=1\n
+new	m	0	1	 #k=v\n=
+new	m	0	1	 #k=v\n"x"
+new	m	0	1	 k
+new	m	0	1	 k 
+new	m	0	1	 k\r
+new	m	0	1	 k\r\n
+new	m	0	1	 k\n\n
+new	m	0	1	 k # tail\n
+new	m	0	1	 k\n#c
+new	m	0	1	 k\n  \n
+new	m	0	1	 k\nz=1
+new	m	0	1	 k\nz=1\n
+new	m	0	1	 k\n=
+new	m	0	1	 k\n"x"
+new	m	0	1	 k v
+new	m	0	1	 k v 
+new	m	0	1	 k v\r
+new	m	0	1	 k v\r\n
+new	m	0	1	 k v\n\n
+new	m	0	1	 k v # tail\n
+new	m	0	1	 k v\n#c
+new	m	0	1	 k v\n  \n
+new	m	0	1	 k v\nz=1
+new	m	0	1	 k v\nz=1\n
+new	m	0	1	 k v\n=
+new	m	0	1	 k v\n"x"
+new	m	0	1	 @include
+new	m	0	1	 @include 
+new	m	0	1	 @include\r
+new	m	0	1	 @include\r\n
+new	m	0	1	 @include\n\n
+new	m	0	1	 @include # tail\n
+new	m	0	1	 @include\n#c
+new	m	0	1	 @include\n  \n
+new	m	0	1	 @include\nz=1
+new	m	0	1	 @include\nz=1\n
+new	m	0	1	 @include\n=
+new	m	0	1	 @include\n"x"
+new	m	0	1	\tk=v
+new	m	0	1	\tk=v 
+new	m	0	1	\tk=v\r
+new	m	0	1	\tk=v\r\n
+new	m	0	1	\tk=v\n\n
+new	m	0	1	\tk=v # tail\n
+new	m	0	1	\tk=v\n#c
+new	m	0	1	\tk=v\n  \n
+new	m	0	1	\tk=v\nz=1
+new	m	0	1	\tk=v\nz=1\n
+new	m	0	1	\tk=v\n=
+new	m	0	1	\tk=v\n"x"
+new	m	0	1	\tk = "v w" # c
+new	m	0	1	\tk = "v w" # c 
+new	m	0	1	\tk = "v w" # c\r
+new	m	0	1	\tk = "v w" # c\r\n
+new	m	0	1	\tk = "v w" # c\n\n
+new	m	0	1	\tk = "v w" # c # tail\n
+new	m	0	1	\tk = "v w" # c\n#c
+new	m	0	1	\tk = "v w" # c\n  \n
+new	m	0	1	\tk = "v w" # c\nz=1
+new	m	0	1	\tk = "v w" # c\nz=1\n
+new	m	0	1	\tk = "v w" # c\n=
+new	m	0	1	\tk = "v w" # c\n"x"
+new	m	0	1	\tk =v#c
+new	m	0	1	\tk =v#c 
+new	m	0	1	\tk =v#c\r
+new	m	0	1	\tk =v#c\r\n
+new	m	0	1	\tk =v#c\n\n
+new	m	0	1	\tk =v#c # tail\n
+new	m	0	1	\tk =v#c\n#c
+new	m	0	1	\tk =v#c\n  \n
+new	m	0	1	\tk =v#c\nz=1
+new	m	0	1	\tk =v#c\nz=1\n
+new	m	0	1	\tk =v#c\n=
+new	m	0	1	\tk =v#c\n"x"
+new	m	0	1	\t"k"=v
+new	m	0	1	\t"k"=v 
+new	m	0	1	\t"k"=v\r
+new	m	0	1	\t"k"=v\r\n
+new	m	0	1	\t"k"=v\n\n
+new	m	0	1	\t"k"=v # tail\n
+new	m	0	1	\t"k"=v\n#c
+new	m	0	1	\t"k"=v\n  \n
+new	m	0	1	\t"k"=v\nz=1
+new	m	0	1	\t"k"=v\nz=1\n
+new	m	0	1	\t"k"=v\n=
+new	m	0	1	\t"k"=v\n"x"
+new	m	0	1	\tk=
+new	m	0	1	\tk= 
+new	m	0	1	\tk=\r
+new	m	0	1	\tk=\r\n
+new	m	0	1	\tk=\n\n
+new	m	0	1	\tk= # tail\n
+new	m	0	1	\tk=\n#c
+new	m	0	1	\tk=\n  \n
+new	m	0	1	\tk=\nz=1
+new	m	0	1	\tk=\nz=1\n
+new	m	0	1	\tk=\n=
+new	m	0	1	\tk=\n"x"
+new	m	0	1	\t#k=v
+new	m	0	1	\t#k=v 
+new	m	0	1	\t#k=v\r
+new	m	0	1	\t#k=v\r\n
+new	m	0	1	\t#k=v\n\n
+new	m	0	1	\t#k=v # tail\n
+new	m	0	1	\t#k=v\n#c
+new	m	0	1	\t#k=v\n  \n
+new	m	0	1	\t#k=v\nz=1
+new	m	0	1	\t#k=v\nz=1\n
+new	m	0	1	\t#k=v\n=
+new	m	0	1	\t#k=v\n"x"
+new	m	0	1	\tk
+new	m	0	1	\tk 
+new	m	0	1	\tk\r
+new	m	0	1	\tk\r\n
+new	m	0	1	\tk\n\n
+new	m	0	1	\tk # tail\n
+new	m	0	1	\tk\n#c
+new	m	0	1	\tk\n  \n
+new	m	0	1	\tk\nz=1
+new	m	0	1	\tk\nz=1\n
+new	m	0	1	\tk\n=
+new	m	0	1	\tk\n"x"
+new	m	0	1	\tk v
+new	m	0	1	\tk v 
+new	m	0	1	\tk v\r
+new	m	0	1	\tk v\r\n
+new	m	0	1	\tk v\n\n
+new	m	0	1	\tk v # tail\n
+new	m	0	1	\tk v\n#c
+new	m	0	1	\tk v\n  \n
+new	m	0	1	\tk v\nz=1
+new	m	0	1	\tk v\nz=1\n
+new	m	0	1	\tk v\n=
+new	m	0	1	\tk v\n"x"
+new	m	0	1	\t@include
+new	m	0	1	\t@include 
+new	m	0	1	\t@include\r
+new	m	0	1	\t@include\r\n
+new	m	0	1	\t@include\n\n
+new	m	0	1	\t@include # tail\n
+new	m	0	1	\t@include\n#c
+new	m	0	1	\t@include\n  \n
+new	m	0	1	\t@include\nz=1
+new	m	0	1	\t@include\nz=1\n
+new	m	0	1	\t@include\n=
+new	m	0	1	\t@include\n"x"
+new	m	0	1	  \tk=v
+new	m	0	1	  \tk=v 
+new	m	0	1	  \tk=v\r
+new	m	0	1	  \tk=v\r\n
+new	m	0	1	  \tk=v\n\n
+new	m	0	1	  \tk=v # tail\n
+new	m	0	1	  \tk=v\n#c
+new	m	0	1	  \tk=v\n  \n
+new	m	0	1	  \tk=v\nz=1
+new	m	0	1	  \tk=v\nz=1\n
+new	m	0	1	  \tk=v\n=
+new	m	0	1	  \tk=v\n"x"
+new	m	0	1	  \tk = "v w" # c
+new	m	0	1	  \tk = "v w" # c 
+new	m	0	1	  \tk = "v w" # c\r
+new	m	0	1	  \tk = "v w" # c\r\n
+new	m	0	1	  \tk = "v w" # c\n\n
+new	m	0	1	  \tk = "v w" # c # tail\n
+new	m	0	1	  \tk = "v w" # c\n#c
+new	m	0	1	  \tk = "v w" # c\n  \n
+new	m	0	1	  \tk = "v w" # c\nz=1
+new	m	0	1	  \tk = "v w" # c\nz=1\n
+new	m	0	1	  \tk = "v w" # c\n=
+new	m	0	1	  \tk = "v w" # c\n"x"
+new	m	0	1	  \tk =v#c
+new	m	0	1	  \tk =v#c 
+new	m	0	1	  \tk =v#c\r
+new	m	0	1	  \tk =v#c\r\n
+new	m	0	1	  \tk =v#c\n\n
+new	m	0	1	  \tk =v#c # tail\n
+new	m	0	1	  \tk =v#c\n#c
+new	m	0	1	  \tk =v#c\n  \n
+new	m	0	1	  \tk =v#c\nz=1
+new	m	0	1	  \tk =v#c\nz=1\n
+new	m	0	1	  \tk =v#c\n=
+new	m	0	1	  \tk =v#c\n"x"
+new	m	0	1	  \t"k"=v
+new	m	0	1	  \t"k"=v 
+new	m	0	1	  \t"k"=v\r
+new	m	0	1	  \t"k"=v\r\n
+new	m	0	1	  \t"k"=v\n\n
+new	m	0	1	  \t"k"=v # tail\n
+new	m	0	1	  \t"k"=v\n#c
+new	m	0	1	  \t"k"=v\n  \n
+new	m	0	1	  \t"k"=v\nz=1
+new	m	0	1	  \t"k"=v\nz=1\n
+new	m	0	1	  \t"k"=v\n=
+new	m	0	1	  \t"k"=v\n"x"
+new	m	0	1	  \tk=
+new	m	0	1	  \tk= 
+new	m	0	1	  \tk=\r
+new	m	0	1	  \tk=\r\n
+new	m	0	1	  \tk=\n\n
+new	m	0	1	  \tk= # tail\n
+new	m	0	1	  \tk=\n#c
+new	m	0	1	  \tk=\n  \n
+new	m	0	1	  \tk=\nz=1
+new	m	0	1	  \tk=\nz=1\n
+new	m	0	1	  \tk=\n=
+new	m	0	1	  \tk=\n"x"
+new	m	0	1	  \t#k=v
+new	m	0	1	  \t#k=v 
+new	m	0	1	  \t#k=v\r
+new	m	0	1	  \t#k=v\r\n
+new	m	0	1	  \t#k=v\n\n
+new	m	0	1	  \t#k=v # tail\n
+new	m	0	1	  \t#k=v\n#c
+new	m	0	1	  \t#k=v\n  \n
+new	m	0	1	  \t#k=v\nz=1
+new	m	0	1	  \t#k=v\nz=1\n
+new	m	0	1	  \t#k=v\n=
+new	m	0	1	  \t#k=v\n"x"
+new	m	0	1	  \tk
+new	m	0	1	  \tk 
+new	m	0	1	  \tk\r
+new	m	0	1	  \tk\r\n
+new	m	0	1	  \tk\n\n
+new	m	0	1	  \tk # tail\n
+new	m	0	1	  \tk\n#c
+new	m	0	1	  \tk\n  \n
+new	m	0	1	  \tk\nz=1
+new	m	0	1	  \tk\nz=1\n
+new	m	0	1	  \tk\n=
+new	m	0	1	  \tk\n"x"
+new	m	0	1	  \tk v
+new	m	0	1	  \tk v 
+new	m	0	1	  \tk v\r
+new	m	0	1	  \tk v\r\n
+new	m	0	1	  \tk v\n\n
+new	m	0	1	  \tk v # tail\n
+new	m	0	1	  \tk v\n#c
+new	m	0	1	  \tk v\n  \n
+new	m	0	1	  \tk v\nz=1
+new	m	0	1	  \tk v\nz=1\n
+new	m	0	1	  \tk v\n=
+new	m	0	1	  \tk v\n"x"
+new	m	0	1	  \t@include
+new	m	0	1	  \t@include 
+new	m	0	1	  \t@include\r
+new	m	0	1	  \t@include\r\n
+new	m	0	1	  \t@include\n\n
+new	m	0	1	  \t@include # tail\n
+new	m	0	1	  \t@include\n#c
+new	m	0	1	  \t@include\n  \n
+new	m	0	1	  \t@include\nz=1
+new	m	0	1	  \t@include\nz=1\n
+new	m	0	1	  \t@include\n=
+new	m	0	1	  \t@include\n"x"
+new	m	0	1	\x0bk=v
+new	m	0	1	\x0bk=v 
+new	m	0	1	\x0bk=v\r
+new	m	0	1	\x0bk=v\r\n
+new	m	0	1	\x0bk=v\n\n
+new	m	0	1	\x0bk=v # tail\n
+new	m	0	1	\x0bk=v\n#c
+new	m	0	1	\x0bk=v\n  \n
+new	m	0	1	\x0bk=v\nz=1
+new	m	0	1	\x0bk=v\nz=1\n
+new	m	0	1	\x0bk=v\n=
+new	m	0	1	\x0bk=v\n"x"
+new	m	0	1	\x0bk = "v w" # c
+new	m	0	1	\x0bk = "v w" # c 
+new	m	0	1	\x0bk = "v w" # c\r
+new	m	0	1	\x0bk = "v w" # c\r\n
+new	m	0	1	\x0bk = "v w" # c\n\n
+new	m	0	1	\x0bk = "v w" # c # tail\n
+new	m	0	1	\x0bk = "v w" # c\n#c
+new	m	0	1	\x0bk = "v w" # c\n  \n
+new	m	0	1	\x0bk = "v w" # c\nz=1
+new	m	0	1	\x0bk = "v w" # c\nz=1\n
+new	m	0	1	\x0bk = "v w" # c\n=
+new	m	0	1	\x0bk = "v w" # c\n"x"
+new	m	0	1	\x0bk =v#c
+new	m	0	1	\x0bk =v#c 
+new	m	0	1	\x0bk =v#c\r
+new	m	0	1	\x0bk =v#c\r\n
+new	m	0	1	\x0bk =v#c\n\n
+new	m	0	1	\x0bk =v#c # tail\n
+new	m	0	1	\x0bk =v#c\n#c
+new	m	0	1	\x0bk =v#c\n  \n
+new	m	0	1	\x0bk =v#c\nz=1
+new	m	0	1	\x0bk =v#c\nz=1\n
+new	m	0	1	\x0bk =v#c\n=
+new	m	0	1	\x0bk =v#c\n"x"
+new	m	0	1	\x0b"k"=v
+new	m	0	1	\x0b"k"=v 
+new	m	0	1	\x0b"k"=v\r
+new	m	0	1	\x0b"k"=v\r\n
+new	m	0	1	\x0b"k"=v\n\n
+new	m	0	1	\x0b"k"=v # tail\n
+new	m	0	1	\x0b"k"=v\n#c
+new	m	0	1	\x0b"k"=v\n  \n
+new	m	0	1	\x0b"k"=v\nz=1
+new	m	0	1	\x0b"k"=v\nz=1\n
+new	m	0	1	\x0b"k"=v\n=
+new	m	0	1	\x0b"k"=v\n"x"
+new	m	0	1	\x0bk=
+new	m	0	1	\x0bk= 
+new	m	0	1	\x0bk=\r
+new	m	0	1	\x0bk=\r\n
+new	m	0	1	\x0bk=\n\n
+new	m	0	1	\x0bk= # tail\n
+new	m	0	1	\x0bk=\n#c
+new	m	0	1	\x0bk=\n  \n
+new	m	0	1	\x0bk=\nz=1
+new	m	0	1	\x0bk=\nz=1\n
+new	m	0	1	\x0bk=\n=
+new	m	0	1	\x0bk=\n"x"
+new	m	0	1	\x0b#k=v
+new	m	0	1	\x0b#k=v 
+new	m	0	1	\x0b#k=v\r
+new	m	0	1	\x0b#k=v\r\n
+new	m	0	1	\x0b#k=v\n\n
+new	m	0	1	\x0b#k=v # tail\n
+new	m	0	1	\x0b#k=v\n#c
+new	m	0	1	\x0b#k=v\n  \n
+new	m	0	1	\x0b#k=v\nz=1
+new	m	0	1	\x0b#k=v\nz=1\n
+new	m	0	1	\x0b#k=v\n=
+new	m	0	1	\x0b#k=v\n"x"
+new	m	0	1	\x0bk
+new	m	0	1	\x0bk 
+new	m	0	1	\x0bk\r
+new	m	0	1	\x0bk\r\n
+new	m	0	1	\x0bk\n\n
+new	m	0	1	\x0bk # tail\n
+new	m	0	1	\x0bk\n#c
+new	m	0	1	\x0bk\n  \n
+new	m	0	1	\x0bk\nz=1
+new	m	0	1	\x0bk\nz=1\n
+new	m	0	1	\x0bk\n=
+new	m	0	1	\x0bk\n"x"
+new	m	0	1	\x0bk v
+new	m	0	1	\x0bk v 
+new	m	0	1	\x0bk v\r
+new	m	0	1	\x0bk v\r\n
+new	m	0	1	\x0bk v\n\n
+new	m	0	1	\x0bk v # tail\n
+new	m	0	1	\x0bk v\n#c
+new	m	0	1	\x0bk v\n  \n
+new	m	0	1	\x0bk v\nz=1
+new	m	0	1	\x0bk v\nz=1\n
+new	m	0	1	\x0bk v\n=
+new	m	0	1	\x0bk v\n"x"
+new	m	0	1	\x0b@include
+new	m	0	1	\x0b@include 
+new	m	0	1	\x0b@include\r
+new	m	0	1	\x0b@include\r\n
+new	m	0	1	\x0b@include\n\n
+new	m	0	1	\x0b@include # tail\n
+new	m	0	1	\x0b@include\n#c
+new	m	0	1	\x0b@include\n  \n
+new	m	0	1	\x0b@include\nz=1
+new	m	0	1	\x0b@include\nz=1\n
+new	m	0	1	\x0b@include\n=
+new	m	0	1	\x0b@include\n"x"
+new	m	0	1	\x0ck=v
+new	m	0	1	\x0ck=v 
+new	m	0	1	\x0ck=v\r
+new	m	0	1	\x0ck=v\r\n
+new	m	0	1	\x0ck=v\n\n
+new	m	0	1	\x0ck=v # tail\n
+new	m	0	1	\x0ck=v\n#c
+new	m	0	1	\x0ck=v\n  \n
+new	m	0	1	\x0ck=v\nz=1
+new	m	0	1	\x0ck=v\nz=1\n
+new	m	0	1	\x0ck=v\n=
+new	m	0	1	\x0ck=v\n"x"
+new	m	0	1	\x0ck = "v w" # c
+new	m	0	1	\x0ck = "v w" # c 
+new	m	0	1	\x0ck = "v w" # c\r
+new	m	0	1	\x0ck = "v w" # c\r\n
+new	m	0	1	\x0ck = "v w" # c\n\n
+new	m	0	1	\x0ck = "v w" # c # tail\n
+new	m	0	1	\x0ck = "v w" # c\n#c
+new	m	0	1	\x0ck = "v w" # c\n  \n
+new	m	0	1	\x0ck = "v w" # c\nz=1
+new	m	0	1	\x0ck = "v w" # c\nz=1\n
+new	m	0	1	\x0ck = "v w" # c\n=
+new	m	0	1	\x0ck = "v w" # c\n"x"
+new	m	0	1	\x0ck =v#c
+new	m	0	1	\x0ck =v#c 
+new	m	0	1	\x0ck =v#c\r
+new	m	0	1	\x0ck =v#c\r\n
+new	m	0	1	\x0ck =v#c\n\n
+new	m	0	1	\x0ck =v#c # tail\n
+new	m	0	1	\x0ck =v#c\n#c
+new	m	0	1	\x0ck =v#c\n  \n
+new	m	0	1	\x0ck =v#c\nz=1
+new	m	0	1	\x0ck =v#c\nz=1\n
+new	m	0	1	\x0ck =v#c\n=
+new	m	0	1	\x0ck =v#c\n"x"
+new	m	0	1	\x0c"k"=v
+new	m	0	1	\x0c"k"=v 
+new	m	0	1	\x0c"k"=v\r
+new	m	0	1	\x0c"k"=v\r\n
+new	m	0	1	\x0c"k"=v\n\n
+new	m	0	1	\x0c"k"=v # tail\n
+new	m	0	1	\x0c"k"=v\n#c
+new	m	0	1	\x0c"k"=v\n  \n
+new	m	0	1	\x0c"k"=v\nz=1
+new	m	0	1	\x0c"k"=v\nz=1\n
+new	m	0	1	\x0c"k"=v\n=
+new	m	0	1	\x0c"k"=v\n"x"
+new	m	0	1	\x0ck=
+new	m	0	1	\x0ck= 
+new	m	0	1	\x0ck=\r
+new	m	0	1	\x0ck=\r\n
+new	m	0	1	\x0ck=\n\n
+new	m	0	1	\x0ck= # tail\n
+new	m	0	1	\x0ck=\n#c
+new	m	0	1	\x0ck=\n  \n
+new	m	0	1	\x0ck=\nz=1
+new	m	0	1	\x0ck=\nz=1\n
+new	m	0	1	\x0ck=\n=
+new	m	0	1	\x0ck=\n"x"
+new	m	0	1	\x0c#k=v
+new	m	0	1	\x0c#k=v 
+new	m	0	1	\x0c#k=v\r
+new	m	0	1	\x0c#k=v\r\n
+new	m	0	1	\x0c#k=v\n\n
+new	m	0	1	\x0c#k=v # tail\n
+new	m	0	1	\x0c#k=v\n#c
+new	m	0	1	\x0c#k=v\n  \n
+new	m	0	1	\x0c#k=v\nz=1
+new	m	0	1	\x0c#k=v\nz=1\n
+new	m	0	1	\x0c#k=v\n=
+new	m	0	1	\x0c#k=v\n"x"
+new	m	0	1	\x0ck
+new	m	0	1	\x0ck 
+new	m	0	1	\x0ck\r
+new	m	0	1	\x0ck\r\n
+new	m	0	1	\x0ck\n\n
+new	m	0	1	\x0ck # tail\n
+new	m	0	1	\x0ck\n#c
+new	m	0	1	\x0ck\n  \n
+new	m	0	1	\x0ck\nz=1
+new	m	0	1	\x0ck\nz=1\n
+new	m	0	1	\x0ck\n=
+new	m	0	1	\x0ck\n"x"
+new	m	0	1	\x0ck v
+new	m	0	1	\x0ck v 
+new	m	0	1	\x0ck v\r
+new	m	0	1	\x0ck v\r\n
+new	m	0	1	\x0ck v\n\n
+new	m	0	1	\x0ck v # tail\n
+new	m	0	1	\x0ck v\n#c
+new	m	0	1	\x0ck v\n  \n
+new	m	0	1	\x0ck v\nz=1
+new	m	0	1	\x0ck v\nz=1\n
+new	m	0	1	\x0ck v\n=
+new	m	0	1	\x0ck v\n"x"
+new	m	0	1	\x0c@include
+new	m	0	1	\x0c@include 
+new	m	0	1	\x0c@include\r
+new	m	0	1	\x0c@include\r\n
+new	m	0	1	\x0c@include\n\n
+new	m	0	1	\x0c@include # tail\n
+new	m	0	1	\x0c@include\n#c
+new	m	0	1	\x0c@include\n  \n
+new	m	0	1	\x0c@include\nz=1
+new	m	0	1	\x0c@include\nz=1\n
+new	m	0	1	\x0c@include\n=
+new	m	0	1	\x0c@include\n"x"
+# S2: whole-config shapes under all four flag combinations
+new	s2	0	0	
+new	s2	0	1	
+new	s2	1	0	
+new	s2	1	1	
+new	s2	0	0	\n
+new	s2	0	1	\n
+new	s2	1	0	\n
+new	s2	1	1	\n
+new	s2	0	0	\n\n\n
+new	s2	0	1	\n\n\n
+new	s2	1	0	\n\n\n
+new	s2	1	1	\n\n\n
+new	s2	0	0	# only comment
+new	s2	0	1	# only comment
+new	s2	1	0	# only comment
+new	s2	1	1	# only comment
+new	s2	0	0	# only comment\n
+new	s2	0	1	# only comment\n
+new	s2	1	0	# only comment\n
+new	s2	1	1	# only comment\n
+new	s2	0	0	a=1
+new	s2	0	1	a=1
+new	s2	1	0	a=1
+new	s2	1	1	a=1
+new	s2	0	0	a=1\n
+new	s2	0	1	a=1\n
+new	s2	1	0	a=1\n
+new	s2	1	1	a=1\n
+new	s2	0	0	a=1\r\nb=2\r\n
+new	s2	0	1	a=1\r\nb=2\r\n
+new	s2	1	0	a=1\r\nb=2\r\n
+new	s2	1	1	a=1\r\nb=2\r\n
+new	s2	0	0	a=1\rb=2
+new	s2	0	1	a=1\rb=2
+new	s2	1	0	a=1\rb=2
+new	s2	1	1	a=1\rb=2
+new	s2	0	0	a = 1\n\n\n  b=2  \n
+new	s2	0	1	a = 1\n\n\n  b=2  \n
+new	s2	1	0	a = 1\n\n\n  b=2  \n
+new	s2	1	1	a = 1\n\n\n  b=2  \n
+new	s2	0	0	a=1\na=2\n
+new	s2	0	1	a=1\na=2\n
+new	s2	1	0	a=1\na=2\n
+new	s2	1	1	a=1\na=2\n
+new	s2	0	0	a=1\n#x\nb=2\na=3\n
+new	s2	0	1	a=1\n#x\nb=2\na=3\n
+new	s2	1	0	a=1\n#x\nb=2\na=3\n
+new	s2	1	1	a=1\n#x\nb=2\na=3\n
+new	s2	0	0	a=1\nb=2\na=3\nb=4\n
+new	s2	0	1	a=1\nb=2\na=3\nb=4\n
+new	s2	1	0	a=1\nb=2\na=3\nb=4\n
+new	s2	1	1	a=1\nb=2\na=3\nb=4\n
+new	s2	0	0	b=1\na=2\nB=3\n_c=4\n-d=5\n0e=6\na-b=7\na_b=8\naB=9\nz=10\nZ=11\n
+new	s2	0	1	b=1\na=2\nB=3\n_c=4\n-d=5\n0e=6\na-b=7\na_b=8\naB=9\nz=10\nZ=11\n
+new	s2	1	0	b=1\na=2\nB=3\n_c=4\n-d=5\n0e=6\na-b=7\na_b=8\naB=9\nz=10\nZ=11\n
+new	s2	1	1	b=1\na=2\nB=3\n_c=4\n-d=5\n0e=6\na-b=7\na_b=8\naB=9\nz=10\nZ=11\n
+new	s2	0	0	a=1\x00b=2\n
+new	s2	0	1	a=1\x00b=2\n
+new	s2	1	0	a=1\x00b=2\n
+new	s2	1	1	a=1\x00b=2\n
+new	s2	0	0	a=1\n\x00\nb=2\n
+new	s2	0	1	a=1\n\x00\nb=2\n
+new	s2	1	0	a=1\n\x00\nb=2\n
+new	s2	1	1	a=1\n\x00\nb=2\n
+new	s2	0	0	\x0b\x0c a=1 \x0b\x0c\n
+new	s2	0	1	\x0b\x0c a=1 \x0b\x0c\n
+new	s2	1	0	\x0b\x0c a=1 \x0b\x0c\n
+new	s2	1	1	\x0b\x0c a=1 \x0b\x0c\n
+new	s2	0	0	a=\xc3\xa9\n
+new	s2	0	1	a=\xc3\xa9\n
+new	s2	1	0	a=\xc3\xa9\n
+new	s2	1	1	a=\xc3\xa9\n
+new	s2	0	0	\xc3\xa9=1\n
+new	s2	0	1	\xc3\xa9=1\n
+new	s2	1	0	\xc3\xa9=1\n
+new	s2	1	1	\xc3\xa9=1\n
+new	s2	0	0	\xef\xbb\xbfa=1\n
+new	s2	0	1	\xef\xbb\xbfa=1\n
+new	s2	1	0	\xef\xbb\xbfa=1\n
+new	s2	1	1	\xef\xbb\xbfa=1\n
+new	s2	0	0	a=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n
+new	s2	0	1	a=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n
+new	s2	1	0	a=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n
+new	s2	1	1	a=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n
+new	s2	0	0	kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk=v\n
+new	s2	0	1	kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk=v\n
+new	s2	1	0	kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk=v\n
+new	s2	1	1	kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk=v\n
+new	s2	0	0	a=\t1\t\n
+new	s2	0	1	a=\t1\t\n
+new	s2	1	0	a=\t1\t\n
+new	s2	1	1	a=\t1\t\n
+new	s2	0	0	\ta\t=\t1\t#c\n
+new	s2	0	1	\ta\t=\t1\t#c\n
+new	s2	1	0	\ta\t=\t1\t#c\n
+new	s2	1	1	\ta\t=\t1\t#c\n
+new	s2	0	0	  # comment with = and " quotes\n
+new	s2	0	1	  # comment with = and " quotes\n
+new	s2	1	0	  # comment with = and " quotes\n
+new	s2	1	1	  # comment with = and " quotes\n
+new	s2	0	0	a=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\n
+new	s2	0	1	a=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\n
+new	s2	1	0	a=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\n
+new	s2	1	1	a=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\na=1\n
+new	s2	0	0	k0 = 0\nk1 = 1\nk2 = 4\nk3 = 9\nk4 = 16\nk5 = 25\nk6 = 36\nk7 = 49\nk8 = 64\nk9 = 81\nk10 = 100\nk11 = 121\nk12 = 144\nk13 = 169\nk14 = 196\nk15 = 225\nk16 = 256\nk17 = 289\nk18 = 324\nk19 = 361\nk20 = 400\nk21 = 441\nk22 = 484\nk23 = 529\nk24 = 576\nk25 = 625\nk26 = 676\nk27 = 729\nk28 = 784\nk29 = 841\nk30 = 900\nk31 = 961\nk32 = 1024\nk33 = 1089\nk34 = 1156\nk35 = 1225\nk36 = 1296\nk37 = 1369\nk38 = 1444\nk39 = 1521\nk40 = 1600\nk41 = 1681\nk42 = 1764\nk43 = 1849\nk44 = 1936\nk45 = 2025\nk46 = 2116\nk47 = 2209\nk48 = 2304\nk49 = 2401\nk50 = 2500\nk51 = 2601\nk52 = 2704\nk53 = 2809\nk54 = 2916\nk55 = 3025\nk56 = 3136\nk57 = 3249\nk58 = 3364\nk59 = 3481\nk60 = 3600\nk61 = 3721\nk62 = 3844\nk63 = 3969\nk64 = 4096\nk65 = 4225\nk66 = 4356\nk67 = 4489\nk68 = 4624\nk69 = 4761\nk70 = 4900\nk71 = 5041\nk72 = 5184\nk73 = 5329\nk74 = 5476\nk75 = 5625\nk76 = 5776\nk77 = 5929\nk78 = 6084\nk79 = 6241\nk80 = 6400\nk81 = 6561\nk82 = 6724\nk83 = 6889\nk84 = 7056\nk85 = 7225\nk86 = 7396\nk87 = 7569\nk88 = 7744\nk89 = 7921\nk90 = 8100\nk91 = 8281\nk92 = 8464\nk93 = 8649\nk94 = 8836\nk95 = 9025\nk96 = 9216\nk97 = 9409\nk98 = 9604\nk99 = 9801\nk100 = 10000\nk101 = 10201\nk102 = 10404\nk103 = 10609\nk104 = 10816\nk105 = 11025\nk106 = 11236\nk107 = 11449\nk108 = 11664\nk109 = 11881\nk110 = 12100\nk111 = 12321\nk112 = 12544\nk113 = 12769\nk114 = 12996\nk115 = 13225\nk116 = 13456\nk117 = 13689\nk118 = 13924\nk119 = 14161\nk120 = 14400\nk121 = 14641\nk122 = 14884\nk123 = 15129\nk124 = 15376\nk125 = 15625\nk126 = 15876\nk127 = 16129\nk128 = 16384\nk129 = 16641\nk130 = 16900\nk131 = 17161\nk132 = 17424\nk133 = 17689\nk134 = 17956\nk135 = 18225\nk136 = 18496\nk137 = 18769\nk138 = 19044\nk139 = 19321\nk140 = 19600\nk141 = 19881\nk142 = 20164\nk143 = 20449\nk144 = 20736\nk145 = 21025\nk146 = 21316\nk147 = 21609\nk148 = 21904\nk149 = 22201\nk150 = 22500\nk151 = 22801\nk152 = 23104\nk153 = 23409\nk154 = 23716\nk155 = 24025\nk156 = 24336\nk157 = 24649\nk158 = 24964\nk159 = 25281\nk160 = 25600\nk161 = 25921\nk162 = 26244\nk163 = 26569\nk164 = 26896\nk165 = 27225\nk166 = 27556\nk167 = 27889\nk168 = 28224\nk169 = 28561\nk170 = 28900\nk171 = 29241\nk172 = 29584\nk173 = 29929\nk174 = 30276\nk175 = 30625\nk176 = 30976\nk177 = 31329\nk178 = 31684\nk179 = 32041\nk180 = 32400\nk181 = 32761\nk182 = 33124\nk183 = 33489\nk184 = 33856\nk185 = 34225\nk186 = 34596\nk187 = 34969\nk188 = 35344\nk189 = 35721\nk190 = 36100\nk191 = 36481\nk192 = 36864\nk193 = 37249\nk194 = 37636\nk195 = 38025\nk196 = 38416\nk197 = 38809\nk198 = 39204\nk199 = 39601\nk200 = 40000\nk201 = 40401\nk202 = 40804\nk203 = 41209\nk204 = 41616\nk205 = 42025\nk206 = 42436\nk207 = 42849\nk208 = 43264\nk209 = 43681\nk210 = 44100\nk211 = 44521\nk212 = 44944\nk213 = 45369\nk214 = 45796\nk215 = 46225\nk216 = 46656\nk217 = 47089\nk218 = 47524\nk219 = 47961\nk220 = 48400\nk221 = 48841\nk222 = 49284\nk223 = 49729\nk224 = 50176\nk225 = 50625\nk226 = 51076\nk227 = 51529\nk228 = 51984\nk229 = 52441\nk230 = 52900\nk231 = 53361\nk232 = 53824\nk233 = 54289\nk234 = 54756\nk235 = 55225\nk236 = 55696\nk237 = 56169\nk238 = 56644\nk239 = 57121\nk240 = 57600\nk241 = 58081\nk242 = 58564\nk243 = 59049\nk244 = 59536\nk245 = 60025\nk246 = 60516\nk247 = 61009\nk248 = 61504\nk249 = 62001\nk250 = 62500\nk251 = 63001\nk252 = 63504\nk253 = 64009\nk254 = 64516\nk255 = 65025\nk256 = 65536\nk257 = 66049\nk258 = 66564\nk259 = 67081\nk260 = 67600\nk261 = 68121\nk262 = 68644\nk263 = 69169\nk264 = 69696\nk265 = 70225\nk266 = 70756\nk267 = 71289\nk268 = 71824\nk269 = 72361\nk270 = 72900\nk271 = 73441\nk272 = 73984\nk273 = 74529\nk274 = 75076\nk275 = 75625\nk276 = 76176\nk277 = 76729\nk278 = 77284\nk279 = 77841\nk280 = 78400\nk281 = 78961\nk282 = 79524\nk283 = 80089\nk284 = 80656\nk285 = 81225\nk286 = 81796\nk287 = 82369\nk288 = 82944\nk289 = 83521\nk290 = 84100\nk291 = 84681\nk292 = 85264\nk293 = 85849\nk294 = 86436\nk295 = 87025\nk296 = 87616\nk297 = 88209\nk298 = 88804\nk299 = 89401\n
+new	s2	0	1	k0 = 0\nk1 = 1\nk2 = 4\nk3 = 9\nk4 = 16\nk5 = 25\nk6 = 36\nk7 = 49\nk8 = 64\nk9 = 81\nk10 = 100\nk11 = 121\nk12 = 144\nk13 = 169\nk14 = 196\nk15 = 225\nk16 = 256\nk17 = 289\nk18 = 324\nk19 = 361\nk20 = 400\nk21 = 441\nk22 = 484\nk23 = 529\nk24 = 576\nk25 = 625\nk26 = 676\nk27 = 729\nk28 = 784\nk29 = 841\nk30 = 900\nk31 = 961\nk32 = 1024\nk33 = 1089\nk34 = 1156\nk35 = 1225\nk36 = 1296\nk37 = 1369\nk38 = 1444\nk39 = 1521\nk40 = 1600\nk41 = 1681\nk42 = 1764\nk43 = 1849\nk44 = 1936\nk45 = 2025\nk46 = 2116\nk47 = 2209\nk48 = 2304\nk49 = 2401\nk50 = 2500\nk51 = 2601\nk52 = 2704\nk53 = 2809\nk54 = 2916\nk55 = 3025\nk56 = 3136\nk57 = 3249\nk58 = 3364\nk59 = 3481\nk60 = 3600\nk61 = 3721\nk62 = 3844\nk63 = 3969\nk64 = 4096\nk65 = 4225\nk66 = 4356\nk67 = 4489\nk68 = 4624\nk69 = 4761\nk70 = 4900\nk71 = 5041\nk72 = 5184\nk73 = 5329\nk74 = 5476\nk75 = 5625\nk76 = 5776\nk77 = 5929\nk78 = 6084\nk79 = 6241\nk80 = 6400\nk81 = 6561\nk82 = 6724\nk83 = 6889\nk84 = 7056\nk85 = 7225\nk86 = 7396\nk87 = 7569\nk88 = 7744\nk89 = 7921\nk90 = 8100\nk91 = 8281\nk92 = 8464\nk93 = 8649\nk94 = 8836\nk95 = 9025\nk96 = 9216\nk97 = 9409\nk98 = 9604\nk99 = 9801\nk100 = 10000\nk101 = 10201\nk102 = 10404\nk103 = 10609\nk104 = 10816\nk105 = 11025\nk106 = 11236\nk107 = 11449\nk108 = 11664\nk109 = 11881\nk110 = 12100\nk111 = 12321\nk112 = 12544\nk113 = 12769\nk114 = 12996\nk115 = 13225\nk116 = 13456\nk117 = 13689\nk118 = 13924\nk119 = 14161\nk120 = 14400\nk121 = 14641\nk122 = 14884\nk123 = 15129\nk124 = 15376\nk125 = 15625\nk126 = 15876\nk127 = 16129\nk128 = 16384\nk129 = 16641\nk130 = 16900\nk131 = 17161\nk132 = 17424\nk133 = 17689\nk134 = 17956\nk135 = 18225\nk136 = 18496\nk137 = 18769\nk138 = 19044\nk139 = 19321\nk140 = 19600\nk141 = 19881\nk142 = 20164\nk143 = 20449\nk144 = 20736\nk145 = 21025\nk146 = 21316\nk147 = 21609\nk148 = 21904\nk149 = 22201\nk150 = 22500\nk151 = 22801\nk152 = 23104\nk153 = 23409\nk154 = 23716\nk155 = 24025\nk156 = 24336\nk157 = 24649\nk158 = 24964\nk159 = 25281\nk160 = 25600\nk161 = 25921\nk162 = 26244\nk163 = 26569\nk164 = 26896\nk165 = 27225\nk166 = 27556\nk167 = 27889\nk168 = 28224\nk169 = 28561\nk170 = 28900\nk171 = 29241\nk172 = 29584\nk173 = 29929\nk174 = 30276\nk175 = 30625\nk176 = 30976\nk177 = 31329\nk178 = 31684\nk179 = 32041\nk180 = 32400\nk181 = 32761\nk182 = 33124\nk183 = 33489\nk184 = 33856\nk185 = 34225\nk186 = 34596\nk187 = 34969\nk188 = 35344\nk189 = 35721\nk190 = 36100\nk191 = 36481\nk192 = 36864\nk193 = 37249\nk194 = 37636\nk195 = 38025\nk196 = 38416\nk197 = 38809\nk198 = 39204\nk199 = 39601\nk200 = 40000\nk201 = 40401\nk202 = 40804\nk203 = 41209\nk204 = 41616\nk205 = 42025\nk206 = 42436\nk207 = 42849\nk208 = 43264\nk209 = 43681\nk210 = 44100\nk211 = 44521\nk212 = 44944\nk213 = 45369\nk214 = 45796\nk215 = 46225\nk216 = 46656\nk217 = 47089\nk218 = 47524\nk219 = 47961\nk220 = 48400\nk221 = 48841\nk222 = 49284\nk223 = 49729\nk224 = 50176\nk225 = 50625\nk226 = 51076\nk227 = 51529\nk228 = 51984\nk229 = 52441\nk230 = 52900\nk231 = 53361\nk232 = 53824\nk233 = 54289\nk234 = 54756\nk235 = 55225\nk236 = 55696\nk237 = 56169\nk238 = 56644\nk239 = 57121\nk240 = 57600\nk241 = 58081\nk242 = 58564\nk243 = 59049\nk244 = 59536\nk245 = 60025\nk246 = 60516\nk247 = 61009\nk248 = 61504\nk249 = 62001\nk250 = 62500\nk251 = 63001\nk252 = 63504\nk253 = 64009\nk254 = 64516\nk255 = 65025\nk256 = 65536\nk257 = 66049\nk258 = 66564\nk259 = 67081\nk260 = 67600\nk261 = 68121\nk262 = 68644\nk263 = 69169\nk264 = 69696\nk265 = 70225\nk266 = 70756\nk267 = 71289\nk268 = 71824\nk269 = 72361\nk270 = 72900\nk271 = 73441\nk272 = 73984\nk273 = 74529\nk274 = 75076\nk275 = 75625\nk276 = 76176\nk277 = 76729\nk278 = 77284\nk279 = 77841\nk280 = 78400\nk281 = 78961\nk282 = 79524\nk283 = 80089\nk284 = 80656\nk285 = 81225\nk286 = 81796\nk287 = 82369\nk288 = 82944\nk289 = 83521\nk290 = 84100\nk291 = 84681\nk292 = 85264\nk293 = 85849\nk294 = 86436\nk295 = 87025\nk296 = 87616\nk297 = 88209\nk298 = 88804\nk299 = 89401\n
+new	s2	1	0	k0 = 0\nk1 = 1\nk2 = 4\nk3 = 9\nk4 = 16\nk5 = 25\nk6 = 36\nk7 = 49\nk8 = 64\nk9 = 81\nk10 = 100\nk11 = 121\nk12 = 144\nk13 = 169\nk14 = 196\nk15 = 225\nk16 = 256\nk17 = 289\nk18 = 324\nk19 = 361\nk20 = 400\nk21 = 441\nk22 = 484\nk23 = 529\nk24 = 576\nk25 = 625\nk26 = 676\nk27 = 729\nk28 = 784\nk29 = 841\nk30 = 900\nk31 = 961\nk32 = 1024\nk33 = 1089\nk34 = 1156\nk35 = 1225\nk36 = 1296\nk37 = 1369\nk38 = 1444\nk39 = 1521\nk40 = 1600\nk41 = 1681\nk42 = 1764\nk43 = 1849\nk44 = 1936\nk45 = 2025\nk46 = 2116\nk47 = 2209\nk48 = 2304\nk49 = 2401\nk50 = 2500\nk51 = 2601\nk52 = 2704\nk53 = 2809\nk54 = 2916\nk55 = 3025\nk56 = 3136\nk57 = 3249\nk58 = 3364\nk59 = 3481\nk60 = 3600\nk61 = 3721\nk62 = 3844\nk63 = 3969\nk64 = 4096\nk65 = 4225\nk66 = 4356\nk67 = 4489\nk68 = 4624\nk69 = 4761\nk70 = 4900\nk71 = 5041\nk72 = 5184\nk73 = 5329\nk74 = 5476\nk75 = 5625\nk76 = 5776\nk77 = 5929\nk78 = 6084\nk79 = 6241\nk80 = 6400\nk81 = 6561\nk82 = 6724\nk83 = 6889\nk84 = 7056\nk85 = 7225\nk86 = 7396\nk87 = 7569\nk88 = 7744\nk89 = 7921\nk90 = 8100\nk91 = 8281\nk92 = 8464\nk93 = 8649\nk94 = 8836\nk95 = 9025\nk96 = 9216\nk97 = 9409\nk98 = 9604\nk99 = 9801\nk100 = 10000\nk101 = 10201\nk102 = 10404\nk103 = 10609\nk104 = 10816\nk105 = 11025\nk106 = 11236\nk107 = 11449\nk108 = 11664\nk109 = 11881\nk110 = 12100\nk111 = 12321\nk112 = 12544\nk113 = 12769\nk114 = 12996\nk115 = 13225\nk116 = 13456\nk117 = 13689\nk118 = 13924\nk119 = 14161\nk120 = 14400\nk121 = 14641\nk122 = 14884\nk123 = 15129\nk124 = 15376\nk125 = 15625\nk126 = 15876\nk127 = 16129\nk128 = 16384\nk129 = 16641\nk130 = 16900\nk131 = 17161\nk132 = 17424\nk133 = 17689\nk134 = 17956\nk135 = 18225\nk136 = 18496\nk137 = 18769\nk138 = 19044\nk139 = 19321\nk140 = 19600\nk141 = 19881\nk142 = 20164\nk143 = 20449\nk144 = 20736\nk145 = 21025\nk146 = 21316\nk147 = 21609\nk148 = 21904\nk149 = 22201\nk150 = 22500\nk151 = 22801\nk152 = 23104\nk153 = 23409\nk154 = 23716\nk155 = 24025\nk156 = 24336\nk157 = 24649\nk158 = 24964\nk159 = 25281\nk160 = 25600\nk161 = 25921\nk162 = 26244\nk163 = 26569\nk164 = 26896\nk165 = 27225\nk166 = 27556\nk167 = 27889\nk168 = 28224\nk169 = 28561\nk170 = 28900\nk171 = 29241\nk172 = 29584\nk173 = 29929\nk174 = 30276\nk175 = 30625\nk176 = 30976\nk177 = 31329\nk178 = 31684\nk179 = 32041\nk180 = 32400\nk181 = 32761\nk182 = 33124\nk183 = 33489\nk184 = 33856\nk185 = 34225\nk186 = 34596\nk187 = 34969\nk188 = 35344\nk189 = 35721\nk190 = 36100\nk191 = 36481\nk192 = 36864\nk193 = 37249\nk194 = 37636\nk195 = 38025\nk196 = 38416\nk197 = 38809\nk198 = 39204\nk199 = 39601\nk200 = 40000\nk201 = 40401\nk202 = 40804\nk203 = 41209\nk204 = 41616\nk205 = 42025\nk206 = 42436\nk207 = 42849\nk208 = 43264\nk209 = 43681\nk210 = 44100\nk211 = 44521\nk212 = 44944\nk213 = 45369\nk214 = 45796\nk215 = 46225\nk216 = 46656\nk217 = 47089\nk218 = 47524\nk219 = 47961\nk220 = 48400\nk221 = 48841\nk222 = 49284\nk223 = 49729\nk224 = 50176\nk225 = 50625\nk226 = 51076\nk227 = 51529\nk228 = 51984\nk229 = 52441\nk230 = 52900\nk231 = 53361\nk232 = 53824\nk233 = 54289\nk234 = 54756\nk235 = 55225\nk236 = 55696\nk237 = 56169\nk238 = 56644\nk239 = 57121\nk240 = 57600\nk241 = 58081\nk242 = 58564\nk243 = 59049\nk244 = 59536\nk245 = 60025\nk246 = 60516\nk247 = 61009\nk248 = 61504\nk249 = 62001\nk250 = 62500\nk251 = 63001\nk252 = 63504\nk253 = 64009\nk254 = 64516\nk255 = 65025\nk256 = 65536\nk257 = 66049\nk258 = 66564\nk259 = 67081\nk260 = 67600\nk261 = 68121\nk262 = 68644\nk263 = 69169\nk264 = 69696\nk265 = 70225\nk266 = 70756\nk267 = 71289\nk268 = 71824\nk269 = 72361\nk270 = 72900\nk271 = 73441\nk272 = 73984\nk273 = 74529\nk274 = 75076\nk275 = 75625\nk276 = 76176\nk277 = 76729\nk278 = 77284\nk279 = 77841\nk280 = 78400\nk281 = 78961\nk282 = 79524\nk283 = 80089\nk284 = 80656\nk285 = 81225\nk286 = 81796\nk287 = 82369\nk288 = 82944\nk289 = 83521\nk290 = 84100\nk291 = 84681\nk292 = 85264\nk293 = 85849\nk294 = 86436\nk295 = 87025\nk296 = 87616\nk297 = 88209\nk298 = 88804\nk299 = 89401\n
+new	s2	1	1	k0 = 0\nk1 = 1\nk2 = 4\nk3 = 9\nk4 = 16\nk5 = 25\nk6 = 36\nk7 = 49\nk8 = 64\nk9 = 81\nk10 = 100\nk11 = 121\nk12 = 144\nk13 = 169\nk14 = 196\nk15 = 225\nk16 = 256\nk17 = 289\nk18 = 324\nk19 = 361\nk20 = 400\nk21 = 441\nk22 = 484\nk23 = 529\nk24 = 576\nk25 = 625\nk26 = 676\nk27 = 729\nk28 = 784\nk29 = 841\nk30 = 900\nk31 = 961\nk32 = 1024\nk33 = 1089\nk34 = 1156\nk35 = 1225\nk36 = 1296\nk37 = 1369\nk38 = 1444\nk39 = 1521\nk40 = 1600\nk41 = 1681\nk42 = 1764\nk43 = 1849\nk44 = 1936\nk45 = 2025\nk46 = 2116\nk47 = 2209\nk48 = 2304\nk49 = 2401\nk50 = 2500\nk51 = 2601\nk52 = 2704\nk53 = 2809\nk54 = 2916\nk55 = 3025\nk56 = 3136\nk57 = 3249\nk58 = 3364\nk59 = 3481\nk60 = 3600\nk61 = 3721\nk62 = 3844\nk63 = 3969\nk64 = 4096\nk65 = 4225\nk66 = 4356\nk67 = 4489\nk68 = 4624\nk69 = 4761\nk70 = 4900\nk71 = 5041\nk72 = 5184\nk73 = 5329\nk74 = 5476\nk75 = 5625\nk76 = 5776\nk77 = 5929\nk78 = 6084\nk79 = 6241\nk80 = 6400\nk81 = 6561\nk82 = 6724\nk83 = 6889\nk84 = 7056\nk85 = 7225\nk86 = 7396\nk87 = 7569\nk88 = 7744\nk89 = 7921\nk90 = 8100\nk91 = 8281\nk92 = 8464\nk93 = 8649\nk94 = 8836\nk95 = 9025\nk96 = 9216\nk97 = 9409\nk98 = 9604\nk99 = 9801\nk100 = 10000\nk101 = 10201\nk102 = 10404\nk103 = 10609\nk104 = 10816\nk105 = 11025\nk106 = 11236\nk107 = 11449\nk108 = 11664\nk109 = 11881\nk110 = 12100\nk111 = 12321\nk112 = 12544\nk113 = 12769\nk114 = 12996\nk115 = 13225\nk116 = 13456\nk117 = 13689\nk118 = 13924\nk119 = 14161\nk120 = 14400\nk121 = 14641\nk122 = 14884\nk123 = 15129\nk124 = 15376\nk125 = 15625\nk126 = 15876\nk127 = 16129\nk128 = 16384\nk129 = 16641\nk130 = 16900\nk131 = 17161\nk132 = 17424\nk133 = 17689\nk134 = 17956\nk135 = 18225\nk136 = 18496\nk137 = 18769\nk138 = 19044\nk139 = 19321\nk140 = 19600\nk141 = 19881\nk142 = 20164\nk143 = 20449\nk144 = 20736\nk145 = 21025\nk146 = 21316\nk147 = 21609\nk148 = 21904\nk149 = 22201\nk150 = 22500\nk151 = 22801\nk152 = 23104\nk153 = 23409\nk154 = 23716\nk155 = 24025\nk156 = 24336\nk157 = 24649\nk158 = 24964\nk159 = 25281\nk160 = 25600\nk161 = 25921\nk162 = 26244\nk163 = 26569\nk164 = 26896\nk165 = 27225\nk166 = 27556\nk167 = 27889\nk168 = 28224\nk169 = 28561\nk170 = 28900\nk171 = 29241\nk172 = 29584\nk173 = 29929\nk174 = 30276\nk175 = 30625\nk176 = 30976\nk177 = 31329\nk178 = 31684\nk179 = 32041\nk180 = 32400\nk181 = 32761\nk182 = 33124\nk183 = 33489\nk184 = 33856\nk185 = 34225\nk186 = 34596\nk187 = 34969\nk188 = 35344\nk189 = 35721\nk190 = 36100\nk191 = 36481\nk192 = 36864\nk193 = 37249\nk194 = 37636\nk195 = 38025\nk196 = 38416\nk197 = 38809\nk198 = 39204\nk199 = 39601\nk200 = 40000\nk201 = 40401\nk202 = 40804\nk203 = 41209\nk204 = 41616\nk205 = 42025\nk206 = 42436\nk207 = 42849\nk208 = 43264\nk209 = 43681\nk210 = 44100\nk211 = 44521\nk212 = 44944\nk213 = 45369\nk214 = 45796\nk215 = 46225\nk216 = 46656\nk217 = 47089\nk218 = 47524\nk219 = 47961\nk220 = 48400\nk221 = 48841\nk222 = 49284\nk223 = 49729\nk224 = 50176\nk225 = 50625\nk226 = 51076\nk227 = 51529\nk228 = 51984\nk229 = 52441\nk230 = 52900\nk231 = 53361\nk232 = 53824\nk233 = 54289\nk234 = 54756\nk235 = 55225\nk236 = 55696\nk237 = 56169\nk238 = 56644\nk239 = 57121\nk240 = 57600\nk241 = 58081\nk242 = 58564\nk243 = 59049\nk244 = 59536\nk245 = 60025\nk246 = 60516\nk247 = 61009\nk248 = 61504\nk249 = 62001\nk250 = 62500\nk251 = 63001\nk252 = 63504\nk253 = 64009\nk254 = 64516\nk255 = 65025\nk256 = 65536\nk257 = 66049\nk258 = 66564\nk259 = 67081\nk260 = 67600\nk261 = 68121\nk262 = 68644\nk263 = 69169\nk264 = 69696\nk265 = 70225\nk266 = 70756\nk267 = 71289\nk268 = 71824\nk269 = 72361\nk270 = 72900\nk271 = 73441\nk272 = 73984\nk273 = 74529\nk274 = 75076\nk275 = 75625\nk276 = 76176\nk277 = 76729\nk278 = 77284\nk279 = 77841\nk280 = 78400\nk281 = 78961\nk282 = 79524\nk283 = 80089\nk284 = 80656\nk285 = 81225\nk286 = 81796\nk287 = 82369\nk288 = 82944\nk289 = 83521\nk290 = 84100\nk291 = 84681\nk292 = 85264\nk293 = 85849\nk294 = 86436\nk295 = 87025\nk296 = 87616\nk297 = 88209\nk298 = 88804\nk299 = 89401\n
+new	s2	0	0	a=1\n  \n\t\n#\n##\n b = 2\n
+new	s2	0	1	a=1\n  \n\t\n#\n##\n b = 2\n
+new	s2	1	0	a=1\n  \n\t\n#\n##\n b = 2\n
+new	s2	1	1	a=1\n  \n\t\n#\n##\n b = 2\n
+new	s2	0	0	\n\n  a  =  "  spaced  "  \n\n
+new	s2	0	1	\n\n  a  =  "  spaced  "  \n\n
+new	s2	1	0	\n\n  a  =  "  spaced  "  \n\n
+new	s2	1	1	\n\n  a  =  "  spaced  "  \n\n
+new	s2	0	0	a="x"\nb=" y "\nc=" \\" "\n
+new	s2	0	1	a="x"\nb=" y "\nc=" \\" "\n
+new	s2	1	0	a="x"\nb=" y "\nc=" \\" "\n
+new	s2	1	1	a="x"\nb=" y "\nc=" \\" "\n
+new	s2	0	0	trailing=newline is okay
+new	s2	0	1	trailing=newline is okay
+new	s2	1	0	trailing=newline is okay
+new	s2	1	1	trailing=newline is okay
+new	s2	0	0	a=1\nb
+new	s2	0	1	a=1\nb
+new	s2	1	0	a=1\nb
+new	s2	1	1	a=1\nb
+new	s2	0	0	a=1\nb=\n
+new	s2	0	1	a=1\nb=\n
+new	s2	1	0	a=1\nb=\n
+new	s2	1	1	a=1\nb=\n
+new	s2	0	0	a=1\n=b\n
+new	s2	0	1	a=1\n=b\n
+new	s2	1	0	a=1\n=b\n
+new	s2	1	1	a=1\n=b\n
+new	s2	0	0	a=1\n"b"=2\n
+new	s2	0	1	a=1\n"b"=2\n
+new	s2	1	0	a=1\n"b"=2\n
+new	s2	1	1	a=1\n"b"=2\n
+new	s2	0	0	a=1 b=2\n
+new	s2	0	1	a=1 b=2\n
+new	s2	1	0	a=1 b=2\n
+new	s2	1	1	a=1 b=2\n
+new	s2	0	0	a=1,b=2\n
+new	s2	0	1	a=1,b=2\n
+new	s2	1	0	a=1,b=2\n
+new	s2	1	1	a=1,b=2\n
+# S3: @include (files written to the scratch directory by the oracle, served from memory by the Rust test)
+file	s1/a.cfg	x=1\n@include b.cfg\ny=2\n
+file	s1/b.cfg	z=3\n
+newfile	f	0	0	s1/a.cfg
+newfile	f	0	1	s1/a.cfg
+newfile	f	1	0	s1/a.cfg
+newfile	f	1	1	s1/a.cfg
+file	s2/a.cfg	x=1\n@include b.cfg\n
+file	s2/b.cfg	x=2\n
+newfile	f	0	0	s2/a.cfg
+newfile	f	0	1	s2/a.cfg
+newfile	f	1	0	s2/a.cfg
+newfile	f	1	1	s2/a.cfg
+file	s3/a.cfg	@include b.cfg\nx=9\n
+file	s3/b.cfg	x=2\ny=3\n
+newfile	f	0	0	s3/a.cfg
+newfile	f	0	1	s3/a.cfg
+newfile	f	1	0	s3/a.cfg
+newfile	f	1	1	s3/a.cfg
+file	s4/a.cfg	@include d/e.cfg\na=1\n
+file	s4/d/e.cfg	@include f.cfg\ne=1\n
+file	s4/d/f.cfg	f=1\n
+file	s4/d/g.cfg	@include ../h.cfg\ng=1\n@include f.cfg\n
+file	s4/h.cfg	h=1\n
+newfile	f	0	1	s4/a.cfg
+newfile	f	0	1	s4/d/g.cfg
+newfile	f	0	1	s4/d/e.cfg
+file	s5/c0.cfg	@include c1.cfg\nc0=1\n
+file	s5/c1.cfg	c1=1\n@include c0.cfg\n
+newfile	f	0	1	s5/c0.cfg
+file	s5/self.cfg	a=1\n@include self.cfg\n
+newfile	f	0	1	s5/self.cfg
+file	self2.cfg	a=1\n@include self2.cfg\n
+newfile	f	0	1	self2.cfg
+file	s5/m.cfg	@include z.cfg\n@include z.cfg\n
+file	s5/z.cfg	z=1\n
+newfile	f	0	1	s5/m.cfg
+file	s5/m2.cfg	@include z.cfg\n@include ./z.cfg\n
+newfile	f	0	1	s5/m2.cfg
+file	s6/abs.cfg	@include /abs/x.cfg\n
+newfile	f	0	1	s6/abs.cfg
+file	s6/abs2.cfg	a=1\n@include \\x\\y.cfg\n
+newfile	f	0	1	s6/abs2.cfg
+file	s6/missing.cfg	a=1\n@include nope.cfg\n
+newfile	f	0	1	s6/missing.cfg
+newfile	f	0	1	nofile.cfg
+newfile	f	0	1	nodir/nofile.cfg
+file	s7/a.cfg	@include b.cfg\nbad line here\n
+file	s7/b.cfg	b=1\n
+newfile	f	0	1	s7/a.cfg
+file	s7/c.cfg	c=1\n\nc=2\n
+file	s7/d.cfg	a=1\n@include c.cfg\nd=1\n
+newfile	f	0	1	s7/d.cfg
+newfile	f	1	1	s7/d.cfg
+file	s7/e.cfg	\n\n@include c.cfg\n\nbad\n
+newfile	f	0	1	s7/e.cfg
+file	s7/crlf.cfg	a=1\r\n@include b.cfg\r\nc=3\r\n
+newfile	f	0	1	s7/crlf.cfg
+file	s7/nonl.cfg	a=1\n@include b.cfg
+newfile	f	0	1	s7/nonl.cfg
+file	s7/empty.cfg	
+newfile	f	0	1	s7/empty.cfg
+file	s7/q.cfg	@include "b.cfg"\n@include 'z.cfg'\n
+file	s7/z.cfg	z=1\n
+newfile	f	0	1	s7/q.cfg
+file	s7/ie.cfg	a=1  # comment\n@include b.cfg # trailing\n
+newfile	f	0	1	s7/ie.cfg
+# S3b: @ directive syntax in a stream (includes resolved relative to the scratch directory)
+new	d	0	1	@include s1/b.cfg\n
+new	d	1	1	@include s1/b.cfg\n
+new	d	0	1	@include "s1/b.cfg"\n
+new	d	1	1	@include "s1/b.cfg"\n
+new	d	0	1	@include 's1/b.cfg'\n
+new	d	1	1	@include 's1/b.cfg'\n
+new	d	0	1	@include = s1/b.cfg\n
+new	d	1	1	@include = s1/b.cfg\n
+new	d	0	1	@include\ts1/b.cfg # c\n
+new	d	1	1	@include\ts1/b.cfg # c\n
+new	d	0	1	@include s1/b.cfg#c\n
+new	d	1	1	@include s1/b.cfg#c\n
+new	d	0	1	@include=s1/b.cfg\n
+new	d	1	1	@include=s1/b.cfg\n
+new	d	0	1	@includes1/b.cfg\n
+new	d	1	1	@includes1/b.cfg\n
+new	d	0	1	@include\n
+new	d	1	1	@include\n
+new	d	0	1	@include \n
+new	d	1	1	@include \n
+new	d	0	1	@include =\n
+new	d	1	1	@include =\n
+new	d	0	1	@include   =  \n
+new	d	1	1	@include   =  \n
+new	d	0	1	@foo s1/b.cfg\n
+new	d	1	1	@foo s1/b.cfg\n
+new	d	0	1	@ include s1/b.cfg\n
+new	d	1	1	@ include s1/b.cfg\n
+new	d	0	1	@include "s1/b.cfg\n
+new	d	1	1	@include "s1/b.cfg\n
+new	d	0	1	@include s1/b.cfg"\n
+new	d	1	1	@include s1/b.cfg"\n
+new	d	0	1	  @include s1/b.cfg  \n
+new	d	1	1	  @include s1/b.cfg  \n
+new	d	0	1	@include\x0bs1/b.cfg\n
+new	d	1	1	@include\x0bs1/b.cfg\n
+new	d	0	1	@\tinclude s1/b.cfg\n
+new	d	1	1	@\tinclude s1/b.cfg\n
+new	d	0	1	#@include s1/b.cfg\n
+new	d	1	1	#@include s1/b.cfg\n
+new	d	0	1	a=@include s1/b.cfg\n
+new	d	1	1	a=@include s1/b.cfg\n
+new	d	0	1	@include s1/b.cfg extra\n
+new	d	1	1	@include s1/b.cfg extra\n
+new	d	0	1	@include s1/b.cfg\n@include s1/b.cfg\n
+new	d	1	1	@include s1/b.cfg\n@include s1/b.cfg\n
+new	d	0	1	@include s1/b.cfg\nz=4\n
+new	d	1	1	@include s1/b.cfg\nz=4\n
+new	d	0	1	z=4\n@include s1/b.cfg\n
+new	d	1	1	z=4\n@include s1/b.cfg\n
+new	d	0	1	@include ./s1/b.cfg\n
+new	d	1	1	@include ./s1/b.cfg\n
+new	d	0	1	@include s1/../s1/b.cfg\n
+new	d	1	1	@include s1/../s1/b.cfg\n
+new	d	0	1	@include s1//b.cfg\n
+new	d	1	1	@include s1//b.cfg\n
+new	d	0	1	@include /s1/b.cfg\n
+new	d	1	1	@include /s1/b.cfg\n
+new	d	0	1	@include \\s1\\b.cfg\n
+new	d	1	1	@include \\s1\\b.cfg\n
+new	d	0	1	@include s1\\b.cfg\n
+new	d	1	1	@include s1\\b.cfg\n
+new	d	0	1	@include ''\n
+new	d	1	1	@include ''\n
+new	d	0	1	@include ""\n
+new	d	1	1	@include ""\n
+new	d	0	1	@include "'s1/b.cfg'"\n
+new	d	1	1	@include "'s1/b.cfg'"\n
+new	d	0	1	@include '"s1/b.cfg"'\n
+new	d	1	1	@include '"s1/b.cfg"'\n
+new	d	0	1	@abcdefgh\n
+new	d	1	1	@abcdefgh\n
+new	d	0	1	@includ=\n
+new	d	1	1	@includ=\n
+new	d	0	1	@include#\n
+new	d	1	1	@include#\n
+new	d	0	1	@include s1/a.cfg\n
+new	d	1	1	@include s1/a.cfg\n
+new	d	0	1	@include nope.cfg\n
+new	d	1	1	@include nope.cfg\n
+new	d	0	1	@include s1/b.cfg\n@include s1/a.cfg\n
+new	d	1	1	@include s1/b.cfg\n@include s1/a.cfg\n
+new	d	0	0	@include s1/b.cfg\nz=4\n
+new	d	0	0	z=4\n@include s1/b.cfg\n
+# S3c: overrideKeys(file) / initialize(file) / copy
+newfile	o	0	1	s1/a.cfg
+overridekeysfile	o	s3/b.cfg
+overridekeysfile	o	s3/b.cfg
+overridekeysfile	o	s2/b.cfg
+overridekeysfile	o	nope.cfg
+overridekeysfile	o	s1/b.cfg
+overridekeysfile	o	s4/d/f.cfg
+overridekeysfile	o	/abs/x.cfg
+copy	oc	o
+info	oc
+new	p	0	1	a=1\n
+overridekeysfile	p	s1/b.cfg
+overridekeysfile	p	s1/b.cfg
+overridekeysfile	p	s4/d/f.cfg
+overridekeysfile	p	s4/a.cfg
+newempty	e	0	1
+init_file	e	s1/a.cfg
+init_file	e	s1/a.cfg
+init_in	e	a=1
+init_kvs	e	a=1
+newempty	e2	1	0
+init_file	e2	nofile.cfg
+init_file	e2	s7/c.cfg
+init_in	e2	a=1
+newempty	e3	0	1
+init_in	e3	x=1\n@include s1/b.cfg\n
+overridekeysfile	e3	s1/b.cfg
+overridekeysfile	e3	s2/b.cfg
+# S4: getters
+new	g	0	1	# getters\ns = hello world\nsq = "quoted # string"\nsempty_list = a,,b, ,c\nsl = a , b,c\nbt = true\nbf = FALSE\nbsp =  Tr\nbsp2 =   True\nbyes = yes\nb1 = 1\nbl = true, false,TRUE, False\nblbad = true,maybe\ne1 = auto\ne2 = Enabled\ne3 = no\ne4 = maybe\ne5 =  AUTO\ne6 = T\ne7 = 1\ne8 = disabled\ne9 = Y\ni = 42\nineg = -17\niplus = +5\nizero = 0\nimax = 2147483647\nimin = -2147483648\niover = 2147483648\niunder = -2147483649\nihuge = 99999999999\nihex = 0x10\nispace =  7\nifloaty = 3.5\niempty_str = abc\ni2 = 1,2, 3 ,4\ni2bad = 1,x\ni2range = 5,50,500\ni2sp = 1, 2 ,3\ni64 = -9000000000000\ni64max = 9223372036854775807\ni64min = -9223372036854775808\ni64over = 9223372036854775808\ni64huge = 99999999999999999999\ni64l = 1, -2 , 9000000000000\nu64 = 18446744073709551615\nu64mid = 18000000000000\nuneg = -1\nuzero = 0\nuover = 18446744073709551616\nu64l = 0, 1, 18446744073709551615\nu64lbad = 1,-1\nf = 1.5\nfneg = -0.0\nfnan = nan\nfnan2 = NaN\nfinf = inf\nfninf = -inf\nfhuge = 1e39\nfexp = 1.5e20\nfsmall = 1e-50\nfsub = 1e-40\nfprec = 0.1\nfhexf = 0x1p3\nfbad = 1.5x\nfl = -1.5, 0.0, 1.5\nflnan = 1.0,nan\nfldbl = 1e39\nd = 2.718281828459045\ndnan = NaN\ndinf = -inf\ndhuge = 1e400\ndsub = 4.9e-324\ndbig = 1.7976931348623157e308\ndprec = 0.1\ndbad = abc\ndl = -1.0e50, 0.0, 1.0e50\ndlbad = 1,2,x\npairs = 1-2, 3-4,,5-6\npairs1 = 7-8\npairs_bad3 = 1-2-3\npairs_badA = a-b\npairs_bad1 = 1-\npairs_badneg = -5-6\npairs_range = 1-2, 3-400\npairs_blank = ,, ,\npairs_sp = 1 - 2, 3 -4\ndup_a = 1\nZkey = Z\n
+info	g
+getint	g	i	lowest	max
+getint	g	i	0	100
+getint	g	i	50	100
+getint	g	i	-100	0
+getint	g	i	42	42
+getint	g	i	43	100
+getint	g	i	0	41
+getint	g	i	-20	-10
+getint	g	ineg	lowest	max
+getint	g	ineg	0	100
+getint	g	ineg	50	100
+getint	g	ineg	-100	0
+getint	g	ineg	42	42
+getint	g	ineg	43	100
+getint	g	ineg	0	41
+getint	g	ineg	-20	-10
+getint	g	iplus	lowest	max
+getint	g	iplus	0	100
+getint	g	iplus	50	100
+getint	g	iplus	-100	0
+getint	g	iplus	42	42
+getint	g	iplus	43	100
+getint	g	iplus	0	41
+getint	g	iplus	-20	-10
+getint	g	izero	lowest	max
+getint	g	izero	0	100
+getint	g	izero	50	100
+getint	g	izero	-100	0
+getint	g	izero	42	42
+getint	g	izero	43	100
+getint	g	izero	0	41
+getint	g	izero	-20	-10
+getint	g	imax	lowest	max
+getint	g	imax	0	100
+getint	g	imax	50	100
+getint	g	imax	-100	0
+getint	g	imax	42	42
+getint	g	imax	43	100
+getint	g	imax	0	41
+getint	g	imax	-20	-10
+getint	g	imin	lowest	max
+getint	g	imin	0	100
+getint	g	imin	50	100
+getint	g	imin	-100	0
+getint	g	imin	42	42
+getint	g	imin	43	100
+getint	g	imin	0	41
+getint	g	imin	-20	-10
+getint	g	iover	lowest	max
+getint	g	iover	0	100
+getint	g	iover	50	100
+getint	g	iover	-100	0
+getint	g	iover	42	42
+getint	g	iover	43	100
+getint	g	iover	0	41
+getint	g	iover	-20	-10
+getint	g	iunder	lowest	max
+getint	g	iunder	0	100
+getint	g	iunder	50	100
+getint	g	iunder	-100	0
+getint	g	iunder	42	42
+getint	g	iunder	43	100
+getint	g	iunder	0	41
+getint	g	iunder	-20	-10
+getint	g	ihuge	lowest	max
+getint	g	ihuge	0	100
+getint	g	ihuge	50	100
+getint	g	ihuge	-100	0
+getint	g	ihuge	42	42
+getint	g	ihuge	43	100
+getint	g	ihuge	0	41
+getint	g	ihuge	-20	-10
+getint	g	ihex	lowest	max
+getint	g	ihex	0	100
+getint	g	ihex	50	100
+getint	g	ihex	-100	0
+getint	g	ihex	42	42
+getint	g	ihex	43	100
+getint	g	ihex	0	41
+getint	g	ihex	-20	-10
+getint	g	ispace	lowest	max
+getint	g	ispace	0	100
+getint	g	ispace	50	100
+getint	g	ispace	-100	0
+getint	g	ispace	42	42
+getint	g	ispace	43	100
+getint	g	ispace	0	41
+getint	g	ispace	-20	-10
+getint	g	ifloaty	lowest	max
+getint	g	ifloaty	0	100
+getint	g	ifloaty	50	100
+getint	g	ifloaty	-100	0
+getint	g	ifloaty	42	42
+getint	g	ifloaty	43	100
+getint	g	ifloaty	0	41
+getint	g	ifloaty	-20	-10
+getint	g	iempty_str	lowest	max
+getint	g	iempty_str	0	100
+getint	g	iempty_str	50	100
+getint	g	iempty_str	-100	0
+getint	g	iempty_str	42	42
+getint	g	iempty_str	43	100
+getint	g	iempty_str	0	41
+getint	g	iempty_str	-20	-10
+getint	g	i64	lowest	max
+getint	g	i64	0	100
+getint	g	i64	50	100
+getint	g	i64	-100	0
+getint	g	i64	42	42
+getint	g	i64	43	100
+getint	g	i64	0	41
+getint	g	i64	-20	-10
+getint	g	u64	lowest	max
+getint	g	u64	0	100
+getint	g	u64	50	100
+getint	g	u64	-100	0
+getint	g	u64	42	42
+getint	g	u64	43	100
+getint	g	u64	0	41
+getint	g	u64	-20	-10
+getint	g	s	lowest	max
+getint	g	s	0	100
+getint	g	s	50	100
+getint	g	s	-100	0
+getint	g	s	42	42
+getint	g	s	43	100
+getint	g	s	0	41
+getint	g	s	-20	-10
+getint	g	nokey	lowest	max
+getint	g	nokey	0	100
+getint	g	nokey	50	100
+getint	g	nokey	-100	0
+getint	g	nokey	42	42
+getint	g	nokey	43	100
+getint	g	nokey	0	41
+getint	g	nokey	-20	-10
+getint	g	f	lowest	max
+getint	g	f	0	100
+getint	g	f	50	100
+getint	g	f	-100	0
+getint	g	f	42	42
+getint	g	f	43	100
+getint	g	f	0	41
+getint	g	f	-20	-10
+getint	g	bt	lowest	max
+getint	g	bt	0	100
+getint	g	bt	50	100
+getint	g	bt	-100	0
+getint	g	bt	42	42
+getint	g	bt	43	100
+getint	g	bt	0	41
+getint	g	bt	-20	-10
+getints	g	i2	lowest	max
+getints	g	i2	0	100
+getints	g	i2	50	100
+getints	g	i2	-100	0
+getints	g	i2	42	42
+getints	g	i2	43	100
+getints	g	i2	0	41
+getints	g	i2	-20	-10
+getints	g	i2bad	lowest	max
+getints	g	i2bad	0	100
+getints	g	i2bad	50	100
+getints	g	i2bad	-100	0
+getints	g	i2bad	42	42
+getints	g	i2bad	43	100
+getints	g	i2bad	0	41
+getints	g	i2bad	-20	-10
+getints	g	i2range	lowest	max
+getints	g	i2range	0	100
+getints	g	i2range	50	100
+getints	g	i2range	-100	0
+getints	g	i2range	42	42
+getints	g	i2range	43	100
+getints	g	i2range	0	41
+getints	g	i2range	-20	-10
+getints	g	i2sp	lowest	max
+getints	g	i2sp	0	100
+getints	g	i2sp	50	100
+getints	g	i2sp	-100	0
+getints	g	i2sp	42	42
+getints	g	i2sp	43	100
+getints	g	i2sp	0	41
+getints	g	i2sp	-20	-10
+getints	g	i	lowest	max
+getints	g	i	0	100
+getints	g	i	50	100
+getints	g	i	-100	0
+getints	g	i	42	42
+getints	g	i	43	100
+getints	g	i	0	41
+getints	g	i	-20	-10
+getints	g	nokey	lowest	max
+getints	g	nokey	0	100
+getints	g	nokey	50	100
+getints	g	nokey	-100	0
+getints	g	nokey	42	42
+getints	g	nokey	43	100
+getints	g	nokey	0	41
+getints	g	nokey	-20	-10
+getints	g	s	lowest	max
+getints	g	s	0	100
+getints	g	s	50	100
+getints	g	s	-100	0
+getints	g	s	42	42
+getints	g	s	43	100
+getints	g	s	0	41
+getints	g	s	-20	-10
+getints	g	ineg	lowest	max
+getints	g	ineg	0	100
+getints	g	ineg	50	100
+getints	g	ineg	-100	0
+getints	g	ineg	42	42
+getints	g	ineg	43	100
+getints	g	ineg	0	41
+getints	g	ineg	-20	-10
+getint64	g	i	lowest	max
+getint64	g	i	0	100
+getint64	g	i	-9000000000000	0
+getint64	g	i	-9000000000000	-9000000000000
+getint64	g	i	0	9223372036854775807
+getint64	g	i	-9223372036854775808	-1
+getint64	g	ineg	lowest	max
+getint64	g	ineg	0	100
+getint64	g	ineg	-9000000000000	0
+getint64	g	ineg	-9000000000000	-9000000000000
+getint64	g	ineg	0	9223372036854775807
+getint64	g	ineg	-9223372036854775808	-1
+getint64	g	i64	lowest	max
+getint64	g	i64	0	100
+getint64	g	i64	-9000000000000	0
+getint64	g	i64	-9000000000000	-9000000000000
+getint64	g	i64	0	9223372036854775807
+getint64	g	i64	-9223372036854775808	-1
+getint64	g	i64max	lowest	max
+getint64	g	i64max	0	100
+getint64	g	i64max	-9000000000000	0
+getint64	g	i64max	-9000000000000	-9000000000000
+getint64	g	i64max	0	9223372036854775807
+getint64	g	i64max	-9223372036854775808	-1
+getint64	g	i64min	lowest	max
+getint64	g	i64min	0	100
+getint64	g	i64min	-9000000000000	0
+getint64	g	i64min	-9000000000000	-9000000000000
+getint64	g	i64min	0	9223372036854775807
+getint64	g	i64min	-9223372036854775808	-1
+getint64	g	i64over	lowest	max
+getint64	g	i64over	0	100
+getint64	g	i64over	-9000000000000	0
+getint64	g	i64over	-9000000000000	-9000000000000
+getint64	g	i64over	0	9223372036854775807
+getint64	g	i64over	-9223372036854775808	-1
+getint64	g	i64huge	lowest	max
+getint64	g	i64huge	0	100
+getint64	g	i64huge	-9000000000000	0
+getint64	g	i64huge	-9000000000000	-9000000000000
+getint64	g	i64huge	0	9223372036854775807
+getint64	g	i64huge	-9223372036854775808	-1
+getint64	g	u64	lowest	max
+getint64	g	u64	0	100
+getint64	g	u64	-9000000000000	0
+getint64	g	u64	-9000000000000	-9000000000000
+getint64	g	u64	0	9223372036854775807
+getint64	g	u64	-9223372036854775808	-1
+getint64	g	ihex	lowest	max
+getint64	g	ihex	0	100
+getint64	g	ihex	-9000000000000	0
+getint64	g	ihex	-9000000000000	-9000000000000
+getint64	g	ihex	0	9223372036854775807
+getint64	g	ihex	-9223372036854775808	-1
+getint64	g	s	lowest	max
+getint64	g	s	0	100
+getint64	g	s	-9000000000000	0
+getint64	g	s	-9000000000000	-9000000000000
+getint64	g	s	0	9223372036854775807
+getint64	g	s	-9223372036854775808	-1
+getint64	g	nokey	lowest	max
+getint64	g	nokey	0	100
+getint64	g	nokey	-9000000000000	0
+getint64	g	nokey	-9000000000000	-9000000000000
+getint64	g	nokey	0	9223372036854775807
+getint64	g	nokey	-9223372036854775808	-1
+getint64	g	ispace	lowest	max
+getint64	g	ispace	0	100
+getint64	g	ispace	-9000000000000	0
+getint64	g	ispace	-9000000000000	-9000000000000
+getint64	g	ispace	0	9223372036854775807
+getint64	g	ispace	-9223372036854775808	-1
+getint64s	g	i64l	lowest	max
+getint64s	g	i64l	0	100
+getint64s	g	i64l	-9000000000000	0
+getint64s	g	i64l	-9000000000000	-9000000000000
+getint64s	g	i64l	0	9223372036854775807
+getint64s	g	i64l	-9223372036854775808	-1
+getint64s	g	i2	lowest	max
+getint64s	g	i2	0	100
+getint64s	g	i2	-9000000000000	0
+getint64s	g	i2	-9000000000000	-9000000000000
+getint64s	g	i2	0	9223372036854775807
+getint64s	g	i2	-9223372036854775808	-1
+getint64s	g	i2bad	lowest	max
+getint64s	g	i2bad	0	100
+getint64s	g	i2bad	-9000000000000	0
+getint64s	g	i2bad	-9000000000000	-9000000000000
+getint64s	g	i2bad	0	9223372036854775807
+getint64s	g	i2bad	-9223372036854775808	-1
+getint64s	g	nokey	lowest	max
+getint64s	g	nokey	0	100
+getint64s	g	nokey	-9000000000000	0
+getint64s	g	nokey	-9000000000000	-9000000000000
+getint64s	g	nokey	0	9223372036854775807
+getint64s	g	nokey	-9223372036854775808	-1
+getuint64	g	u64	lowest	max
+getuint64	g	u64	0	100
+getuint64	g	u64	1	18000000000000
+getuint64	g	u64	18000000000000	18446744073709551615
+getuint64	g	u64	18446744073709551615	18446744073709551615
+getuint64	g	u64	1	1
+getuint64	g	u64mid	lowest	max
+getuint64	g	u64mid	0	100
+getuint64	g	u64mid	1	18000000000000
+getuint64	g	u64mid	18000000000000	18446744073709551615
+getuint64	g	u64mid	18446744073709551615	18446744073709551615
+getuint64	g	u64mid	1	1
+getuint64	g	uneg	lowest	max
+getuint64	g	uneg	0	100
+getuint64	g	uneg	1	18000000000000
+getuint64	g	uneg	18000000000000	18446744073709551615
+getuint64	g	uneg	18446744073709551615	18446744073709551615
+getuint64	g	uneg	1	1
+getuint64	g	uzero	lowest	max
+getuint64	g	uzero	0	100
+getuint64	g	uzero	1	18000000000000
+getuint64	g	uzero	18000000000000	18446744073709551615
+getuint64	g	uzero	18446744073709551615	18446744073709551615
+getuint64	g	uzero	1	1
+getuint64	g	uover	lowest	max
+getuint64	g	uover	0	100
+getuint64	g	uover	1	18000000000000
+getuint64	g	uover	18000000000000	18446744073709551615
+getuint64	g	uover	18446744073709551615	18446744073709551615
+getuint64	g	uover	1	1
+getuint64	g	i	lowest	max
+getuint64	g	i	0	100
+getuint64	g	i	1	18000000000000
+getuint64	g	i	18000000000000	18446744073709551615
+getuint64	g	i	18446744073709551615	18446744073709551615
+getuint64	g	i	1	1
+getuint64	g	ineg	lowest	max
+getuint64	g	ineg	0	100
+getuint64	g	ineg	1	18000000000000
+getuint64	g	ineg	18000000000000	18446744073709551615
+getuint64	g	ineg	18446744073709551615	18446744073709551615
+getuint64	g	ineg	1	1
+getuint64	g	ihex	lowest	max
+getuint64	g	ihex	0	100
+getuint64	g	ihex	1	18000000000000
+getuint64	g	ihex	18000000000000	18446744073709551615
+getuint64	g	ihex	18446744073709551615	18446744073709551615
+getuint64	g	ihex	1	1
+getuint64	g	s	lowest	max
+getuint64	g	s	0	100
+getuint64	g	s	1	18000000000000
+getuint64	g	s	18000000000000	18446744073709551615
+getuint64	g	s	18446744073709551615	18446744073709551615
+getuint64	g	s	1	1
+getuint64	g	nokey	lowest	max
+getuint64	g	nokey	0	100
+getuint64	g	nokey	1	18000000000000
+getuint64	g	nokey	18000000000000	18446744073709551615
+getuint64	g	nokey	18446744073709551615	18446744073709551615
+getuint64	g	nokey	1	1
+getuint64	g	ispace	lowest	max
+getuint64	g	ispace	0	100
+getuint64	g	ispace	1	18000000000000
+getuint64	g	ispace	18000000000000	18446744073709551615
+getuint64	g	ispace	18446744073709551615	18446744073709551615
+getuint64	g	ispace	1	1
+getuint64s	g	u64l	lowest	max
+getuint64s	g	u64l	0	100
+getuint64s	g	u64l	1	18000000000000
+getuint64s	g	u64l	18000000000000	18446744073709551615
+getuint64s	g	u64l	18446744073709551615	18446744073709551615
+getuint64s	g	u64l	1	1
+getuint64s	g	u64lbad	lowest	max
+getuint64s	g	u64lbad	0	100
+getuint64s	g	u64lbad	1	18000000000000
+getuint64s	g	u64lbad	18000000000000	18446744073709551615
+getuint64s	g	u64lbad	18446744073709551615	18446744073709551615
+getuint64s	g	u64lbad	1	1
+getuint64s	g	i2	lowest	max
+getuint64s	g	i2	0	100
+getuint64s	g	i2	1	18000000000000
+getuint64s	g	i2	18000000000000	18446744073709551615
+getuint64s	g	i2	18446744073709551615	18446744073709551615
+getuint64s	g	i2	1	1
+getuint64s	g	nokey	lowest	max
+getuint64s	g	nokey	0	100
+getuint64s	g	nokey	1	18000000000000
+getuint64s	g	nokey	18000000000000	18446744073709551615
+getuint64s	g	nokey	18446744073709551615	18446744073709551615
+getuint64s	g	nokey	1	1
+getfloat	g	f	lowest	max
+getfloat	g	f	00000000	42C80000
+getfloat	g	f	3F800000	40000000
+getfloat	g	f	C0000000	BF800000
+getfloat	g	f	3FC00000	3FC00000
+getfloat	g	f	3F000000	3FA00000
+getfloat	g	f	F149F2CA	7149F2CA
+getfloat	g	fneg	lowest	max
+getfloat	g	fneg	00000000	42C80000
+getfloat	g	fneg	3F800000	40000000
+getfloat	g	fneg	C0000000	BF800000
+getfloat	g	fneg	3FC00000	3FC00000
+getfloat	g	fneg	3F000000	3FA00000
+getfloat	g	fneg	F149F2CA	7149F2CA
+getfloat	g	fnan	lowest	max
+getfloat	g	fnan	00000000	42C80000
+getfloat	g	fnan	3F800000	40000000
+getfloat	g	fnan	C0000000	BF800000
+getfloat	g	fnan	3FC00000	3FC00000
+getfloat	g	fnan	3F000000	3FA00000
+getfloat	g	fnan	F149F2CA	7149F2CA
+getfloat	g	fnan2	lowest	max
+getfloat	g	fnan2	00000000	42C80000
+getfloat	g	fnan2	3F800000	40000000
+getfloat	g	fnan2	C0000000	BF800000
+getfloat	g	fnan2	3FC00000	3FC00000
+getfloat	g	fnan2	3F000000	3FA00000
+getfloat	g	fnan2	F149F2CA	7149F2CA
+getfloat	g	finf	lowest	max
+getfloat	g	finf	00000000	42C80000
+getfloat	g	finf	3F800000	40000000
+getfloat	g	finf	C0000000	BF800000
+getfloat	g	finf	3FC00000	3FC00000
+getfloat	g	finf	3F000000	3FA00000
+getfloat	g	finf	F149F2CA	7149F2CA
+getfloat	g	fninf	lowest	max
+getfloat	g	fninf	00000000	42C80000
+getfloat	g	fninf	3F800000	40000000
+getfloat	g	fninf	C0000000	BF800000
+getfloat	g	fninf	3FC00000	3FC00000
+getfloat	g	fninf	3F000000	3FA00000
+getfloat	g	fninf	F149F2CA	7149F2CA
+getfloat	g	fhuge	lowest	max
+getfloat	g	fhuge	00000000	42C80000
+getfloat	g	fhuge	3F800000	40000000
+getfloat	g	fhuge	C0000000	BF800000
+getfloat	g	fhuge	3FC00000	3FC00000
+getfloat	g	fhuge	3F000000	3FA00000
+getfloat	g	fhuge	F149F2CA	7149F2CA
+getfloat	g	fexp	lowest	max
+getfloat	g	fexp	00000000	42C80000
+getfloat	g	fexp	3F800000	40000000
+getfloat	g	fexp	C0000000	BF800000
+getfloat	g	fexp	3FC00000	3FC00000
+getfloat	g	fexp	3F000000	3FA00000
+getfloat	g	fexp	F149F2CA	7149F2CA
+getfloat	g	fsmall	lowest	max
+getfloat	g	fsmall	00000000	42C80000
+getfloat	g	fsmall	3F800000	40000000
+getfloat	g	fsmall	C0000000	BF800000
+getfloat	g	fsmall	3FC00000	3FC00000
+getfloat	g	fsmall	3F000000	3FA00000
+getfloat	g	fsmall	F149F2CA	7149F2CA
+getfloat	g	fsub	lowest	max
+getfloat	g	fsub	00000000	42C80000
+getfloat	g	fsub	3F800000	40000000
+getfloat	g	fsub	C0000000	BF800000
+getfloat	g	fsub	3FC00000	3FC00000
+getfloat	g	fsub	3F000000	3FA00000
+getfloat	g	fsub	F149F2CA	7149F2CA
+getfloat	g	fprec	lowest	max
+getfloat	g	fprec	00000000	42C80000
+getfloat	g	fprec	3F800000	40000000
+getfloat	g	fprec	C0000000	BF800000
+getfloat	g	fprec	3FC00000	3FC00000
+getfloat	g	fprec	3F000000	3FA00000
+getfloat	g	fprec	F149F2CA	7149F2CA
+getfloat	g	fhexf	lowest	max
+getfloat	g	fhexf	00000000	42C80000
+getfloat	g	fhexf	3F800000	40000000
+getfloat	g	fhexf	C0000000	BF800000
+getfloat	g	fhexf	3FC00000	3FC00000
+getfloat	g	fhexf	3F000000	3FA00000
+getfloat	g	fhexf	F149F2CA	7149F2CA
+getfloat	g	fbad	lowest	max
+getfloat	g	fbad	00000000	42C80000
+getfloat	g	fbad	3F800000	40000000
+getfloat	g	fbad	C0000000	BF800000
+getfloat	g	fbad	3FC00000	3FC00000
+getfloat	g	fbad	3F000000	3FA00000
+getfloat	g	fbad	F149F2CA	7149F2CA
+getfloat	g	i	lowest	max
+getfloat	g	i	00000000	42C80000
+getfloat	g	i	3F800000	40000000
+getfloat	g	i	C0000000	BF800000
+getfloat	g	i	3FC00000	3FC00000
+getfloat	g	i	3F000000	3FA00000
+getfloat	g	i	F149F2CA	7149F2CA
+getfloat	g	d	lowest	max
+getfloat	g	d	00000000	42C80000
+getfloat	g	d	3F800000	40000000
+getfloat	g	d	C0000000	BF800000
+getfloat	g	d	3FC00000	3FC00000
+getfloat	g	d	3F000000	3FA00000
+getfloat	g	d	F149F2CA	7149F2CA
+getfloat	g	dhuge	lowest	max
+getfloat	g	dhuge	00000000	42C80000
+getfloat	g	dhuge	3F800000	40000000
+getfloat	g	dhuge	C0000000	BF800000
+getfloat	g	dhuge	3FC00000	3FC00000
+getfloat	g	dhuge	3F000000	3FA00000
+getfloat	g	dhuge	F149F2CA	7149F2CA
+getfloat	g	s	lowest	max
+getfloat	g	s	00000000	42C80000
+getfloat	g	s	3F800000	40000000
+getfloat	g	s	C0000000	BF800000
+getfloat	g	s	3FC00000	3FC00000
+getfloat	g	s	3F000000	3FA00000
+getfloat	g	s	F149F2CA	7149F2CA
+getfloat	g	nokey	lowest	max
+getfloat	g	nokey	00000000	42C80000
+getfloat	g	nokey	3F800000	40000000
+getfloat	g	nokey	C0000000	BF800000
+getfloat	g	nokey	3FC00000	3FC00000
+getfloat	g	nokey	3F000000	3FA00000
+getfloat	g	nokey	F149F2CA	7149F2CA
+getfloats	g	fl	lowest	max
+getfloats	g	fl	00000000	42C80000
+getfloats	g	fl	3F800000	40000000
+getfloats	g	fl	C0000000	BF800000
+getfloats	g	fl	3FC00000	3FC00000
+getfloats	g	fl	3F000000	3FA00000
+getfloats	g	fl	F149F2CA	7149F2CA
+getfloats	g	flnan	lowest	max
+getfloats	g	flnan	00000000	42C80000
+getfloats	g	flnan	3F800000	40000000
+getfloats	g	flnan	C0000000	BF800000
+getfloats	g	flnan	3FC00000	3FC00000
+getfloats	g	flnan	3F000000	3FA00000
+getfloats	g	flnan	F149F2CA	7149F2CA
+getfloats	g	fldbl	lowest	max
+getfloats	g	fldbl	00000000	42C80000
+getfloats	g	fldbl	3F800000	40000000
+getfloats	g	fldbl	C0000000	BF800000
+getfloats	g	fldbl	3FC00000	3FC00000
+getfloats	g	fldbl	3F000000	3FA00000
+getfloats	g	fldbl	F149F2CA	7149F2CA
+getfloats	g	i2	lowest	max
+getfloats	g	i2	00000000	42C80000
+getfloats	g	i2	3F800000	40000000
+getfloats	g	i2	C0000000	BF800000
+getfloats	g	i2	3FC00000	3FC00000
+getfloats	g	i2	3F000000	3FA00000
+getfloats	g	i2	F149F2CA	7149F2CA
+getfloats	g	f	lowest	max
+getfloats	g	f	00000000	42C80000
+getfloats	g	f	3F800000	40000000
+getfloats	g	f	C0000000	BF800000
+getfloats	g	f	3FC00000	3FC00000
+getfloats	g	f	3F000000	3FA00000
+getfloats	g	f	F149F2CA	7149F2CA
+getfloats	g	nokey	lowest	max
+getfloats	g	nokey	00000000	42C80000
+getfloats	g	nokey	3F800000	40000000
+getfloats	g	nokey	C0000000	BF800000
+getfloats	g	nokey	3FC00000	3FC00000
+getfloats	g	nokey	3F000000	3FA00000
+getfloats	g	nokey	F149F2CA	7149F2CA
+getdouble	g	d	lowest	max
+getdouble	g	d	0000000000000000	4059000000000000
+getdouble	g	d	3FF0000000000000	4000000000000000
+getdouble	g	d	C000000000000000	BFF0000000000000
+getdouble	g	d	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	d	3FE0000000000000	3FF4000000000000
+getdouble	g	d	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	f	lowest	max
+getdouble	g	f	0000000000000000	4059000000000000
+getdouble	g	f	3FF0000000000000	4000000000000000
+getdouble	g	f	C000000000000000	BFF0000000000000
+getdouble	g	f	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	f	3FE0000000000000	3FF4000000000000
+getdouble	g	f	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	fneg	lowest	max
+getdouble	g	fneg	0000000000000000	4059000000000000
+getdouble	g	fneg	3FF0000000000000	4000000000000000
+getdouble	g	fneg	C000000000000000	BFF0000000000000
+getdouble	g	fneg	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	fneg	3FE0000000000000	3FF4000000000000
+getdouble	g	fneg	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dnan	lowest	max
+getdouble	g	dnan	0000000000000000	4059000000000000
+getdouble	g	dnan	3FF0000000000000	4000000000000000
+getdouble	g	dnan	C000000000000000	BFF0000000000000
+getdouble	g	dnan	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dnan	3FE0000000000000	3FF4000000000000
+getdouble	g	dnan	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dinf	lowest	max
+getdouble	g	dinf	0000000000000000	4059000000000000
+getdouble	g	dinf	3FF0000000000000	4000000000000000
+getdouble	g	dinf	C000000000000000	BFF0000000000000
+getdouble	g	dinf	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dinf	3FE0000000000000	3FF4000000000000
+getdouble	g	dinf	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dhuge	lowest	max
+getdouble	g	dhuge	0000000000000000	4059000000000000
+getdouble	g	dhuge	3FF0000000000000	4000000000000000
+getdouble	g	dhuge	C000000000000000	BFF0000000000000
+getdouble	g	dhuge	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dhuge	3FE0000000000000	3FF4000000000000
+getdouble	g	dhuge	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dsub	lowest	max
+getdouble	g	dsub	0000000000000000	4059000000000000
+getdouble	g	dsub	3FF0000000000000	4000000000000000
+getdouble	g	dsub	C000000000000000	BFF0000000000000
+getdouble	g	dsub	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dsub	3FE0000000000000	3FF4000000000000
+getdouble	g	dsub	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dbig	lowest	max
+getdouble	g	dbig	0000000000000000	4059000000000000
+getdouble	g	dbig	3FF0000000000000	4000000000000000
+getdouble	g	dbig	C000000000000000	BFF0000000000000
+getdouble	g	dbig	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dbig	3FE0000000000000	3FF4000000000000
+getdouble	g	dbig	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dprec	lowest	max
+getdouble	g	dprec	0000000000000000	4059000000000000
+getdouble	g	dprec	3FF0000000000000	4000000000000000
+getdouble	g	dprec	C000000000000000	BFF0000000000000
+getdouble	g	dprec	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dprec	3FE0000000000000	3FF4000000000000
+getdouble	g	dprec	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	dbad	lowest	max
+getdouble	g	dbad	0000000000000000	4059000000000000
+getdouble	g	dbad	3FF0000000000000	4000000000000000
+getdouble	g	dbad	C000000000000000	BFF0000000000000
+getdouble	g	dbad	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	dbad	3FE0000000000000	3FF4000000000000
+getdouble	g	dbad	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	fnan	lowest	max
+getdouble	g	fnan	0000000000000000	4059000000000000
+getdouble	g	fnan	3FF0000000000000	4000000000000000
+getdouble	g	fnan	C000000000000000	BFF0000000000000
+getdouble	g	fnan	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	fnan	3FE0000000000000	3FF4000000000000
+getdouble	g	fnan	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	finf	lowest	max
+getdouble	g	finf	0000000000000000	4059000000000000
+getdouble	g	finf	3FF0000000000000	4000000000000000
+getdouble	g	finf	C000000000000000	BFF0000000000000
+getdouble	g	finf	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	finf	3FE0000000000000	3FF4000000000000
+getdouble	g	finf	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	i	lowest	max
+getdouble	g	i	0000000000000000	4059000000000000
+getdouble	g	i	3FF0000000000000	4000000000000000
+getdouble	g	i	C000000000000000	BFF0000000000000
+getdouble	g	i	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	i	3FE0000000000000	3FF4000000000000
+getdouble	g	i	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	s	lowest	max
+getdouble	g	s	0000000000000000	4059000000000000
+getdouble	g	s	3FF0000000000000	4000000000000000
+getdouble	g	s	C000000000000000	BFF0000000000000
+getdouble	g	s	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	s	3FE0000000000000	3FF4000000000000
+getdouble	g	s	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	nokey	lowest	max
+getdouble	g	nokey	0000000000000000	4059000000000000
+getdouble	g	nokey	3FF0000000000000	4000000000000000
+getdouble	g	nokey	C000000000000000	BFF0000000000000
+getdouble	g	nokey	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	nokey	3FE0000000000000	3FF4000000000000
+getdouble	g	nokey	FE37E43C8800759C	7E37E43C8800759C
+getdouble	g	fhuge	lowest	max
+getdouble	g	fhuge	0000000000000000	4059000000000000
+getdouble	g	fhuge	3FF0000000000000	4000000000000000
+getdouble	g	fhuge	C000000000000000	BFF0000000000000
+getdouble	g	fhuge	4005BF0A8B145769	4005BF0A8B145769
+getdouble	g	fhuge	3FE0000000000000	3FF4000000000000
+getdouble	g	fhuge	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	dl	lowest	max
+getdoubles	g	dl	0000000000000000	4059000000000000
+getdoubles	g	dl	3FF0000000000000	4000000000000000
+getdoubles	g	dl	C000000000000000	BFF0000000000000
+getdoubles	g	dl	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	dl	3FE0000000000000	3FF4000000000000
+getdoubles	g	dl	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	dlbad	lowest	max
+getdoubles	g	dlbad	0000000000000000	4059000000000000
+getdoubles	g	dlbad	3FF0000000000000	4000000000000000
+getdoubles	g	dlbad	C000000000000000	BFF0000000000000
+getdoubles	g	dlbad	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	dlbad	3FE0000000000000	3FF4000000000000
+getdoubles	g	dlbad	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	fl	lowest	max
+getdoubles	g	fl	0000000000000000	4059000000000000
+getdoubles	g	fl	3FF0000000000000	4000000000000000
+getdoubles	g	fl	C000000000000000	BFF0000000000000
+getdoubles	g	fl	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	fl	3FE0000000000000	3FF4000000000000
+getdoubles	g	fl	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	i2	lowest	max
+getdoubles	g	i2	0000000000000000	4059000000000000
+getdoubles	g	i2	3FF0000000000000	4000000000000000
+getdoubles	g	i2	C000000000000000	BFF0000000000000
+getdoubles	g	i2	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	i2	3FE0000000000000	3FF4000000000000
+getdoubles	g	i2	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	d	lowest	max
+getdoubles	g	d	0000000000000000	4059000000000000
+getdoubles	g	d	3FF0000000000000	4000000000000000
+getdoubles	g	d	C000000000000000	BFF0000000000000
+getdoubles	g	d	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	d	3FE0000000000000	3FF4000000000000
+getdoubles	g	d	FE37E43C8800759C	7E37E43C8800759C
+getdoubles	g	nokey	lowest	max
+getdoubles	g	nokey	0000000000000000	4059000000000000
+getdoubles	g	nokey	3FF0000000000000	4000000000000000
+getdoubles	g	nokey	C000000000000000	BFF0000000000000
+getdoubles	g	nokey	4005BF0A8B145769	4005BF0A8B145769
+getdoubles	g	nokey	3FE0000000000000	3FF4000000000000
+getdoubles	g	nokey	FE37E43C8800759C	7E37E43C8800759C
+getstring	g	s
+getstrings	g	s
+getstringsnet	g	s
+getstring	g	sq
+getstrings	g	sq
+getstringsnet	g	sq
+getstring	g	sempty_list
+getstrings	g	sempty_list
+getstringsnet	g	sempty_list
+getstring	g	sl
+getstrings	g	sl
+getstringsnet	g	sl
+getstring	g	bt
+getstrings	g	bt
+getstringsnet	g	bt
+getstring	g	i
+getstrings	g	i
+getstringsnet	g	i
+getstring	g	nokey
+getstrings	g	nokey
+getstringsnet	g	nokey
+getstring	g	Zkey
+getstrings	g	Zkey
+getstringsnet	g	Zkey
+getstring	g	pairs
+getstrings	g	pairs
+getstringsnet	g	pairs
+getstringp	g	s	hello world
+getstringsp	g	s	hello world
+getstringp	g	s	a,b,c
+getstringsp	g	s	a,b,c
+getstringp	g	s	true,false
+getstringsp	g	s	true,false
+getstringp	g	s	
+getstringsp	g	s	
+getstringp	g	s	auto,yes
+getstringsp	g	s	auto,yes
+getstringp	g	s	hello world,x
+getstringsp	g	s	hello world,x
+getstringp	g	bt	hello world
+getstringsp	g	bt	hello world
+getstringp	g	bt	a,b,c
+getstringsp	g	bt	a,b,c
+getstringp	g	bt	true,false
+getstringsp	g	bt	true,false
+getstringp	g	bt	
+getstringsp	g	bt	
+getstringp	g	bt	auto,yes
+getstringsp	g	bt	auto,yes
+getstringp	g	bt	hello world,x
+getstringsp	g	bt	hello world,x
+getstringp	g	e1	hello world
+getstringsp	g	e1	hello world
+getstringp	g	e1	a,b,c
+getstringsp	g	e1	a,b,c
+getstringp	g	e1	true,false
+getstringsp	g	e1	true,false
+getstringp	g	e1	
+getstringsp	g	e1	
+getstringp	g	e1	auto,yes
+getstringsp	g	e1	auto,yes
+getstringp	g	e1	hello world,x
+getstringsp	g	e1	hello world,x
+getstringp	g	nokey	hello world
+getstringsp	g	nokey	hello world
+getstringp	g	nokey	a,b,c
+getstringsp	g	nokey	a,b,c
+getstringp	g	nokey	true,false
+getstringsp	g	nokey	true,false
+getstringp	g	nokey	
+getstringsp	g	nokey	
+getstringp	g	nokey	auto,yes
+getstringsp	g	nokey	auto,yes
+getstringp	g	nokey	hello world,x
+getstringsp	g	nokey	hello world,x
+getstringp	g	sl	hello world
+getstringsp	g	sl	hello world
+getstringp	g	sl	a,b,c
+getstringsp	g	sl	a,b,c
+getstringp	g	sl	true,false
+getstringsp	g	sl	true,false
+getstringp	g	sl	
+getstringsp	g	sl	
+getstringp	g	sl	auto,yes
+getstringsp	g	sl	auto,yes
+getstringp	g	sl	hello world,x
+getstringsp	g	sl	hello world,x
+getbool	g	bt
+getbools	g	bt
+getbool	g	bf
+getbools	g	bf
+getbool	g	bsp
+getbools	g	bsp
+getbool	g	bsp2
+getbools	g	bsp2
+getbool	g	byes
+getbools	g	byes
+getbool	g	b1
+getbools	g	b1
+getbool	g	bl
+getbools	g	bl
+getbool	g	blbad
+getbools	g	blbad
+getbool	g	e1
+getbools	g	e1
+getbool	g	s
+getbools	g	s
+getbool	g	i
+getbools	g	i
+getbool	g	nokey
+getbools	g	nokey
+getenabled	g	e1
+getenabled	g	e2
+getenabled	g	e3
+getenabled	g	e4
+getenabled	g	e5
+getenabled	g	e6
+getenabled	g	e7
+getenabled	g	e8
+getenabled	g	e9
+getenabled	g	bt
+getenabled	g	bf
+getenabled	g	bsp
+getenabled	g	bsp2
+getenabled	g	b1
+getenabled	g	s
+getenabled	g	nokey
+getpairs	g	pairs	lowest	max
+getpairs	g	pairs	0	100
+getpairs	g	pairs	0	5
+getpairs	g	pairs	2	8
+getpairs	g	pairs	1	400
+getpairs	g	pairs	0	0
+getpairs	g	pairs1	lowest	max
+getpairs	g	pairs1	0	100
+getpairs	g	pairs1	0	5
+getpairs	g	pairs1	2	8
+getpairs	g	pairs1	1	400
+getpairs	g	pairs1	0	0
+getpairs	g	pairs_bad3	lowest	max
+getpairs	g	pairs_bad3	0	100
+getpairs	g	pairs_bad3	0	5
+getpairs	g	pairs_bad3	2	8
+getpairs	g	pairs_bad3	1	400
+getpairs	g	pairs_bad3	0	0
+getpairs	g	pairs_badA	lowest	max
+getpairs	g	pairs_badA	0	100
+getpairs	g	pairs_badA	0	5
+getpairs	g	pairs_badA	2	8
+getpairs	g	pairs_badA	1	400
+getpairs	g	pairs_badA	0	0
+getpairs	g	pairs_bad1	lowest	max
+getpairs	g	pairs_bad1	0	100
+getpairs	g	pairs_bad1	0	5
+getpairs	g	pairs_bad1	2	8
+getpairs	g	pairs_bad1	1	400
+getpairs	g	pairs_bad1	0	0
+getpairs	g	pairs_badneg	lowest	max
+getpairs	g	pairs_badneg	0	100
+getpairs	g	pairs_badneg	0	5
+getpairs	g	pairs_badneg	2	8
+getpairs	g	pairs_badneg	1	400
+getpairs	g	pairs_badneg	0	0
+getpairs	g	pairs_range	lowest	max
+getpairs	g	pairs_range	0	100
+getpairs	g	pairs_range	0	5
+getpairs	g	pairs_range	2	8
+getpairs	g	pairs_range	1	400
+getpairs	g	pairs_range	0	0
+getpairs	g	pairs_blank	lowest	max
+getpairs	g	pairs_blank	0	100
+getpairs	g	pairs_blank	0	5
+getpairs	g	pairs_blank	2	8
+getpairs	g	pairs_blank	1	400
+getpairs	g	pairs_blank	0	0
+getpairs	g	pairs_sp	lowest	max
+getpairs	g	pairs_sp	0	100
+getpairs	g	pairs_sp	0	5
+getpairs	g	pairs_sp	2	8
+getpairs	g	pairs_sp	1	400
+getpairs	g	pairs_sp	0	0
+getpairs	g	i	lowest	max
+getpairs	g	i	0	100
+getpairs	g	i	0	5
+getpairs	g	i	2	8
+getpairs	g	i	1	400
+getpairs	g	i	0	0
+getpairs	g	nokey	lowest	max
+getpairs	g	nokey	0	100
+getpairs	g	nokey	0	5
+getpairs	g	nokey	2	8
+getpairs	g	nokey	1	400
+getpairs	g	nokey	0	0
+info	g
+# S4b: the same getters under a file name (error texts embed it) and after overrideKeys changes it
+file	g/getters.cfg	i = 42\nf = 1.5\nbt = true\nbad = x\n
+newfile	gf	0	1	g/getters.cfg
+getint	gf	bad	lowest	max
+getint	gf	nokey	lowest	max
+getint	gf	i	0	10
+getfloat	gf	i	00000000	41200000
+getdouble	gf	f	4000000000000000	4008000000000000
+getbool	gf	bad
+getenabled	gf	bad
+getstringp	gf	bt	x,y
+overridekeys	gf	i=7
+getint	gf	i	0	5
+getint	gf	nokey	lowest	max
+overridekeys	gf	i=8
+getint	gf	nokey	lowest	max
+# S5: contains, firstFound, overrides, alias, used keys, warnUnusedKeys, copy, kvs, parseCommaSeparated
+new	c	0	1	a=1\nb=2\nc-d=3\nprefix_x=4\nprefix_y=5\nprefixz=6\nother=7\n
+contains	c	a
+contains	c	A
+contains	c	
+containsany	c	
+containsany	c	x,y,z
+containsany	c	x,b
+containsany	c	c-d
+firstfail	c	x,y
+firstfail	c	x,b,a
+firstfail	c	
+firstempty	c	x,y
+firstempty	c	x,b,a
+firstempty	c	
+info	c
+getint	c	a	lowest	max
+info	c
+warn	c
+markused	c	b
+markused	c	not_a_key
+markprefix	c	prefix_
+info	c
+warn	c
+markprefix	c	
+warn	c
+unsetused	c	a
+unsetused	c	nokey
+warn	c
+markprefix	c	zzz
+markprefix	c	o
+info	c
+newfile	cf	0	1	s1/a.cfg
+warn	cf
+overridekeys	cf	q=1
+warn	cf
+copy	cc	c
+info	cc
+getstring	cc	a
+info	c
+newempty	ne	0	1
+copy	cne	ne
+info	ne
+getstring	ne	a
+contains	ne	a
+warn	ne
+newkvs	kv	a=1,b=2,c=x y
+info	kv
+getint	kv	a	lowest	max
+getstring	kv	c
+init_in	kv	a=1
+init_kvs	kv	a=2
+newkvs	kv0	
+info	kv0
+copy	kvc	kv
+info	kvc
+new	ov	0	1	a=1\nb=2\nc=3\n
+overridekey	ov	a	10
+overridekey	ov	b	
+overridekey	ov	nokey	
+overridekey	ov	d	4
+overridekey	ov	e	 
+overridekey	ov		v
+overridekeys	ov	a=11,c=,x=1
+overridekeys	ov	
+overridekeys	ov	a=,x=
+overridekeys	ov	q=r,s=t
+new	om	0	1	a1=1\na2=2\nb1=3\nb2=4\nc=5\nd=6\n
+overridekeysm	om	a1=9	a1,a2|b1,b2
+copy	om2	om
+overridekeysm	om2	b2=9	a1,a2|b1,b2
+copy	om3	om
+overridekeysm	om3	c=9	a1,a2|b1,b2
+copy	om4	om
+overridekeysm	om4	a2=1,b1=2	a1,a2|b1,b2
+copy	om5	om
+overridekeysm	om5	c=1	c|d;a1|b1
+overridekeysm	om5	d=	c|d;a1|b1
+overridekeysm	om5	a1=2,x=y	c|d;a1|b1;x|a2
+overridekeysm	om5	zz=1	
+overridekeysm	om5	zz=2	zz|
+overridekeysm	om5	q=2	|zz
+new	al	0	1	old=1\nnew=2\nonly=3\nused=4\n
+alias	al	old	new
+alias	al	old	renamed
+alias	al	nokey	other
+getint	al	used	lowest	max
+alias	al	used	usedtoo
+info	al
+alias	al	only	only
+alias	al	renamed	used
+info	al
+parsecomma	
+parsecomma	a=1
+parsecomma	a=1,b=2
+parsecomma	 a = 1 , b = 2 
+parsecomma	a=1,,b=2
+parsecomma	,
+parsecomma	 , 
+parsecomma	a
+parsecomma	a=1,b
+parsecomma	a=
+parsecomma	=b
+parsecomma	 = 
+parsecomma	a=b=c
+parsecomma	a=1,a=2
+parsecomma	a = x y , b = "q"
+parsecomma	k=v,
+parsecomma	,k=v
+parsecomma	a=1,\t,b=2
+parsecomma	\xc3\xa9=\xc3\xbc
+parsecomma	a=1;b=2
+parsecomma	a=1\nb=2
+parsecomma	x=1,y=2,z
+parsecomma	=,=
+parsecomma	b=2,a=1,A=3

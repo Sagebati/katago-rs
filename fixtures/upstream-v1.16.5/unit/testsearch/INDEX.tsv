@@ -1,0 +1,5 @@
+file	line	test	role
+runsearchtests-g103-sym0.expected0.txt	1	runSearchTests g103 symmetry 0 (Eigen rerun)	expected
+runsearchtests-g103-sym1.expected0.txt	1	runSearchTests g103 symmetry 1 (Eigen rerun)	expected
+runsearchtests-run4-sym0.expected0.txt	1	runSearchTests run4 symmetry 0 (Eigen rerun)	expected
+runsearchtests-run4-sym1.expected0.txt	1	runSearchTests run4 symmetry 1 (Eigen rerun)	expected

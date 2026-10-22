@@ -1,0 +1,11 @@
+file	line	test	role
+runownershipandmisc.input0.txt	245	runOwnershipAndMisc	input
+runownershipandmisc.input1.txt	260	runOwnershipAndMisc	input
+runownershipandmisc.input2.txt	311	runOwnershipAndMisc	input
+runownershipandmisc.input3.txt	347	runOwnershipAndMisc	input
+runownershipandmisc.input4.txt	404	runOwnershipAndMisc	input
+runownershipandmisc.input5.txt	448	runOwnershipAndMisc	input
+runownershipandmisc.input6.txt	488	runOwnershipAndMisc	input
+runsearchtestsv3-grun2-sym0.expected0.txt	1	runSearchTestsV3 grun2 symmetry 0 (Eigen rerun)	expected
+runsearchtestsv3-grun2-sym1.expected0.txt	1	runSearchTestsV3 grun2 symmetry 1 (Eigen rerun)	expected
+runsearchtestsv3-grun2-sym5.expected0.txt	1	runSearchTestsV3 grun2 symmetry 5 (Eigen rerun)	expected

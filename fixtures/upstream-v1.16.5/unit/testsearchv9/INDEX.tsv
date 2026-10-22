@@ -1,0 +1,12 @@
+file	line	test	role
+runv9positions.input0.txt	75	runV9Positions	input
+runv9positions.input1.txt	126	runV9Positions	input
+runv9positions.input2.txt	250	runV9Positions	input
+runv9positions.input3.txt	314	runV9Positions	input
+runv9positions.input4.txt	368	runV9Positions	input
+runv9positions.input5.txt	436	runV9Positions	input
+runv9positions.input6.txt	498	runV9Positions	input
+runv9positions.input7.txt	580	runV9Positions	input
+runv9positions.input8.txt	614	runV9Positions	input
+runv9positions.input9.txt	684	runV9Positions	input
+runsearchtestsv9-g170-bin.expected0.txt	1	runSearchTestsV9 g170-b6c96 .bin.gz (Eigen rerun)	expected

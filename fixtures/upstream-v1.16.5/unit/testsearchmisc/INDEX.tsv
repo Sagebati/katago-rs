@@ -1,0 +1,5 @@
+file	line	test	role
+runnnontinyboard.input0.txt	22	runNNOnTinyBoard	input
+runnnsymmetries.input0.txt	58	runNNSymmetries	input
+runnnontinyboardtest-g170-bin-sym0.expected0.txt	1	runNNOnTinyBoard g170-b6c96 .bin.gz symmetry 0 (Eigen rerun)	expected
+runnnsymmetriestest-g103.expected0.txt	1	runNNSymmetries g103 (Eigen rerun)	expected

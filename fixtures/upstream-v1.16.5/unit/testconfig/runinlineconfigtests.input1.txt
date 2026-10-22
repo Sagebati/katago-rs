@@ -1,0 +1,24 @@
+
+a1 = k2
+#comment
+ #comment
+  #= == == ayay
+  #a = b
+  b1 = c5
+_c_ = 43
+d_= 5
+e=6
+f =7
+abc =    def
+bcd    =  g#foo
+c-de =  g  #"test's"=== =
+_a = "quoted"
+_b= "quoted "  #hmm##
+ _c =" quoted "
+_d =" some # symbols \" yay " # later comment
+ _e  = "\"\"\\"  # comment
+# _f  = "\"\"\\"  # comment
+key =  with spaces
+quotes =  i'm a value " with " quotes! # hmmm"!
+ test=back\slashes don't \escape \\here\
+ test2=back\slashes don't \escape \\here\#comment

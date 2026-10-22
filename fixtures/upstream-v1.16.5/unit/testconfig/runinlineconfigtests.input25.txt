@@ -1,0 +1,14 @@
+
+negInt = -42
+zeroInt = 0
+posInt = 100
+bigInt = 2000000000
+negInt64 = -9000000000000
+zeroInt64 = 0
+posUInt64 = 18000000000000
+negFloat = -3.5
+zeroFloat = 0.0
+posFloat = 1.5e20
+negDouble = -1.0e100
+zeroDouble = 0.0
+posDouble = 1.0e100
