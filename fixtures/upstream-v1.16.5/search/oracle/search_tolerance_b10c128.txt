@@ -1,0 +1,679 @@
+# search_tolerance: unmodified upstream Search (1 thread) over NNEvaluator + Eigen fp32 on g170e-b10c128-s1141046784-d204142634.bin.gz
+# generated with g++ 16.2.1 20260810 / glibc 2.44 on Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz
+# cases: 32 from 72 positions, seed 2 (board sizes 7/9/13/19, nnXLen=nnYLen=19, maxBatchSize 16, nnCacheSizePowerOfTwo 16, defaultSymmetry 0, no randomize)
+CASE 0 name=game9-p35-m45 board=9x9 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=00000000 ipla=1 pla=2 moves=18/1,28/2,31/1,25/2,75/1,99/2,35/1,56/2,82/1,97/2,53/1,71/2,44/1,23/2,32/1,76/2,68/1,24/2,27/1,33/2,54/1,36/2,42/1,86/2,83/1,88/2,85/1,43/2,67/1,14/2,16/1,64/2,66/1,87/2,41/1,61/2,94/1,91/2,19/1,77/2,11/1,72/2,74/1,92/2,29/1 sseed=tol0 base=1 maxvisits=600 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=600
+c 0 H7 loc=38 edge=74 visits=74 wl=-0.9788939 sm=-34.70165 lead=-37.91373 util=-1.110611 prior=0.2287318
+c 1 B5 loc=52 edge=432 visits=432 wl=-0.9852014 sm=-28.61513 lead=-31.24313 util=-1.034828 prior=0.2214673
+c 2 C4 loc=63 edge=12 visits=12 wl=-0.9830333 sm=-50.72284 lead=-56.89608 util=-1.261339 prior=0.104443
+c 3 B8 loc=22 edge=6 visits=6 wl=-0.987067 sm=-59.74529 lead=-62.99073 util=-1.309109 prior=0.05949631
+c 4 J3 loc=79 edge=9 visits=9 wl=-0.9541155 sm=-46.65973 lead=-51.22043 util=-1.207554 prior=0.05760632
+c 5 E4 loc=65 edge=7 visits=7 wl=-0.9143703 sm=-50.44682 lead=-54.4754 util=-1.178421 prior=0.04100035
+c 6 E6 loc=45 edge=4 visits=4 wl=-0.9834137 sm=-55.22985 lead=-57.04318 util=-1.280193 prior=0.03870286
+c 7 H3 loc=78 edge=6 visits=6 wl=-0.9600165 sm=-46.17771 lead=-50.29857 util=-1.205593 prior=0.03658193
+c 8 H6 loc=48 edge=6 visits=6 wl=-0.9692917 sm=-43.41876 lead=-47.61427 util=-1.18248 prior=0.0324481
+c 9 F6 loc=46 edge=3 visits=3 wl=-0.9589492 sm=-48.517 lead=-51.83349 util=-1.202274 prior=0.02272971
+c 10 E5 loc=55 edge=7 visits=7 wl=-0.8965661 sm=-45.37326 lead=-49.6042 util=-1.128693 prior=0.02266923
+c 11 F8 loc=26 edge=19 visits=19 wl=-0.9030604 sm=-39.01802 lead=-41.22865 util=-1.056819 prior=0.02188901
+c 12 H5 loc=58 edge=4 visits=4 wl=-0.8934995 sm=-51.59333 lead=-55.75125 util=-1.152389 prior=0.02172953
+c 13 G6 loc=47 edge=6 visits=6 wl=-0.8970886 sm=-47.5198 lead=-49.95827 util=-1.123831 prior=0.02097278
+c 14 G5 loc=57 edge=1 visits=1 wl=-0.9748868 sm=-60.46402 lead=-64.29654 util=-1.294866 prior=0.01752911
+c 15 B9 loc=12 edge=1 visits=1 wl=-0.9872068 sm=-65.12471 lead=-66.68619 util=-1.325735 prior=0.01152921
+c 16 D7 loc=34 edge=1 visits=1 wl=-0.970976 sm=-63.84425 lead=-63.92628 util=-1.29516 prior=0.01009357
+c 17 G7 loc=37 edge=1 visits=1 wl=-0.9787165 sm=-44.97168 lead=-52.63754 util=-1.212321 prior=0.00849765
+children=18
+RV win=0.01115873 loss=0.9888413 es=-31.90664 lead=-34.74233 wl=-0.9776825 util=-1.062581
+chosen loc=52 B5
+END 0
+CASE 1 name=game19-p0-m0 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=- sseed=tol1 base=0 maxvisits=400 params=conservativePass=1
+root visits=400
+c 0 Q4 loc=336 edge=55 visits=55 wl=-0.00553679 sm=-0.1335167 lead=0.01944726 util=-0.006064412 prior=0.1360342
+c 1 D4 loc=324 edge=63 visits=63 wl=-0.01169046 sm=-0.1920671 lead=-0.0442672 util=-0.01244836 prior=0.1344139
+c 2 Q16 loc=96 edge=53 visits=53 wl=-0.00491048 sm=-0.0996153 lead=0.01355721 util=-0.005301863 prior=0.1333435
+c 3 D16 loc=84 edge=52 visits=52 wl=-0.007123925 sm=-0.1189934 lead=-0.008558483 util=-0.007592859 prior=0.122586
+c 4 D3 loc=344 edge=26 visits=26 wl=-0.01976854 sm=-0.3085714 lead=-0.1104762 util=-0.02098848 prior=0.04565883
+c 5 R16 loc=97 edge=16 visits=16 wl=-0.0003092606 sm=-0.01952196 lead=0.05006728 util=-0.0003821542 prior=0.04530944
+c 6 Q17 loc=76 edge=25 visits=25 wl=-0.01859935 sm=-0.2781056 lead=-0.1066467 util=-0.01969473 prior=0.0445669
+c 7 C4 loc=323 edge=31 visits=31 wl=-0.0259667 sm=-0.4023799 lead=-0.1669606 util=-0.02755891 prior=0.04230998
+c 8 R4 loc=337 edge=20 visits=20 wl=-0.01134071 sm=-0.2078012 lead=-0.03796743 util=-0.0121622 prior=0.0414971
+c 9 C16 loc=83 edge=24 visits=24 wl=-0.01906773 sm=-0.2921823 lead=-0.1094784 util=-0.02022403 prior=0.04099381
+c 10 Q3 loc=356 edge=16 visits=16 wl=-0.003472779 sm=-0.08677626 lead=0.02868508 util=-0.00381498 prior=0.04095034
+c 11 D17 loc=64 edge=18 visits=18 wl=-0.01250556 sm=-0.1996318 lead=-0.05554046 util=-0.01329549 prior=0.03935667
+children=12
+RV win=0.4943778 loss=0.5054775 es=-0.1875509 lead=-0.03819647 wl=-0.01109971 util=-0.01184016
+chosen loc=324 D4
+END 1
+CASE 2 name=game9-p32-m90 board=9x9 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=17/1,95/2,44/1,25/2,82/1,77/2,81/1,39/2,38/1,72/2,23/1,65/2,87/1,33/2,34/1,35/2,43/1,98/2,86/1,45/2,41/1,73/2,89/1,28/2,42/1,52/2,78/1,51/2,36/1,84/2,61/1,99/2,63/1,83/2,75/1,92/2,29/1,14/2,16/1,94/2,96/1,15/2,12/1,19/2,88/1,18/2,59/1,67/2,57/1,46/2,54/1,64/2,49/1,76/2,71/1,29/2,13/1,53/2,47/1,74/2,48/1,91/2,31/1,24/2,56/1,55/2,66/1,58/2,27/1,79/2,97/1,22/2,62/1,51/2,98/1,18/2,11/1,39/2,21/1,68/2,19/1,85/2,53/1,26/2,93/1,92/2,28/1,91/2,69/1,37/2 sseed=tol2 base=0 maxvisits=1000 params=wideRootNoise=0.05,conservativePass=1
+root visits=1000
+c 0 E3 loc=75 edge=229 visits=229 wl=-0.9985132 sm=-69.82726 lead=-69.42437 util=-1.249674 prior=0.304543
+c 1 C1 loc=93 edge=164 visits=164 wl=-0.9979122 sm=-69.0588 lead=-69.04319 util=-1.248483 prior=0.1767917
+c 2 B7 loc=32 edge=160 visits=160 wl=-0.9966511 sm=-68.99279 lead=-68.33935 util=-1.247097 prior=0.1727168
+c 3 B5 loc=52 edge=119 visits=119 wl=-0.9946034 sm=-68.72518 lead=-68.29725 util=-1.244773 prior=0.1108998
+c 4 J8 loc=29 edge=110 visits=110 wl=-0.9948618 sm=-68.67078 lead=-68.34328 util=-1.244973 prior=0.08617093
+c 5 pass loc=1 edge=108 visits=108 wl=-0.99557 sm=-69.07105 lead=-69.35486 util=-1.246037 prior=0.08507149
+c 6 J3 loc=79 edge=67 visits=67 wl=-0.992092 sm=-68.1633 lead=-67.46167 util=-1.2417 prior=0.03911055
+c 7 H9 loc=18 edge=41 visits=41 wl=-0.9896207 sm=-67.76547 lead=-68.18058 util=-1.238769 prior=0.01592046
+c 8 J1 loc=99 edge=1 visits=1 wl=0.4767026 sm=-0.06873674 lead=-4.35598 util=0.4763358 prior=0.008775431
+children=9
+RV win=0.002187341 loss=0.9978118 es=-69.01233 lead=-68.7289 wl=-0.9956244 util=-1.245995
+chosen loc=75 E3
+END 2
+CASE 3 name=rnd7-0-m8 board=7x7 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=36/1,46/2,11/1,59/2,9/1,45/2,39/1,51/2 sseed=tol3 base=1 maxvisits=1000 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=1000
+c 0 F5 loc=30 edge=398 visits=398 wl=0.9935185 sm=9.559959 lead=8.925004 util=1.061941 prior=0.2566077
+c 1 E4 loc=37 edge=277 visits=277 wl=0.9944585 sm=9.731815 lead=9.027487 util=1.068192 prior=0.2195714
+c 2 E5 loc=29 edge=123 visits=123 wl=0.9944381 sm=11.14447 lead=10.36345 util=1.105796 prior=0.2051243
+c 3 D3 loc=44 edge=178 visits=178 wl=0.987924 sm=10.43271 lead=9.73657 util=1.077863 prior=0.1820307
+c 4 F4 loc=38 edge=7 visits=7 wl=0.9969756 sm=15.24456 lead=14.31758 util=1.190852 prior=0.02891179
+c 5 C3 loc=43 edge=4 visits=4 wl=0.9951027 sm=16.02635 lead=15.03655 util=1.206921 prior=0.01728682
+c 6 B4 loc=34 edge=2 visits=2 wl=0.9965007 sm=16.16202 lead=15.64269 util=1.214608 prior=0.01263657
+c 7 D5 loc=28 edge=3 visits=3 wl=0.9957612 sm=13.75124 lead=12.48715 util=1.17107 prior=0.01241712
+c 8 B3 loc=42 edge=3 visits=3 wl=0.9940623 sm=15.29813 lead=14.30155 util=1.196537 prior=0.01241618
+c 9 E6 loc=21 edge=2 visits=2 wl=0.9970292 sm=14.18096 lead=13.15834 util=1.181183 prior=0.007553733
+c 10 F6 loc=22 edge=1 visits=1 wl=0.9888101 sm=14.9302 lead=13.04172 util=1.1727 prior=0.005364896
+c 11 C4 loc=35 edge=1 visits=1 wl=0.9929208 sm=16.34998 lead=15.41071 util=1.20841 prior=0.00434751
+children=12
+RV win=0.9964754 loss=0.003524324 es=10.06656 lead=9.375826 wl=0.9929511 util=1.074401
+chosen loc=30 F5
+END 3
+CASE 4 name=game19-p7-m20 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=96/1,324/2,103/1,356/2,283/1,346/2,322/1,343/2,223/1,64/2,43/1,63/2,65/1,45/2,44/1,46/2,84/1,85/2,62/1,66/2 sseed=tol4 base=1 maxvisits=800 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=800
+c 0 C16 loc=83 edge=685 visits=685 wl=0.5845658 sm=7.85143 lead=6.052642 util=0.603278 prior=0.3970227
+c 1 R5 loc=317 edge=24 visits=24 wl=0.7043729 sm=10.45174 lead=8.399972 util=0.744118 prior=0.1104876
+c 2 Q5 loc=316 edge=17 visits=17 wl=0.7043165 sm=10.58158 lead=8.50454 util=0.7450402 prior=0.07702868
+c 3 O17 loc=74 edge=14 visits=14 wl=0.7067297 sm=10.84764 lead=8.662949 util=0.7499157 prior=0.068172
+c 4 K17 loc=70 edge=10 visits=10 wl=0.7118024 sm=11.15719 lead=9.110592 util=0.7571374 prior=0.05157678
+c 5 E15 loc=105 edge=6 visits=6 wl=0.7583222 sm=12.41553 lead=10.12651 util=0.8130605 prior=0.03721403
+c 6 N17 loc=73 edge=8 visits=8 wl=0.6982846 sm=10.53325 lead=8.387448 util=0.7389233 prior=0.03259571
+c 7 J17 loc=69 edge=5 visits=5 wl=0.7153497 sm=11.75362 lead=9.592801 util=0.7647661 prior=0.02820496
+c 8 Q4 loc=336 edge=14 visits=14 wl=0.6253442 sm=8.943701 lead=7.102339 util=0.652724 prior=0.02675637
+c 9 R14 loc=137 edge=6 visits=6 wl=0.6785978 sm=10.25419 lead=8.227285 util=0.7168589 prior=0.01854929
+c 10 G3 loc=347 edge=2 visits=2 wl=0.6956707 sm=10.63038 lead=8.572138 util=0.7359603 prior=0.01104958
+c 11 M17 loc=72 edge=2 visits=2 wl=0.6394482 sm=9.447084 lead=7.548054 util=0.6704676 prior=0.006016091
+c 12 J16 loc=89 edge=2 visits=2 wl=0.6687453 sm=10.67369 lead=8.645165 util=0.7088968 prior=0.005882892
+c 13 K16 loc=90 edge=1 visits=1 wl=0.6490338 sm=10.63956 lead=8.292137 util=0.6890901 prior=0.005683202
+c 14 L17 loc=71 edge=1 visits=1 wl=0.6558183 sm=10.5172 lead=8.19265 util=0.6951339 prior=0.004591553
+c 15 O16 loc=94 edge=1 visits=1 wl=0.6578094 sm=10.22963 lead=7.905541 util=0.6949642 prior=0.004013461
+c 16 R13 loc=157 edge=1 visits=1 wl=0.6303402 sm=9.57972 lead=7.399567 util=0.6624331 prior=0.003881777
+children=17
+RV win=0.7990113 loss=0.2008839 es=8.186815 lead=6.353937 wl=0.5981274 util=0.6195322
+chosen loc=83 C16
+END 4
+CASE 5 name=game13-p38-m50 board=13x13 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=73/1,110/2,50/1,27/2,150/1,135/2,122/1,65/2,149/1,142/2,151/1,114/2,175/1,85/2,95/1,82/2,180/1,173/2,190/1,67/2,116/1,86/2,18/1,162/2,134/1,113/2,184/1,163/2,74/1,106/2,146/1,100/2,156/1,94/2,25/1,143/2,34/1,155/2,147/1,76/2,109/1,148/2,60/1,62/2,119/1,144/2,108/1,39/2,69/1,26/2 sseed=tol5 base=0 maxvisits=800 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=800
+c 0 M8 loc=96 edge=539 visits=539 wl=-0.933216 sm=-10.17867 lead=-9.692566 util=-0.9963475 prior=0.4293153
+c 1 H10 loc=64 edge=56 visits=56 wl=-0.9059554 sm=-8.292772 lead=-7.5113 util=-0.9572729 prior=0.1206365
+c 2 J12 loc=37 edge=38 visits=38 wl=-0.9022306 sm=-7.696545 lead=-6.810579 util=-0.9503047 prior=0.09036765
+c 3 E3 loc=159 edge=50 visits=50 wl=-0.9218626 sm=-8.68548 lead=-7.957184 util=-0.9759271 prior=0.07729983
+c 4 K11 loc=52 edge=15 visits=15 wl=-0.8666414 sm=-7.191343 lead=-6.426258 util=-0.9114272 prior=0.05364238
+c 5 K12 loc=38 edge=13 visits=13 wl=-0.8732735 sm=-7.046406 lead=-6.15718 util=-0.9172849 prior=0.04346865
+c 6 K9 loc=80 edge=12 visits=12 wl=-0.8761875 sm=-7.04953 lead=-6.289938 util=-0.9206741 prior=0.03775057
+c 7 L9 loc=81 edge=17 visits=17 wl=-0.9000318 sm=-8.742125 lead=-7.967949 util=-0.9538242 prior=0.03749168
+c 8 F11 loc=48 edge=15 visits=15 wl=-0.930673 sm=-7.448297 lead=-6.758379 util=-0.9786459 prior=0.02087812
+c 9 J11 loc=51 edge=35 visits=35 wl=-0.943109 sm=-9.65253 lead=-8.904975 util=-1.002639 prior=0.01782702
+c 10 C2 loc=171 edge=7 visits=7 wl=-0.8912113 sm=-8.674407 lead=-7.873655 util=-0.9443514 prior=0.01382936
+c 11 F2 loc=174 edge=2 visits=2 wl=-0.8319137 sm=-6.161786 lead=-5.196464 util=-0.8711087 prior=0.01078405
+children=12
+RV win=0.03718846 loss=0.9627913 es=-9.581518 lead=-9.002706 wl=-0.9256028 util=-0.9850757
+chosen loc=96 M8
+END 5
+CASE 6 name=game19-p30-m135 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=2 moves=390/1,67/2,26/1,194/2,107/1,244/2,211/1,307/2,351/1,319/2,103/1,184/2,311/1,392/2,104/1,178/2,46/1,33/2,235/1,131/2,294/1,154/2,119/1,162/2,165/1,78/2,76/1,91/2,366/1,338/2,322/1,305/2,289/1,66/2,221/1,358/2,353/1,327/2,51/1,256/2,243/1,29/2,182/1,361/2,274/1,324/2,112/1,396/2,45/1,167/2,376/1,303/2,308/1,277/2,97/1,296/2,98/1,130/2,395/1,236/2,271/1,355/2,381/1,126/2,121/1,164/2,147/1,285/2,191/1,22/2,343/1,34/2,134/1,267/2,186/1,302/2,347/1,334/2,330/1,253/2,124/1,356/2,172/1,341/2,169/1,386/2,39/1,224/2,106/1,359/2,337/1,378/2,304/1,166/2,137/1,342/2,397/1,288/2,153/1,255/2,163/1,247/2,309/1,149/2,127/1,299/2,238/1,151/2,398/1,348/2,292/1,50/2,214/1,399/2,115/1,365/2,111/1,159/2,101/1,48/2,363/1,242/2,282/1,321/2,335/1,27/2,93/1,25/2,266/1,250/2,171/1,370/2,143/1,183/2,379/1 sseed=tol6 base=1 maxvisits=400 params=rootSymmetryPruning=1
+root visits=400
+c 0 E17 loc=65 edge=14 visits=14 wl=0.5582178 sm=7.320896 lead=6.971624 util=0.5760409 prior=0.1481759
+c 1 M18 loc=52 edge=9 visits=9 wl=0.4380568 sm=5.496544 lead=5.085181 util=0.4399607 prior=0.1392709
+c 2 D17 loc=64 edge=22 visits=22 wl=0.6492131 sm=9.812816 lead=9.478957 util=0.6875569 prior=0.1167332
+c 3 K16 loc=90 edge=11 visits=11 wl=0.5617178 sm=7.19024 lead=6.452412 util=0.5783099 prior=0.1084278
+c 4 B10 loc=202 edge=3 visits=3 wl=0.3634725 sm=5.776455 lead=5.782311 util=0.3687654 prior=0.07507922
+c 5 M17 loc=72 edge=301 visits=301 wl=0.7508636 sm=10.80468 lead=10.36341 util=0.7998132 prior=0.06269424
+c 6 J16 loc=89 edge=7 visits=7 wl=0.6138359 sm=7.880003 lead=7.122013 util=0.6364188 prior=0.05614535
+c 7 J17 loc=69 edge=11 visits=11 wl=0.6776431 sm=8.074675 lead=7.223077 util=0.702819 prior=0.05350389
+c 8 L17 loc=71 edge=5 visits=5 wl=0.6152388 sm=7.687428 lead=6.967043 util=0.6360251 prior=0.04102398
+c 9 K15 loc=110 edge=5 visits=5 wl=0.6238212 sm=7.899403 lead=7.044751 util=0.6465379 prior=0.03659907
+c 10 G18 loc=47 edge=5 visits=5 wl=0.6614888 sm=7.6434 lead=6.924791 util=0.6826497 prior=0.02987202
+c 11 K17 loc=70 edge=1 visits=1 wl=0.3534132 sm=4.463411 lead=3.956066 util=0.3460922 prior=0.02880408
+c 12 O2 loc=374 edge=1 visits=1 wl=0.4000832 sm=5.710186 lead=5.929589 util=0.4036468 prior=0.01525604
+c 13 H16 loc=88 edge=1 visits=1 wl=0.5943915 sm=7.127704 lead=6.625771 util=0.6104803 prior=0.01512188
+c 14 L19 loc=31 edge=1 visits=1 wl=0.3782436 sm=4.900243 lead=4.470859 util=0.3749633 prior=0.01363072
+c 15 E16 loc=85 edge=1 visits=1 wl=0.4074783 sm=5.176021 lead=4.606279 util=0.4063321 prior=0.01223846
+c 16 H12 loc=168 edge=1 visits=1 wl=0.5740608 sm=7.704724 lead=7.07044 util=0.5947811 prior=0.007025789
+children=17
+RV win=0.8583472 loss=0.1414746 es=10.17494 lead=9.709803 wl=0.7168726 util=0.7601318
+chosen loc=72 M17
+END 6
+CASE 7 name=rnd9-4-m36 board=9x9 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=40F00000 ipla=1 pla=1 moves=43/1,36/2,96/1,26/2,79/1,33/2,11/1,19/2,41/1,42/2,31/1,82/2,55/1,16/2,83/1,85/2,75/1,62/2,93/1,94/2,21/1,59/2,98/1,23/2,51/1,87/2,44/1,64/2,29/1,47/2,63/1,35/2,24/1,14/2,17/1,27/2 sseed=tol7 base=0 maxvisits=400 params=conservativePass=1
+root visits=400
+c 0 B5 loc=52 edge=186 visits=186 wl=0.9505253 sm=14.68008 lead=15.57015 util=1.064782 prior=0.1530833
+c 1 B3 loc=72 edge=49 visits=49 wl=0.9803392 sm=13.68237 lead=13.90499 util=1.09348 prior=0.1067079
+c 2 C3 loc=73 edge=53 visits=53 wl=0.9794462 sm=13.41472 lead=13.59055 util=1.089883 prior=0.1036493
+c 3 H5 loc=58 edge=15 visits=15 wl=0.9929983 sm=32.04257 lead=35.44716 util=1.179348 prior=0.09966923
+c 4 D7 loc=34 edge=8 visits=8 wl=0.9955694 sm=34.95874 lead=38.2663 util=1.194344 prior=0.05814605
+c 5 D3 loc=74 edge=17 visits=17 wl=0.9826414 sm=17.73476 lead=18.66163 util=1.116737 prior=0.05798386
+c 6 C5 loc=53 edge=21 visits=21 wl=0.971736 sm=17.55016 lead=18.06584 util=1.1047 prior=0.05429055
+c 7 G5 loc=57 edge=8 visits=8 wl=0.9938686 sm=27.14301 lead=29.46496 util=1.168468 prior=0.05269006
+c 8 G4 loc=67 edge=8 visits=8 wl=0.9925738 sm=26.61926 lead=29.09351 util=1.165227 prior=0.04774503
+c 9 F2 loc=86 edge=8 visits=8 wl=0.9935971 sm=24.00538 lead=26.14393 util=1.157791 prior=0.04353129
+c 10 G3 loc=77 edge=7 visits=7 wl=0.9949932 sm=25.21698 lead=27.7683 util=1.164064 prior=0.04086514
+c 11 E4 loc=65 edge=7 visits=7 wl=0.9887878 sm=23.36234 lead=24.92281 util=1.150152 prior=0.03735253
+c 12 C9 loc=13 edge=4 visits=4 wl=0.9922007 sm=29.242 lead=31.67467 util=1.175324 prior=0.02691404
+c 13 F4 loc=66 edge=3 visits=3 wl=0.9924965 sm=22.93565 lead=24.87997 util=1.153165 prior=0.01952082
+c 14 F3 loc=76 edge=2 visits=2 wl=0.9936114 sm=24.21948 lead=26.51491 util=1.159978 prior=0.01628574
+c 15 D2 loc=84 edge=3 visits=3 wl=0.9932948 sm=23.21377 lead=25.1512 util=1.155058 prior=0.01491062
+children=16
+RV win=0.9838476 loss=0.01615241 es=16.89204 lead=17.87154 wl=0.9676952 util=1.093584
+chosen loc=52 B5
+END 7
+CASE 8 name=rnd19-15-m110 board=19x19 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=40F00000 ipla=1 pla=1 moves=94/1,191/2,37/1,192/2,398/1,329/2,151/1,93/2,135/1,306/2,369/1,379/2,215/1,83/2,89/1,39/2,56/1,333/2,25/1,206/2,73/1,265/2,392/1,185/2,318/1,184/2,257/1,21/2,357/1,291/2,98/1,218/2,315/1,75/2,219/1,346/2,230/1,332/2,303/1,209/2,366/1,381/2,187/1,227/2,297/1,104/2,249/1,372/2,186/1,238/2,189/1,279/2,389/1,331/2,193/1,285/2,326/1,368/2,393/1,397/2,126/1,226/2,268/1,161/2,363/1,271/2,168/1,210/2,31/1,63/2,278/1,308/2,292/1,269/2,133/1,112/2,41/1,203/2,81/1,127/2,116/1,250/2,276/1,30/2,259/1,201/2,391/1,231/2,145/1,313/2,337/1,273/2,296/1,283/2,319/1,399/2,71/1,314/2,67/1,85/2,221/1,322/2,228/1,54/2,208/1,118/2,253/1,284/2,287/1,197/2 sseed=tol8 base=0 maxvisits=1000 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=1000
+c 0 S13 loc=158 edge=257 visits=257 wl=-0.9736623 sm=-33.11447 lead=-33.32367 util=-1.09499 prior=0.2769575
+c 1 S12 loc=178 edge=210 visits=210 wl=-0.9701441 sm=-32.6314 lead=-32.87615 util=-1.089738 prior=0.2633854
+c 2 S14 loc=138 edge=345 visits=345 wl=-0.9817008 sm=-34.88412 lead=-35.11739 util=-1.108964 prior=0.2218049
+c 3 R15 loc=117 edge=119 visits=119 wl=-0.9832412 sm=-33.92389 lead=-34.07756 util=-1.107816 prior=0.08150709
+c 4 R13 loc=157 edge=34 visits=34 wl=-0.968434 sm=-30.16816 lead=-30.17474 util=-1.081493 prior=0.05279292
+c 5 R14 loc=137 edge=15 visits=15 wl=-0.9636047 sm=-29.75178 lead=-29.6955 util=-1.074906 prior=0.02623298
+c 6 E3 loc=345 edge=19 visits=19 wl=-0.9794914 sm=-29.99865 lead=-29.6229 util=-1.092245 prior=0.02273304
+children=7
+RV win=0.01164552 loss=0.9883545 es=-33.5292 lead=-33.72603 wl=-0.976709 util=-1.099576
+chosen loc=138 S14
+END 8
+CASE 9 name=empty19 board=19x19 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=40F00000 ipla=1 pla=1 moves=- sseed=tol9 base=0 maxvisits=600 params=conservativePass=1
+root visits=600
+c 0 D4 loc=324 edge=93 visits=93 wl=0.06299511 sm=0.8773655 lead=0.6756931 util=0.06648516 prior=0.1378451
+c 1 Q4 loc=336 edge=72 visits=72 wl=0.07044779 sm=1.008786 lead=0.7814073 util=0.07445904 prior=0.1293197
+c 2 Q16 loc=96 edge=69 visits=69 wl=0.07012797 sm=1.011992 lead=0.754324 util=0.07415416 prior=0.123981
+c 3 D16 loc=84 edge=82 visits=82 wl=0.06246463 sm=0.8854982 lead=0.6644979 util=0.06598709 prior=0.1197023
+c 4 D3 loc=344 edge=35 visits=35 wl=0.06060687 sm=0.8756408 lead=0.6722195 util=0.06409528 prior=0.0488001
+c 5 Q17 loc=76 edge=41 visits=41 wl=0.05589885 sm=0.7939386 lead=0.6071295 util=0.05906285 prior=0.04878576
+c 6 R16 loc=97 edge=34 visits=34 wl=0.06038077 sm=0.8565935 lead=0.6445361 util=0.06378744 prior=0.0472529
+c 7 D17 loc=64 edge=36 visits=36 wl=0.05738747 sm=0.8204527 lead=0.6129292 util=0.06065497 prior=0.04351903
+c 8 C16 loc=83 edge=37 visits=37 wl=0.05599167 sm=0.7970473 lead=0.6001825 util=0.05916629 prior=0.04350601
+c 9 R4 loc=337 edge=33 visits=33 wl=0.05956111 sm=0.8306519 lead=0.6537696 util=0.06286448 prior=0.04305811
+c 10 C4 loc=323 edge=43 visits=43 wl=0.05208472 sm=0.7286282 lead=0.5755569 util=0.05498931 prior=0.0417108
+c 11 Q3 loc=356 edge=24 visits=24 wl=0.0691007 sm=1.002815 lead=0.7580449 util=0.07308747 prior=0.04075863
+children=12
+RV win=0.5311766 loss=0.4688234 es=0.8864432 lead=0.675971 wl=0.06235316 util=0.06588062
+chosen loc=324 D4
+END 9
+CASE 10 name=game19-p29-m71 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=2 moves=332/1,378/2,55/1,117/2,155/1,47/2,141/1,38/2,151/1,299/2,190/1,115/2,86/1,241/2,146/1,294/2,318/1,165/2,333/1,75/2,398/1,346/2,114/1,134/2,254/1,232/2,144/1,196/2,186/1,193/2,284/1,131/2,385/1,202/2,153/1,371/2,148/1,303/2,25/1,236/2,32/1,188/2,154/1,222/2,381/1,269/2,58/1,372/2,71/1,358/2,226/1,296/2,266/1,257/2,388/1,132/2,74/1,109/2,177/1,51/2,1/1,1/2,219/1,290/2,111/1,262/2,1/1,1/2,73/1,307/2,54/1 sseed=tol10 base=1 maxvisits=1000 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=1000
+c 0 K17 loc=70 edge=79 visits=79 wl=0.9861909 sm=46.99769 lead=45.10844 util=1.047193 prior=0.09453186
+c 1 R18 loc=57 edge=422 visits=422 wl=0.9905353 sm=53.06622 lead=51.04767 util=1.088106 prior=0.09295661
+c 2 E17 loc=65 edge=72 visits=72 wl=0.9863715 sm=47.28018 lead=45.40179 util=1.048844 prior=0.08300237
+c 3 M13 loc=152 edge=50 visits=50 wl=0.9848088 sm=45.68351 lead=44.34337 util=1.037856 prior=0.07010017
+c 4 K13 loc=150 edge=36 visits=36 wl=0.9849593 sm=46.04295 lead=44.02678 util=1.040028 prior=0.05020056
+c 5 J13 loc=149 edge=25 visits=25 wl=0.9832917 sm=45.14423 lead=43.42737 util=1.033001 prior=0.03821269
+c 6 O16 loc=94 edge=31 visits=31 wl=0.9853777 sm=46.82496 lead=45.39373 util=1.044951 prior=0.03790607
+c 7 E13 loc=145 edge=25 visits=25 wl=0.985554 sm=46.48262 lead=44.98146 util=1.043337 prior=0.03163107
+c 8 F12 loc=166 edge=28 visits=28 wl=0.985984 sm=48.55642 lead=46.9985 util=1.055858 prior=0.02825027
+c 9 N15 loc=113 edge=16 visits=16 wl=0.983754 sm=45.09334 lead=43.81389 util=1.032844 prior=0.02552656
+c 10 N14 loc=133 edge=15 visits=15 wl=0.9807716 sm=44.98811 lead=43.48591 util=1.029312 prior=0.02542545
+c 11 E18 loc=45 edge=15 visits=15 wl=0.9842205 sm=45.01186 lead=43.19605 util=1.032774 prior=0.02372479
+c 12 R17 loc=77 edge=12 visits=12 wl=0.985187 sm=42.72733 lead=41.39795 util=1.019453 prior=0.02226775
+c 13 M15 loc=112 edge=15 visits=15 wl=0.9835195 sm=46.18759 lead=44.70138 util=1.039576 prior=0.02053213
+c 14 Q12 loc=176 edge=11 visits=11 wl=0.9818058 sm=43.22481 lead=42.10988 util=1.019772 prior=0.02023972
+c 15 F17 loc=66 edge=10 visits=10 wl=0.9836618 sm=44.10608 lead=42.77729 util=1.026674 prior=0.01802518
+c 16 D4 loc=324 edge=11 visits=11 wl=0.9810019 sm=45.18447 lead=43.73374 util=1.031416 prior=0.01703884
+c 17 G14 loc=127 edge=11 visits=11 wl=0.9842612 sm=45.24696 lead=43.16841 util=1.034196 prior=0.01611061
+c 18 E4 loc=325 edge=10 visits=10 wl=0.9804489 sm=45.68711 lead=44.38966 util=1.0343 prior=0.01545343
+c 19 K15 loc=110 edge=8 visits=8 wl=0.9830324 sm=43.34587 lead=41.45591 util=1.021115 prior=0.01526871
+c 20 L12 loc=171 edge=6 visits=6 wl=0.9834757 sm=42.8645 lead=41.76877 util=1.018609 prior=0.01180645
+c 21 D17 loc=64 edge=6 visits=6 wl=0.9852035 sm=43.05875 lead=41.39051 util=1.021139 prior=0.01110231
+c 22 R13 loc=157 edge=11 visits=11 wl=0.9889524 sm=48.181 lead=46.34544 util=1.057264 prior=0.01103664
+c 23 D3 loc=344 edge=9 visits=9 wl=0.9831013 sm=46.01974 lead=44.65974 util=1.038778 prior=0.01087515
+c 24 J3 loc=349 edge=8 visits=8 wl=0.9837003 sm=47.44597 lead=45.2128 util=1.048335 prior=0.00917463
+c 25 F15 loc=106 edge=5 visits=5 wl=0.9859109 sm=45.4588 lead=43.08771 util=1.037346 prior=0.008371042
+c 26 L16 loc=91 edge=5 visits=5 wl=0.984491 sm=45.57032 lead=44.0395 util=1.03675 prior=0.008058826
+c 27 K4 loc=330 edge=5 visits=5 wl=0.9841349 sm=46.46487 lead=44.27563 util=1.043268 prior=0.007320281
+c 28 Q17 loc=76 edge=4 visits=4 wl=0.9838008 sm=42.29178 lead=41.52398 util=1.01572 prior=0.006922695
+c 29 G16 loc=87 edge=3 visits=3 wl=0.985083 sm=43.21824 lead=41.57868 util=1.022244 prior=0.00676008
+c 30 K14 loc=130 edge=3 visits=3 wl=0.9803013 sm=43.33499 lead=41.68082 util=1.018197 prior=0.00672476
+c 31 H3 loc=348 edge=5 visits=5 wl=0.9811025 sm=46.83331 lead=45.21273 util=1.04241 prior=0.006632504
+c 32 E15 loc=105 edge=6 visits=6 wl=0.9866884 sm=47.72025 lead=45.93761 util=1.051679 prior=0.006390062
+c 33 S17 loc=78 edge=3 visits=3 wl=0.9848642 sm=42.40199 lead=40.98482 util=1.017173 prior=0.006376222
+c 34 J2 loc=369 edge=3 visits=3 wl=0.9797728 sm=43.80233 lead=42.2824 util=1.021544 prior=0.006237362
+c 35 S13 loc=158 edge=3 visits=3 wl=0.9859502 sm=44.54158 lead=43.05995 util=1.032265 prior=0.005581634
+c 36 E16 loc=85 edge=4 visits=4 wl=0.9854406 sm=44.73922 lead=42.88661 util=1.032077 prior=0.005418598
+c 37 K3 loc=350 edge=1 visits=1 wl=0.9704924 sm=38.97768 lead=38.82705 util=0.9814386 prior=0.004648959
+c 38 F4 loc=326 edge=1 visits=1 wl=0.9727686 sm=38.03239 lead=38.2058 util=0.9779454 prior=0.004475901
+c 39 Q18 loc=56 edge=4 visits=4 wl=0.9851963 sm=46.86485 lead=44.85988 util=1.045474 prior=0.003856115
+c 40 H9 loc=228 edge=1 visits=1 wl=0.9799407 sm=39.34755 lead=38.8758 util=0.9934648 prior=0.003650368
+c 41 J4 loc=329 edge=1 visits=1 wl=0.9699074 sm=39.57228 lead=39.35157 util=0.9848851 prior=0.003556677
+children=42
+RV win=0.993641 loss=0.006356765 es=49.1261 lead=47.31119 wl=0.9872843 util=1.061006
+chosen loc=57 R18
+END 10
+CASE 11 name=game9-p37-m70 board=9x9 ko=2 score=0 tax=0 suicide=0 button=0 whb=2 fpo=1 komi=40F00000 ipla=1 pla=1 moves=79/1,33/2,74/1,98/2,39/1,38/2,44/1,19/2,27/1,86/2,85/1,83/2,22/1,76/2,35/1,23/2,46/1,92/2,15/1,48/2,66/1,42/2,53/1,26/2,11/1,75/2,47/1,31/2,59/1,99/2,64/1,87/2,96/1,24/2,16/1,41/2,93/1,51/2,56/1,21/2,14/1,55/2,34/1,69/2,95/1,54/2,71/1,61/2,84/1,57/2,18/1,52/2,72/1,28/2,65/1,68/2,89/1,1/2,36/1,91/2,17/1,13/2,25/1,12/2,43/1,32/2,78/1,37/2,58/1,67/2 sseed=tol11 base=1 maxvisits=800 params=rootPolicyTemperature=1.4,rootPolicyTemperatureEarly=1.4
+root visits=800
+c 0 G3 loc=77 edge=787 visits=787 wl=-0.9992341 sm=-40.02023 lead=-42.9065 util=-1.260896 prior=0.7149307
+c 1 J8 loc=29 edge=2 visits=2 wl=0.1903945 sm=-3.988959 lead=-4.139324 util=0.3936511 prior=0.1248186
+c 2 G1 loc=97 edge=3 visits=3 wl=-0.3570547 sm=-13.68737 lead=-16.57725 util=-0.2526962 prior=0.08195661
+c 3 J6 loc=49 edge=1 visits=1 wl=0.7957608 sm=4.264063 lead=6.49112 util=1.068935 prior=0.02487732
+c 4 H2 loc=88 edge=1 visits=1 wl=0.1564466 sm=-0.05671918 lead=0.1746207 util=0.3927267 prior=0.01186778
+c 5 B4 loc=62 edge=1 visits=1 wl=0.5416808 sm=0.9244627 lead=1.948831 util=0.8000541 prior=0.01082133
+c 6 pass loc=1 edge=1 visits=1 wl=0.7599894 sm=1.620886 lead=3.108715 util=1.022315 prior=0.007489281
+c 7 C3 loc=73 edge=1 visits=1 wl=0.5194374 sm=1.115386 lead=2.144753 util=0.7769897 prior=0.004697732
+c 8 B2 loc=82 edge=1 visits=1 wl=0.4486696 sm=0.5972478 lead=1.567146 util=0.7031378 prior=0.004594443
+c 9 C4 loc=63 edge=1 visits=1 wl=0.5438894 sm=1.266685 lead=2.424891 util=0.8034757 prior=0.004573001
+children=10
+RV win=0.003272511 loss=0.9967275 es=-39.84056 lead=-42.71365 wl=-0.993455 util=-1.252767
+chosen loc=77 G3
+END 11
+CASE 12 name=empty9 board=9x9 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=- sseed=tol12 base=0 maxvisits=1000 params=rootPolicyTemperature=1.4,rootPolicyTemperatureEarly=1.4
+root visits=1000
+c 0 E6 loc=45 edge=141 visits=141 wl=0.2789171 sm=0.8679308 lead=0.7952399 util=0.2863677 prior=0.1967755
+c 1 F5 loc=56 edge=156 visits=156 wl=0.2729987 sm=0.8070205 lead=0.7447765 util=0.2799551 prior=0.1768359
+c 2 D5 loc=54 edge=599 visits=599 wl=0.2310519 sm=0.7083283 lead=0.6782655 util=0.2371306 prior=0.1695279
+c 3 E4 loc=65 edge=68 visits=68 wl=0.3020315 sm=0.9153855 lead=0.87173 util=0.3098933 prior=0.1662765
+c 4 E5 loc=55 edge=7 visits=7 wl=0.4263612 sm=1.250159 lead=1.235538 util=0.4371884 prior=0.04928163
+c 5 F6 loc=46 edge=7 visits=7 wl=0.4162179 sm=1.262873 lead=1.177183 util=0.4272204 prior=0.0435226
+c 6 D6 loc=44 edge=6 visits=6 wl=0.4022996 sm=1.099428 lead=1.042318 util=0.4119214 prior=0.03764718
+c 7 F4 loc=66 edge=5 visits=5 wl=0.4104332 sm=1.307304 lead=1.283587 util=0.4217701 prior=0.03281261
+c 8 D4 loc=64 edge=6 visits=6 wl=0.3677739 sm=1.086173 lead=1.12415 util=0.3772394 prior=0.02883477
+c 9 C4 loc=63 edge=2 visits=2 wl=0.4599007 sm=1.567828 lead=1.416489 util=0.4735497 prior=0.01052617
+c 10 D7 loc=34 edge=1 visits=1 wl=0.4563834 sm=1.413006 lead=1.304607 util=0.468942 prior=0.008374941
+c 11 G6 loc=47 edge=1 visits=1 wl=0.3775666 sm=1.390992 lead=1.217966 util=0.3897126 prior=0.007644543
+children=12
+RV win=0.6268673 loss=0.3730132 es=0.7739666 lead=0.731976 wl=0.2538542 util=0.2605063
+chosen loc=54 D5
+END 12
+CASE 13 name=rnd19-16-m30 board=19x19 ko=2 score=0 tax=0 suicide=0 button=0 whb=2 fpo=1 komi=40F00000 ipla=1 pla=1 moves=146/1,34/2,306/1,278/2,347/1,369/2,48/1,216/2,169/1,366/2,129/1,252/2,90/1,391/2,274/1,267/2,161/1,335/2,181/1,217/2,321/1,296/2,22/1,270/2,322/1,122/2,379/1,277/2,86/1,151/2 sseed=tol13 base=1 maxvisits=1000 params=conservativePass=1
+root visits=1000
+c 0 C13 loc=143 edge=461 visits=461 wl=0.7605507 sm=14.18111 lead=11.52973 util=0.7889774 prior=0.1390327
+c 1 Q17 loc=76 edge=56 visits=56 wl=0.8196498 sm=15.1711 lead=12.66624 util=0.8566456 prior=0.1076172
+c 2 C12 loc=163 edge=79 visits=79 wl=0.7905691 sm=14.92738 lead=12.19375 util=0.8248116 prior=0.0885876
+c 3 Q3 loc=356 edge=56 visits=56 wl=0.8075975 sm=14.70315 lead=12.07136 util=0.8405784 prior=0.08626939
+c 4 C16 loc=83 edge=25 visits=25 wl=0.8674392 sm=17.01692 lead=13.96804 util=0.9189392 prior=0.08609831
+c 5 Q16 loc=96 edge=49 visits=49 wl=0.8112048 sm=14.92398 lead=12.45018 util=0.8460339 prior=0.08178714
+c 6 R16 loc=97 edge=79 visits=79 wl=0.787431 sm=14.24139 lead=11.82371 util=0.8168705 prior=0.0759375
+c 7 D12 loc=164 edge=113 visits=113 wl=0.7732196 sm=14.5654 lead=11.89757 util=0.804529 prior=0.07395509
+c 8 C15 loc=103 edge=16 visits=16 wl=0.8509786 sm=16.69324 lead=13.69005 util=0.8995464 prior=0.0488467
+c 9 G2 loc=367 edge=10 visits=10 wl=0.8321732 sm=16.08522 lead=13.37135 util=0.875911 prior=0.02543001
+c 10 R17 loc=77 edge=12 visits=12 wl=0.8224161 sm=15.3796 lead=12.8513 util=0.8609053 prior=0.02313649
+c 11 D11 loc=184 edge=16 visits=16 wl=0.7960071 sm=15.2019 lead=12.39822 util=0.8323105 prior=0.02153038
+c 12 C17 loc=63 edge=5 visits=5 wl=0.8805916 sm=17.60439 lead=14.49334 util=0.9364805 prior=0.01949106
+c 13 C11 loc=183 edge=8 visits=8 wl=0.8167198 sm=15.55602 lead=12.7646 util=0.8557995 prior=0.01631661
+c 14 B16 loc=82 edge=4 visits=4 wl=0.8768259 sm=17.69333 lead=14.74735 util=0.9329982 prior=0.01614445
+c 15 J3 loc=349 edge=3 visits=3 wl=0.8689557 sm=17.74936 lead=14.85367 util=0.925439 prior=0.01334145
+c 16 P2 loc=375 edge=2 visits=2 wl=0.8811111 sm=17.36722 lead=14.58586 util=0.9352284 prior=0.00939692
+c 17 H6 loc=288 edge=2 visits=2 wl=0.8707307 sm=17.07603 lead=14.46521 util=0.9227341 prior=0.005714332
+c 18 Q2 loc=376 edge=1 visits=1 wl=0.8943313 sm=18.10666 lead=14.96244 util=0.9534129 prior=0.004828515
+c 19 D10 loc=204 edge=2 visits=2 wl=0.824245 sm=15.78627 lead=13.12819 util=0.8658236 prior=0.004256834
+children=20
+RV win=0.8912073 loss=0.1087927 es=14.61618 lead=11.97086 wl=0.7824146 util=0.8144124
+chosen loc=143 C13
+END 13
+CASE 14 name=game13-p44-m30 board=13x9 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=74/1,21/2,36/1,129/2,50/1,138/2,77/1,27/2,45/1,85/2,116/1,122/2,80/1,25/2,90/1,66/2,123/1,131/2,40/1,52/2,59/1,120/2,64/1,103/2,44/1,92/2,97/1,57/2,99/1,38/2 sseed=tol14 base=1 maxvisits=800 params=conservativePass=1
+root visits=800
+c 0 L5 loc=81 edge=411 visits=411 wl=-0.9869986 sm=-27.59001 lead=-28.77984 util=-1.081941 prior=0.3037975
+c 1 K3 loc=108 edge=108 visits=108 wl=-0.9865138 sm=-24.51639 lead=-25.66109 util=-1.04355 prior=0.1960941
+c 2 J5 loc=79 edge=80 visits=80 wl=-0.9868604 sm=-24.60262 lead=-25.83804 util=-1.043065 prior=0.1436966
+c 3 L4 loc=95 edge=49 visits=49 wl=-0.9847039 sm=-23.41623 lead=-24.44116 util=-1.029385 prior=0.1092355
+c 4 L6 loc=67 edge=60 visits=60 wl=-0.9838363 sm=-26.87309 lead=-27.77722 util=-1.065522 prior=0.07266212
+c 5 M5 loc=82 edge=55 visits=55 wl=-0.986762 sm=-27.24118 lead=-28.60095 util=-1.07474 prior=0.05068878
+c 6 J3 loc=107 edge=16 visits=16 wl=-0.9841473 sm=-23.17015 lead=-24.0695 util=-1.025318 prior=0.03833961
+c 7 M6 loc=68 edge=13 visits=13 wl=-0.9790545 sm=-22.78247 lead=-24.08641 util=-1.015032 prior=0.03373792
+c 8 K4 loc=94 edge=6 visits=6 wl=-0.9812082 sm=-22.84924 lead=-24.08512 util=-1.018382 prior=0.01358763
+c 9 C2 loc=115 edge=1 visits=1 wl=-0.9500913 sm=-14.93641 lead=-14.9147 util=-0.8857899 prior=0.007458613
+children=10
+RV win=0.006860909 loss=0.9931379 es=-26.37717 lead=-27.54098 wl=-0.986277 util=-1.06565
+chosen loc=81 L5
+END 14
+CASE 15 name=game9-p43-m40 board=9x13 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=29/1,135/2,43/1,28/2,84/1,59/2,23/1,97/2,131/1,134/2,111/1,54/2,121/1,124/2,48/1,115/2,122/1,101/2,133/1,62/2,69/1,103/2,65/1,77/2,68/1,66/2,107/1,138/2,116/1,81/2,25/1,49/2,16/1,47/2,45/1,137/2,58/1,129/2,67/1,106/2 sseed=tol15 base=1 maxvisits=800 params=-
+root visits=800
+c 0 F5 loc=96 edge=748 visits=748 wl=0.336624 sm=1.438591 lead=1.55606 util=0.3368245 prior=0.3217669
+c 1 E7 loc=75 edge=7 visits=7 wl=0.7559718 sm=3.985131 lead=3.361724 util=0.8023448 prior=0.09891015
+c 2 B7 loc=72 edge=6 visits=6 wl=0.7414351 sm=4.544696 lead=3.85726 util=0.7939238 prior=0.0890824
+c 3 B6 loc=82 edge=4 visits=4 wl=0.839784 sm=5.982814 lead=5.775702 util=0.9135806 prior=0.07553343
+c 4 F7 loc=76 edge=13 visits=13 wl=0.5049294 sm=1.773735 lead=1.641615 util=0.512397 prior=0.0688235
+c 5 B4 loc=102 edge=3 visits=3 wl=0.8757194 sm=5.912233 lead=5.60243 util=0.9509373 prior=0.06839034
+c 6 F9 loc=56 edge=4 visits=4 wl=0.7806718 sm=2.8783 lead=2.599538 util=0.8096962 prior=0.05572287
+c 7 F6 loc=86 edge=3 visits=3 wl=0.7093372 sm=2.92115 lead=2.292902 util=0.7376931 prior=0.04116799
+c 8 D4 loc=104 edge=1 visits=1 wl=0.8848291 sm=6.528096 lead=6.253159 util=0.9646634 prior=0.03502927
+c 9 D7 loc=74 edge=1 visits=1 wl=0.7926228 sm=4.35829 lead=3.611547 util=0.8436884 prior=0.02503347
+c 10 B5 loc=92 edge=1 visits=1 wl=0.7578984 sm=4.770307 lead=4.202132 util=0.8111059 prior=0.02402612
+c 11 C5 loc=93 edge=1 visits=1 wl=0.8330949 sm=5.188214 lead=4.876154 util=0.8969811 prior=0.02117107
+c 12 C7 loc=73 edge=1 visits=1 wl=0.7818818 sm=4.640356 lead=4.023757 util=0.8350247 prior=0.01624056
+c 13 C6 loc=83 edge=1 visits=1 wl=0.8638329 sm=5.528775 lead=5.171705 util=0.9321056 prior=0.0149358
+c 14 D8 loc=64 edge=1 visits=1 wl=0.813357 sm=4.461463 lead=3.574041 util=0.8664216 prior=0.01436163
+c 15 H5 loc=98 edge=1 visits=1 wl=0.7647242 sm=4.501674 lead=4.072001 util=0.8155029 prior=0.007333595
+c 16 C9 loc=53 edge=1 visits=1 wl=0.8474661 sm=4.944319 lead=4.365406 util=0.9076161 prior=0.004374414
+c 17 C8 loc=63 edge=1 visits=1 wl=0.8068011 sm=4.864418 lead=4.206169 util=0.8644169 prior=0.004085573
+c 18 E4 loc=105 edge=1 visits=1 wl=0.7167999 sm=4.596181 lead=4.13005 util=0.7683251 prior=0.00396766
+children=19
+RV win=0.6766798 loss=0.3232369 es=1.542041 lead=1.635751 wl=0.3534429 util=0.3554339
+chosen loc=96 F5
+END 15
+CASE 16 name=empty13 board=13x13 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=- sseed=tol16 base=0 maxvisits=400 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=400
+c 0 K10 loc=66 edge=378 visits=378 wl=0.04281427 sm=0.2370938 lead=0.231726 util=0.04422284 prior=0.2329734
+c 1 L10 loc=67 edge=21 visits=21 wl=0.04451203 sm=0.2681952 lead=0.2567596 util=0.04610921 prior=0.01515288
+children=2
+RV win=0.5213841 loss=0.4784715 es=0.239521 lead=0.2332192 wl=0.04291263 util=0.04433559
+chosen loc=66 K10
+END 16
+CASE 17 name=game13-p40-m30 board=13x13 ko=2 score=0 tax=0 suicide=1 button=0 whb=0 fpo=1 komi=C0600000 ipla=1 pla=1 moves=25/1,72/2,37/1,90/2,77/1,108/2,169/1,100/2,175/1,92/2,19/1,30/2,89/1,75/2,68/1,167/2,45/1,23/2,155/1,173/2,152/1,47/2,149/1,143/2,78/1,117/2,144/1,66/2,188/1,139/2 sseed=tol17 base=1 maxvisits=1000 params=wideRootNoise=0.05,conservativePass=1
+root visits=1000
+c 0 C3 loc=157 edge=176 visits=176 wl=0.2192852 sm=2.110477 lead=1.498927 util=0.2400814 prior=0.3256185
+c 1 D3 loc=158 edge=71 visits=71 wl=0.2353762 sm=2.264365 lead=1.65422 util=0.2579325 prior=0.1239705
+c 2 F9 loc=76 edge=387 visits=387 wl=0.1169988 sm=1.033073 lead=0.7126257 util=0.1254048 prior=0.1238924
+c 3 H12 loc=36 edge=35 visits=35 wl=0.3047399 sm=2.696351 lead=1.914149 util=0.3326813 prior=0.06956334
+c 4 C5 loc=129 edge=71 visits=71 wl=0.2034929 sm=1.994259 lead=1.346557 util=0.2227555 prior=0.06795934
+c 5 G8 loc=91 edge=121 visits=121 wl=0.1578174 sm=1.40784 lead=0.8889016 util=0.1705879 prior=0.06228703
+c 6 H11 loc=50 edge=15 visits=15 wl=0.3760747 sm=3.40451 lead=2.432478 util=0.4124614 prior=0.05001748
+c 7 J11 loc=51 edge=26 visits=26 wl=0.2488298 sm=2.113549 lead=1.557516 util=0.2701527 prior=0.03651156
+c 8 K9 loc=80 edge=5 visits=5 wl=0.4892802 sm=4.361004 lead=3.280781 util=0.53821 prior=0.01913781
+c 9 J8 loc=93 edge=11 visits=11 wl=0.2530479 sm=2.340494 lead=1.562983 util=0.2766487 prior=0.01553601
+c 10 J10 loc=65 edge=9 visits=9 wl=0.3114924 sm=2.802982 lead=1.97796 util=0.3410086 prior=0.0142544
+c 11 E10 loc=61 edge=6 visits=6 wl=0.3630588 sm=3.422857 lead=2.507322 util=0.3995842 prior=0.01273328
+c 12 G12 loc=35 edge=7 visits=7 wl=0.2964858 sm=2.666741 lead=1.848134 util=0.3239685 prior=0.009671462
+c 13 M5 loc=138 edge=6 visits=6 wl=0.2905417 sm=2.465938 lead=1.655336 util=0.3160678 prior=0.009434876
+c 14 L3 loc=165 edge=7 visits=7 wl=0.2840385 sm=2.474456 lead=1.80421 util=0.3093881 prior=0.008477656
+c 15 L6 loc=123 edge=4 visits=4 wl=0.3212455 sm=3.049439 lead=2.017552 util=0.3533401 prior=0.006655919
+c 16 L5 loc=137 edge=4 visits=4 wl=0.3112061 sm=2.932066 lead=2.072628 util=0.3416578 prior=0.006096299
+c 17 L11 loc=53 edge=5 visits=5 wl=0.2970831 sm=2.482692 lead=1.827477 util=0.3229955 prior=0.004066316
+c 18 M6 loc=124 edge=1 visits=1 wl=0.3879151 sm=3.430132 lead=2.306871 util=0.4251856 prior=0.003971909
+c 19 D5 loc=130 edge=19 visits=19 wl=0.1837752 sm=1.861144 lead=1.217851 util=0.2013119 prior=0.003010992
+c 20 G11 loc=49 edge=2 visits=2 wl=0.2591604 sm=2.350986 lead=1.578651 util=0.282645 prior=0.001800152
+c 21 L4 loc=151 edge=1 visits=1 wl=0.4448693 sm=3.998897 lead=2.710569 util=0.4888559 prior=0.001695838
+c 22 F11 loc=48 edge=2 visits=2 wl=0.2616355 sm=2.294536 lead=1.512771 util=0.2848796 prior=0.00168497
+c 23 H13 loc=22 edge=1 visits=1 wl=0.5968623 sm=5.745511 lead=4.330363 util=0.6614697 prior=0.001291241
+c 24 K12 loc=38 edge=1 visits=1 wl=0.3954503 sm=3.501617 lead=2.343411 util=0.4336399 prior=0.001160573
+c 25 F4 loc=146 edge=1 visits=1 wl=0.336286 sm=2.958093 lead=1.920985 util=0.3684655 prior=0.001045673
+c 26 K11 loc=52 edge=1 visits=1 wl=0.4082676 sm=3.532734 lead=2.325369 util=0.4469779 prior=0.001043711
+c 27 F12 loc=34 edge=1 visits=1 wl=0.377406 sm=3.558881 lead=2.272779 util=0.4154388 prior=0.0009002328
+c 28 K8 loc=94 edge=1 visits=1 wl=0.3999569 sm=3.733534 lead=2.508151 util=0.4403549 prior=0.0007307855
+c 29 E3 loc=159 edge=1 visits=1 wl=0.3561817 sm=3.022003 lead=1.97135 util=0.3890621 prior=0.0007189076
+c 30 E4 loc=145 edge=1 visits=1 wl=0.3541336 sm=3.223431 lead=2.06495 util=0.3884356 prior=0.000697505
+children=31
+RV win=0.58932 loss=0.41068 es=1.639935 lead=1.137465 wl=0.17864 util=0.1940869
+chosen loc=76 F9
+END 17
+CASE 18 name=game19-p9-m120 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=96/1,324/2,103/1,356/2,283/1,346/2,322/1,343/2,223/1,64/2,43/1,63/2,65/1,45/2,44/1,46/2,84/1,85/2,62/1,66/2,83/1,94/2,136/1,76/2,77/1,75/2,97/1,91/2,316/1,277/2,357/1,377/2,337/1,375/2,297/1,276/2,314/1,353/2,217/1,274/2,312/1,331/2,273/1,254/2,354/1,374/2,294/1,253/2,272/1,196/2,216/1,195/2,197/1,177/2,157/1,176/2,178/1,215/2,236/1,252/2,333/1,332/2,311/1,310/2,290/1,309/2,251/1,231/2,230/1,250/2,271/1,249/2,210/1,232/2,235/1,234/2,289/1,308/2,288/1,307/2,191/1,193/2,228/1,183/2,342/1,362/2,203/1,184/2,105/1,106/2,126/1,125/2,104/1,145/2,107/1,86/2,146/1,166/2,167/1,186/2,128/1,187/2,168/1,188/2,68/1,48/2,49/1,69/2,89/1,70/2,47/1,88/2,28/1,87/2,109/1,108/2,129/1,127/2,147/1,67/2 sseed=tol18 base=1 maxvisits=1000 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=1000
+c 0 J12 loc=169 edge=930 visits=930 wl=0.8103884 sm=14.55343 lead=14.36219 util=0.8520058 prior=0.5295992
+c 1 K18 loc=50 edge=28 visits=28 wl=0.9406148 sm=23.47405 lead=23.07293 util=1.049838 prior=0.1484147
+c 2 H18 loc=48 edge=10 visits=10 wl=0.9574879 sm=25.68594 lead=25.13237 util=1.082224 prior=0.0606645
+c 3 J11 loc=189 edge=4 visits=4 wl=0.9716111 sm=26.58939 lead=26.05114 util=1.105228 prior=0.03072839
+c 4 L15 loc=111 edge=4 visits=4 wl=0.9587871 sm=24.46912 lead=23.96176 util=1.077224 prior=0.02443289
+c 5 D13 loc=144 edge=3 visits=3 wl=0.9637304 sm=25.30513 lead=24.54759 util=1.090043 prior=0.01957386
+c 6 L13 loc=151 edge=2 visits=2 wl=0.9547761 sm=23.78392 lead=23.25965 util=1.068892 prior=0.01584939
+c 7 M13 loc=152 edge=1 visits=1 wl=0.9745146 sm=28.05431 lead=27.62821 util=1.120992 prior=0.01185702
+c 8 L17 loc=71 edge=3 visits=3 wl=0.8835985 sm=18.80725 lead=18.45205 util=0.9600441 prior=0.01150963
+c 9 M3 loc=352 edge=1 visits=1 wl=0.9663087 sm=24.96477 lead=24.82738 util=1.090923 prior=0.01061286
+c 10 M15 loc=112 edge=1 visits=1 wl=0.9704529 sm=27.94525 lead=27.7575 util=1.115075 prior=0.01004062
+c 11 G15 loc=107 edge=1 visits=1 wl=0.9504519 sm=20.52546 lead=20.07026 util=1.042318 prior=0.009388198
+c 12 N13 loc=153 edge=1 visits=1 wl=0.9782585 sm=30.00568 lead=29.0566 util=1.137785 prior=0.008353401
+c 13 M17 loc=72 edge=1 visits=1 wl=0.9527942 sm=25.59383 lead=25.5594 util=1.080875 prior=0.007868292
+c 14 N15 loc=113 edge=1 visits=1 wl=0.9703609 sm=28.46272 lead=28.25932 util=1.118696 prior=0.007756965
+c 15 O12 loc=174 edge=1 visits=1 wl=0.9757401 sm=29.29604 lead=28.18191 util=1.1283 prior=0.007648731
+c 16 K12 loc=170 edge=1 visits=1 wl=0.9706972 sm=27.09397 lead=26.76831 util=1.110916 prior=0.00568673
+c 17 L14 loc=131 edge=1 visits=1 wl=0.9701588 sm=27.2828 lead=27.16676 util=1.110984 prior=0.0046033
+c 18 E19 loc=25 edge=1 visits=1 wl=0.9586187 sm=26.19364 lead=26.01771 util=1.09445 prior=0.004501544
+c 19 L18 loc=51 edge=1 visits=1 wl=0.9581584 sm=26.77389 lead=26.37566 util=1.093582 prior=0.004468175
+c 20 E12 loc=165 edge=1 visits=1 wl=0.9653359 sm=25.94884 lead=25.45489 util=1.098569 prior=0.004319458
+c 21 K4 loc=330 edge=1 visits=1 wl=0.9728891 sm=28.8148 lead=27.93617 util=1.123278 prior=0.004211897
+c 22 E17 loc=65 edge=1 visits=1 wl=0.9718261 sm=29.00952 lead=28.46352 util=1.126163 prior=0.00345837
+children=23
+RV win=0.9091303 loss=0.09072427 es=15.12849 lead=14.92099 wl=0.818406 util=0.8644336
+chosen loc=169 J12
+END 18
+CASE 19 name=rnd9-3-m14 board=9x9 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=71/1,67/2,94/1,12/2,11/1,48/2,81/1,56/2,21/1,82/2,26/1,22/2,74/1,45/2 sseed=tol19 base=1 maxvisits=400 params=-
+root visits=400
+c 0 C7 loc=33 edge=181 visits=181 wl=0.9958486 sm=27.19856 lead=27.38123 util=1.125284 prior=0.2541085
+c 1 D7 loc=34 edge=72 visits=72 wl=0.9952372 sm=29.22907 lead=28.92647 util=1.150247 prior=0.1823176
+c 2 H7 loc=38 edge=23 visits=23 wl=0.9961127 sm=30.04317 lead=29.00922 util=1.170435 prior=0.07680149
+c 3 B6 loc=42 edge=25 visits=25 wl=0.996462 sm=28.86107 lead=29.07188 util=1.157713 prior=0.07115953
+c 4 E7 loc=35 edge=20 visits=20 wl=0.9956726 sm=30.52884 lead=30.2653 util=1.171279 prior=0.06677022
+c 5 D8 loc=24 edge=22 visits=22 wl=0.9958265 sm=28.90378 lead=28.82208 util=1.148423 prior=0.05379523
+c 6 G7 loc=37 edge=10 visits=10 wl=0.9965714 sm=30.98006 lead=31.16513 util=1.182142 prior=0.04145799
+c 7 C5 loc=53 edge=9 visits=9 wl=0.9967912 sm=29.2318 lead=29.76868 util=1.163404 prior=0.02942927
+c 8 C6 loc=43 edge=8 visits=8 wl=0.9965076 sm=28.88218 lead=28.78884 util=1.157014 prior=0.02369869
+c 9 G6 loc=47 edge=7 visits=7 wl=0.9962215 sm=29.63215 lead=28.68951 util=1.166391 prior=0.02146251
+c 10 F3 loc=76 edge=5 visits=5 wl=0.9964617 sm=30.64132 lead=31.55988 util=1.186216 prior=0.02032598
+c 11 C4 loc=63 edge=3 visits=3 wl=0.9933442 sm=31.92521 lead=32.75532 util=1.190636 prior=0.01362782
+c 12 D5 loc=54 edge=3 visits=3 wl=0.9947451 sm=30.89988 lead=31.14219 util=1.174665 prior=0.01116485
+c 13 B7 loc=32 edge=2 visits=2 wl=0.9976497 sm=30.30285 lead=29.02899 util=1.181866 prior=0.01115755
+c 14 D6 loc=44 edge=2 visits=2 wl=0.9974546 sm=30.93121 lead=30.81503 util=1.186139 prior=0.01089907
+c 15 H8 loc=28 edge=3 visits=3 wl=0.9972026 sm=29.20481 lead=28.55488 util=1.160452 prior=0.01080122
+c 16 C8 loc=23 edge=2 visits=2 wl=0.9970679 sm=31.53481 lead=29.82833 util=1.194617 prior=0.008486777
+c 17 B5 loc=52 edge=2 visits=2 wl=0.9961567 sm=30.94328 lead=31.22519 util=1.185143 prior=0.007783987
+children=18
+RV win=0.9979327 loss=0.002067187 es=28.47603 lead=28.44222 wl=0.9958655 util=1.14434
+chosen loc=33 C7
+END 19
+CASE 20 name=game19-p17-m120 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=76/1,344/2,83/1,336/2,85/1,203/2,304/1,323/2,303/1,346/2,243/1,143/2,297/1,317/2,296/1,334/2,136/1,318/2,216/1,225/2,265/1,227/2,90/1,146/2,130/1,322/2,302/1,222/2,242/1,307/2,351/1,353/2,348/1,306/2,223/1,202/2,224/1,204/2,245/1,226/2,210/1,191/2,190/1,212/2,251/1,171/2,170/1,254/2,294/1,194/2,153/1,175/2,177/1,173/2,154/1,152/2,233/1,213/2,232/1,234/2,215/1,214/2,256/1,150/2,149/1,151/2,192/1,129/2,128/1,109/2,110/1,169/2,148/1,230/2,231/1,211/2,188/1,229/2,291/1,189/2,168/1,209/2,112/1,372/2,371/1,374/2,186/1,185/2,166/1,145/2,165/1,164/2,206/1,205/2,124/1,144/2,107/1,122/2,102/1,123/2,104/1,103/2,82/1,73/2,71/1,94/2,54/1,53/2,75/1,51/2,50/1,72/2,31/1,32/2,30/1,133/2,132/1,134/2,155/1,95/2 sseed=tol20 base=1 maxvisits=600 params=-
+root visits=600
+c 0 Q16 loc=96 edge=233 visits=233 wl=-0.971995 sm=-37.39077 lead=-37.9021 util=-1.072901 prior=0.407733
+c 1 R15 loc=117 edge=188 visits=188 wl=-0.9718993 sm=-38.82743 lead=-39.5022 util=-1.08406 prior=0.2537596
+c 2 R16 loc=97 edge=84 visits=84 wl=-0.9748704 sm=-37.8498 lead=-38.49687 util=-1.07966 prior=0.12805
+c 3 Q13 loc=156 edge=17 visits=17 wl=-0.9782116 sm=-35.2142 lead=-35.62299 util=-1.062174 prior=0.03754162
+c 4 Q12 loc=176 edge=25 visits=25 wl=-0.9787385 sm=-37.8826 lead=-38.38327 util=-1.084063 prior=0.03534358
+c 5 R17 loc=77 edge=24 visits=24 wl=-0.9773493 sm=-37.89741 lead=-38.65188 util=-1.083377 prior=0.03300148
+c 6 R14 loc=137 edge=8 visits=8 wl=-0.9722258 sm=-36.52153 lead=-37.21381 util=-1.065603 prior=0.01745899
+c 7 P14 loc=135 edge=7 visits=7 wl=-0.9682527 sm=-35.4205 lead=-35.57431 util=-1.052432 prior=0.01694634
+c 8 S17 loc=78 edge=6 visits=6 wl=-0.9701948 sm=-36.97131 lead=-37.6596 util=-1.066954 prior=0.01186898
+c 9 Q15 loc=116 edge=2 visits=2 wl=-0.9571529 sm=-32.84602 lead=-33.35485 util=-1.020332 prior=0.009801379
+c 10 R13 loc=157 edge=5 visits=5 wl=-0.9767968 sm=-36.73003 lead=-37.48965 util=-1.073162 prior=0.007516667
+children=11
+RV win=0.01351476 loss=0.9864758 es=-37.83183 lead=-38.42321 wl=-0.972961 util=-1.077394
+chosen loc=117 R15
+END 20
+CASE 21 name=rnd19-14-m50 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=47/1,255/2,289/1,174/2,163/1,344/2,345/1,89/2,22/1,171/2,330/1,312/2,389/1,162/2,277/1,103/2,318/1,192/2,111/1,105/2,169/1,368/2,358/1,39/2,388/1,328/2,361/1,126/2,274/1,313/2,225/1,209/2,338/1,43/2,156/1,321/2,268/1,311/2,232/1,189/2,91/1,293/2,48/1,234/2,65/1,356/2,272/1,118/2,257/1,295/2 sseed=tol21 base=1 maxvisits=600 params=rootSymmetryPruning=1
+root visits=600
+c 0 D4 loc=324 edge=513 visits=513 wl=0.5666331 sm=9.189187 lead=7.203044 util=0.5778626 prior=0.4223871
+c 1 E4 loc=325 edge=60 visits=60 wl=0.6645683 sm=10.98885 lead=8.669367 util=0.6900421 prior=0.2784361
+c 2 D2 loc=364 edge=17 visits=17 wl=0.7397793 sm=13.05848 lead=10.29201 util=0.7810759 prior=0.1333047
+c 3 P7 loc=275 edge=2 visits=2 wl=0.8670235 sm=16.77495 lead=13.46454 util=0.9368262 prior=0.02754795
+c 4 R16 loc=97 edge=1 visits=1 wl=0.7949372 sm=15.5863 lead=12.04627 util=0.855445 prior=0.01962867
+c 5 K5 loc=310 edge=1 visits=1 wl=0.804752 sm=15.60267 lead=11.85522 util=0.8650837 prior=0.01438514
+c 6 F2 loc=366 edge=1 visits=1 wl=0.7441796 sm=14.07524 lead=10.80393 util=0.7931055 prior=0.01240331
+c 7 E2 loc=365 edge=1 visits=1 wl=0.7712112 sm=15.19353 lead=11.6114 util=0.8283251 prior=0.01234588
+c 8 D16 loc=84 edge=1 visits=1 wl=0.7909421 sm=15.5729 lead=11.85592 util=0.8509574 prior=0.006759727
+c 9 Q17 loc=76 edge=1 visits=1 wl=0.8168124 sm=16.29137 lead=12.59745 util=0.8825681 prior=0.006139925
+c 10 J2 loc=369 edge=1 visits=1 wl=0.7686259 sm=14.59151 lead=11.17685 util=0.8218682 prior=0.005692834
+children=11
+RV win=0.7911164 loss=0.208735 es=9.519441 lead=7.466852 wl=0.5823815 util=0.5961936
+chosen loc=324 D4
+END 21
+CASE 22 name=game19-p8-m60 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=96/1,324/2,103/1,356/2,283/1,346/2,322/1,343/2,223/1,64/2,43/1,63/2,65/1,45/2,44/1,46/2,84/1,85/2,62/1,66/2,83/1,94/2,136/1,76/2,77/1,75/2,97/1,91/2,316/1,277/2,357/1,377/2,337/1,375/2,297/1,276/2,314/1,353/2,217/1,274/2,312/1,331/2,273/1,254/2,354/1,374/2,294/1,253/2,272/1,196/2,216/1,195/2,197/1,177/2,157/1,176/2,178/1,215/2,236/1,252/2 sseed=tol22 base=0 maxvisits=400 params=rootPolicyTemperature=1.4,rootPolicyTemperatureEarly=1.4
+root visits=400
+c 0 F14 loc=126 edge=30 visits=30 wl=0.9399129 sm=17.46394 lead=14.81949 util=1.009371 prior=0.08512512
+c 1 M3 loc=352 edge=118 visits=118 wl=0.9037722 sm=15.81482 lead=13.18631 util=0.9666056 prior=0.0732297
+c 2 J16 loc=89 edge=104 visits=104 wl=0.9032593 sm=16.53351 lead=13.76234 util=0.9682274 prior=0.07170879
+c 3 O14 loc=134 edge=20 visits=20 wl=0.9327961 sm=17.92151 lead=15.17512 util=1.003211 prior=0.05000993
+c 4 K7 loc=270 edge=17 visits=17 wl=0.9364773 sm=17.40642 lead=14.82342 util=1.005643 prior=0.0442447
+c 5 P9 loc=235 edge=15 visits=15 wl=0.9350716 sm=17.99695 lead=15.14408 util=1.005842 prior=0.04102748
+c 6 K16 loc=90 edge=22 visits=22 wl=0.9165325 sm=17.29773 lead=14.47387 util=0.9846509 prior=0.0350983
+c 7 N4 loc=333 edge=7 visits=7 wl=0.9602961 sm=19.5831 lead=16.69015 util=1.037216 prior=0.031838
+c 8 J17 loc=69 edge=13 visits=13 wl=0.9274677 sm=18.01271 lead=15.07148 util=0.9980766 prior=0.02866385
+c 9 F13 loc=146 edge=7 visits=7 wl=0.9513047 sm=19.19065 lead=16.41109 util=1.026636 prior=0.0269351
+c 10 J15 loc=109 edge=8 visits=8 wl=0.9439166 sm=17.28075 lead=14.65063 util=1.012852 prior=0.02558617
+c 11 P7 loc=275 edge=5 visits=5 wl=0.9570484 sm=18.98557 lead=16.27525 util=1.031869 prior=0.0216962
+c 12 N15 loc=113 edge=6 visits=6 wl=0.9433848 sm=18.80958 lead=15.98211 util=1.017056 prior=0.0197798
+c 13 O15 loc=114 edge=4 visits=4 wl=0.9542123 sm=19.14625 lead=16.34747 util=1.02943 prior=0.0166797
+c 14 G14 loc=127 edge=5 visits=5 wl=0.9454045 sm=17.69066 lead=15.06736 util=1.015648 prior=0.01610031
+c 15 L8 loc=251 edge=4 visits=4 wl=0.9449302 sm=18.34945 lead=15.46974 util=1.017591 prior=0.01514953
+c 16 G13 loc=147 edge=4 visits=4 wl=0.9460749 sm=18.09323 lead=15.51514 util=1.017616 prior=0.01458241
+c 17 P6 loc=295 edge=3 visits=3 wl=0.9508292 sm=18.37435 lead=15.64233 util=1.023316 prior=0.01299228
+c 18 N10 loc=213 edge=3 visits=3 wl=0.943352 sm=19.56545 lead=16.64739 util=1.018965 prior=0.01286751
+c 19 K5 loc=310 edge=2 visits=2 wl=0.9600168 sm=18.92129 lead=15.99684 util=1.034097 prior=0.01067968
+c 20 E15 loc=105 edge=2 visits=2 wl=0.9512119 sm=18.63568 lead=15.66499 util=1.025047 prior=0.009696026
+children=21
+RV win=0.9591844 loss=0.04079277 es=16.93327 lead=14.21271 wl=0.9183916 util=0.9852683
+chosen loc=352 M3
+END 22
+CASE 23 name=game9-p49-m96 board=9x9 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=46/1,72/2,25/1,17/2,95/1,15/2,56/1,87/2,21/1,51/2,42/1,84/2,35/1,26/2,23/1,22/2,38/1,53/2,91/1,33/2,74/1,89/2,29/1,59/2,67/1,54/2,49/1,63/2,79/1,13/2,47/1,82/2,76/1,28/2,41/1,32/2,73/1,19/2,48/1,16/2,93/1,31/2,37/1,61/2,18/1,12/2,97/1,77/2,27/1,85/2,64/1,58/2,88/1,11/2,52/1,65/2,71/1,24/2,86/1,45/2,57/1,44/2,68/1,99/2,81/1,14/2,96/1,92/2,55/1,81/2,36/1,34/2,83/1,94/2,66/1,75/2,98/1,43/2,74/1,62/2,99/1,52/2,41/1,93/2,73/1,83/2,69/1,42/2,78/1,59/2,87/1,64/2,74/1,73/2,58/1,1/2 sseed=tol23 base=1 maxvisits=1000 params=-
+root visits=1000
+c 0 pass loc=1 edge=428 visits=428 wl=0.9999899 sm=14.40822 lead=14.55097 util=1.138391 prior=0.3887811
+c 1 J9 loc=19 edge=144 visits=144 wl=0.999976 sm=14.29019 lead=14.7079 util=1.134538 prior=0.1562502
+c 2 H8 loc=28 edge=139 visits=139 wl=0.9999788 sm=14.33848 lead=14.72392 util=1.135893 prior=0.1501162
+c 3 J7 loc=39 edge=130 visits=130 wl=0.999973 sm=14.28128 lead=14.73949 util=1.134217 prior=0.1384914
+c 4 J5 loc=59 edge=62 visits=62 wl=0.9999811 sm=14.30503 lead=14.8124 util=1.134613 prior=0.06624801
+c 5 J2 loc=89 edge=59 visits=59 wl=0.9999754 sm=14.32836 lead=14.86008 util=1.135027 prior=0.0646078
+c 6 G3 loc=77 edge=37 visits=37 wl=0.9999676 sm=14.30731 lead=14.86253 util=1.13444 prior=0.03550534
+children=7
+RV win=0.999991 loss=9.039865e-06 es=14.34898 lead=14.6689 wl=0.9999819 util=1.136332
+chosen loc=1 pass
+END 23
+CASE 24 name=rnd13-10-m40 board=13x13 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=40F00000 ipla=1 pla=1 moves=131/1,78/2,16/1,48/2,172/1,91/2,51/1,95/2,82/1,174/2,39/1,83/2,187/1,37/2,189/1,124/2,35/1,68/2,53/1,73/2,25/1,138/2,164/1,135/2,34/1,109/2,100/1,96/2,159/1,101/2,90/1,60/2,97/1,55/2,134/1,110/2,32/1,153/2,113/1,29/2 sseed=tol24 base=0 maxvisits=600 params=-
+root visits=600
+c 0 C6 loc=115 edge=581 visits=581 wl=-0.979268 sm=-14.71097 lead=-14.33078 util=-1.067948 prior=0.871866
+c 1 J4 loc=149 edge=14 visits=14 wl=-0.9709903 sm=-11.3373 lead=-10.7012 util=-1.041344 prior=0.03872184
+c 2 E11 loc=47 edge=2 visits=2 wl=-0.9197849 sm=-7.780322 lead=-6.925739 util=-0.9686958 prior=0.01647269
+c 3 D8 loc=88 edge=2 visits=2 wl=-0.9416977 sm=-10.38594 lead=-9.585877 util=-1.00538 prior=0.01182385
+children=4
+RV win=0.01062552 loss=0.9893745 es=-14.59418 lead=-14.20573 wl=-0.978749 util=-1.066783
+chosen loc=115 C6
+END 24
+CASE 25 name=game19-p27-m41 board=19x19 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=2 moves=198/1,369/2,254/1,343/2,87/1,315/2,167/1,390/2,148/1,323/2,294/1,265/2,67/1,370/2,251/1,306/2,83/1,347/2,212/1,184/2,270/1,39/2,114/1,186/2,230/1,331/2,211/1,244/2,187/1,61/2,361/1,279/2,332/1,235/2,105/1,81/2,318/1,191/2,65/1,21/2,1/1 sseed=tol25 base=1 maxvisits=800 params=wideRootNoise=0.05,conservativePass=1
+root visits=800
+c 0 P17 loc=75 edge=183 visits=183 wl=-0.9835957 sm=-27.96334 lead=-24.94613 util=-1.06738 prior=0.3918518
+c 1 O17 loc=74 edge=145 visits=145 wl=-0.9805958 sm=-27.0671 lead=-23.89961 util=-1.057114 prior=0.2214798
+c 2 P16 loc=95 edge=65 visits=65 wl=-0.9867426 sm=-28.06467 lead=-25.33145 util=-1.072475 prior=0.06913324
+c 3 Q17 loc=76 edge=61 visits=61 wl=-0.9851536 sm=-27.18729 lead=-24.27051 util=-1.064516 prior=0.06456977
+c 4 R12 loc=177 edge=46 visits=46 wl=-0.9846968 sm=-28.56115 lead=-25.53948 util=-1.073297 prior=0.03635018
+c 5 R6 loc=297 edge=26 visits=26 wl=-0.9867961 sm=-30.1055 lead=-27.21005 util=-1.087685 prior=0.02201544
+c 6 O16 loc=94 edge=19 visits=19 wl=-0.9876294 sm=-30.5014 lead=-27.6854 util=-1.089217 prior=0.01385545
+c 7 Q16 loc=96 edge=29 visits=29 wl=-0.9858283 sm=-26.93615 lead=-23.95165 util=-1.06321 prior=0.01262121
+c 8 R16 loc=97 edge=20 visits=20 wl=-0.9886167 sm=-28.54185 lead=-25.56932 util=-1.078651 prior=0.009837711
+c 9 R4 loc=337 edge=16 visits=16 wl=-0.9852879 sm=-29.73226 lead=-26.92583 util=-1.083508 prior=0.009272611
+c 10 R7 loc=277 edge=11 visits=11 wl=-0.9853172 sm=-29.17974 lead=-26.17709 util=-1.079022 prior=0.006927108
+c 11 N17 loc=73 edge=12 visits=12 wl=-0.9890095 sm=-32.12562 lead=-29.25568 util=-1.101023 prior=0.006298636
+c 12 Q7 loc=276 edge=13 visits=13 wl=-0.9862618 sm=-28.9312 lead=-26.01373 util=-1.07886 prior=0.005969243
+c 13 Q15 loc=116 edge=19 visits=19 wl=-0.9854577 sm=-27.85165 lead=-24.93755 util=-1.069549 prior=0.005505408
+c 14 P18 loc=55 edge=9 visits=9 wl=-0.9879196 sm=-29.18167 lead=-26.12544 util=-1.081002 prior=0.005012498
+c 15 Q12 loc=176 edge=13 visits=13 wl=-0.9884817 sm=-29.53674 lead=-26.42205 util=-1.085191 prior=0.004280173
+c 16 R14 loc=137 edge=13 visits=13 wl=-0.9874544 sm=-29.18535 lead=-26.23751 util=-1.081475 prior=0.004233506
+c 17 R17 loc=77 edge=9 visits=9 wl=-0.9890431 sm=-29.24287 lead=-26.49108 util=-1.084551 prior=0.003720124
+c 18 O18 loc=54 edge=6 visits=6 wl=-0.9910256 sm=-31.91673 lead=-29.12907 util=-1.103436 prior=0.003673339
+c 19 R10 loc=217 edge=9 visits=9 wl=-0.9881351 sm=-29.05483 lead=-26.08442 util=-1.082253 prior=0.003037652
+c 20 R11 loc=197 edge=8 visits=8 wl=-0.9905056 sm=-30.11881 lead=-27.37054 util=-1.093042 prior=0.002922942
+c 21 R15 loc=117 edge=8 visits=8 wl=-0.9888828 sm=-28.74329 lead=-25.89285 util=-1.081082 prior=0.002921883
+c 22 Q13 loc=156 edge=6 visits=6 wl=-0.9891442 sm=-30.83163 lead=-27.90421 util=-1.09426 prior=0.002837411
+c 23 Q14 loc=136 edge=5 visits=5 wl=-0.9897778 sm=-30.89013 lead=-27.76582 util=-1.094677 prior=0.002790742
+c 24 R5 loc=317 edge=6 visits=6 wl=-0.9906913 sm=-31.16643 lead=-28.53226 util=-1.100864 prior=0.002504125
+c 25 R13 loc=157 edge=6 visits=6 wl=-0.988507 sm=-29.78842 lead=-26.83016 util=-1.087022 prior=0.002240905
+c 26 Q11 loc=196 edge=9 visits=9 wl=-0.9895567 sm=-30.01991 lead=-26.94284 util=-1.090067 prior=0.002184013
+c 27 C13 loc=143 edge=3 visits=3 wl=-0.9913912 sm=-34.29026 lead=-31.60205 util=-1.120903 prior=0.00210227
+c 28 N16 loc=93 edge=3 visits=3 wl=-0.9923302 sm=-34.91443 lead=-32.47523 util=-1.122533 prior=0.001815864
+c 29 P12 loc=175 edge=3 visits=3 wl=-0.9896867 sm=-30.78492 lead=-27.62401 util=-1.094625 prior=0.001599111
+c 30 C17 loc=63 edge=2 visits=2 wl=-0.9918302 sm=-34.69719 lead=-32.05316 util=-1.12434 prior=0.001567729
+c 31 P14 loc=135 edge=4 visits=4 wl=-0.9894106 sm=-30.74451 lead=-27.79129 util=-1.093956 prior=0.001543638
+c 32 P15 loc=115 edge=4 visits=4 wl=-0.9901819 sm=-30.73697 lead=-27.93503 util=-1.095818 prior=0.001529166
+c 33 P13 loc=155 edge=3 visits=3 wl=-0.9896193 sm=-31.93892 lead=-28.75675 util=-1.100364 prior=0.001443153
+c 34 R8 loc=257 edge=3 visits=3 wl=-0.9896538 sm=-31.1857 lead=-28.44388 util=-1.098883 prior=0.001438068
+c 35 Q3 loc=356 edge=2 visits=2 wl=-0.9907583 sm=-31.51037 lead=-28.87393 util=-1.102977 prior=0.00124164
+children=36
+RV win=0.007482583 loss=0.9925155 es=-28.38578 lead=-25.4096 wl=-0.9850329 util=-1.072386
+chosen loc=74 O17
+END 25
+CASE 26 name=rnd9-6-m44 board=9x9 ko=2 score=0 tax=0 suicide=0 button=0 whb=2 fpo=1 komi=40F00000 ipla=1 pla=1 moves=25/1,14/2,47/1,22/2,31/1,75/2,44/1,96/2,95/1,63/2,88/1,39/2,24/1,68/2,48/1,89/2,54/1,61/2,52/1,18/2,16/1,51/2,99/1,74/2,36/1,93/2,67/1,17/2,42/1,55/2,69/1,34/2,64/1,57/2,41/1,27/2,21/1,19/2,65/1,32/2,79/1,26/2,94/1,28/2 sseed=tol26 base=0 maxvisits=600 params=-
+root visits=600
+c 0 C2 loc=83 edge=247 visits=247 wl=-0.988789 sm=-64.14323 lead=-63.29292 util=-1.233437 prior=0.3986304
+c 1 B4 loc=62 edge=202 visits=202 wl=-0.9881603 sm=-64.03547 lead=-63.49354 util=-1.233278 prior=0.3272859
+c 2 F2 loc=86 edge=72 visits=72 wl=-0.9920223 sm=-65.43989 lead=-64.20965 util=-1.238731 prior=0.1016444
+c 3 B3 loc=72 edge=38 visits=38 wl=-0.9766874 sm=-59.504 lead=-59.94227 util=-1.216937 prior=0.07637884
+c 4 B2 loc=82 edge=26 visits=26 wl=-0.990159 sm=-64.09187 lead=-62.95707 util=-1.235226 prior=0.04131609
+c 5 C3 loc=73 edge=14 visits=14 wl=-0.9715157 sm=-54.89134 lead=-56.70177 util=-1.206997 prior=0.03679102
+children=6
+RV win=0.006052759 loss=0.9939472 es=-63.76391 lead=-63.10208 wl=-0.9878945 util=-1.232487
+chosen loc=83 C2
+END 26
+CASE 27 name=empty7 board=7x7 ko=2 score=0 tax=0 suicide=0 button=0 whb=2 fpo=1 komi=40E00000 ipla=1 pla=1 moves=- sseed=tol27 base=1 maxvisits=400 params=useGraphSearch=0
+root visits=400
+c 0 D4 loc=36 edge=397 visits=397 wl=-0.8290732 sm=-2.159017 lead=-2.222649 util=-0.8432837 prior=0.9651681
+c 1 D3 loc=44 edge=1 visits=1 wl=0.3446159 sm=-0.6602366 lead=-0.0713101 util=0.3688395 prior=0.01266318
+c 2 C4 loc=35 edge=1 visits=1 wl=0.5494019 sm=-0.06026514 lead=0.3524992 util=0.5933438 prior=0.006979942
+children=3
+RV win=0.08685933 loss=0.9131407 es=-2.155074 lead=-2.215952 wl=-0.8262813 util=-0.8403994
+chosen loc=36 D4
+END 27
+CASE 28 name=game19-p20-m60 board=19x19 ko=0 score=1 tax=1 suicide=0 button=0 whb=0 fpo=0 komi=40D00000 ipla=1 pla=1 moves=96/1,324/2,356/1,64/2,296/1,74/2,137/1,123/2,346/1,348/2,306/1,264/2,350/1,330/2,331/1,329/2,351/1,290/2,347/1,368/2,344/1,343/2,363/1,345/2,364/1,325/2,365/1,342/2,308/1,311/2,312/1,292/2,293/1,272/2,273/1,252/2,84/1,83/2,65/1,104/2,85/1,44/2,105/1,125/2,126/1,145/2,146/1,165/2,72/1,76/2,77/1,57/2,75/1,56/2,95/1,97/2,117/1,78/2,55/1,118/2 sseed=tol28 base=1 maxvisits=1000 params=useGraphSearch=0,rootSymmetryPruning=1
+root visits=1000
+c 0 N8 loc=253 edge=302 visits=302 wl=0.4630355 sm=7.045337 lead=5.8847 util=0.4893646 prior=0.2804514
+c 1 E18 loc=45 edge=29 visits=29 wl=0.5874384 sm=9.171704 lead=7.530316 util=0.6306473 prior=0.1249279
+c 2 C17 loc=63 edge=354 visits=354 wl=0.4445482 sm=6.272012 lead=5.256562 util=0.4653526 prior=0.1052336
+c 3 C5 loc=303 edge=14 visits=14 wl=0.5905485 sm=9.484724 lead=8.161469 util=0.6358943 prior=0.06527766
+c 4 G8 loc=247 edge=15 visits=15 wl=0.5755682 sm=8.522122 lead=7.091542 util=0.6140306 prior=0.06139885
+c 5 F7 loc=266 edge=15 visits=15 wl=0.5686738 sm=8.439743 lead=7.016917 util=0.6064676 prior=0.0548468
+c 6 O9 loc=234 edge=8 visits=8 wl=0.5865735 sm=9.18121 lead=7.576959 util=0.6293313 prior=0.03728588
+c 7 B2 loc=362 edge=8 visits=8 wl=0.5753105 sm=8.446819 lead=6.843606 util=0.6131317 prior=0.03362593
+c 8 S14 loc=138 edge=5 visits=5 wl=0.6019803 sm=8.976262 lead=7.411491 util=0.6440335 prior=0.02613018
+c 9 J7 loc=269 edge=6 visits=6 wl=0.5325523 sm=7.941335 lead=6.537826 util=0.5660008 prior=0.01798706
+c 10 J5 loc=309 edge=13 visits=13 wl=0.4823849 sm=6.867535 lead=5.725419 util=0.5075536 prior=0.01739846
+c 11 N5 loc=313 edge=197 visits=197 wl=0.4290644 sm=5.84393 lead=4.769639 util=0.4468436 prior=0.01675219
+c 12 H7 loc=268 edge=6 visits=6 wl=0.5612345 sm=8.55739 lead=7.066979 util=0.5993744 prior=0.0162192
+c 13 E7 loc=265 edge=4 visits=4 wl=0.5328683 sm=7.213664 lead=5.968532 util=0.5614344 prior=0.01356789
+c 14 F12 loc=166 edge=3 visits=3 wl=0.5530311 sm=7.869991 lead=6.605006 util=0.5862779 prior=0.0126419
+c 15 G7 loc=267 edge=3 visits=3 wl=0.5418829 sm=7.612995 lead=6.245171 util=0.5734368 prior=0.01159727
+c 16 N4 loc=333 edge=5 visits=5 wl=0.509557 sm=6.768878 lead=5.46427 util=0.5347685 prior=0.01099588
+c 17 G11 loc=187 edge=2 visits=2 wl=0.559737 sm=7.836719 lead=6.37191 util=0.592794 prior=0.008400267
+c 18 F8 loc=246 edge=2 visits=2 wl=0.5546718 sm=7.71258 lead=6.26623 util=0.5870737 prior=0.008400214
+c 19 C6 loc=283 edge=2 visits=2 wl=0.6392093 sm=10.44876 lead=8.972646 util=0.6925888 prior=0.007818392
+c 20 D6 loc=284 edge=2 visits=2 wl=0.5387349 sm=7.401792 lead=6.254812 util=0.569057 prior=0.004716916
+c 21 C4 loc=323 edge=1 visits=1 wl=0.619598 sm=8.565206 lead=7.307228 util=0.6594142 prior=0.004683967
+c 22 H8 loc=248 edge=1 visits=1 wl=0.5402304 sm=7.555946 lead=6.269347 util=0.5712321 prior=0.003890152
+c 23 B5 loc=302 edge=1 visits=1 wl=0.5658835 sm=8.974578 lead=7.497902 util=0.6083743 prior=0.003803399
+c 24 H4 loc=328 edge=1 visits=1 wl=0.4955833 sm=6.829437 lead=5.699495 util=0.5216442 prior=0.003321522
+children=25
+RV win=0.7310276 loss=0.2688869 es=6.691272 lead=5.566132 wl=0.4621407 util=0.4861181
+chosen loc=313 N5
+END 28
+CASE 29 name=game19-p6-m132 board=19x19 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=336/1,84/2,97/1,324/2,256/1,95/2,72/1,136/2,75/1,357/2,356/1,337/2,317/1,318/2,297/1,298/2,177/1,277/2,276/1,257/2,376/1,236/2,237/1,296/2,316/1,295/2,255/1,238/2,217/1,218/2,197/1,74/2,76/1,93/2,116/1,115/2,137/1,96/2,117/1,54/2,57/1,111/2,69/1,67/2,109/1,352/2,91/1,92/2,294/1,90/2,71/1,110/2,48/1,89/2,47/1,66/2,46/1,45/2,68/1,88/2,87/1,65/2,107/1,144/2,108/1,150/2,167/1,349/2,133/1,132/2,153/1,190/2,104/1,105/2,124/1,125/2,143/1,163/2,142/1,164/2,162/1,182/2,183/1,203/2,83/1,63/2,82/1,62/2,102/1,123/2,103/1,184/2,122/1,52/2,51/1,32/2,31/1,53/2,29/1,50/2,70/1,208/2,207/1,227/2,206/1,188/2,146/1,226/2,205/1,225/2,204/1,224/2,223/1,243/2,145/1,222/2,114/1,94/2,113/1,112/2,169/1,170/2,149/1,187/2,189/1,209/2,130/1,152/2,210/1,173/2,154/1,174/2 sseed=tol29 base=1 maxvisits=400 params=conservativePass=1
+root visits=400
+c 0 P13 loc=155 edge=57 visits=57 wl=0.9996723 sm=98.63268 lead=95.51244 util=1.190411 prior=0.1745424
+c 1 Q13 loc=156 edge=19 visits=19 wl=0.9997659 sm=100.6576 lead=95.63671 util=1.205517 prior=0.07084885
+c 2 C3 loc=343 edge=22 visits=22 wl=0.9997729 sm=94.72726 lead=91.34313 util=1.175273 prior=0.05438616
+c 3 D18 loc=44 edge=111 visits=111 wl=0.9991975 sm=89.53112 lead=88.59537 util=1.130912 prior=0.04664055
+c 4 E19 loc=25 edge=12 visits=12 wl=0.9997647 sm=96.7916 lead=93.38015 util=1.187852 prior=0.0343583
+c 5 B18 loc=42 edge=46 visits=46 wl=0.9992136 sm=90.80477 lead=89.45795 util=1.137129 prior=0.03288681
+c 6 E12 loc=165 edge=15 visits=15 wl=0.9995482 sm=95.65624 lead=92.47204 util=1.172983 prior=0.03224289
+c 7 P14 loc=135 edge=6 visits=6 wl=0.9997395 sm=102.5851 lead=96.93388 util=1.216498 prior=0.02644341
+c 8 A17 loc=61 edge=10 visits=10 wl=0.9996306 sm=96.3984 lead=94.9364 util=1.178758 prior=0.02562878
+c 9 L11 loc=191 edge=9 visits=9 wl=0.9996969 sm=96.38999 lead=92.86963 util=1.18076 prior=0.0240226
+c 10 D3 loc=344 edge=8 visits=8 wl=0.9997725 sm=96.84272 lead=92.28822 util=1.187892 prior=0.02386535
+c 11 H3 loc=348 edge=8 visits=8 wl=0.9997893 sm=95.7512 lead=91.80581 util=1.180601 prior=0.02229254
+c 12 F14 loc=126 edge=4 visits=4 wl=0.9994306 sm=106.1821 lead=102.0711 util=1.214729 prior=0.01981156
+c 13 P12 loc=175 edge=4 visits=4 wl=0.9997335 sm=102.574 lead=96.37847 util=1.220241 prior=0.01913725
+c 14 F11 loc=186 edge=4 visits=4 wl=0.9997056 sm=106.278 lead=102.8861 util=1.22187 prior=0.01786785
+c 15 F16 loc=86 edge=15 visits=15 wl=0.999515 sm=91.43838 lead=91.09789 util=1.143209 prior=0.01365768
+c 16 J4 loc=329 edge=5 visits=5 wl=0.999768 sm=96.09706 lead=92.73423 util=1.18037 prior=0.01355556
+c 17 F19 loc=26 edge=4 visits=4 wl=0.9997841 sm=97.04098 lead=92.76926 util=1.190421 prior=0.01277922
+c 18 C2 loc=363 edge=4 visits=4 wl=0.9997808 sm=96.63162 lead=92.26523 util=1.187327 prior=0.01240577
+c 19 E16 loc=85 edge=5 visits=5 wl=0.9995849 sm=94.73931 lead=93.17452 util=1.165333 prior=0.01185746
+c 20 C18 loc=43 edge=4 visits=4 wl=0.9996543 sm=97.43195 lead=94.70782 util=1.186779 prior=0.01161455
+c 21 S2 loc=378 edge=4 visits=4 wl=0.9997315 sm=95.85586 lead=92.92446 util=1.182514 prior=0.0108315
+c 22 S7 loc=278 edge=3 visits=3 wl=0.9996299 sm=99.82278 lead=96.29193 util=1.198867 prior=0.009913204
+c 23 B19 loc=22 edge=3 visits=3 wl=0.9996384 sm=97.98486 lead=98.19899 util=1.184428 prior=0.0090373
+c 24 L6 loc=291 edge=2 visits=2 wl=0.9997427 sm=97.5498 lead=93.95425 util=1.187901 prior=0.008646483
+c 25 L10 loc=211 edge=2 visits=2 wl=0.9996954 sm=97.76882 lead=93.11988 util=1.189756 prior=0.008595726
+c 26 S8 loc=258 edge=2 visits=2 wl=0.9995602 sm=96.29757 lead=92.74681 util=1.183019 prior=0.007776321
+c 27 A18 loc=41 edge=2 visits=2 wl=0.9995802 sm=98.51044 lead=95.51622 util=1.189633 prior=0.007005766
+c 28 O9 loc=234 edge=2 visits=2 wl=0.9996345 sm=96.54503 lead=91.27737 util=1.183765 prior=0.006210149
+c 29 K4 loc=330 edge=2 visits=2 wl=0.9997581 sm=96.11374 lead=92.38935 util=1.182868 prior=0.006201232
+c 30 F15 loc=106 edge=1 visits=1 wl=0.9994653 sm=101.7001 lead=103.1494 util=1.201324 prior=0.0061991
+c 31 H12 loc=168 edge=1 visits=1 wl=0.9995671 sm=108.0918 lead=105.3936 util=1.230269 prior=0.00613773
+c 32 M6 loc=292 edge=2 visits=2 wl=0.9996699 sm=94.39056 lead=89.61283 util=1.170292 prior=0.005925694
+c 33 H13 loc=148 edge=1 visits=1 wl=0.9995601 sm=107.9289 lead=104.0749 util=1.230661 prior=0.00583186
+children=34
+RV win=0.9997437 loss=0.0002563318 es=94.39205 lead=92.0041 wl=0.9994873 util=1.164137
+chosen loc=44 D18
+END 29
+CASE 30 name=game19-p23-m20 board=19x19 ko=0 score=0 tax=0 suicide=0 button=0 whb=1 fpo=1 komi=40F00000 ipla=1 pla=1 moves=96/1,336/2,324/1,84/2,357/1,356/2,337/1,353/2,316/1,315/2,296/1,377/2,378/1,143/2,103/1,104/2,123/1,124/2,83/1,163/2 sseed=tol30 base=1 maxvisits=1000 params=-
+root visits=1000
+c 0 C17 loc=63 edge=941 visits=941 wl=-0.3463281 sm=-4.449374 lead=-3.168287 util=-0.3619624 prior=0.7236907
+c 1 D17 loc=64 edge=58 visits=58 wl=-0.2049977 sm=-2.924552 lead=-2.022224 util=-0.2083439 prior=0.2478729
+children=2
+RV win=0.3300846 loss=0.6697973 es=-4.377587 lead=-3.114366 wl=-0.3397127 util=-0.3547685
+chosen loc=63 C17
+END 30
+CASE 31 name=game9-p50-m110 board=9x9 ko=1 score=0 tax=0 suicide=1 button=0 whb=0 fpo=0 komi=40F00000 ipla=1 pla=1 moves=48/1,54/2,81/1,82/2,22/1,25/2,31/1,44/2,15/1,95/2,84/1,17/2,99/1,94/2,57/1,91/2,89/1,92/2,35/1,88/2,93/1,33/2,39/1,32/2,74/1,75/2,69/1,23/2,52/1,18/2,49/1,79/2,85/1,13/2,12/1,96/2,29/1,16/2,34/1,41/2,66/1,68/2,28/1,24/2,45/1,65/2,56/1,27/2,61/1,46/2,78/1,47/2,73/1,51/2,71/1,36/2,43/1,87/2,14/1,11/2,37/1,58/2,79/1,72/2,59/1,26/2,97/1,62/2,83/1,61/2,14/1,38/2,71/1,67/2,77/1,64/2,53/1,68/2,67/1,15/2,42/1,19/2,86/1,55/2,21/1,45/2,35/1,81/2,34/1,11/2,94/1,95/2,35/1,58/2,21/1,22/2,31/1,58/2,96/1,98/2,88/1,68/2,68/1,37/2,63/1,31/2,34/1,35/2,76/1,1/2 sseed=tol31 base=1 maxvisits=400 params=conservativePass=1
+root visits=400
+c 0 pass loc=1 edge=213 visits=213 wl=0.9999789 sm=12.30968 lead=12.50906 util=1.130607 prior=0.4954651
+c 1 H1 loc=98 edge=52 visits=52 wl=0.9999614 sm=12.30546 lead=12.69654 util=1.129629 prior=0.1443902
+c 2 H5 loc=58 edge=52 visits=52 wl=0.9999581 sm=12.30274 lead=12.72351 util=1.129554 prior=0.1427989
+c 3 E1 loc=95 edge=41 visits=41 wl=0.9999494 sm=12.23662 lead=12.73675 util=1.12756 prior=0.1107258
+c 4 G2 loc=87 edge=41 visits=41 wl=0.9999441 sm=12.27494 lead=12.77545 util=1.128306 prior=0.1066201
+children=5
+RV win=0.9999837 loss=1.632032e-05 es=12.29365 lead=12.61261 wl=0.9999674 util=1.129696
+chosen loc=1 pass
+END 31

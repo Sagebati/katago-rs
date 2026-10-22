@@ -1,6 +1,6 @@
 // Oracle for port::math::{atan, tan} (DECISIONS.md D13): glibc results on inputs in the ranges
 // ScoreValue uses (nninputs.cpp: atan of a scaled score, tan of a value in (-pi/2, pi/2)).
-// Those two delegate to the platform libm, so the test allows 1 ulp, not bit-exactness.
+// atan is now port::math::atan (CORE-MATH + glibc override, D13 b); tan delegates to the platform libm, so the test allows 1 ulp for tan.
 // Not upstream code. Build and run (from the repo root):
 //   g++ -std=c++17 -O2 -ffp-contract=off -fno-builtin \
 //     -o /tmp/math_ulp_oracle fixtures/upstream-v1.16.5/unit/oracle/math_ulp.cpp -lm
