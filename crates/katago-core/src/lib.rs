@@ -8,7 +8,8 @@
 #![allow(clippy::collapsible_if, clippy::collapsible_else_if, clippy::needless_range_loop,
          clippy::manual_range_contains, clippy::new_without_default, clippy::too_many_arguments,
          clippy::inherent_to_string_shadow_display, clippy::manual_swap, clippy::nonminimal_bool,
-         clippy::needless_return, clippy::comparison_chain)]
+         clippy::needless_return, clippy::comparison_chain, clippy::if_same_then_else,
+         clippy::field_reassign_with_default)]
 #![deny(clippy::await_holding_refcell_ref)]
 // PORTING.md §6 item 3: transcendentals only through port::math (list in clippy.toml).
 #![deny(clippy::disallowed_methods)]

@@ -194,6 +194,24 @@ mod tests {
     assert_eq!(cpp_max(1.0, f64::NAN), 1.0);
     assert_eq!(cpp_min(1.0, 2.0), 1.0);
   }
+
+  #[test]
+  fn static_cast_i64() {
+    // x86-64 cvttss2si/cvttsd2si (64-bit): INT64_MIN for NaN and anything outside [-2^63, 2^63).
+    assert_eq!(static_cast_i64_f32(f32::NAN), i64::MIN);
+    assert_eq!(static_cast_i64_f32(f32::INFINITY), i64::MIN);
+    assert_eq!(static_cast_i64_f32(f32::NEG_INFINITY), i64::MIN);
+    assert_eq!(static_cast_i64_f32(9223372036854775808.0f32), i64::MIN);
+    assert_eq!(static_cast_i64_f32(-9223372036854775808.0f32), i64::MIN);
+    assert_eq!(static_cast_i64_f32(f32::from_bits(0x5effffff)), 9223371487098961920);
+    assert_eq!(static_cast_i64_f32(-7.9f32), -7);
+    assert_eq!(static_cast_i64_f64(f64::NAN), i64::MIN);
+    assert_eq!(static_cast_i64_f64(1e19), i64::MIN);
+    assert_eq!(static_cast_i64_f64(-1e19), i64::MIN);
+    assert_eq!(static_cast_i64_f64(9223372036854774784.0), 9223372036854774784);
+    assert_eq!(static_cast_i64_f64(-9223372036854775808.0), i64::MIN);
+    assert_eq!(static_cast_i64_f64(1868.999), 1868);
+  }
 }
 
 /// `(int)x` / `static_cast<int>(x)` of a `double` as compiled for x86-64 (`cvttsd2si`).
@@ -206,4 +224,28 @@ pub fn static_cast_i32_f64(x: f64) -> i32 {
 /// `(int)x` of a `float` as compiled for x86-64 (`cvttss2si`): see static_cast_i32_f64.
 pub fn static_cast_i32_f32(x: f32) -> i32 {
   static_cast_i32_f64(x as f64)
+}
+
+/// `(int64_t)x` / `static_cast<int64_t>(x)` of a `double` as compiled for x86-64 (64-bit
+/// `cvttsd2si`). C++ UB for NaN and values outside [-2^63, 2^63); x86-64 gives INT64_MIN there
+/// (the "integer indefinite" value), while Rust `as` saturates (NaN -> 0). In range it truncates
+/// toward zero like `as`. -2^63 itself is representable, so the lower bound is inclusive.
+pub fn static_cast_i64_f64(x: f64) -> i64 {
+  if x >= -9223372036854775808.0 && x < 9223372036854775808.0 { x as i64 } else { i64::MIN }
+}
+
+/// `(int64_t)x` of a `float` as compiled for x86-64 (64-bit `cvttss2si`): see static_cast_i64_f64.
+/// Widening f32 -> f64 is exact, so the range test is the same.
+pub fn static_cast_i64_f32(x: f32) -> i64 {
+  static_cast_i64_f64(x as f64)
+}
+
+/// A `const char*` parameter seen from C++: the string ends at its first NUL byte (`strlen`,
+/// `strchr`, `operator+=(const char*)`, `find_*_of(const char*)` all stop there). A Rust `&str` can
+/// carry interior NULs, so ported `const char*` parameters go through this first.
+pub fn c_str(s: &str) -> &str {
+  match s.as_bytes().iter().position(|&c| c == 0) {
+    Some(i) => &s[..i],
+    None => s,
+  }
 }

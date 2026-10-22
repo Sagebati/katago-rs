@@ -1,8 +1,9 @@
 //! Replays upstream cpp/tests/testboardbasic.cpp @ v1.16.5 against the extracted
 //! expected blocks in fixtures/upstream-v1.16.5/unit/testboardbasic/.
 //!
-//! Not ported (need code outside the pilot): Tests::runBoardHandicapTest (BoardHistory),
-//! Tests::runBoardReplayTest (BoardHistory, GraphHash, PlayUtils).
+//! Tests::runBoardReplayTest uses a test-local copy of PlayUtils::chooseRandomLegalMove
+//! (program/playutils.rs is M3 and only ports getHackedLCBForWinrate), and also checks its Rand
+//! stream against oracle/boardreplay_rng.cpp (the upstream test asserts only replay invariants).
 
 #![allow(non_upper_case_globals)]
 
@@ -13,9 +14,13 @@ use common::endl;
 use common::fixture;
 use common::init;
 use katago_core::core::global::Global;
+use katago_core::core::hash::Hash128;
 use katago_core::core::rand::Rand;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
+use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::graphhash::GraphHash;
+use katago_core::game::rules::Rules;
 use katago_core::strprintf;
 use katago_core::testAssert;
 
@@ -541,6 +546,157 @@ fn board_undo_test() {
   cases.ran();
 }
 
+// ===================================================================== runBoardHandicapTest
+
+#[test]
+fn board_handicap_test() {
+  init();
+  let mut cases = Cases::new("testboardbasic::board_handicap_test");
+  {
+    let mut board = Board::new_x_y(19, 19).unwrap();
+    let next_pla: Player = P_BLACK;
+    let rules = Rules::parse_rules("chinese").unwrap();
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 3, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 4, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 5, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 3);
+  }
+  cases.ran();
+
+  {
+    let mut board = Board::new_x_y(19, 19).unwrap();
+    let next_pla: Player = P_BLACK;
+    let rules = Rules::parse_rules("chinese").unwrap();
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+
+    hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    let loc = Location::get_loc(3, 3, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 4, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 2);
+    testAssert!(hist.compute_white_handicap_bonus() == 2);
+    let loc = Location::get_loc(3, 5, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 3);
+  }
+  cases.ran();
+
+  {
+    let mut board = Board::new_x_y(19, 19).unwrap();
+    let next_pla: Player = P_BLACK;
+    let rules = Rules::parse_rules("aga").unwrap();
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+
+    hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    let loc = Location::get_loc(3, 3, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 4, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 2);
+    testAssert!(hist.compute_white_handicap_bonus() == 1);
+    let loc = Location::get_loc(3, 5, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 2);
+  }
+  cases.ran();
+
+  {
+    let mut board = Board::new_x_y(19, 19).unwrap();
+    let next_pla: Player = P_BLACK;
+    let rules = Rules::parse_rules("aga").unwrap();
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+
+    hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    let loc = Location::get_loc(3, 3, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_WHITE, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 4, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 2);
+    testAssert!(hist.compute_white_handicap_bonus() == 1);
+    hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_WHITE, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 2);
+    testAssert!(hist.compute_white_handicap_bonus() == 1);
+    let loc = Location::get_loc(3, 5, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 2);
+    let loc = Location::get_loc(3, 6, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_WHITE, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 2);
+    let loc = Location::get_loc(3, 7, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 3);
+    testAssert!(hist.compute_white_handicap_bonus() == 2);
+  }
+  cases.ran();
+
+  {
+    let mut board = Board::new_x_y(19, 19).unwrap();
+    let next_pla: Player = P_BLACK;
+    let rules = Rules::parse_rules("chinese").unwrap();
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+
+    hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    let loc = Location::get_loc(3, 3, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 4, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_WHITE, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 5, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_WHITE, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 6, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+    let loc = Location::get_loc(3, 7, board.x_size);
+    hist.make_board_move_assume_legal(&mut board, loc, P_BLACK, None, false);
+    testAssert!(hist.compute_num_handicap_stones() == 0);
+    testAssert!(hist.compute_white_handicap_bonus() == 0);
+  }
+  cases.ran();
+
+}
+
 // ===================================================================== runBoardStressTest
 
 #[test]
@@ -919,4 +1075,208 @@ fn board_stress_test() {
     cases.ran();
   }
   let _ = Global::int_to_string(0);
+}
+
+// ===================================================================== runBoardReplayTest
+
+/// upstream: PlayUtils::chooseRandomLegalMove (program/playutils.cpp)
+/// Test-local copy: program/playutils.rs (M3) only ports getHackedLCBForWinrate, and this
+/// test needs nothing else from it.
+fn choose_random_legal_move(board: &Board, hist: &BoardHistory, pla: Player, game_rand: &mut Rand, ban_move: Loc) -> Loc {
+  let mut num_legal_moves: i32 = 0;
+  let mut locs: [Loc; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
+  testAssert!(pla == hist.presumed_next_move_pla);
+  for loc in 0..Board::MAX_ARR_SIZE {
+    let loc = loc as Loc;
+    if hist.is_legal(board, loc, pla) && loc != ban_move {
+      locs[num_legal_moves as usize] = loc;
+      num_legal_moves += 1;
+    }
+  }
+  if num_legal_moves > 0 {
+    let n: i32 = game_rand.next_uint_n(num_legal_moves as u32) as i32;
+    return locs[n as usize];
+  }
+  Board::NULL_LOC
+}
+
+/// upstream: Board::isAdjacentToPla (board.cpp), as called by runBoardReplayTest.
+/// PORT NOTE: upstream UB (isAdjacentToPla(PASS_LOC) reads colors[-9], out of bounds).
+/// chooseRandomLegalMove scans every loc from 0 and PASS_LOC is always legal, so upstream calls
+/// isAdjacentToPla(PASS_LOC, opp) (and would call it with NULL_LOC if nothing were legal). FOREACHADJ
+/// then reads colors[loc-(x_size+1)], colors[loc-1], colors[loc+1], colors[loc+x_size+1]: for PASS_LOC
+/// = 1 that is colors[-9] (outside the Board), colors[0], colors[2] and colors[x_size+2] (= the
+/// on-board point (0,0)). Rust would panic on the negative index, so only the adjacent indices >= 0
+/// are checked: the result is true exactly when (0,0) holds `pla`. That keeps the RNG stream of the
+/// upstream binary, whose out-of-bounds byte never equals pla there: oracle/boardreplay_rng.cpp runs
+/// the real isAdjacentToPla next to this in-bounds variant and counts 0 disagreements over the 6000
+/// reps, and board_replay_test asserts its Rand/move fingerprints. On-board locs are unaffected.
+fn is_adjacent_to_pla_in_bounds(board: &Board, loc: Loc, pla: Player, fp: &mut ReplayFingerprint) -> bool {
+  let mut r = false;
+  for adjoffset in [-(board.x_size + 1), -1, 1, board.x_size + 1] {
+    let adj: i32 = loc as i32 + adjoffset;
+    if adj >= 0 && board.colors[adj as usize] == pla {
+      r = true;
+      break;
+    }
+  }
+  if loc == Board::PASS_LOC || loc == Board::NULL_LOC {
+    fp.pass_adj_calls += 1;
+    if r {
+      fp.pass_adj_true += 1;
+    }
+  }
+  r
+}
+
+/// Not upstream: fingerprints of the Rand stream and of the selected moves, compared with
+/// oracle/boardreplay_rng.txt (the same loop built from the C++ sources, oracle/boardreplay_rng.cpp).
+/// The upstream test asserts only replay invariants, so without this a different draw sequence
+/// would still pass.
+struct ReplayFingerprint {
+  moves: i64,
+  pass_adj_calls: i64,
+  pass_adj_true: i64,
+  move_fnv: u64,
+}
+
+impl ReplayFingerprint {
+  fn note_move(&mut self, loc: Loc) {
+    self.moves += 1;
+    self.move_fnv ^= loc as i64 as u64;
+    self.move_fnv = self.move_fnv.wrapping_mul(1099511628211);
+  }
+}
+
+#[test]
+fn board_replay_test() {
+  init();
+  let mut cases = Cases::new("testboardbasic::board_replay_test");
+  // cout << "Running board replay test" << endl;
+  let mut rand = Rand::new_seed("runBoardReplayTest");
+
+  let base = parse(9, 5, &fixture(F, "runboardreplaytest.input0.txt"));
+  let mut fp = ReplayFingerprint { moves: 0, pass_adj_calls: 0, pass_adj_true: 0, move_fnv: 1469598103934665603 };
+  let mut reps = 0;
+
+  for _rep in 0..6000 {
+    let mut board = base.clone();
+    let mut pla: Player = if rand.next_bool(0.5) { P_BLACK } else { P_WHITE };
+    let mut initial_encore_phase: i32 = if rand.next_bool(0.9) { 0 } else if rand.next_bool(0.5) { 1 } else { 2 };
+    let mut rules: Rules = if rand.next_bool(0.8) { Rules::parse_rules("japanese").unwrap() } else { Rules::parse_rules("chinese").unwrap() };
+    if rules.scoring_rule == Rules::SCORING_AREA {
+      initial_encore_phase = 0;
+    }
+    if rand.next_bool(0.1) {
+      rules.ko_rule = if rand.next_bool(0.5) { Rules::KO_SITUATIONAL } else { Rules::KO_POSITIONAL };
+    }
+    if rand.next_bool(0.2) {
+      rules.tax_rule = if rand.next_bool(0.5) { Rules::TAX_SEKI } else if rand.next_bool(0.5) { Rules::TAX_NONE } else { Rules::TAX_ALL };
+    }
+    let mut hist = BoardHistory::new_full(&board, pla, &rules, initial_encore_phase);
+    hist.set_initial_turn_number(rand.next_int_a_b(0, 40) as i64);
+    hist.set_assume_multiple_starting_black_moves_are_handicap(rand.next_bool(0.5));
+
+    let draw_equivalent_wins_for_white: f64 = 0.7;
+    let rep_bound: i32 = rand.next_int_a_b(1, 5);
+
+    let mut graph_hash: Hash128 = GraphHash::get_graph_hash_from_scratch(&hist, pla, rep_bound, draw_equivalent_wins_for_white);
+
+    let mut any_komi_set = false;
+    let pass_prob: f64 = rand.next_double_a_b(0.05, 0.80);
+    let num_steps: i32 = rand.next_int_a_b(6, 15);
+    for _i in 0..num_steps {
+      let tmp_hist = BoardHistory::new_full(&board, pla, &rules, hist.encore_phase);
+      let mut move_loc: Loc;
+      if rand.next_bool(pass_prob) {
+        move_loc = Board::PASS_LOC;
+      } else {
+        move_loc = choose_random_legal_move(&board, &tmp_hist, pla, &mut rand, Board::NULL_LOC);
+        //Resample to increase likelihood of capture moves.
+        if !board.would_be_capture(move_loc, pla) {
+          move_loc = choose_random_legal_move(&board, &tmp_hist, pla, &mut rand, Board::NULL_LOC);
+        }
+        //Resample to decrease likelihood of moves not adjacent to opponent
+        if !is_adjacent_to_pla_in_bounds(&board, move_loc, get_opp(pla), &mut fp) {
+          move_loc = choose_random_legal_move(&board, &tmp_hist, pla, &mut rand, Board::NULL_LOC);
+        }
+      }
+      fp.note_move(move_loc);
+      let prevent_encore: bool = rand.next_bool(0.5);
+      if rand.next_bool(0.5) {
+        // if(!hist.isLegal(board,moveLoc,pla))
+        //   cout << "AAAA" << endl;
+        let suc: bool = hist.make_board_move_tolerant_prevent_encore(&mut board, move_loc, pla, prevent_encore);
+        testAssert!(suc);
+      } else {
+        if hist.is_legal(&board, move_loc, pla) {
+          hist.make_board_move_assume_legal(&mut board, move_loc, pla, None, prevent_encore);
+        } else {
+          continue;
+        }
+      }
+      pla = get_opp(pla);
+      if rand.next_bool(0.1) {
+        pla = get_opp(pla);
+      }
+      if rand.next_bool(0.025) {
+        any_komi_set = true;
+        let new_komi: f32 = hist.rules.komi + (if rand.next_bool(0.5) { -0.5 } else { 0.5 }) as f32;
+        hist.set_komi(new_komi);
+      }
+
+      graph_hash = GraphHash::get_graph_hash(graph_hash, &hist, pla, rep_bound, draw_equivalent_wins_for_white);
+    }
+
+    let mut hist_copy = hist.copy_to_initial();
+    let mut board_copy = hist_copy.get_recent_board(0).clone();
+    for i in 0..hist.move_history.len() {
+      hist_copy.make_board_move_assume_legal(&mut board_copy, hist.move_history[i].loc, hist.move_history[i].pla, None, hist.prevent_encore_history[i]);
+    }
+    if rand.next_bool(0.05) {
+      hist_copy = hist.clone();
+    }
+    //if(rep < 100)
+    //  hist.printDebugInfo(cout,board);
+
+    testAssert!(board_copy.is_equal_for_testing(&board, true, true).unwrap());
+    testAssert!(board_copy.is_equal_for_testing(hist_copy.get_recent_board(0), true, true).unwrap());
+    testAssert!(hist_copy.get_recent_board(0).is_equal_for_testing(hist.get_recent_board(0), true, true).unwrap());
+    testAssert!(
+      BoardHistory::get_situation_rules_and_ko_hash(&board_copy, &hist_copy, pla, draw_equivalent_wins_for_white)
+        == BoardHistory::get_situation_rules_and_ko_hash(&board, &hist, pla, draw_equivalent_wins_for_white)
+    );
+    testAssert!(
+      hist_copy.current_self_komi(P_BLACK, draw_equivalent_wins_for_white) == hist.current_self_komi(P_BLACK, draw_equivalent_wins_for_white)
+    );
+    testAssert!(
+      hist_copy.current_self_komi(P_WHITE, draw_equivalent_wins_for_white) == hist.current_self_komi(P_WHITE, draw_equivalent_wins_for_white)
+    );
+    testAssert!(hist_copy.initial_turn_number == hist.initial_turn_number);
+    testAssert!(hist_copy.presumed_next_move_pla == hist.presumed_next_move_pla);
+    testAssert!(hist_copy.assume_multiple_starting_black_moves_are_handicap == hist.assume_multiple_starting_black_moves_are_handicap);
+    testAssert!(
+      GraphHash::get_state_hash(&hist_copy, pla, draw_equivalent_wins_for_white) == GraphHash::get_state_hash(&hist, pla, draw_equivalent_wins_for_white)
+    );
+    testAssert!(
+      GraphHash::get_graph_hash_from_scratch(&hist_copy, pla, rep_bound, draw_equivalent_wins_for_white)
+        == GraphHash::get_graph_hash_from_scratch(&hist, pla, rep_bound, draw_equivalent_wins_for_white)
+    );
+    testAssert!(any_komi_set || graph_hash == GraphHash::get_graph_hash_from_scratch(&hist, pla, rep_bound, draw_equivalent_wins_for_white));
+    cases.ran();
+    reps += 1;
+  }
+
+  // Not upstream: the draw sequence must be the C++ one (oracle/boardreplay_rng.cpp).
+  let fin: u64 = rand.next_uint64();
+  let actual = format!(
+    "reps {} moves {} passadj {} {} mismatch 0 movefnv {} final {}\n",
+    reps,
+    fp.moves,
+    fp.pass_adj_calls,
+    fp.pass_adj_true,
+    Global::uint64_to_hex_string(fp.move_fnv),
+    Global::uint64_to_hex_string(fin)
+  );
+  assert_eq!(actual, fixture("oracle", "boardreplay_rng.txt"), "runBoardReplayTest RNG stream differs from C++");
 }

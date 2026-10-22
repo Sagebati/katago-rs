@@ -90,7 +90,7 @@ They don't read the implementer's summary.
 | `Hash128` | `#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)] pub struct Hash128 { pub hash0: u64, pub hash1: u64 }` | **`Ord`/`PartialOrd` by hand**, comparing `hash1` first, then `hash0` (`hash.h`). Derived `Ord` would be wrong, and it decides `std::map` order. `^ \| &` → `impl BitXor/BitOr/BitAnd` + `*Assign`. `operator<<` → `impl Display` (= `to_string()`, uppercase hex, hash1 then hash0). Constructors are `const fn new(h0, h1)`. |
 | `T x[N]` (field or local) | `[T; N as usize]` | Keep the constant's declared type (`MAX_ARR_SIZE` is `i32`). Write `as usize` in array types and indices. Uninitialized C++ locals are zero-initialized in Rust (no note needed). |
 | `std::vector<T>` | `Vec<T>` | Param `const vector<T>&` → `&[T]`. Param `vector<T>&` → `&mut Vec<T>`. `vector<bool>` → `Vec<bool>`. |
-| `std::string` | `String` | Param `const string&`/`const char*` → `&str`. Out-param `string&` → `&mut String`. `std::string` is **bytes**: indexing, `size()`, `substr`, `find` and `+ char` are byte operations. Use `s.as_bytes()[i]`, `s.len()`, and slice only at ASCII boundaries (all KataGo text is ASCII); a byte that may be non-ASCII → `TODO(port)`. |
+| `std::string` | `String` | Param `const string&`/`const char*` → `&str`. A `const char*` ends at its first NUL: when the `&str` can contain one, read it through `port::cpp::c_str` (PORT NOTE). When rule 1 of §1 collapses a `const char*`/`std::string` overload pair, follow the overload upstream callers actually use, and say which in the PORT NOTE. Out-param `string&` → `&mut String`. `std::string` is **bytes**: indexing, `size()`, `substr`, `find` and `+ char` are byte operations. Use `s.as_bytes()[i]`, `s.len()`, and slice only at ASCII boundaries (all KataGo text is ASCII); a byte that may be non-ASCII → `TODO(port)`. |
 | `std::map<K,V>` / `std::set<K>` | `BTreeMap<K,V>` / `BTreeSet<K>` | Always, even when order looks irrelevant. `K` must use the C++ `operator<` order (see Hash128). `std::string` keys compare as unsigned bytes in both languages. |
 | `std::unordered_map/set` | `HashMap/HashSet` | Only for lookups. **Never iterate one.** If upstream iterates an unordered container, write `TODO(port)`. |
 | `std::pair<A,B>` | `(A, B)` | `STRUCT_NAMED_PAIR(Loc,loc,Player,pla,Move)` → `#[derive(Clone, Copy, Debug, Default, PartialEq)] pub struct Move { pub loc: Loc, pub pla: Player }` + `Move::new`. |
@@ -114,7 +114,7 @@ They don't read the implementer's summary.
 | static data, initialized at runtime | one `OnceLock<XStatics>` per class or file | §8. |
 | `enum` / `enum class` | `#[repr(i32)] enum` with verbatim variant names, or `pub const` ints when upstream uses plain `static const int` (`Rules::KO_SIMPLE`) | Don't convert int constants into an enum. |
 | `StringError`, `IOError`, `ValueError`, `ConfigParsingError`, `CommandError` | `KataError` variants of the same names (`core/global.rs`) | §7. |
-| `std::ostream&` param | `&mut dyn std::fmt::Write` | `out << x` → `write!(out, …).unwrap()` (writing to a `String` can't fail; this is the only allowed bare unwrap). `cout`/`cerr` → `log` macros. |
+| `std::ostream&` param | `&mut dyn std::fmt::Write` | `out << x` → `write!(out, …).unwrap()`, and `out << x << endl` → `writeln!(out, …).unwrap()` (not `write!` with `\n`) (writing to a `String` can't fail; this is the only allowed bare unwrap). `cout`/`cerr` → `log` macros. |
 | `Logger*` / `logger->write(s)` | removed / `log::info!("{}", s)` | Manifest: logger replaced by the `log` crate. `if(logger != NULL) logger->write(..)` → just log. Keep the message text. |
 | iterators | indices or slice iterators | `it = m.erase(it)` loops → `BTreeMap::retain`, only if visit order and side effects stay identical; otherwise collect the keys first. |
 
@@ -205,7 +205,9 @@ port were in this category.
    truncates and saturates (NaN→0). Use `as` when the value is known to be in range. If it can
    be out of range or NaN (anything derived from user input), use
    `port::cpp::static_cast_i32_f64`/`static_cast_i32_f32`, which give `i32::MIN` like x86-64
-   `cvttsd2si`/`cvttss2si`, and add `// PORT NOTE: C++ UB; x86-64 gives INT_MIN`.
+   `cvttsd2si`/`cvttss2si`, and add `// PORT NOTE: C++ UB; x86-64 gives INT_MIN`. `int64_t` targets work the same way with
+   `port::cpp::static_cast_i64_f64`/`_f32` (`i64::MIN`); plain `as i64` only when provably in
+   range, with `// PORT NOTE: in range because …`.
 6. **Integer overflow.** Signed overflow is UB in C++: use plain `+ - *` (debug builds panic,
    which catches bugs). Unsigned wraparound that upstream relies on uses `wrapping_*`.
    **Always** in hash, RNG and zobrist code (`Rand::nextUInt(n)`'s `bits - val + (n-1)`,
@@ -217,6 +219,10 @@ port were in this category.
 8. **Signed/unsigned comparisons.** C++ converts the signed side to unsigned
    (`int x = -1; x < v.size()` is false). Reproduce it: `(x as usize) < v.len()`.
 9. **Literal types.** `0.20f` → `0.20f32`, `1e-20f` → `1e-20f32`, `2.0` → f64. `1ULL << 53` → `1u64 << 53`.
+
+## 6b. Undefined behaviour that upstream actually reaches
+
+Some upstream code or tests hit UB (e.g. `isAdjacentToPla(PASS_LOC)` reads `colors[-9]` from `testboardbasic`'s replay test via `chooseRandomLegalMove`). Rule: if the UB is a **cast or arithmetic overflow** with deterministic x86-64/GCC behaviour, emulate it (`port::cpp::static_cast_*`, `wrapping_*`) with a PORT NOTE. If it is an **out-of-bounds or uninitialised read**, don't emulate memory: make the case explicit at the call site with the behaviour that keeps every *asserted* upstream result unchanged, add `// PORT NOTE: upstream UB (<what>)`, and list it in the manifest notes of the module. Evidence: an oracle build that runs the real UB call next to the substitute and counts disagreements (as `oracle/boardreplay_rng.cpp` does). That evidence holds for the fixture compiler and flags only.
 
 ## 7. Errors and assertions
 
@@ -257,7 +263,7 @@ port were in this category.
 - **`ostream << double`** (default precision 6, `%g`) → `port::fmt::cpp_ostream_f64(x)`. For
   `float` it's the same after widening. `Global::doubleToString`/`floatToString` use it.
   `ss.precision(17)` → `port::fmt::cpp_ostream_f64_prec(x, 17)`. `std::to_string(double)` → `%f`.
-  Integers and `Hash128` → `Display`. `endl` → `"\n"`.
+  Integers and `Hash128` → `Display`. `endl` → `"\n"` (`writeln!` when it ends a `write!`).
 - **JSON output must equal nlohmann's `dump()` byte for byte.** The goldens prove it
   (`tests/results/analysis/*.stdout`): keys **sorted** (`"edgeVisits","edgeWeight","lcb","move",…`),
   compact separators, doubles printed nlohmann-style (`9.0`, `0.65662659`, `4.12549165e-05`,
@@ -360,9 +366,12 @@ The fidelity rules trigger lints that are not bugs here. `crates/katago-core/src
 #![allow(clippy::collapsible_if, clippy::collapsible_else_if, clippy::needless_range_loop,
          clippy::manual_range_contains, clippy::new_without_default, clippy::too_many_arguments,
          clippy::inherent_to_string_shadow_display, clippy::manual_swap, clippy::nonminimal_bool,
-         clippy::needless_return, clippy::comparison_chain)]
+         clippy::needless_return, clippy::comparison_chain, clippy::if_same_then_else,
+         clippy::field_reassign_with_default)]
 #![deny(clippy::await_holding_refcell_ref)]
 ```
+
+Test crates don't inherit `lib.rs` attributes: each file in `tests/` that replays upstream code carries its own `#![allow(…)]` with the subset it needs (`bool_comparison`, `needless_late_init`, `manual_memcpy`… are common in transcribed tests).
 
 ## 12. Forbidden
 
@@ -395,6 +404,8 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 | Search (M3) | `cpp/tests/analysis/*.txt` queries through the ported analysis path. Primary oracle: our **Eigen** rerun under `runcmdtests.sh` overrides. Secondary: upstream `tests/results/analysis/*.stdout`, which were produced on CUDA with b6c96 (see `.stderr`), so allow float tolerance. | identical moves, order and visits; values ±1e-4; JSON key order and format exact |
 | Corpus (M3) | deterministic Eigen `katago analysis`, b10c128, 100 visits | ≥99% same top move, ≥95% identical visit vectors |
 
+**Comparisons.** Unit blocks use `TestCommon::expect` (upstream's per-line trim). Oracle-program outputs are compared **byte-exact** by `tests/common::compare_lines` (line endings and trailing newline included). `tests/fixture_coverage.rs` fails if an extracted expected block is consumed by no test and isn't on its allowlist with a reason.
+
 **Fixture layout.** `fixtures/<tag>/unit/<test-file-stem>/<test-slug>.<input|expected><k>.txt` plus an `INDEX.tsv`, produced by `tools/extract_raw_blocks.py` (stand-in for `xtask extract-tests`). C++ oracle programs that print values from upstream code live next to their outputs, in `fixtures/<tag>/unit/oracle/`, with the build command in their header.
 
 **Audit that tests actually ran:**
@@ -410,6 +421,8 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
   the recipe. `tests/common::fixture` reads fixtures through node's `fs` there.
 - Reviewers spot-check one fixture by hand: change one expected byte locally and confirm the
   test fails.
+
+**Test-local copies.** A test that needs an upstream helper from a later milestone (e.g. `PlayUtils::chooseRandomLegalMove`, M3) may carry a faithful copy in its test file, tagged `/// upstream: PlayUtils::chooseRandomLegalMove (playutils.cpp) — test-local copy until M3`. Delete it when the module lands. A function skipped because it does IO or reads stdin (`Global::pauseForKey`) gets no Rust fn; the manifest `notes` say so.
 
 ## 14. Re-sync after an upstream tag bump
 
@@ -429,8 +442,7 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 
 ## Appendix: `crates/katago-core/src/port/` (port-only helpers, binding names)
 
-Only the pilot owner and humans edit `port/`. Agents who need a helper that is missing write
-`TODO(port): needs port::<name>` and report it.
+Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<name>` in the report. Fixers whose task explicitly asks for a helper add it, with a unit test and a row in this table.
 
 | Item | Signature / meaning |
 |---|---|
@@ -440,6 +452,8 @@ Only the pilot owner and humans edit `port/`. Agents who need a helper that is m
 | `port::fmt` | `printf`, `printf_bytes`, `cpp_ostream_f64`, `cpp_ostream_f64_prec`, `cpp_to_string_f64`, `PrintfArg` (keeps C width and signedness so `%u`/`%x` of an int is right; `char`/`short` promote to `int`). `printf_bytes` has C byte semantics (`%c` one raw byte, `%.Ns` may cut a UTF-8 character, `%s` stops at NUL); `printf` is its `String` form, with U+FFFD where the bytes are not UTF-8 |
 | `port::math::{exp, ln, powf, expf}` | C `exp`, `log`, `pow` (double) and `expf`, bit-identical to glibc 2.44 on x86-64 with FMA (`__exp_fma`…), on every target. Ported from ARM optimized-routines (MIT) with glibc's FMA contractions as explicit `mul_add`. Oracle: `tests/math.rs` vs `oracle/math.cpp` (also under `just test-wasm`). `port::math::{atan, tan}` wrap the platform libm (≤ 1 ulp from glibc on wasm, D13; oracle `oracle/math_ulp.txt`). Not provided yet (TODO(port) list in the file): `tanh`, `tanhf`, `atanf`, `expm1`, `log10`, `lgamma`, float `logf`/`powf` |
 | `port::cpp::static_cast_i32_f64`, `static_cast_i32_f32` | `(int)x` with x86-64 `cvtts*2si` results: truncation in range, `i32::MIN` for NaN/out of range (§6 item 5) |
+| `port::cpp::static_cast_i64_f64`, `static_cast_i64_f32` | same for `int64_t` targets: `i64::MIN` for NaN/out of range |
+| `port::cpp::c_str` | `fn(&str) -> &str`: cut at the first NUL, the `const char*` view of a string |
 | `port::cpp::istream_parse_{i32,i64,u64,hex_u64,f32,f64}_whole` | `istream >>` semantics for `Global::tryStringTo*` |
 | `port::digest` | sha2/md5 glue: C-string NUL cut-off, big-endian u64 words, hex, `get512` |
 | `port::nlohmann::{parse, sax_parse, Sax, Exception}` | `json::parse(s)` / `json::sax_parse(s, &sax)`: port of nlohmann 3.8.0's lexer + parser (§9 Input); errors are `KataError::NlohmannJson(e.what())` |
@@ -455,3 +469,7 @@ Only the pilot owner and humans edit `port/`. Agents who need a helper that is m
 | `Rules::Rules(int kRule, int sRule, int tRule, bool suic, bool button, int whbRule, bool pOk, float km)` | `Rules::new_full` |
 | `Location::toStringMach(Loc, const Board&)` | `Location::to_string_mach_b` (rule 3 result, kept) |
 | `TestCommon::expect(const char*, std::ostringstream&, …)` | `TestCommon::expect_string` |
+| `BoardHistory::BoardHistory(const Board&, Player, const Rules&, int encorePhase)` | `BoardHistory::new_full` |
+| `Global::mapGet(const std::map<std::string,V>&, const char*)` (specialisation with its own message) | `Global::map_get_str` |
+| `Global::contains(const std::vector<A>&, const A&)` / `(const std::set<A>&, …)` / `(const std::map<A,B>&, …)` | `contains_vector` / `contains_set` / `contains_map` |
+| `Global::concat(const char*, int len)` / `concat(const std::set<std::string>&, …)` | `concat_len` / `concat_set` |

@@ -53,7 +53,8 @@ check-features:
     echo 'check-features: serde_json ok (float_roundtrip, no preserve_order)'
 
 # Oracle tests on wasm32-unknown-unknown under node: port::math (vs glibc), Rand, hash, printf,
-# rules. On wasm the std float math is not glibc's, so this is where libm drift shows up.
+# rules, global, testrules, the BoardHistory fuzz oracle. On wasm the std float math is not
+# glibc's, so this is where libm drift shows up.
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle

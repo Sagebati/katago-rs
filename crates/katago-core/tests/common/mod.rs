@@ -81,15 +81,33 @@ impl Drop for Cases {
   }
 }
 
-/// Line-by-line string equality against an oracle fixture, reporting the first differing line.
+/// Exact equality against an oracle fixture: the same bytes, including every line ending (`\r`
+/// kept) and the trailing newline (or its absence). On a mismatch it reports the first differing
+/// line, with escapes so that `\r` and missing newlines are visible.
 pub fn compare_lines(label: &str, actual: &str, expected: &str) {
-  let a: Vec<&str> = actual.lines().collect();
-  let e: Vec<&str> = expected.lines().collect();
-  for i in 0..std::cmp::max(a.len(), e.len()) {
-    let al = a.get(i).copied().unwrap_or("<missing>");
-    let el = e.get(i).copied().unwrap_or("<missing>");
-    assert_eq!(al, el, "{}: line {} differs", label, i + 1);
+  if actual == expected {
+    return;
   }
+  let a: Vec<&str> = actual.split_inclusive('\n').collect();
+  let e: Vec<&str> = expected.split_inclusive('\n').collect();
+  for i in 0..std::cmp::max(a.len(), e.len()) {
+    let al = a.get(i).copied();
+    let el = e.get(i).copied();
+    if al != el {
+      panic!(
+        "{}: line {} differs (actual {} lines / {} bytes, expected {} lines / {} bytes)\n  actual: {:?}\nexpected: {:?}",
+        label,
+        i + 1,
+        a.len(),
+        actual.len(),
+        e.len(),
+        expected.len(),
+        al,
+        el
+      );
+    }
+  }
+  unreachable!("{}: strings differ but every line is equal", label);
 }
 
 /// `dbits(x)` in oracle.cpp: the f64 bit pattern as 16 uppercase hex digits.
