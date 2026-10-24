@@ -5,6 +5,8 @@
 //! for a subset) and operator== / operator!=. Bit-exact; runs natively and on wasm32 (`just
 //! test-wasm`): the row goes through port::math's ln / powf / cos / sin.
 
+#![allow(clippy::field_reassign_with_default)]
+
 mod common;
 
 use std::collections::BTreeMap;

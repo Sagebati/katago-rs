@@ -1,6 +1,6 @@
 //! Replays upstream `DateTime::runTests` (cpp/core/datetime.cpp, SimpleDate) call for call; the two
 //! expected blocks are fixtures/upstream-v1.16.5/unit/datetime/runtests.expected{0,1}.txt.
-#![allow(clippy::bool_comparison, clippy::nonminimal_bool, clippy::identity_op, clippy::eq_op)]
+#![allow(clippy::bool_comparison, clippy::nonminimal_bool, clippy::identity_op, clippy::eq_op, clippy::neg_cmp_op_on_partial_ord)]
 
 mod common;
 
