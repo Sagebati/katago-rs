@@ -408,7 +408,9 @@ impl Search {
   }
 
   /// upstream: Search::selectBestChildToDescend (searchexplorehelpers.cpp)
-  pub(crate) fn select_best_child_to_descend(
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_evalcache_diff.rs can call it.
+  pub fn select_best_child_to_descend(
     &self,
     thread: &mut SearchThread,
     node: &SearchNode,

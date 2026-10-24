@@ -98,7 +98,9 @@ impl Search {
   }
 
   /// upstream: Search::addCurrentNNOutputAsLeafValue (searchupdatehelpers.cpp)
-  pub(crate) fn add_current_nn_output_as_leaf_value(&self, node: &SearchNode, assume_no_existing_weight: bool) {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_evalcache_diff.rs can call it.
+  pub fn add_current_nn_output_as_leaf_value(&self, node: &SearchNode, assume_no_existing_weight: bool) {
     let nn_output: Rc<NNOutput> = node.get_nn_output().expect("addCurrentNNOutputAsLeafValue needs an nnOutput");
     //Values in the search are from the perspective of white positive always
     let mut win_loss_value: f64 = nn_output.white_win_prob as f64 - nn_output.white_loss_prob as f64;
@@ -196,7 +198,9 @@ impl Search {
   //Recompute all the stats of this node based on its children, except its visits and virtual losses, which are not child-dependent and
   //are updated in the manner specified.
   //Assumes this node has an nnOutput
-  pub(crate) fn recompute_node_stats(&self, node: &SearchNode, thread: &mut SearchThread, num_visits_to_add: i32, is_root: bool) {
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_evalcache_diff.rs can call it.
+  pub fn recompute_node_stats(&self, node: &SearchNode, thread: &mut SearchThread, num_visits_to_add: i32, is_root: bool) {
     //Find all children and compute weighting of the children based on their values
     let stats_buf: &mut Vec<MoreNodeStats> = &mut thread.stats_buf;
     let mut num_good_children: i32 = 0;
@@ -402,7 +406,9 @@ impl Search {
 
   /// upstream: Search::adjustEvalsFromCacheHelper (searchupdatehelpers.cpp)
   /// PORT NOTE: `&self` (upstream non-const; it mutates only its out-params, PORTING.md §3).
-  pub(crate) fn adjust_evals_from_cache_helper(
+  /// PORT NOTE: `pub` (upstream private, PORTING.md §1 would give pub(crate)) so the crafted parity oracle
+  /// tests/search_evalcache_diff.rs can call it.
+  pub fn adjust_evals_from_cache_helper(
     &self,
     eval_cache_entry: &Rc<EvalCacheEntry>,
     this_node_visits: i64,
