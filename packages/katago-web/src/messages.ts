@@ -5,7 +5,7 @@ export type Backend = "webgpu" | "cpu";
 
 /** The `.bpk` weights of a network compiled into the wasm (see `models.json` written by `just web-build`). */
 export interface ModelSpec {
-  /** "g170e-b10c128" | "g170-b6c96" | "kata1-b18c384nbt" (must be compiled in). */
+  /** "g170e-b10c128" | "g170-b6c96" | "kata1-b18c384nbt" | "b18c384nbt-humanv0" (must be compiled in; the human-SL net needs humanSLProfile). */
   network: string;
   /** Where to fetch the `.bpk` (resolved against the page URL). */
   url: string;

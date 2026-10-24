@@ -11,6 +11,12 @@ For a set of positions x {japanese, chinese} rules, this script:
   3. runs the ONNX model in onnxruntime (all positions as one batch),
   4. applies NNEvaluator post-processing (cpp/neuralnet/nneval.cpp) and compares.
 
+Human-SL nets (metaEncoderVersion > 0, a third input `meta_input`): every position is evaluated once
+per --human-sl-profiles entry. KataGo runs with `humanSLProfile=<profile>` (the net is the main model,
+so `kata-raw-nn` passes the profile's SGFMetadata), and the ONNX side gets the row of
+SGFMetadata::fillMetadataRow, built with upstream's python/katago/game/sgfmetadata.py from a mirror of
+SGFMetadata::getProfile (cpp/neuralnet/sgfmetadata.cpp). NNEvaluator zeroes policyOptimism for them.
+
 Run with `python -I` (it adds the paths it needs itself):
   .venv/bin/python -I tools/bin2onnx/verify.py --model path/to/net.bin.gz --onnx models/onnx/net.onnx
 """
@@ -34,6 +40,7 @@ import onnxruntime as ort  # noqa: E402
 from katago.game.board import Board  # noqa: E402
 from katago.game.features import Features  # noqa: E402
 from katago.game.gamestate import GameState  # noqa: E402
+from katago.game.sgfmetadata import SGFMetadata  # noqa: E402
 
 import bin2onnx  # noqa: E402
 
@@ -125,6 +132,53 @@ def build_positions(sgf_dir):
         (B, (9, 5)), (W, (10, 4)), (B, (10, 3)), (W, (11, 3)), (B, (11, 2)), (W, (2, 8)),
     ]))
     return P
+
+
+# ---------------------------------------------------------------------------
+# SGF metadata (mirrors cpp SGFMetadata::getProfile; the row is upstream python's get_metadata_row)
+# ---------------------------------------------------------------------------
+
+RANK_STRS = [f"{d}d" for d in range(9, 0, -1)] + [f"{k}k" for k in range(1, 21)]
+
+
+def sgf_metadata_profile(name):
+    """SGFMetadata::getProfile for the profiles it knows (all fields set: python's defaults differ)."""
+    import datetime
+
+    def base(**kw):
+        m = SGFMetadata(
+            inverseBRank=0, inverseWRank=0, bIsUnranked=False, wIsUnranked=False, bRankIsUnknown=False,
+            wRankIsUnknown=False, bIsHuman=False, wIsHuman=False, gameIsUnrated=False,
+            gameRatednessIsUnknown=False, tcIsUnknown=False, tcIsNone=False, tcIsAbsolute=False,
+            tcIsSimple=False, tcIsByoYomi=False, tcIsCanadian=False, tcIsFischer=False, mainTimeSeconds=0.0,
+            periodTimeSeconds=0.0, byoYomiPeriods=0, canadianMoves=0, gameDate=datetime.date(1970, 1, 1), source=0)
+        for k, v in kw.items():
+            setattr(m, k, v)
+        return m
+
+    if name.startswith("proyear_"):
+        year = int(name[len("proyear_"):])
+        if 1800 <= year <= 2020:
+            src = SGFMetadata.SOURCE_GOGOD
+        elif 2021 <= year <= 2023:
+            src = SGFMetadata.SOURCE_GO4GO
+        else:
+            raise ValueError(name)
+        return base(inverseBRank=1, inverseWRank=1, bIsHuman=True, wIsHuman=True, tcIsUnknown=True,
+                    gameDate=datetime.date(year, 6, 1), source=src)
+    for prefix, pre_az in (("rank_", False), ("preaz_", True)):
+        if name.startswith(prefix):
+            ranks = name[len(prefix):]
+            pieces = ranks.split("_") if ranks not in RANK_STRS else [ranks, ranks]
+            if len(pieces) != 2 or any(p not in RANK_STRS for p in pieces):
+                raise ValueError(name)
+            inv_b, inv_w = (RANK_STRS.index(p) + 1 for p in pieces)
+            return base(inverseBRank=inv_b, inverseWRank=inv_w, bIsHuman=True, wIsHuman=True,
+                        gameRatednessIsUnknown=True, tcIsByoYomi=True, mainTimeSeconds=1200.0,
+                        periodTimeSeconds=30.0, byoYomiPeriods=5,
+                        gameDate=datetime.date(2016, 9, 1) if pre_az else datetime.date(2020, 3, 1),
+                        source=SGFMetadata.SOURCE_KGS)
+    raise ValueError(f"Unknown human SL network profile: {name}")
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +417,10 @@ def main():
     ap.add_argument("--extra-overrides", default="", help="extra -override-config entries (comma separated)")
     ap.add_argument("--tol-prob", type=float, default=1e-4)
     ap.add_argument("--tol-score", type=float, default=1e-3)
-    ap.add_argument("--dump-features", default=None, help="Save features/raw outputs to this .npz")
+    ap.add_argument("--dump-features", default=None,
+                    help="Save features/raw outputs to this .npz (human-SL nets: <name>.<profile>.npz per profile)")
+    ap.add_argument("--human-sl-profiles", default="preaz_18k,rank_9d,rank_1k_15k,proyear_1850,proyear_2022",
+                    help="comma-separated humanSLProfile values, for nets with metadata inputs")
     args = ap.parse_args()
 
     katago = args.katago
@@ -383,68 +440,80 @@ def main():
         for rules_name, komi in (("japanese", 6.5), ("chinese", 7.5)):
             positions.append(Position(label, size, moves, rules_name, komi))
 
-    # --- ONNX ---
+    meta = desc.num_input_meta_channels > 0
+    profiles = [p for p in args.human_sl_profiles.split(",") if p] if meta else [None]
+    sess = ort.InferenceSession(args.onnx, providers=["CPUExecutionProvider"])
+    tmp = tempfile.mkdtemp(prefix="bin2onnx-verify-")
     bins, globs = zip(*(p.features(feats) for p in positions))
     bin_input = np.concatenate(bins)
     global_input = np.concatenate(globs)
-    sess = ort.InferenceSession(args.onnx, providers=["CPUExecutionProvider"])
-    policy, value, score, ownership = sess.run(
-        ["policy", "value", "scorevalue", "ownership"],
-        {"bin_input": bin_input, "global_input": global_input})
-    if args.dump_features:
-        np.savez_compressed(args.dump_features, bin_input=bin_input, global_input=global_input,
-                            policy=policy, value=value, scorevalue=score, ownership=ownership)
+    # NNEvaluator::evaluate: "Avoid using policy optimism for humanSL"
+    policy_optimism = 0.0 if meta else args.policy_optimism
 
-    # --- KataGo ---
-    tmp = tempfile.mkdtemp(prefix="bin2onnx-verify-")
-    overrides = ",".join(x for x in [
-        f"logDir={tmp}", f"homeDataDir={args.home_data_dir or tmp}", "logAllGTPCommunication=false", "logSearchInfo=false",
-        "numSearchThreads=1", "gtpForceMaxNNSize=true", f"rootPolicyOptimism={args.policy_optimism}", args.extra_overrides,
-    ] if x)
-    gtp = GTP(katago, args.config, args.model, overrides)
-    ref = []
-    try:
-        for p in positions:
-            for c in p.gtp_commands():
-                gtp.send(c)
-            ref.append(parse_raw_nn(gtp.send("kata-raw-nn 0"), p.size))
-    finally:
-        gtp.close()
-
-    # --- compare ---
-    print(f"model  {desc.name} (version {desc.model_version})")
+    print(f"model  {desc.name} (version {desc.model_version}, metaEncoderVersion {desc.meta_encoder_version})")
     print(f"onnx   {args.onnx}")
     print(f"katago {katago}")
-    print(f"policyOptimism {args.policy_optimism}  (GTP print precision: probs 1e-6, ownership 1e-7, scores 1e-3)")
+    print(f"policyOptimism {policy_optimism}  (GTP print precision: probs 1e-6, ownership 1e-7, scores 1e-3)")
     hdr = f"{'position':<22} {'rules':<8} {'tomove':<6} {'policy':>9} {'wl/nr':>9} {'owner':>9} {'lead':>8} {'scoreM':>8} {'scoreSq':>8} {'other':>8}  ok"
-    print(hdr)
-    print("-" * len(hdr))
     all_ok = True
     worst = {}
-    for i, p in enumerate(positions):
-        ours = postprocess(desc, pp, p, policy[i], value[i], score[i], ownership[i, 0], args.policy_optimism)
-        r = ref[i]
-        nan_ref = np.isnan(r["policy"])
-        nan_ours = np.isnan(ours["policy"])
-        legal_match = bool(np.array_equal(nan_ref, nan_ours)) and (math.isnan(r["policyPass"]) == math.isnan(ours["policyPass"]))
-        d_pol = max(float(np.nanmax(np.abs(np.where(nan_ref | nan_ours, 0.0, r["policy"] - ours["policy"])))),
-                    abs(r["policyPass"] - ours["policyPass"]))
-        d_wl = max(abs(r[k] - ours[k]) for k in ("whiteWin", "whiteLoss", "noResult"))
-        d_own = float(np.max(np.abs(r["ownership"] - ours["ownership"])))
-        d_lead = abs(r["whiteLead"] - ours["whiteLead"])
-        d_sm = abs(r["whiteScoreSelfplay"] - ours["whiteScoreSelfplay"])
-        d_sq = abs(r["whiteScoreSelfplaySq"] - ours["whiteScoreSelfplaySq"])
-        d_other = max(abs(r[k] - ours[k]) for k in ("varTimeLeft", "shorttermWinlossError", "shorttermScoreError"))
-        ok = (legal_match and d_pol <= args.tol_prob and d_wl <= args.tol_prob and d_own <= args.tol_prob
-              and d_lead <= args.tol_score and d_sm <= args.tol_score)
-        all_ok &= ok
-        for k, v in (("policy", d_pol), ("wl/nr", d_wl), ("owner", d_own), ("lead", d_lead),
-                     ("scoreM", d_sm), ("scoreSq", d_sq), ("other", d_other)):
-            worst[k] = max(worst.get(k, 0.0), v)
-        tomove = "B" if p.pla == B else "W"
-        flag = "OK" if ok else ("FAIL" + ("" if legal_match else " (legal mask mismatch)"))
-        print(f"{p.label:<22} {p.rules_name:<8} {tomove:<6} {d_pol:9.2e} {d_wl:9.2e} {d_own:9.2e} "
-              f"{d_lead:8.1e} {d_sm:8.1e} {d_sq:8.1e} {d_other:8.1e}  {flag}")
+    for profile in profiles:
+        # --- ONNX ---
+        feeds = {"bin_input": bin_input, "global_input": global_input}
+        if meta:
+            m = sgf_metadata_profile(profile)
+            feeds["meta_input"] = np.stack([
+                m.get_metadata_row(p.pla, p.size * p.size).astype(np.float32) for p in positions])
+        policy, value, score, ownership = sess.run(["policy", "value", "scorevalue", "ownership"], feeds)
+        if args.dump_features:
+            dump = args.dump_features if not meta else args.dump_features.replace(".npz", "") + f".{profile}.npz"
+            np.savez_compressed(dump, policy=policy, value=value, scorevalue=score, ownership=ownership, **feeds)
+
+        # --- KataGo ---
+        overrides = ",".join(x for x in [
+            f"logDir={tmp}", f"homeDataDir={args.home_data_dir or tmp}", "logAllGTPCommunication=false", "logSearchInfo=false",
+            "numSearchThreads=1", "gtpForceMaxNNSize=true", f"rootPolicyOptimism={args.policy_optimism}",
+            f"humanSLProfile={profile}" if meta else "", args.extra_overrides,
+        ] if x)
+        gtp = GTP(katago, args.config, args.model, overrides)
+        ref = []
+        try:
+            for p in positions:
+                for c in p.gtp_commands():
+                    gtp.send(c)
+                ref.append(parse_raw_nn(gtp.send("kata-raw-nn 0"), p.size))
+        finally:
+            gtp.close()
+
+        # --- compare ---
+        if meta:
+            print(f"humanSLProfile {profile}")
+        print(hdr)
+        print("-" * len(hdr))
+        for i, p in enumerate(positions):
+            ours = postprocess(desc, pp, p, policy[i], value[i], score[i], ownership[i, 0], policy_optimism)
+            r = ref[i]
+            nan_ref = np.isnan(r["policy"])
+            nan_ours = np.isnan(ours["policy"])
+            legal_match = bool(np.array_equal(nan_ref, nan_ours)) and (math.isnan(r["policyPass"]) == math.isnan(ours["policyPass"]))
+            d_pol = max(float(np.nanmax(np.abs(np.where(nan_ref | nan_ours, 0.0, r["policy"] - ours["policy"])))),
+                        abs(r["policyPass"] - ours["policyPass"]))
+            d_wl = max(abs(r[k] - ours[k]) for k in ("whiteWin", "whiteLoss", "noResult"))
+            d_own = float(np.max(np.abs(r["ownership"] - ours["ownership"])))
+            d_lead = abs(r["whiteLead"] - ours["whiteLead"])
+            d_sm = abs(r["whiteScoreSelfplay"] - ours["whiteScoreSelfplay"])
+            d_sq = abs(r["whiteScoreSelfplaySq"] - ours["whiteScoreSelfplaySq"])
+            d_other = max(abs(r[k] - ours[k]) for k in ("varTimeLeft", "shorttermWinlossError", "shorttermScoreError"))
+            ok = (legal_match and d_pol <= args.tol_prob and d_wl <= args.tol_prob and d_own <= args.tol_prob
+                  and d_lead <= args.tol_score and d_sm <= args.tol_score)
+            all_ok &= ok
+            for k, v in (("policy", d_pol), ("wl/nr", d_wl), ("owner", d_own), ("lead", d_lead),
+                         ("scoreM", d_sm), ("scoreSq", d_sq), ("other", d_other)):
+                worst[k] = max(worst.get(k, 0.0), v)
+            tomove = "B" if p.pla == B else "W"
+            flag = "OK" if ok else ("FAIL" + ("" if legal_match else " (legal mask mismatch)"))
+            print(f"{p.label:<22} {p.rules_name:<8} {tomove:<6} {d_pol:9.2e} {d_wl:9.2e} {d_own:9.2e} "
+                  f"{d_lead:8.1e} {d_sm:8.1e} {d_sq:8.1e} {d_other:8.1e}  {flag}")
     print("-" * len(hdr))
     print("max    " + "  ".join(f"{k}={v:.2e}" for k, v in worst.items()))
     print("RESULT:", "PASS" if all_ok else "FAIL")

@@ -56,8 +56,6 @@ const KEEP: &[&str] = &[
 /// Cases where katago-rs knowingly differs from the reference binary, with the reason. The test fails if
 /// one of them starts matching (remove it then).
 const KNOWN_DIVERGENCES: &[(&str, &str)] = &[
-  ("cfg_10", "humanSLProfile=rank_5k: SGFMetadata::getProfile's rank profiles are M8 (StringError in katago-rs)"),
-  ("ovr_20", "humanSLProfile override: SGFMetadata::getProfile's rank profiles are M8"),
   ("cfg_18", "nnMaxBatchSize=0: upstream's Eigen backend ignores nnMaxBatchSize; burn follows the non-Eigen branch (range 1..65536)"),
   // ovr_24 (investigated 2026-10, benign): on the empty 9x9 board the 8-symmetry average makes the four
   // center-adjacent points symmetric, so their priors tie up to float noise. Reference (Eigen): E4 = F5 =

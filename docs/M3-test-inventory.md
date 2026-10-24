@@ -42,7 +42,7 @@ Regenerate with `fixtures/upstream-v1.16.5/analysis/regen.sh` and
 6. **Several tests depend on things the port deliberately lacks** (details in section 4): `CompactSgf`
    (`dataio/sgf` is `[[ignored]]`; `tests/testnninputs.rs` already carries a test-local subset), `GameInitializer`
    (`program/play.cpp` is `[[ignored]]`), `Setup::loadSingleParams` for GTP/MATCH/BENCHMARK/OTHER/DISTRIBUTED
-   (only the analysis branch is ported), the human-SL net (`bin2onnx` rejects `metaEncoderVersion > 0`, M8).
+   (only the analysis branch is ported), the human-SL net (`bin2onnx` rejected `metaEncoderVersion > 0` until M8; resolved, section 7).
 
 ## 2. Analysis goldens (`fixtures/upstream-v1.16.5/analysis/`)
 
@@ -74,7 +74,7 @@ order and format. Order in this table is the suggested porting order.
 | 8 | `pvvisits_nograph.stdout` (7.9 KB) | `pvvisits.txt` | b6c96 | no maxVisits on the command line (the queries say 1000), useGraphSearch=false | same without graph search (tree edge visits == visits) | **structurally different**: one response lists 10 moves vs 9, move order differs in places, edgeVisits off by up to 11 |
 | 9 | `evalcache.txt.stdout` (4.7 KB) | `evalcache.txt`: A/B/C (25/27/25 moves, 50/100/50 visits) | b6c96 | maxVisits=100 (loop form, no eval cache) | repeatability: C must equal A | n/a (upstream has no golden for it; the loop run is unchecked) |
 | 10 | `eval_cache.stdout` (8 KB) | `evalcache.txt` through fifos (line N+1 only after response N) | **b10c128** | useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10 | `useEvalCache`: C is *not* equal to A (root visits 50, top move R19 with 8 visits vs S13 with 42), B reuses A's cache | n/a (upstream throws stdout away and keeps only `eval_cache.txt.log`); fed by the fifo handshake in `regen.sh` |
-| 11 | `humansl_sidetomove.stdout` (17 KB) | `humansl.txt.noauto`: 5 searches + `query_models` + a 91-stone position with `humanSLRootExploreProbWeightless/CpuctPermanent` | b6c96 + human net `b18c384nbt-humanv0` (model v15, outside this repo: `backend/docker/models`) | + SIDETOMOVE, humanSLProfile = preaz_18k | human-SL head, `humanScoreMean/Stdev`, `query_models` | same shape; humanScoreMean <= 2.8e-2, scoreLead 5.8e-3. `query_models` line differs by backend: `maxBatchSize` 2 vs 64, `usingFP16` "auto" vs "false". **M8-gated** (bin2onnx rejects human nets) |
+| 11 | `humansl_sidetomove.stdout` (17 KB) | `humansl.txt.noauto`: 5 searches + `query_models` + a 91-stone position with `humanSLRootExploreProbWeightless/CpuctPermanent` | b6c96 + human net `b18c384nbt-humanv0` (model v15, outside this repo: `backend/docker/models`) | + SIDETOMOVE, humanSLProfile = preaz_18k | human-SL head, `humanScoreMean/Stdev`, `query_models` | same shape; humanScoreMean <= 2.8e-2, scoreLead 5.8e-3. `query_models` line differs by backend: `maxBatchSize` 2 vs 64, `usingFP16` "auto" vs "false". Passes since M8 (`golden_humansl_sidetomove`, maxBatchSize normalized) |
 
 Per-golden notes for the test writer:
 - Compare line by line as JSON with `serde_json` `float_roundtrip` (the `just check-features` rule), but also assert the *key order and number formatting* of the raw line (the goldens have alphabetical keys and floats with 9 significant digits, e.g. `0.656578463`, as `nlohmann::json::dump` writes them).
@@ -157,7 +157,7 @@ Blocks are listed in appendix A; counts below are input boards.
 | `fillRowV3..V6`, v3-v7 models | testsearch (v1), V3, `runNNSymmetries` | only fillRowV7 and v8+ nets |
 | ~~`GameInitializer` (`program/play.cpp`, `[[ignored]]`)~~ | resolved: NN-less "Board size distribution" runs a faithful test-local copy (tests/testsearchnonn.rs, PORTING.md §13) | 100000 `createGame` draws, byte-exact |
 | `Setup::loadSingleParams` non-analysis branches | NN-less "SearchParams for GTP/Match/Benchmark/Other/Distributed" | manifest: only analysis ported |
-| human-SL net / `SGFMetadata` (M8) | analysis #11 | `bin2onnx` rejects `metaEncoderVersion > 0` |
+| ~~human-SL net / `SGFMetadata` (M8)~~ | resolved (M8): analysis #11 passes | `bin2onnx` converts `metaEncoderVersion` 1 nets, katago-nn-burn imports `b18c384nbt-humanv0` |
 | avoid-SGF-pattern bonus loading (`PatternBonusTable::avoidRepeatedSgfMoves`, SGF files, M8) | none of the search tests (V8's pattern sections use the in-memory `avoidRepeatedPatternUtility`, now ported in `patternbonustable.rs`); `tests/gtp/avoidcorners` in runcmdtests only | `Setup::loadAvoidSgfPatternBonusTables` reads the keys as upstream (protocol case cfg_11 matches) |
 
 ## 7. Determinism and regeneration checks
@@ -279,8 +279,9 @@ in the source; it is exact for the NN-less file (the 32 blocks map, in order, on
 - Eval cache, pattern bonus table and anti-mirror (formerly deferred, D7) are ported: `search/evalcache.rs`,
   `search/patternbonustable.rs` (minus its SGF/file loaders), `search/searchmirror.rs` (+ `port::math::tanh`/`atanh`).
 - Analysis golden #10 `eval_cache` passes (katago-cli `golden_eval_cache`: the fifo handshake is a stream that yields
-  line N+1 after response N; within tolerance, C differs from A as upstream). All analysis goldens but
-  `humansl_sidetomove` (M8) are compared.
+  line N+1 after response N; within tolerance, C differs from A as upstream). All analysis goldens are compared,
+  `humansl_sidetomove` since M8 (b6c96 + `-human-model b18c384nbt-humanv0`, within tolerance; max deviation
+  humanScoreMean 5.5e-5).
 - `runNNLessSearchTests`: 44/44 sections byte-exact ("Board size distribution" through a test-local GameInitializer).
 - `runNNOnTinyBoard`: katago-nn-burn `tests/testsearchmisc.rs`, exact (39 lines). Only `runNNSymmetries` (g103 v5)
   stays on the fixture_coverage allowlist from testsearchmisc.
@@ -289,6 +290,8 @@ in the source; it is exact for the NN-less file (the 32 blocks map, in order, on
   search without pattern bonus, and the cumulative NN row count). No V8 section is pending.
 - NN-less differential oracle (`oracle/search_nonn.cpp`): 480 cases (+32 evalcache, +40 antimirror, +26 patternbonus),
   bit-exact native and wasm32.
-- Analysis-protocol corpus: 1,398 cases, 1,394 match; known divergences cfg_10 / ovr_20 (human-SL profiles, M8),
-  cfg_18 (nnMaxBatchSize under Eigen), ovr_24 (an exact E4/F5 prior tie in the reference that burn's NN noise breaks
+- Human-SL search paths (M8): `oracle/search_humansl.cpp` (a main and a human-SL debugSkipNeuralNet evaluator), 120 cases,
+  bit-exact native and wasm32 (`tests/search_humansl.rs`); `oracle/sgfmetadata.cpp` and `DateTime::runTests` likewise.
+- Analysis-protocol corpus: 1,398 cases, 1,396 match (cfg_10 / ovr_20, the human-SL profiles, match since M8); known
+  divergences cfg_18 (nnMaxBatchSize under Eigen), ovr_24 (an exact E4/F5 prior tie in the reference that burn's NN noise breaks
   the other way; investigated, benign).

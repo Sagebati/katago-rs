@@ -5,8 +5,8 @@
 //! tests/common (structure byte-exact, floats within VALUE_TOL / SCORE_TOL / WEIGHT_REL_TOL).
 //! Each test prints "exact" / "within tolerance (max deviations)" / "DIVERGED (first difference)".
 //!
-//! Pending (not run here):
-//! - humansl_sidetomove.stdout: needs a human-SL net (M8; tools/bin2onnx rejects them).
+//! humansl_sidetomove (M8): the b6c96 main net with `-human-model models/b18c384nbt-humanv0.bin.gz` and
+//! humanSLProfile preaz_18k (humanPrior / humanPolicy / the rootInfo human* keys from the human-SL net).
 //!
 //! Debug runs take a few minutes (the two 1000-visit pvvisits goldens dominate); `just analysis-goldens`
 //! runs them in release. Not a port of upstream code.
@@ -110,6 +110,23 @@ fn golden_symmetry() {
 fn golden_symmetry_with_pruning() {
   let c = check_golden("symmetry_with_pruning.stdout", "tests/analysis/symmetry.txt", M6, "maxVisits=100, maxPlayouts=10000, rootSymmetryPruning=true");
   assert_ok("symmetry_with_pruning", &c);
+}
+
+/// regen.sh's humansl_sidetomove (runcmdtests.sh's humansl run): tests/analysis/humansl.txt.noauto with the human-SL
+/// net as `-human-model`.
+#[test]
+fn golden_humansl_sidetomove() {
+  let c = check_golden_human(
+    "humansl_sidetomove.stdout",
+    "tests/analysis/humansl.txt.noauto",
+    M6,
+    HUMAN,
+    &format!("{LOOP_OVERRIDES}, reportAnalysisWinratesAs=SIDETOMOVE, humanSLProfile = preaz_18k"),
+  );
+  assert_ok("humansl_sidetomove", &c);
+  // The human-SL outputs are there (and so compared): humanPrior on the moves, humanPolicy, rootInfo human*.
+  let gold = read_golden("humansl_sidetomove.stdout");
+  assert!(gold.iter().any(|l| l.contains("\"humanPolicy\"")) && gold.iter().any(|l| l.contains("\"humanPrior\"")));
 }
 
 /// The loop form (maxVisits=100, no eval cache): repeatability, C equals A.

@@ -22,7 +22,7 @@ fn bench<N: Network>(backend: &str, bpk: &str, batches: &[usize]) {
         let global = Tensor::<2>::random([n, 19], burn::tensor::Distribution::Uniform(-1.0, 1.0), &device);
 
         let run = || {
-            let out = model.forward(bin.clone(), global.clone());
+            let out = model.forward(bin.clone(), global.clone(), None);
             // One readback per batch, like the engine will do.
             let all = Tensor::cat(
                 vec![

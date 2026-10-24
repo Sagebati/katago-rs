@@ -176,38 +176,6 @@ pub struct SearchParams {
   pub human_sl_chosen_move_pikl_lambda: f64, //Shift the final move selection significantly in response to utility differences this large.
 }
 
-/// upstream: SGFMetadata::operator== (sgfmetadata.cpp)
-/// TODO(port): needs SGFMetadata::operator== (sgfmetadata.cpp, M8). This is that function minus the
-/// `gameDate == other.gameDate` term, because `SimpleDate gameDate` is not a field of the Rust
-/// SGFMetadata yet (neuralnet/sgfmetadata.rs is an M2 subset). Replace this helper with the real
-/// `==` when sgfmetadata.rs is completed.
-fn sgf_metadata_operator_eq(a: &SGFMetadata, b: &SGFMetadata) -> bool {
-  a.initialized == b.initialized
-    && a.inverse_b_rank == b.inverse_b_rank
-    && a.inverse_w_rank == b.inverse_w_rank
-    && a.b_is_unranked == b.b_is_unranked
-    && a.w_is_unranked == b.w_is_unranked
-    && a.b_rank_is_unknown == b.b_rank_is_unknown
-    && a.w_rank_is_unknown == b.w_rank_is_unknown
-    && a.b_is_human == b.b_is_human
-    && a.w_is_human == b.w_is_human
-    && a.game_is_unrated == b.game_is_unrated
-    && a.game_ratedness_is_unknown == b.game_ratedness_is_unknown
-    && a.tc_is_unknown == b.tc_is_unknown
-    && a.tc_is_none == b.tc_is_none
-    && a.tc_is_absolute == b.tc_is_absolute
-    && a.tc_is_simple == b.tc_is_simple
-    && a.tc_is_byo_yomi == b.tc_is_byo_yomi
-    && a.tc_is_canadian == b.tc_is_canadian
-    && a.tc_is_fischer == b.tc_is_fischer
-    && a.main_time_seconds == b.main_time_seconds
-    && a.period_time_seconds == b.period_time_seconds
-    && a.byo_yomi_periods == b.byo_yomi_periods
-    && a.canadian_moves == b.canadian_moves
-    // gameDate == other.gameDate: see the TODO(port) above
-    && a.source == b.source
-}
-
 impl SearchParams {
   /// upstream: SearchParams::SearchParams (searchparams.cpp)
   //Default search params
@@ -457,7 +425,7 @@ impl PartialEq for SearchParams {
 
     self.futile_visits_threshold == other.futile_visits_threshold &&
 
-    sgf_metadata_operator_eq(&self.human_sl_profile, &other.human_sl_profile) &&
+    self.human_sl_profile == other.human_sl_profile &&
     self.human_sl_cpuct_exploration == other.human_sl_cpuct_exploration &&
     self.human_sl_cpuct_permanent == other.human_sl_cpuct_permanent &&
     self.human_sl_root_explore_prob_weightless == other.human_sl_root_explore_prob_weightless &&

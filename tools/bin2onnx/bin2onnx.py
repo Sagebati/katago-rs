@@ -11,6 +11,9 @@ Graph I/O (NCHW, batch dimension "N" is dynamic):
   inputs:
     bin_input     float32 [N, numInputChannels, pos_len, pos_len]
     global_input  float32 [N, numInputGlobalChannels]
+    meta_input    float32 [N, numInputMetaChannels]   (only for metaEncoderVersion > 0, i.e.
+                  human-SL nets: SGFMetadata::fillMetadataRow's row; the SGF metadata encoder's
+                  output is added to the trunk after the global input, as eigenbackend's Trunk)
   outputs:
     policy        float32 [N, numPolicyChannels, pos_len*pos_len + 1]   (last = pass)
     value         float32 [N, numValueChannels]        (win/loss/noresult logits)
@@ -384,6 +387,55 @@ def parse_residual_block_stack(r: ModelReader, model_version: int, name: str,
 
 
 @dataclass
+class SGFMetadataEncoderDesc:
+    name: str
+    meta_encoder_version: int
+    num_input_meta_channels: int
+    mul1: MatMulLayerDesc
+    bias1: MatBiasLayerDesc
+    act1: ActivationLayerDesc
+    mul2: MatMulLayerDesc
+    bias2: MatBiasLayerDesc
+    act2: ActivationLayerDesc
+    mul3: MatMulLayerDesc
+
+
+def num_input_meta_channels_for(meta_encoder_version: int) -> int:
+    """NNModelVersion::getNumInputMetaChannels (modelversion.cpp)."""
+    if meta_encoder_version == 0:
+        return 0
+    if meta_encoder_version == 1:
+        return 192
+    raise ValueError(f"Unknown meta encoder version {meta_encoder_version}")
+
+
+def parse_sgf_metadata_encoder(r: ModelReader, model_version: int, meta_encoder_version: int) -> SGFMetadataEncoderDesc:
+    """SGFMetadataEncoderDesc::SGFMetadataEncoderDesc(istream&, modelVersion, metaEncVersion, binaryFloats)."""
+    name = r.token()
+    num_input_meta_channels = r.int()
+    expected = num_input_meta_channels_for(meta_encoder_version)
+    _check(num_input_meta_channels == expected,
+           f"{name}: number of in channels ({num_input_meta_channels}) did not match expected ({expected})")
+    mul1 = parse_matmul(r)
+    bias1 = parse_matbias(r)
+    act1 = parse_activation(r, model_version)
+    mul2 = parse_matmul(r)
+    bias2 = parse_matbias(r)
+    act2 = parse_activation(r, model_version)
+    mul3 = parse_matmul(r)
+    _check(mul1.out_channels == bias1.num_channels,
+           f"{name}: mul1.outChannels ({mul1.out_channels}) != bias1.numChannels ({bias1.num_channels})")
+    _check(mul2.in_channels == mul1.out_channels,
+           f"{name}: mul2.inChannels ({mul2.in_channels}) != mul1.outChannels ({mul1.out_channels})")
+    _check(mul2.out_channels == bias2.num_channels,
+           f"{name}: mul2.outChannels ({mul2.out_channels}) != bias2.numChannels ({bias2.num_channels})")
+    _check(mul2.out_channels == mul3.in_channels,
+           f"{name}: mul2.outChannels ({mul2.out_channels}) != mul3.inChannels ({mul3.in_channels})")
+    return SGFMetadataEncoderDesc(name, meta_encoder_version, num_input_meta_channels,
+                                  mul1, bias1, act1, mul2, bias2, act2, mul3)
+
+
+@dataclass
 class TrunkDesc:
     name: str
     model_version: int
@@ -395,6 +447,7 @@ class TrunkDesc:
     meta_encoder_version: int
     initial_conv: ConvLayerDesc
     initial_matmul: MatMulLayerDesc
+    sgf_metadata_encoder: Optional[SGFMetadataEncoderDesc]
     blocks: List[BlockDesc]
     trunk_tip_bn: BatchNormLayerDesc
     trunk_tip_activation: ActivationLayerDesc
@@ -419,16 +472,23 @@ def parse_trunk(r: ModelReader, model_version: int, meta_encoder_version: int) -
     initial_matmul = parse_matmul(r)
     _check(initial_matmul.out_channels == trunk_c, f"{initial_matmul.name}: outChannels != trunkNumChannels")
 
+    sgf_metadata_encoder = None
     if meta_encoder_version > 0:
-        # SGFMetadataEncoderDesc (human SL nets) is not supported in this converter yet.
-        raise NotImplementedError("SGF metadata encoder (metaEncoderVersion > 0) is not supported")
+        sgf_metadata_encoder = parse_sgf_metadata_encoder(r, model_version, meta_encoder_version)
+        num_input_meta_channels = num_input_meta_channels_for(meta_encoder_version)
+        _check(num_input_meta_channels == sgf_metadata_encoder.mul1.in_channels,
+               f"{name}: {sgf_metadata_encoder.name} sgfMetadataEncoder.mul1.inChannels "
+               f"({sgf_metadata_encoder.mul1.in_channels}) != numInputMetaChannels ({num_input_meta_channels})")
+        _check(sgf_metadata_encoder.mul3.out_channels == trunk_c,
+               f"{name}: {sgf_metadata_encoder.name} sgfMetadataEncoder.mul3.outChannels "
+               f"({sgf_metadata_encoder.mul3.out_channels}) != trunkNumChannels ({trunk_c})")
 
     blocks = parse_residual_block_stack(r, model_version, name, num_blocks, trunk_c)
     tip_bn = parse_bn(r)
     tip_act = parse_activation(r, model_version)
     _check(tip_bn.num_channels == trunk_c, f"{name}: trunkTipBN.numChannels != trunkNumChannels")
     return TrunkDesc(name, model_version, num_blocks, trunk_c, mid_c, regular_c, gpool_c,
-                     meta_encoder_version, initial_conv, initial_matmul, blocks, tip_bn, tip_act)
+                     meta_encoder_version, initial_conv, initial_matmul, sgf_metadata_encoder, blocks, tip_bn, tip_act)
 
 
 @dataclass
@@ -617,7 +677,7 @@ def parse_model(r: ModelReader) -> ModelDesc:
     if model_version >= 15:
         meta_encoder_version = r.int()
         _check(0 <= meta_encoder_version <= 1, f"{name}: unsupported metaEncoderVersion {meta_encoder_version}")
-        num_input_meta_channels = 192 if meta_encoder_version == 1 else 0
+        num_input_meta_channels = num_input_meta_channels_for(meta_encoder_version)
         for _ in range(7):
             r.int()  # unused
 
@@ -843,11 +903,29 @@ class GraphBuilder:
 
     # --- trunk and heads ---
 
-    def trunk(self, bin_input: str, global_input: str, d: TrunkDesc) -> str:
+    def sgf_metadata_encoder(self, meta_input: str, d: SGFMetadataEncoderDesc) -> str:
+        """SGFMetadataEncoder::apply in eigenbackend: mul1, bias1, act1, mul2, bias2, act2, mul3."""
+        m = self.matmul(meta_input, d.mul1)
+        m = self.matbias(m, d.bias1)
+        m = self.activation(m, d.act1)
+        m = self.matmul(m, d.mul2)
+        m = self.matbias(m, d.bias2)
+        m = self.activation(m, d.act2)
+        return self.matmul(m, d.mul3)
+
+    def trunk(self, bin_input: str, global_input: str, meta_input: Optional[str], d: TrunkDesc) -> str:
         x = self.conv(bin_input, d.initial_conv)
         g = self.matmul(global_input, d.initial_matmul)
         g = self.nc_to_nc11(g, d.trunk_num_channels, d.initial_matmul.name + ".nc11")
         x = self.node("Add", [x, g], "trunk_input")
+        if d.sgf_metadata_encoder is not None:
+            # Trunk::apply: a second addNCBiasInplace with the encoder output after the global one.
+            assert meta_input is not None
+            m = self.sgf_metadata_encoder(meta_input, d.sgf_metadata_encoder)
+            m = self.nc_to_nc11(m, d.trunk_num_channels, d.sgf_metadata_encoder.name + ".nc11")
+            x = self.node("Add", [x, m], "trunk_input_meta")
+        else:
+            assert meta_input is None
         x = self.block_stack(x, d.blocks)
         return self.bn_act_mask(x, d.trunk_tip_bn, d.trunk_tip_activation, self.mask)
 
@@ -892,9 +970,10 @@ class GraphBuilder:
 
 def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -1.0e4) -> onnx.ModelProto:
     gb = GraphBuilder(pos_len, max_pool_off_board)
-    gb._names.update(["bin_input", "global_input", "policy", "value", "scorevalue", "ownership"])
+    gb._names.update(["bin_input", "global_input", "meta_input", "policy", "value", "scorevalue", "ownership"])
     gb.setup_mask("bin_input")
-    trunk = gb.trunk("bin_input", "global_input", desc.trunk)
+    meta_input = "meta_input" if desc.num_input_meta_channels > 0 else None
+    trunk = gb.trunk("bin_input", "global_input", meta_input, desc.trunk)
     policy = gb.policy_head(trunk, desc.policy_head)
     value, score, ownership = gb.value_head(trunk, desc.value_head)
     assert (policy, value, score, ownership) == ("policy", "value", "scorevalue", "ownership")
@@ -904,6 +983,8 @@ def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -
         helper.make_tensor_value_info("bin_input", f, ["N", desc.num_input_channels, pos_len, pos_len]),
         helper.make_tensor_value_info("global_input", f, ["N", desc.num_input_global_channels]),
     ]
+    if meta_input is not None:
+        inputs.append(helper.make_tensor_value_info("meta_input", f, ["N", desc.num_input_meta_channels]))
     outputs = [
         helper.make_tensor_value_info("policy", f, ["N", desc.num_policy_channels, pos_len * pos_len + 1]),
         helper.make_tensor_value_info("value", f, ["N", desc.num_value_channels]),
@@ -928,6 +1009,7 @@ def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -
         "numInputChannels": desc.num_input_channels,
         "numInputGlobalChannels": desc.num_input_global_channels,
         "numInputMetaChannels": desc.num_input_meta_channels,
+        "metaEncoderVersion": desc.meta_encoder_version,
         "numPolicyChannels": desc.num_policy_channels,
         "numValueChannels": desc.num_value_channels,
         "numScoreValueChannels": desc.num_score_value_channels,

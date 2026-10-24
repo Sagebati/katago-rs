@@ -7,11 +7,15 @@ publish = false
 
 [features]
 # b18c384nbt is default so `cargo test -p katago-nn-burn` / `just nn-parity` cover a v14 net
-# (optimistic policy, shortterm errors): +~25 s debug test time, +~30 s release build.
-default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt"]
+# (optimistic policy, shortterm errors): +~25 s debug test time, +~30 s release build. Likewise the
+# human-SL net b18c384nbt-humanv0 (v15, SGF metadata input).
+default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt", "net-b18c384nbt-humanv0"]
 net-b6c96 = []
 net-b10c128 = []
 net-b18c384nbt = []
+# Human-SL net b18c384nbt-humanv0 (models/onnx/b18c384nbt-humanv0.onnx, `just convert`): model v15 with the
+# SGF metadata input (+100 MB weights, +~30 s release build).
+net-b18c384nbt-humanv0 = []
 # CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
 flex = ["burn/flex", "dep:burn-flex"]
 # GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser, with burn's autotune (each kernel family is

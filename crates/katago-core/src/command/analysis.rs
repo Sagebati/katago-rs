@@ -36,8 +36,7 @@
 //   input (upstream's request thread handles the rest of a burst of lines while the AsyncBot's search
 //   thread wakes up). See `request_loop` and `analysis_loop`.
 // - Avoid-SGF pattern bonus tables: Setup::loadAvoidSgfPatternBonusTables reads their keys as upstream but
-//   cannot load SGF files (IO/M8), so a fully configured set is an error. Human-SL nets (M8):
-//   the code paths are ported, but no backend can load such a net yet.
+//   cannot load SGF files (IO/M8), so a fully configured set is an error.
 
 use std::cell::Cell;
 use std::cell::RefCell;

@@ -1059,6 +1059,37 @@ pub use tanh::cr_tanh;
 pub use tanh::tanh;
 
 // ---------------------------------------------------------------------------------------
+// sin, cos (CORE-MATH, in math/sincos.rs)
+// ---------------------------------------------------------------------------------------
+//
+// Port of CORE-MATH's correctly rounded `cr_sincos` (MIT, src/binary64/sincos/sincos.c at
+// commit 0ce0cbc15935e24c, 2026-10-20). glibc 2.44's sin/cos (IBM Accurate Mathematical
+// Library, LGPL-2.1+) are not correctly rounded, so these differ from glibc by 1 ulp on ~0.1%
+// of inputs, identically on every target. Caller: sgfmetadata.cpp fillMetadataRow, which casts
+// the results to float. Oracle: tests/math_sincos.rs vs oracle/math_sincos.txt (CORE-MATH's C
+// checked against MPFR; also under `just test-wasm`).
+
+mod sincos;
+
+pub use sincos::cr_sincos;
+
+/// C `sin(double)`, correctly rounded via CORE-MATH's `cr_sincos` (identical on every target).
+/// glibc 2.44's `sin` is not correctly rounded (~0.1% 1-ulp differences), so this is 1 ulp from
+/// glibc there: callers that need glibc bit-exactness must only depend on the result after a
+/// cast to float, as sgfmetadata's fillMetadataRow does. Use instead of `f64::sin`.
+pub fn sin(x: f64) -> f64 {
+  cr_sincos(x).0
+}
+
+/// C `cos(double)`, correctly rounded via CORE-MATH's `cr_sincos` (identical on every target).
+/// glibc 2.44's `cos` is not correctly rounded (~0.1% 1-ulp differences), so this is 1 ulp from
+/// glibc there: callers that need glibc bit-exactness must only depend on the result after a
+/// cast to float, as sgfmetadata's fillMetadataRow does. Use instead of `f64::cos`.
+pub fn cos(x: f64) -> f64 {
+  cr_sincos(x).1
+}
+
+// ---------------------------------------------------------------------------------------
 // e_log10.c
 // ---------------------------------------------------------------------------------------
 //

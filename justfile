@@ -58,8 +58,13 @@ check-features:
 # yields to the JS event loop between batches (PORTING.md §11).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
+
+# The human-SL net (b18c384nbt-humanv0) inside wasm on burn flex vs the Eigen NNEvaluator records (M8; release, a few
+# minutes of build, ~1-2 s per evaluation under node). Opt-in: not part of test-wasm.
+test-wasm-human:
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test --release -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b18c384nbt-humanv0 --test wasm_human -- --nocapture
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
 # Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
@@ -125,7 +130,7 @@ web-build *features="":
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
     entries=()
-    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt; do
+    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0; do
         bpk="$(ls -t target/wasm32-unknown-unknown/web/build/katago-nn-burn-*/out/model/$net.bpk 2>/dev/null | head -1 || true)"
         [ -n "$bpk" ] || continue
         sha="$(sha256sum "$bpk" | cut -d' ' -f1)"

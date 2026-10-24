@@ -11,9 +11,8 @@
 //! Differences the test accounts for (all port-side, none changes a result):
 //! - `Setup::getBackendPrefixes` ends with "burn" (katago-nn-burn's backend; PORT NOTE in setup.rs). The oracle
 //!   generator leaves "burn*" keys out of the cases, so the only place it shows is the PREFIXES line.
-//! - Pending (M8): the loadParams ops (P) of cases that set `humanSLProfile` need SGFMetadata::get_profile for
-//!   real profiles (it only knows the empty profile until the human-SL net work); see PENDING_M8_*. Those ops
-//!   are left out on both sides; the rules, winrate, board size and NN ops of the same cases are compared.
+//! - Pending: none. (Until M8 the loadParams ops (P) of cases that set `humanSLProfile` were left out, because
+//!   SGFMetadata::get_profile only knew the empty profile; the PENDING_* lists stay for future gaps.)
 //!
 //! Not a port of upstream code.
 
@@ -42,11 +41,11 @@ use katago_core::program::setup::Setup;
 use katago_core::program::setup::setup_for_t;
 use katago_core::search::searchparams::SearchParams;
 
-/// Cases whose loadParams ops (P) are not compared yet, with the reason: the config sets `humanSLProfile`, and
-/// SGFMetadata::get_profile only knows the empty profile (M8, human-SL nets).
+/// Cases whose loadParams ops (P) are not compared yet, with the reason (none since M8 ported
+/// SGFMetadata::get_profile: the configs/gtp_human* cases are compared).
 /// A name is a prefix of the case name in setup_oracle_cases.txt ("#mutN" variants follow their config).
 /// `pending_entries_match_cases` fails when an entry matches nothing.
-const PENDING_M8_NAME_PREFIXES: &[&str] = &["configs/gtp_human"];
+const PENDING_M8_NAME_PREFIXES: &[&str] = &[];
 /// Fuzzed cases (by number in setup_oracle_cases.txt) with the same reason.
 const PENDING_M8_CASES: &[i32] = &[];
 

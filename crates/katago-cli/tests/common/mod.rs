@@ -30,6 +30,8 @@ pub const COMMON: &str = "logDir=, logTimeStamp=false, logAllRequests=true, logA
 pub const CFG: &str = "configs/analysis_example.cfg";
 pub const M6: &str = "tests/models/g170-b6c96-s175395328-d26788732.bin.gz";
 pub const M10: &str = "tests/models/g170e-b10c128-s1141046784-d204142634.bin.gz";
+/// The human-SL net as regen.sh passes it (`-human-model models/b18c384nbt-humanv0.bin.gz`).
+pub const HUMAN: &str = "models/b18c384nbt-humanv0.bin.gz";
 
 /// Runs `katago analysis -config configs/analysis_example.cfg -model <model> -override-config "<COMMON>, <extra>"`
 /// with the lines of `query_file` (relative to cpp/) on stdin, through `katago_core::command::analysis::analysis`
@@ -53,11 +55,22 @@ pub fn run_analysis_lines(lines: Vec<String>, model: &str, extra: &str) -> Vec<S
 /// As run_analysis_lines with byte lines; returns the stdout lines and `analysis`'s result (an Err is
 /// the exception that terminates the process upstream).
 pub fn run_analysis_bytes(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
+  run_analysis_bytes_human(lines, model, "", extra)
+}
+
+/// As run_analysis_bytes, with `-human-model <human_model>` ("" = none).
+pub fn run_analysis_bytes_human(
+  lines: Vec<Vec<u8>>,
+  model: &str,
+  human_model: &str,
+  extra: &str,
+) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
   let model = model.to_string();
+  let human_model = human_model.to_string();
   let extra = extra.to_string();
   std::thread::Builder::new()
     .stack_size(256 << 20)
-    .spawn(move || run_analysis_inner(lines, &model, &extra, false))
+    .spawn(move || run_analysis_inner(lines, &model, &human_model, &extra, false))
     .unwrap()
     .join()
     .expect("analysis run panicked")
@@ -74,7 +87,7 @@ pub fn run_analysis_handshake(query_file: &str, model: &str, extra: &str) -> Vec
   let extra = extra.to_string();
   let (out, code) = std::thread::Builder::new()
     .stack_size(256 << 20)
-    .spawn(move || run_analysis_inner(lines, &model, &extra, true))
+    .spawn(move || run_analysis_inner(lines, &model, "", &extra, true))
     .unwrap()
     .join()
     .expect("analysis run panicked");
@@ -88,6 +101,7 @@ pub fn run_analysis_handshake(query_file: &str, model: &str, extra: &str) -> Vec
 fn run_analysis_inner(
   lines: Vec<Vec<u8>>,
   model: &str,
+  human_model: &str,
   extra: &str,
   handshake: bool,
 ) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
@@ -127,7 +141,7 @@ fn run_analysis_inner(
   let host = AnalysisHost {
     args: AnalysisArgs {
       model_file: model.to_string(),
-      human_model_file: String::new(),
+      human_model_file: human_model.to_string(),
       num_analysis_threads_cmdline_specified: false,
       num_analysis_threads_cmdline: 0,
       quit_without_waiting: false,
@@ -369,6 +383,42 @@ pub fn read_golden(name: &str) -> Vec<String> {
 }
 
 /// Runs one golden and asserts it is exact or within tolerance; prints the outcome.
+/// check_golden with `-human-model <human_model>`.
+pub fn check_golden_human(name: &str, query_file: &str, model: &str, human_model: &str, extra: &str) -> Comparison {
+  let gold = read_golden(name);
+  assert!(!gold.is_empty(), "{name}: empty golden");
+  let t0 = std::time::Instant::now();
+  let lines: Vec<Vec<u8>> =
+    std::fs::read_to_string(format!("{}/{query_file}", cpp_dir())).expect("query file").lines().map(|l| l.as_bytes().to_vec()).collect();
+  assert!(!lines.is_empty(), "{query_file}: no query lines");
+  let (got, code) = run_analysis_bytes_human(lines, model, human_model, extra);
+  match code {
+    Ok(c) => assert_eq!(c, 0),
+    Err(e) => panic!("analysis failed: {}", e.what()),
+  }
+  // query_models' maxBatchSize is a Rust choice (the non-Eigen branch: nnMaxBatchSize; the Eigen reference
+  // prints its own), as in tests/analysis_protocol_corpus.rs: compared after normalizing it on both sides.
+  let gold: Vec<String> = gold.iter().map(|l| normalize_max_batch_size(l)).collect();
+  let got: Vec<String> = got.iter().map(|l| normalize_max_batch_size(l)).collect();
+  let c = compare(&gold, &got);
+  eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
+  c
+}
+
+/// Replaces every `"maxBatchSize":<n>` value with 0.
+pub fn normalize_max_batch_size(line: &str) -> String {
+  let key = "\"maxBatchSize\":";
+  let mut s = line.to_string();
+  let mut from = 0;
+  while let Some(p) = s[from..].find(key) {
+    let start = from + p + key.len();
+    let end = start + s[start..].find([',', '}']).unwrap_or(s.len() - start);
+    s.replace_range(start..end, "0");
+    from = start;
+  }
+  s
+}
+
 pub fn check_golden(name: &str, query_file: &str, model: &str, extra: &str) -> Comparison {
   let gold = read_golden(name);
   assert!(!gold.is_empty(), "{name}: empty golden");

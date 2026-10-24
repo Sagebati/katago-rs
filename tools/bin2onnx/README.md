@@ -10,8 +10,9 @@ Verified numerically against KataGo on v8 (`g170*`) and v14 (`kata1-b18c384nbt`:
 nested bottleneck blocks, Mish, 2-channel policy, 6 score channels). The v3–v5 test
 models in `upstream/KataGo/cpp/tests/models` parse and convert but are not
 numerically verified; the v15/v16 code paths (pass-head MLP, 4-channel policy) are
-written from desc.cpp/eigenbackend.cpp but untested. Human-SL nets
-(`metaEncoderVersion > 0`) are rejected.
+written from desc.cpp/eigenbackend.cpp; v15's pass-head MLP is verified through the human-SL
+net `b18c384nbt-humanv0` (v15, `metaEncoderVersion` 1: the SGF metadata encoder, a third
+input `meta_input`), the 4-channel policy is untested.
 
 ## Usage
 
@@ -28,6 +29,7 @@ Options: `--pos-len N` (fixed spatial size, default 19), `--no-check`.
 |---|---|---|
 | `bin_input` | `[N, C_in, 19, 19]` | spatial features (V7: 22 ch), NCHW; channel 0 = on-board mask |
 | `global_input` | `[N, G_in]` | global features (V7: 19) |
+| `meta_input` | `[N, 192]` | only for human-SL nets (`metaEncoderVersion > 0`): the row of `SGFMetadata::fillMetadataRow`. The encoder (`mul1, bias1, act1, mul2, bias2, act2, mul3`, desc.cpp `SGFMetadataEncoderDesc`) is added to the trunk as a per-channel bias after the global one (eigenbackend `Trunk::apply`) |
 | `policy` | `[N, P, 362]` | policy logits, index `y*19+x`, last = pass. P = 1 (v<12), 2 (v12–15: normal, optimistic), 4 (v16) |
 | `value` | `[N, 3]` | win / loss / no-result logits, player-to-move perspective |
 | `scorevalue` | `[N, S]` | raw score outputs (v8: scoreMean, scoreStdev pre-softplus, lead, varTimeLeft pre-softplus; v9+: + 2 shortterm error outputs) |
@@ -46,7 +48,8 @@ flip signs to white's perspective when black is to move. `verify.py` has a refer
 implementation (`postprocess`).
 
 Metadata keys: `name`, `modelVersion`, `posLen`, `numInputChannels`,
-`numInputGlobalChannels`, `numInputMetaChannels`, `numPolicyChannels`,
+`numInputGlobalChannels`, `numInputMetaChannels`, `metaEncoderVersion` (written since M8;
+older exports lack it and are all version 0), `numPolicyChannels`,
 `numValueChannels`, `numScoreValueChannels`, `numOwnershipChannels`,
 `trunkNumBlocks`, `trunkNumChannels`, the post-process multipliers, and `outputs`.
 
@@ -66,6 +69,13 @@ from upstream KataGo's MIT python code (`upstream/KataGo/python/katago/game`).
   --model /home/sam/src/web/katago-ws/bench/models/g170e-b10c128.bin.gz \
   --onnx models/onnx/g170e-b10c128.onnx
 ```
+
+For a human-SL net every position is evaluated once per `--human-sl-profiles` entry
+(default `preaz_18k,rank_9d,rank_1k_15k,proyear_1850,proyear_2022`): KataGo runs with
+`humanSLProfile=<profile>`, the ONNX side gets the metadata row from upstream's
+`python/katago/game/sgfmetadata.py` (profile fields mirrored from `SGFMetadata::getProfile`).
+b18c384nbt-humanv0 (2026-10-24): 5 profiles x 26 positions, max diff policy 1.8e-6,
+win/loss 1.3e-6, ownership 3.1e-6, lead 5.1e-4 (GTP print precision).
 
 By default it uses `build/eigen/katago` (Eigen fp32 build of the submodule) if present.
 For an OpenCL build pass `--katago ... --extra-overrides openclUseFP16=false`

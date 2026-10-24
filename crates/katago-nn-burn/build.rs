@@ -15,6 +15,8 @@ const NETS: &[(&str, &str)] = &[
     ("NET_B6C96", "g170-b6c96"),
     ("NET_B10C128", "g170e-b10c128"),
     ("NET_B18C384NBT", "kata1-b18c384nbt"),
+    // Human-SL net (model v15, metaEncoderVersion 1: a third input `meta_input`, SGFMetadata rows).
+    ("NET_B18C384NBT_HUMANV0", "b18c384nbt-humanv0"),
 ];
 
 fn main() {
@@ -62,7 +64,14 @@ fn write_model_desc(onnx: &str, net: &str) {
     let f64bits = |k: &str| -> u64 { get(k).parse::<f64>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
     let f32bits = |k: &str| -> u32 { get(k).parse::<f32>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
     let num_input_meta_channels = int("numInputMetaChannels");
-    assert_eq!(num_input_meta_channels, 0, "{onnx}: human-SL nets are not supported (bin2onnx rejects them)");
+    // Exports made before bin2onnx wrote metaEncoderVersion are all metaEncoderVersion 0.
+    let meta_encoder_version: i32 = match meta.iter().find(|(key, _)| key == "metaEncoderVersion") {
+        Some((_, v)) => v.parse().unwrap_or_else(|e| panic!("{onnx}: metaEncoderVersion: {e}")),
+        None => {
+            assert_eq!(num_input_meta_channels, 0, "{onnx}: numInputMetaChannels > 0 without metaEncoderVersion (re-run `just convert`)");
+            0
+        }
+    };
     let code = format!(
         "/// The network's `ModelDesc`, from the ONNX `metadata_props` written by tools/bin2onnx (desc.cpp-faithful parser).\n\
          pub fn model_desc() -> katago_core::neuralnet::desc::ModelDesc {{\n\
@@ -77,7 +86,7 @@ fn write_model_desc(onnx: &str, net: &str) {
          \x20       num_value_channels: {nvc},\n\
          \x20       num_score_value_channels: {nsvc},\n\
          \x20       num_ownership_channels: {noc},\n\
-         \x20       meta_encoder_version: 0,\n\
+         \x20       meta_encoder_version: {mev},\n\
          \x20       post_process_params: katago_core::neuralnet::desc::ModelPostProcessParams {{\n\
          \x20           td_score_multiplier: f64::from_bits({td:#x}),\n\
          \x20           score_mean_multiplier: f64::from_bits({sm:#x}),\n\
@@ -91,12 +100,15 @@ fn write_model_desc(onnx: &str, net: &str) {
          \x20   }}\n\
          }}\n\
          /// Fixed spatial size of the generated graph (bin2onnx `--pos-len`).\n\
-         pub const POS_LEN: i32 = {pl};\n",
+         pub const POS_LEN: i32 = {pl};\n\
+         /// Width of the `meta_input` graph input (0: the graph has none).\n\
+         pub const NUM_INPUT_META_CHANNELS: i32 = {nimc};\n",
         name = get("name"),
         mv = int("modelVersion"),
         nic = int("numInputChannels"),
         nigc = int("numInputGlobalChannels"),
         nimc = num_input_meta_channels,
+        mev = meta_encoder_version,
         npc = int("numPolicyChannels"),
         nvc = int("numValueChannels"),
         nsvc = int("numScoreValueChannels"),
