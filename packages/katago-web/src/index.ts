@@ -1,10 +1,11 @@
 // katago-web: KataGo's analysis engine (ported to Rust, compiled to wasm) in a Web Worker, on WebGPU or
 // the wasm CPU. See docs/M4-report.md in the katago-rs repository.
 
-export { AnalysisRun, KataGoClient, KataGoError } from "./client.js";
+export { AnalysisRun, KataGoClient, KataGoError, ReviewRun } from "./client.js";
 export type { KataGoClientOptions } from "./client.js";
 export type { Backend, BackendChoice, EngineInitOptions, EngineStats, ModelSpec, ReadyInfo } from "./messages.js";
 export type * from "./protocol.js";
+export type * from "./review.js";
 
 /** `models.json` next to the built package (`just web-build`): the weights of the compiled-in networks. */
 export interface ModelManifest {

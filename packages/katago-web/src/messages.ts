@@ -1,5 +1,7 @@
 // Messages between KataGoClient (main thread) and the engine worker (worker.ts).
 
+import type { GameInput, ReviewOptions, ReviewProgress } from "./review.js";
+
 export type BackendChoice = "auto" | "webgpu" | "cpu";
 export type Backend = "webgpu" | "cpu";
 
@@ -101,6 +103,8 @@ export type ToWorker =
   | { type: "init"; options: EngineInitOptions }
   | { type: "lines"; lines: string[] }
   | { type: "stats"; requestId: number }
+  | { type: "review"; requestId: number; game: string | GameInput; options: Omit<ReviewOptions, "signal"> }
+  | { type: "reviewCancel"; requestId: number }
   | { type: "close" };
 
 export type FromWorker =
@@ -109,5 +113,9 @@ export type FromWorker =
   | { type: "line"; line: string }
   | { type: "log"; kind: string; text: string }
   | { type: "stats"; requestId: number; stats: EngineStats }
+  | { type: "reviewProgress"; requestId: number; progress: ReviewProgress }
+  /** `payload`: the GameAnalysis JSON text. */
+  | { type: "reviewDone"; requestId: number; payload: string }
+  | { type: "reviewError"; requestId: number; message: string; cancelled: boolean }
   | { type: "exit"; code: number }
   | { type: "fatal"; message: string };

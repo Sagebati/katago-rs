@@ -1,8 +1,13 @@
 // Browser tests of katago-web (`just web-test`): a static server for the built package, the upstream query
 // files / config and the goldens, and Playwright driving headless system Chromium.
 //
-//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback]
-//        [--backends webgpu,cpu] [--goldens basic,symmetry] [--json out.json] [--headed]
+//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback,review]
+//        [--backends webgpu,cpu] [--goldens basic,symmetry] [--json out.json] [--headed] [--profile dir]
+//
+// `review` (M6, full-game review): reviewGame against the native run of the same deterministic search and against
+// the katago-ws parity fixtures' payloads, two-pass and moves input, cancel. `review-timing` (not in the default
+// set): time per turn at the default settings. Both run in a persistent browser profile (--profile, default
+// target/web-test-profile), so after the first run the WebGPU kernels come from the kernel cache.
 //
 // Env: PLAYWRIGHT (path of the playwright package; default: sai-frontend's node_modules), CHROMIUM
 // (default /usr/bin/chromium). WebGPU on Linux needs --enable-unsafe-webgpu --enable-features=Vulkan
@@ -11,9 +16,11 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { extname, join, normalize, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compare, status, selfCheck, TOLERANCES } from "./compare.mjs";
+import { comparePayloads, keyShapes, validatePayload } from "./review.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = resolve(here, "..");
@@ -27,10 +34,11 @@ const opt = (name, def) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : def;
 };
-const only = opt("only", "goldens,fallback,cache,kernels,partials,terminate,throughput").split(",");
+const only = opt("only", "goldens,fallback,cache,kernels,partials,terminate,throughput,review").split(",");
 const backends = opt("backends", "webgpu,cpu").split(",");
 const headed = args.includes("--headed");
 const jsonOut = opt("json", null);
+const profileDir = resolve(opt("profile", join(root, "target/web-test-profile")));
 
 // The goldens of crates/katago-cli/tests/analysis_goldens.rs (fixtures/upstream-v1.16.5/analysis/regen.sh),
 // minus eval_cache (deferred, D7) and humansl (M8).
@@ -112,7 +120,7 @@ async function openPage(browser) {
 
 const call = (page, fn, arg) => page.evaluate(([f, a]) => window.kgwTests[f](a), [fn, arg]);
 
-const results = { origin, checks: [], goldens: [], fallback: null, cache: null, partials: [], terminate: [], throughput: [] };
+const results = { origin, checks: [], goldens: [], fallback: null, cache: null, partials: [], terminate: [], throughput: [], review: [], reviewTiming: [] };
 let failures = 0;
 function check(name, ok, detail) {
   results.checks.push({ name, ok, detail });
@@ -228,6 +236,141 @@ try {
   }
 } finally {
   await gpuBrowser.close();
+}
+
+//------------------------------------------------------------------------------------------------
+// Full-game review (M6)
+
+// Same browser flags, persistent profile: the kernel cache (Cache API) and Chrome's GPU cache survive runs.
+async function openPersistent() {
+  const context = await chromium.launchPersistentContext(profileDir, { executablePath: CHROMIUM, headless: !headed, args: WEBGPU_ARGS });
+  const page = context.pages()[0] ?? (await context.newPage());
+  page.on("console", (m) => {
+    if (process.env.KGW_ALL_CONSOLE || m.type() === "error" || m.type() === "warning") console.log(`  [page ${m.type()}] ${m.text()}`);
+  });
+  page.on("pageerror", (e) => console.log(`  [pageerror] ${e}`));
+  await page.goto(`${origin}/test/index.html`);
+  await page.waitForFunction(() => window.kgwReady === true);
+  return { context, page };
+}
+
+const FIX = join(root, "fixtures/katago-annotate");
+const fixture = (name) => {
+  const c = JSON.parse(readFileSync(join(FIX, name, "case.json"), "utf8"));
+  const expected = JSON.parse(gunzipSync(readFileSync(join(FIX, name, "expected.json.gz"))).toString());
+  // The wasm sets these itself (its network, no human SL model).
+  const { model, humanModel, ...options } = c.options;
+  return { sgf: readFileSync(join(FIX, name, "game.sgf"), "utf8"), options: { ...options, humanProfile: c.humanProfile }, expected, moves: expected.moves.map((m) => [m.color, m.mv]) };
+};
+// The deterministic search of fixtures/katago-annotate/browser/README.md (same overrides natively).
+const DETERMINISTIC = "logDir=, numAnalysisThreads=1, numSearchThreadsPerAnalysisThread=1, nnMaxBatchSize=8, nnRandomize=false, nnRandSeed=review, forDeterministicTesting=true";
+const turnGaps = (progress) => progress.map((p, i) => p.t - (i === 0 ? 0 : progress[i - 1].t));
+const fmtStats = (xs) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
+  return `mean ${mean.toFixed(0)} ms, median ${s[Math.floor(s.length / 2)].toFixed(0)}, min ${s[0].toFixed(0)}, max ${s[s.length - 1].toFixed(0)}`;
+};
+
+if (only.includes("review")) {
+  const nine = fixture("hand-9x9");
+  const native = JSON.parse(readFileSync(join(FIX, "browser/hand-9x9.b6c96-deterministic.json"), "utf8"));
+  const eigen = JSON.parse(readFileSync(join(FIX, "browser/hand-9x9.b6c96-deterministic.eigen.json"), "utf8"));
+  const thirteen = fixture("hand-13x13-h2");
+  const full = fixture("ogs-60000000");
+  const { context, page } = await openPersistent();
+  try {
+    for (const backend of backends) {
+      // 1. The deterministic search of the native reference (katago-rs, burn flex): same moves, candidates, visits
+      //    and PVs; floats within the NN tier's tolerances. And the payload contract, and katago-ws's key paths.
+      const r = await call(page, "review", { backend, network: "g170-b6c96", configUrl: "/upstream/configs/analysis_example.cfg", overrides: [DETERMINISTIC], warmupVisits: 0, reviews: [{ game: nine.sgf, options: nine.options }] });
+      const rv = r.reviews[0];
+      results.review.push({ backend: r.backend, case: "hand-9x9 deterministic", ms: rv.ms, error: rv.error, progress: rv.progress.length });
+      if (!rv.json) {
+        check(`review: deterministic 9x9 [${backend}]`, false, rv.error);
+        continue;
+      }
+      const p = JSON.parse(rv.json);
+      const bad = validatePayload(p, { boardSize: 9, moves: nine.moves, maxVisits: 50, engineName: "katago-rs-wasm", model: "g170-b6c96" });
+      check(`review: payload valid [${backend}]`, bad.length === 0 && p.engine.version === "1.16.5", bad.slice(0, 5).join("; ") || `engine ${JSON.stringify(p.engine)}`);
+      const tiers = { cpu: { value: 1e-5, score: 5e-4, prior: 1e-5, accuracy: 5e-3, grid: 1, policyGrid: 1 }, webgpu: { value: 1e-4, score: 2e-3, prior: 1e-4, accuracy: 5e-2, grid: 1, policyGrid: 2 } };
+      const c = comparePayloads(native, p, tiers[r.backend]);
+      results.review.at(-1).compare = c;
+      check(`review: matches the native run (katago-rs) [${backend}]`, c.structure.length === 0 && c.over.length === 0, `${c.structure.length} structural, ${c.over.length} over tolerance (${[...c.structure, ...c.over].slice(0, 4).join("; ")}); max dev ${JSON.stringify(c.maxDev)}`);
+      const ce = comparePayloads(eigen, p, tiers.webgpu);
+      results.review.at(-1).compareEigen = ce;
+      check(`review: matches upstream KataGo (Eigen) [${backend}]`, ce.structure.length === 0 && ce.over.length === 0, `${ce.structure.length} structural, ${ce.over.length} over the WebGPU tier (${[...ce.structure, ...ce.over].slice(0, 4).join("; ")}); max dev ${JSON.stringify(ce.maxDev)}`);
+      const shapes = keyShapes(p);
+      const fixtureShapes = keyShapes(nine.expected);
+      const onlyHere = [...shapes].filter((k) => !fixtureShapes.has(k));
+      const onlyThere = [...fixtureShapes].filter((k) => !shapes.has(k));
+      check(`review: katago-ws's key paths [${backend}]`, onlyHere.join() === ".engine.version" && onlyThere.length === 0, `only in the browser's: ${onlyHere.join(", ")}; only in katago-ws's: ${onlyThere.join(", ") || "none"}`);
+      const turns = rv.progress.map((x) => x.turnNumber).sort((a, b) => a - b);
+      check(`review: one progress event per turn [${backend}]`, turns.length === 24 && turns.every((t, i) => t === i) && rv.progress.every((x) => x.pass === "full" && x.total === 24), `${rv.progress.length} events; ${(rv.ms / 1000).toFixed(1)} s (${fmtStats(turnGaps(rv.progress))} per turn)`);
+      check(`review: the engine still answers queries afterwards [${backend}]`, r.after.length === 1 && r.after[0].visits >= 8, JSON.stringify(r.after));
+    }
+    if (backends.includes("webgpu")) {
+      // 2. Default config. Two-pass, the game given as moves (the 13x13 handicap fixture), then a cancel.
+      const thirteenInput = { boardSize: 13, komi: thirteen.expected.komi, rules: thirteen.expected.rules, initialStones: [["B", "D10"], ["B", "K4"]], moves: thirteen.moves };
+      const r = await call(page, "review", {
+        backend: "webgpu",
+        network: "g170e-b10c128",
+        reviews: [
+          { game: thirteenInput, options: thirteen.options },
+          { game: full.sgf, options: {}, cancelAfter: 10 },
+        ],
+      });
+      const [two, cancelled] = r.reviews;
+      const p = two.json ? JSON.parse(two.json) : null;
+      const bad = p ? validatePayload(p, { boardSize: 13, moves: thirteen.moves, maxVisits: 60, engineName: "katago-rs-wasm", model: "g170e-b10c128" }) : [two.error];
+      const screen = two.progress.filter((x) => x.pass === "screen").length;
+      const refine = two.progress.filter((x) => x.pass === "refine");
+      check("review: two-pass, game as moves [webgpu]", bad.length === 0 && p.engine.screen_visits === 10 && p.ownership === undefined && screen === 21 && refine.length > 0 && refine.every((x) => x.total === refine.length && x.passes === 2), `${bad.slice(0, 4).join("; ")} screen ${screen} turns, refine ${refine.length}; ${(two.ms / 1000).toFixed(1)} s`);
+      const shapes = keyShapes(p ?? {});
+      const fixtureShapes = keyShapes(thirteen.expected);
+      const diff = [...[...shapes].filter((k) => !fixtureShapes.has(k)), ...[...fixtureShapes].filter((k) => !shapes.has(k))];
+      check("review: two-pass key paths are katago-ws's [webgpu]", diff.join() === ".engine.version", diff.join(", "));
+      check("review: cancel [webgpu]", cancelled.cancelled && cancelled.error === "review cancelled" && cancelled.progress.length < 133 && r.after.length === 1, `${cancelled.error}; ${cancelled.progress.length} turns reported; rejected ${(cancelled.ms - cancelled.tCancel).toFixed(0)} ms after cancel()`);
+      results.review.push({ backend: "webgpu", case: "13x13 two-pass + cancel", two: { ms: two.ms, screen, refine: refine.length }, cancel: { ms: cancelled.ms, tCancel: cancelled.tCancel, turns: cancelled.progress.length } });
+    }
+    const logs = await call(page, "takeLogs", null);
+    for (const l of logs) console.log(`  [engine] ${l}`);
+  } finally {
+    await context.close();
+  }
+}
+
+if (only.includes("review-timing")) {
+  // Time per turn at katago-ws's defaults (100 visits, one pass; the browser's default engine config), b10c128:
+  // the whole 132-move game on WebGPU (one pass and two-pass, screen 16), its first 10 moves on both backends.
+  const full = fixture("ogs-60000000");
+  const first10 = { boardSize: 19, komi: full.expected.komi, rules: full.expected.rules, moves: full.moves.slice(0, 10) };
+  const { context, page } = await openPersistent();
+  try {
+    for (const backend of backends) {
+      const which = (opt("timing", "first10,full,twopass")).split(",");
+      const all = { first10: [{ game: first10, options: {} }, "first 10 moves"], full: [{ game: full.sgf, options: {} }, "132 moves"], twopass: [{ game: full.sgf, options: { screenVisits: 16 } }, "132 moves, two-pass (screen 16)"] };
+      const picked = which.filter((w) => backend === "webgpu" || w === "first10");
+      const reviews = picked.map((w) => all[w][0]);
+      // NN cache cleared before each review: the later ones re-analyse the same positions.
+      // --review-overrides: engine config for the timing (e.g. the throughput shape katago-ws uses for games:
+      // many positions in parallel, few threads each).
+      const ro = opt("review-overrides", null);
+      const r = await call(page, "review", { backend, network: "g170e-b10c128", reviews, clearCache: true, overrides: ro ? [ro] : undefined });
+      for (const [i, rv] of r.reviews.entries()) {
+        const label = all[picked[i]][1];
+        const turns = rv.progress.length;
+        const p = rv.json ? JSON.parse(rv.json) : null;
+        results.reviewTiming.push({ backend: r.backend, label, ms: rv.ms, turns, gaps: turnGaps(rv.progress), error: rv.error, ready: r.ready.timings, nn: rv.nn });
+        const nn = rv.nn;
+        console.log(`  NN: ${nn.rows} evals in ${nn.batches} batches (avg ${(nn.rows / nn.batches).toFixed(1)} rows, ${(nn.busyMs / nn.batches).toFixed(0)} ms, max ${nn.maxBatchMs.toFixed(0)} ms), ${((nn.rows * 1000) / rv.ms).toFixed(0)} evals/s, NN busy ${((100 * nn.busyMs) / rv.ms).toFixed(0)}% of the time`);
+        const bad = p ? validatePayload(p, { maxVisits: 100 }) : [rv.error];
+        const ok = bad.length === 0;
+        check(`review timing: ${label} [${backend}]`, !!ok, `${(rv.ms / 1000).toFixed(1)} s for ${turns} analysed turns = ${(rv.ms / turns).toFixed(0)} ms per turn (gaps ${fmtStats(turnGaps(rv.progress))}); ready in ${r.ready.timings.totalMs.toFixed(0)} ms${bad.length ? `; ${bad.slice(0, 3).join("; ")}` : ""}`);
+      }
+    }
+  } finally {
+    await context.close();
+  }
 }
 
 if (only.includes("fallback")) {
