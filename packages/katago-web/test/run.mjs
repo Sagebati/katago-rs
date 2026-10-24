@@ -1,7 +1,7 @@
 // Browser tests of katago-web (`just web-test`): a static server for the built package, the upstream query
 // files / config and the goldens, and Playwright driving headless system Chromium.
 //
-//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback]
+//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback,b18]
 //        [--backends webgpu,cpu] [--goldens basic,symmetry] [--json out.json] [--headed]
 //
 // Env: PLAYWRIGHT (path of the playwright package; default: sai-frontend's node_modules), CHROMIUM
@@ -10,7 +10,7 @@
 
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { extname, join, normalize, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compare, status, selfCheck, TOLERANCES } from "./compare.mjs";
@@ -27,6 +27,7 @@ const opt = (name, def) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : def;
 };
+// `b18` (kata1-b18c384nbt: goldens, 105 MB weights, CPU guard, throughput; `just web-test-b18`) is not in the default set.
 const only = opt("only", "goldens,fallback,cache,kernels,partials,terminate,throughput").split(",");
 const backends = opt("backends", "webgpu,cpu").split(",");
 const headed = args.includes("--headed");
@@ -49,6 +50,17 @@ const GOLDENS = [
   ["pvvisits", "pvvisits.txt.stdout", "pvvisits.txt", LOOP],
   ["pvvisits_nograph", "pvvisits_nograph.stdout", "pvvisits.txt", "rootSymmetryPruning=false, useGraphSearch=false"],
 ];
+// kata1-b18c384nbt goldens: fixtures/upstream-v1.16.5/analysis/regen_b18.sh (Eigen reference; upstream has none for this net).
+const B18 = "kata1-b18c384nbt";
+const B18_FILE = "models/kata1-b18c384nbt.bin.gz";
+const B18_GOLDENS = [
+  ["b18_basic", "b18_basic.stdout", "basic.txt", LOOP],
+  ["b18_symmetry", "b18_symmetry.stdout", "symmetry.txt", LOOP],
+  ["b18_symmetry_with_pruning", "b18_symmetry_with_pruning.stdout", "symmetry.txt", "maxVisits=100, maxPlayouts=10000, rootSymmetryPruning=true"],
+];
+// The same on a device limited to WebGPU's default buffer limits (test/page/lowlimits-worker.js), batches of at most 32
+// (80 MB im2col buffers; 64 rows would need 160 MB, more than the default 128 MiB binding).
+const B18_GOLDENS_LOW = [["b18_basic_lowlimits", "b18_basic.stdout", "basic.txt", `${LOOP}, nnMaxBatchSize=32`]];
 const goldenFilter = opt("goldens", null)?.split(",");
 
 //------------------------------------------------------------------------------------------------
@@ -112,6 +124,25 @@ async function openPage(browser) {
 
 const call = (page, fn, arg) => page.evaluate(([f, a]) => window.kgwTests[f](a), [fn, arg]);
 
+/** VRAM in use per DRM card (amdgpu's mem_info_vram_used), in bytes; {} where the kernel does not say. */
+function vramUsed() {
+  const out = {};
+  try {
+    for (const card of readdirSync("/sys/class/drm")) {
+      if (!/^card\d+$/.test(card)) continue;
+      try {
+        out[card] = Number(readFileSync(`/sys/class/drm/${card}/device/mem_info_vram_used`, "utf8"));
+      } catch {
+        /* not an amdgpu card */
+      }
+    }
+  } catch {
+    /* no sysfs */
+  }
+  return out;
+}
+const vramDelta = (a, b) => Object.fromEntries(Object.keys(b).map((k) => [k, Math.round(((b[k] ?? 0) - (a[k] ?? 0)) / 1048576)]));
+
 const results = { origin, checks: [], goldens: [], fallback: null, cache: null, partials: [], terminate: [], throughput: [] };
 let failures = 0;
 function check(name, ok, detail) {
@@ -127,10 +158,10 @@ const readGolden = (f) =>
 
 selfCheck(readGolden("basic.txt.stdout"));
 
-async function goldens(page, backend, label, filter = goldenFilter) {
-  for (const [name, golden, query, extra] of GOLDENS) {
+async function goldens(page, backend, label, filter = goldenFilter, list = GOLDENS, net = { network: "g170-b6c96", modelFile: M6 }) {
+  for (const [name, golden, query, extra] of list) {
     if (filter && !filter.includes(name)) continue;
-    const r = await call(page, "runGolden", { backend, queryFile: query, overrides: `${COMMON}, ${extra}`, modelFile: M6 });
+    const r = await call(page, "runGolden", { backend, queryFile: query, overrides: `${COMMON}, ${extra}`, ...net });
     const gold = readGolden(golden);
     const tol = r.backend === "webgpu" ? TOLERANCES.webgpu : TOLERANCES.flex;
     const c = compare(gold, r.lines, tol);
@@ -226,6 +257,61 @@ try {
     for (const l of logs) console.log(`  [engine] ${l}`);
     await context.close();
   }
+
+  if (only.includes("b18") && backends.includes("webgpu")) {
+    const net = { network: B18, modelFile: B18_FILE };
+    results.b18 = {};
+    {
+      // Fresh context (empty Cache API): the 105 MB of weights come from the network, then from the cache.
+      const { context, page, browserRequests } = await openPage(gpuBrowser);
+      const bpkRequests = () => requestLog.filter((p) => p.endsWith(".bpk")).length;
+      const vram0 = vramUsed();
+      const before = bpkRequests();
+      const cold = await call(page, "loadModel", { backend: "webgpu", network: B18 });
+      const afterCold = bpkRequests();
+      const vram1 = vramUsed();
+      const storage = await call(page, "storageAndLimits", null);
+      browserRequests.length = 0;
+      await page.reload();
+      await page.waitForFunction(() => window.kgwReady === true);
+      const warm = await call(page, "loadModel", { backend: "webgpu", network: B18 });
+      const afterWarm = bpkRequests();
+      const browserBpk = browserRequests.filter((u) => u.endsWith(".bpk"));
+      results.b18.load = { cold, warm, storage, vramDeltaMiB: vramDelta(vram0, vram1) };
+      check("b18: first load fetches the weights once", cold.backend === "webgpu" && cold.modelSource === "network" && afterCold - before === 1, `${afterCold - before} .bpk request(s), source ${cold.modelSource}, adapter ${cold.adapter}`);
+      check("b18: second load does no model network request", warm.modelSource === "cache" && afterWarm === afterCold && browserBpk.length === 0, `server saw ${afterWarm - afterCold}, browser issued ${browserBpk.length}, source ${warm.modelSource}`);
+      check("b18: second load compiles no WebGPU kernel", cold.kernelCache?.compiled > 0 && warm.kernelCache?.compiled === 0 && warm.kernelCache?.hits > 0, `cold ${JSON.stringify(cold.kernelCache)}, warm ${JSON.stringify(warm.kernelCache)}`);
+      // The biggest buffer of a b18c384nbt forward pass is the im2col matrix of its 192-channel 3x3 convs (62 of them):
+      // batch * 361 * 1728 floats = 2.5 MB per row, 80 MB at 32 rows. WebGPU's default maxStorageBufferBindingSize is
+      // 128 MiB (53 rows; 64 rows fail on a default-limit device, see lowlimits-worker.js), so the engine relies on the
+      // adapter's own, larger limit being passed on to the device.
+      const im2col = 32 * 361 * 192 * 9 * 4;
+      check("b18: adapter limits cover the biggest buffer", cold.adapterLimits && cold.adapterLimits.maxStorageBufferBindingSize >= im2col && cold.adapterLimits.maxBufferSize >= im2col, `maxStorageBufferBindingSize ${cold.adapterLimits?.maxStorageBufferBindingSize}, maxBufferSize ${cold.adapterLimits?.maxBufferSize}; im2col at batch 32 ${im2col}`);
+      console.log(`  cold: ${JSON.stringify(cold.timings)}\n  warm: ${JSON.stringify(warm.timings)}\n  wasm memory ${(cold.wasmMemoryBytes / 1048576).toFixed(0)} MiB after the load\n  storage ${JSON.stringify(storage)}; VRAM +${JSON.stringify(vramDelta(vram0, vram1))} MiB`);
+      await context.close();
+    }
+    {
+      const { context, page } = await openPage(gpuBrowser);
+      await goldens(page, "webgpu", "b18 webgpu", goldenFilter, B18_GOLDENS, net);
+      await goldens(page, "webgpu", "b18 webgpu, default buffer limits", goldenFilter, B18_GOLDENS_LOW, { ...net, workerUrl: "/test/lowlimits-worker.js" });
+      const r = await call(page, "apiSmoke", { backend: "webgpu", network: B18 });
+      const partials = r.responses.filter((x) => x.isDuringSearch);
+      check("b18: reportDuringSearchEvery partials arrive", partials.length >= 2 && r.responses.every((x) => x.id === "mine" && x.ownership === 361), `${partials.length} partials (visits ${partials.map((p) => p.visits).join(",")})`);
+      for (const visits of [100, 400]) {
+        const t = await call(page, "throughput", { backend: "webgpu", network: B18, visits, positions: 4 });
+        (results.b18.throughput ??= []).push({ visits, ...t });
+        for (const x of t.results) console.log(`  b18 ${visits}: ${x.moves} moves: ${x.visits} visits ${x.ms.toFixed(0)} ms = ${x.visitsPerS.toFixed(0)} visits/s, ${x.rows} evals in ${x.batches} batches (avg ${x.avgBatch.toFixed(1)}) = ${x.evalsPerS.toFixed(0)} evals/s (NN busy ${x.nnBusyEvalsPerS.toFixed(0)}/s)`);
+        check(`b18: ${visits}-visit searches complete`, t.results.every((x) => x.visits >= visits), t.results.map((x) => x.visits).join(","));
+      }
+      const t = await call(page, "terminateLatency", { backend: "webgpu", network: B18, partialsBeforeCancel: 3, every: 0.5, trials: 5 });
+      results.b18.terminate = t;
+      for (const [i, x] of t.trials.entries()) {
+        check(`b18: terminate returns within one NN batch #${i + 1}`, x.finalIsDuringSearch === false && x.rowsAfterTerminate <= 16 && x.terminateLatencyMs <= 1.5 * x.avgBatchMs + 25, `${x.terminateLatencyMs.toFixed(1)} ms after cancel(), ${x.rowsAfterTerminate} evals in ${x.batchesAfterTerminate} batch(es) (avg batch ${x.avgBatchMs.toFixed(1)} ms of ${x.avgBatchRows.toFixed(1)} rows)`);
+      }
+      for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
+      await context.close();
+    }
+  }
 } finally {
   await gpuBrowser.close();
 }
@@ -258,6 +344,34 @@ if (only.includes("fallback")) {
     await context.close();
   } finally {
     await browser.close();
+  }
+}
+
+
+if (only.includes("b18")) {
+  // No WebGPU: b18c384nbt is refused on the CPU (it would run at ~2 evals/s), replaced by `cpuModel`, or run anyway.
+  const noGpu = await chromium.launch({ executablePath: CHROMIUM, headless: !headed, args: ["--disable-gpu", "--disable-features=WebGPU"] });
+  try {
+    const { context, page } = await openPage(noGpu);
+    const before = requestLog.filter((p) => p.endsWith(".bpk")).map((p) => p);
+    const b18Before = requestLog.filter((p) => p.includes("kata1-b18c384nbt") && p.endsWith(".bpk")).length;
+    const refused = await call(page, "tryLoadModel", { backend: "auto", network: B18 });
+    check("b18: refused on the CPU without cpuModel", /needs WebGPU/.test(refused.error ?? "") && /cpuModel/.test(refused.error ?? "") && !/WebGPU engine failed/.test(refused.error ?? ""), refused.error ?? JSON.stringify(refused.ready?.backend));
+    check("b18: refusal fetches no weights", requestLog.filter((p) => p.endsWith(".bpk")).length === before.length, `${requestLog.filter((p) => p.endsWith(".bpk")).length - before.length} .bpk request(s)`);
+    const cpuForced = await call(page, "tryLoadModel", { backend: "cpu", network: B18 });
+    check("b18: refused with backend cpu too", /needs WebGPU/.test(cpuForced.error ?? ""), cpuForced.error);
+    const swapped = await call(page, "tryLoadModel", { backend: "auto", network: B18, cpuNetwork: "g170e-b10c128" });
+    results.b18 ??= {};
+    results.b18.cpuModel = swapped;
+    const b18Fetched = requestLog.filter((p) => p.includes("kata1-b18c384nbt") && p.endsWith(".bpk")).length - b18Before;
+    check("b18: auto without WebGPU picks cpuModel (b10c128)", swapped.ready?.backend === "cpu" && swapped.ready.network === "g170e-b10c128" && swapped.ready.requestedNetwork === B18 && !!swapped.ready.fallbackReason && b18Fetched === 0, `${swapped.error ?? `backend ${swapped.ready.backend}, network ${swapped.ready.network} (asked ${swapped.ready.requestedNetwork}), ${b18Fetched} b18 download(s), ready in ${swapped.ready.timings.totalMs.toFixed(0)} ms`}`);
+    const slow = await call(page, "slowCpuSearch", { network: B18, visits: 4 });
+    results.b18.slowCpu = slow;
+    check("b18: allowSlowCpu runs it on the CPU", slow.ready.backend === "cpu" && slow.ready.network === B18 && slow.visits >= 4, `ready in ${slow.ready.timings.totalMs.toFixed(0)} ms (weights ${slow.ready.modelSource}, engine start ${slow.ready.timings.engineStartMs.toFixed(0)} ms), ${slow.visits} visits in ${slow.ms.toFixed(0)} ms = ${((slow.rows * 1000) / slow.ms).toFixed(2)} evals/s`);
+    for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
+    await context.close();
+  } finally {
+    await noGpu.close();
   }
 }
 

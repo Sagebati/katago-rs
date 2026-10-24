@@ -15,20 +15,21 @@ const onLog = (kind, t) => {
 };
 
 async function client(opts) {
-  const network = opts.network ?? "g170e-b10c128";
+  const { network = "g170e-b10c128", cpuNetwork, ...rest } = opts;
   const model = await fetchModelSpec("/pkg/models/models.json", network);
-  const c = new KataGoClient({ model, onLog, ...opts });
+  const cpuModel = cpuNetwork ? await fetchModelSpec("/pkg/models/models.json", cpuNetwork) : undefined;
+  const c = new KataGoClient({ model, cpuModel, onLog, ...rest });
   const ready = await c.ready;
   return { c, ready };
 }
 
 /** One upstream analysis golden: analysis_example.cfg + regen.sh's overrides, the query file's lines as one
  * burst, end of input, every output line. */
-export async function runGolden({ backend, queryFile, overrides, modelFile }) {
+export async function runGolden({ backend, queryFile, overrides, modelFile, network = "g170-b6c96", workerUrl }) {
   const config = await text("/upstream/configs/analysis_example.cfg");
   const lines = (await text(`/upstream/tests/analysis/${queryFile}`)).split("\n").filter((l) => l.length > 0);
   const t0 = performance.now();
-  const { c, ready } = await client({ backend, network: "g170-b6c96", config, overrides: [overrides], modelFile, warmupVisits: 0 });
+  const { c, ready } = await client({ backend, network, config, overrides: [overrides], modelFile, warmupVisits: 0, workerUrl });
   const out = [];
   c.onLine((l) => out.push(l));
   const t1 = performance.now();
@@ -38,10 +39,44 @@ export async function runGolden({ backend, queryFile, overrides, modelFile }) {
 }
 
 /** Model load: returns the ready info (backend, model source, timings). */
-export async function loadModel({ backend, network, workerUrl }) {
-  const { c, ready } = await client({ backend, network, workerUrl });
+export async function loadModel({ backend, network, workerUrl, cpuNetwork, allowSlowCpu }) {
+  const { c, ready } = await client({ backend, network, workerUrl, cpuNetwork, allowSlowCpu });
   c.dispose();
   return ready;
+}
+
+/** loadModel that reports a failure (`ready` rejecting) instead of throwing: {ready} | {error}. */
+export async function tryLoadModel(opts) {
+  try {
+    return { ready: await loadModel(opts) };
+  } catch (e) {
+    return { error: String(e.message ?? e) };
+  }
+}
+
+/** A tiny search on the CPU with a GPU-only net (allowSlowCpu): the time per visit there, 1 search thread. */
+export async function slowCpuSearch({ network, visits }) {
+  const { c, ready } = await client({ backend: "cpu", network, allowSlowCpu: true, warmupVisits: 0 });
+  const s0 = await c.stats();
+  const t0 = performance.now();
+  const finals = await c.analyze({ ...EMPTY_19, moves: GAME_MOVES.slice(0, 10), maxVisits: visits }).done;
+  const ms = performance.now() - t0;
+  const s1 = await c.stats();
+  c.dispose();
+  return { ready, visits: finals[0].rootInfo.visits, ms, rows: s1.rows - s0.rows, batches: s1.batches - s0.batches, top: finals[0].moveInfos[0].move };
+}
+
+/** Storage quota and usage of the origin (the Cache API holds the weights) and the adapter's limits, seen from the page. */
+export async function storageAndLimits() {
+  const est = await navigator.storage.estimate();
+  const a = await navigator.gpu?.requestAdapter({ powerPreference: "high-performance" });
+  const l = a?.limits;
+  return {
+    quota: est.quota,
+    usage: est.usage,
+    limits: l && { maxStorageBufferBindingSize: l.maxStorageBufferBindingSize, maxBufferSize: l.maxBufferSize, maxComputeWorkgroupsPerDimension: l.maxComputeWorkgroupsPerDimension, maxStorageBuffersPerShaderStage: l.maxStorageBuffersPerShaderStage },
+    features: a ? [...a.features] : [],
+  };
 }
 
 const EMPTY_19 = { moves: [], rules: "tromp-taylor", komi: 7.5, boardXSize: 19, boardYSize: 19 };
@@ -53,8 +88,8 @@ const GAME_MOVES = [
 ];
 
 /** visits/s and evals/s of maxVisits searches on fresh positions (NN cache cleared before each). */
-export async function throughput({ backend, network, visits, positions }) {
-  const { c, ready } = await client({ backend, network });
+export async function throughput({ backend, network, visits, positions, overrides, workerUrl }) {
+  const { c, ready } = await client({ backend, network, overrides, workerUrl });
   const results = [];
   for (let p = 0; p < positions; p++) {
     await c.clearCache();
@@ -175,5 +210,5 @@ export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, throughput, terminateLatency, apiSmoke, kernelCacheParity, takeLogs };
+window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, terminateLatency, apiSmoke, kernelCacheParity, takeLogs };
 window.kgwReady = true;

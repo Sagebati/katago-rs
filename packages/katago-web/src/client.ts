@@ -217,6 +217,8 @@ export class KataGoClient {
     };
     const init: EngineInitOptions = {
       model: this.options.model,
+      cpuModel: this.options.cpuModel,
+      allowSlowCpu: this.options.allowSlowCpu,
       backend,
       config: this.options.config,
       overrides: overridesToStrings(this.options.overrides),
@@ -269,17 +271,17 @@ export class KataGoClient {
         this.onFatal(`engine exited with code ${m.code}`);
         break;
       case "fatal":
-        this.onFatal(m.message);
+        this.onFatal(m.message, m.retry !== false);
         break;
     }
   }
 
-  private onFatal(message: string): void {
+  private onFatal(message: string, retry = true): void {
     // A WebGPU failure before the engine was ready (e.g. a kernel that does not compile on this GPU traps
     // the wasm): start over in a new worker on the CPU when the backend was "auto" (not possible with a
     // Worker instance passed in).
     const canRestart = !(this.options.worker && typeof this.options.worker !== "function");
-    if (!this.isReady && !this.dead && !this.disposed && (this.options.backend ?? "auto") === "auto" && !this.retriedOnCpu && canRestart) {
+    if (retry && !this.isReady && !this.dead && !this.disposed && (this.options.backend ?? "auto") === "auto" && !this.retriedOnCpu && canRestart) {
       this.retriedOnCpu = true;
       this.retryReason = `WebGPU engine failed before it was ready: ${message}`;
       this.worker.terminate();
@@ -288,6 +290,8 @@ export class KataGoClient {
       return;
     }
     if (this.dead) return;
+    // The CPU restart's own failure (e.g. a GPU-only net refused on the CPU) keeps the WebGPU failure in view.
+    if (this.retriedOnCpu && !this.isReady && this.retryReason && !message.includes(this.retryReason)) message = `${message} (${this.retryReason})`;
     this.dead = new KataGoError(message);
     this.exitDeferred?.reject(this.dead);
     this.readyDeferred.reject(this.dead);
