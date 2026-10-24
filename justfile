@@ -96,3 +96,48 @@ search-tests *flags="":
 # (fixtures/upstream-v1.16.5/search/oracle/search_tolerance_*.txt). Release, ~16 min.
 search-tolerance *flags="":
     cargo test --release -p katago-nn-burn --test search_tolerance {{flags}} -- --nocapture
+
+# npm package packages/katago-web (M4): the katago-wasm engine (cargo profile `web`: size-optimized except burn's CPU
+# kernels; wasm-bindgen --target web, wasm-opt when installed),
+# the TypeScript client and worker (tsc), and dist/models/ (the compiled-in nets' .bpk weights + models.json with
+# their sha256). Needs wasm-bindgen 0.2.129 and a TypeScript compiler (TSC, default: sai-frontend's).
+tsc := env_var_or_default("TSC", "/home/sam/src/web/baduk_review/sai-frontend/node_modules/.bin/tsc")
+web_pkg := "packages/katago-web"
+
+web-build *features="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo build --profile web -p katago-wasm --target wasm32-unknown-unknown {{features}}
+    wasm=target/wasm32-unknown-unknown/web/katago_wasm.wasm
+    rm -rf {{web_pkg}}/src/wasm {{web_pkg}}/dist
+    wasm-bindgen --target web --out-dir {{web_pkg}}/src/wasm "$wasm"
+    if command -v wasm-opt >/dev/null; then
+        wasm-opt -O3 --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals \
+            {{web_pkg}}/src/wasm/katago_wasm_bg.wasm -o {{web_pkg}}/src/wasm/katago_wasm_bg.wasm
+    else
+        echo "web-build: wasm-opt not found, wasm left unoptimised"
+    fi
+    {{tsc}} -p {{web_pkg}}
+    cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
+    mkdir -p {{web_pkg}}/dist/models
+    entries=()
+    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt; do
+        bpk="$(ls -t target/wasm32-unknown-unknown/web/build/katago-nn-burn-*/out/model/$net.bpk 2>/dev/null | head -1 || true)"
+        [ -n "$bpk" ] || continue
+        sha="$(sha256sum "$bpk" | cut -d' ' -f1)"
+        file="$net.${sha:0:12}.bpk"
+        cp "$bpk" "{{web_pkg}}/dist/models/$file"
+        entries+=("{\"network\":\"$net\",\"file\":\"$file\",\"sha256\":\"$sha\",\"size\":$(stat -c %s "$bpk")}")
+    done
+    (IFS=,; echo "{\"models\":[${entries[*]}]}") > {{web_pkg}}/dist/models/models.json
+    raw=$(stat -c %s {{web_pkg}}/dist/wasm/katago_wasm_bg.wasm)
+    gz=$(gzip -9 -c {{web_pkg}}/dist/wasm/katago_wasm_bg.wasm | wc -c)
+    br=$(command -v brotli >/dev/null && brotli -c -q 11 {{web_pkg}}/dist/wasm/katago_wasm_bg.wasm | wc -c || echo n/a)
+    echo "web-build: katago_wasm_bg.wasm $raw bytes raw, $gz gzip -9, $br brotli -q 11"
+    cat {{web_pkg}}/dist/models/models.json
+
+# Browser tests of katago-web (Playwright + system Chromium, headless; WebGPU through Vulkan): the upstream
+# analysis goldens on WebGPU, on the CPU and through the no-GPU fallback, the second load without network,
+# terminate latency, partial reports, throughput. `just web-build` first. Options: see packages/katago-web/test/run.mjs.
+web-test *args="":
+    node {{web_pkg}}/test/run.mjs {{args}}

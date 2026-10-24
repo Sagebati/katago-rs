@@ -19,6 +19,9 @@
 //   virtual threads run, and on wasm32 also the host's event loop (PORTING.md §11). The per-row
 //   `symmetry` / `policyOptimism` are read from the input bufs before that await.
 // - Logger output goes to the `log` crate.
+// - Optional batch-shape buckets (`BurnNeuralNet::with_batch_buckets`, port-only, off by default): a
+//   batch is padded to the smallest bucket that holds it, so a GPU backend sees a few fixed shapes
+//   (each new shape costs a shader compile + autotune on wgpu, 1-3 s in the browser).
 
 // Lints the fidelity rules trigger (PORTING.md §11b), for this ported file.
 #![allow(clippy::needless_bool, clippy::needless_range_loop)]
@@ -51,13 +54,31 @@ use crate::Network;
 /// (device initialization is async on the web, so it is the host's job).
 pub struct BurnNeuralNet<N: Network> {
   device: Device,
+  batch_buckets: Vec<i32>,
   _net: PhantomData<N>,
 }
 
 impl<N: Network> BurnNeuralNet<N> {
   pub fn new(device: Device) -> BurnNeuralNet<N> {
-    BurnNeuralNet { device, _net: PhantomData }
+    BurnNeuralNet { device, batch_buckets: Vec::new(), _net: PhantomData }
   }
+
+  /// PORT NOTE: port-only. Pads every batch of `n` rows to the smallest bucket `>= n` (and within the
+  /// input buffers' max batch size; larger batches run unpadded). The padding rows hold stale inputs and
+  /// their outputs are dropped. For GPU backends, where each new input shape compiles and autotunes
+  /// kernels: e.g. powers of two up to nnMaxBatchSize, warmed up once at start.
+  pub fn with_batch_buckets(mut self, mut buckets: Vec<i32>) -> BurnNeuralNet<N> {
+    buckets.retain(|&b| b > 0);
+    buckets.sort_unstable();
+    buckets.dedup();
+    self.batch_buckets = buckets;
+    self
+  }
+}
+
+/// The number of rows a batch of `n` runs with: the smallest bucket in `[n, max_batch_size]`, else `n`.
+pub fn padded_batch_size(buckets: &[i32], n: i32, max_batch_size: i32) -> i32 {
+  buckets.iter().copied().filter(|&b| b >= n && b <= max_batch_size).min().unwrap_or(n)
 }
 
 // LoadedModel / ModelDesc ---------------------------------------------------------------------------------------------
@@ -99,6 +120,8 @@ pub struct BurnComputeHandle<N: Network> {
   pub inputs_use_nhwc: bool,
   pub device: Device,
   pub model: N,
+  /// PORT NOTE: port-only, see BurnNeuralNet::with_batch_buckets.
+  pub batch_buckets: Vec<i32>,
   pub model_version: i32,
   pub num_input_channels: i32,
   pub num_policy_channels: i32,
@@ -303,6 +326,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       inputs_use_nhwc,
       device: context.device.clone(),
       model: N::from_bpk(loaded_model.bpk.clone(), &context.device),
+      batch_buckets: self.batch_buckets.clone(),
       model_version: m.model_version,
       num_input_channels: m.num_input_channels,
       num_policy_channels: m.num_policy_channels,
@@ -412,19 +436,21 @@ async fn get_output_impl<N: Network>(
   }
 
   // PORT NOTE: Eigen maps the buffers as tensors and calls Model::apply; here the batch is copied
-  // into burn tensors (NCHW) and the generated network runs.
+  // into burn tensors (NCHW) and the generated network runs, padded to a batch bucket if configured
+  // (rows n..n_run of the input buffers hold stale inputs; their outputs are not read).
   let n = batch_size as usize;
+  let n_run = padded_batch_size(&compute_handle.batch_buckets, batch_size, input_buffers.max_batch_size) as usize;
   let hw = (nn_x_len * nn_y_len) as usize;
   let device = &compute_handle.device;
   let input = Tensor::<4>::from_data(
     TensorData::new(
-      input_buffers.spatial_input[..input_buffers.single_input_elts * n].to_vec(),
-      [n, num_spatial_features as usize, nn_y_len as usize, nn_x_len as usize],
+      input_buffers.spatial_input[..input_buffers.single_input_elts * n_run].to_vec(),
+      [n_run, num_spatial_features as usize, nn_y_len as usize, nn_x_len as usize],
     ),
     device,
   );
   let input_global = Tensor::<2>::from_data(
-    TensorData::new(input_buffers.global_input[..input_buffers.single_input_global_elts * n].to_vec(), [n, num_global_features as usize]),
+    TensorData::new(input_buffers.global_input[..input_buffers.single_input_global_elts * n_run].to_vec(), [n_run, num_global_features as usize]),
     device,
   );
   let raw = compute_handle.model.forward(input, input_global);
@@ -436,10 +462,10 @@ async fn get_output_impl<N: Network>(
   let ownership_row_len = compute_handle.num_ownership_channels as usize * hw;
   let flat = Tensor::cat(
     vec![
-      raw.policy.reshape([n, policy_row_len]),
-      raw.value.reshape([n, num_value_channels]),
-      raw.score.reshape([n, num_score_value_channels]),
-      raw.ownership.reshape([n, ownership_row_len]),
+      raw.policy.reshape([n_run, policy_row_len]),
+      raw.value.reshape([n_run, num_value_channels]),
+      raw.score.reshape([n_run, num_score_value_channels]),
+      raw.ownership.reshape([n_run, ownership_row_len]),
     ],
     1,
   );
@@ -457,7 +483,7 @@ async fn get_output_impl<N: Network>(
   #[cfg(target_arch = "wasm32")]
   crate::host::yield_to_event_loop().await;
   let row_len = policy_row_len + num_value_channels + num_score_value_channels + ownership_row_len;
-  testAssert!(data.len() == row_len * n);
+  testAssert!(data.len() == row_len * n_run);
 
   debug_assert!(input_buffers.single_policy_pass_result_elts == num_policy_channels as usize);
   debug_assert!(input_buffers.single_policy_result_elts == (num_policy_channels as usize) * hw);

@@ -18,6 +18,26 @@ strip = true
 lto = "thin"
 codegen-units = 1
 
+# Browser builds (`just web-build`): optimized for size except burn's CPU compute kernels. Measured in M4
+# (docs/M4-report.md): wasm 25.7 -> 18.2 MB raw, 5.1 -> 3.6 MB gzip, same WebGPU and wasm-CPU speed.
+[profile.web]
+inherits = "release"
+opt-level = "s"
+[profile.web.package.burn-flex]
+opt-level = 3
+[profile.web.package.burn-backend]
+opt-level = 3
+[profile.web.package.gemm]
+opt-level = 3
+[profile.web.package.gemm-common]
+opt-level = 3
+[profile.web.package.gemm-f32]
+opt-level = 3
+[profile.web.package.macerator]
+opt-level = 3
+[profile.web.package.pulp]
+opt-level = 3
+
 # burn's CPU kernels are ~50x slower unoptimized; the NN parity tests (crates/katago-nn-burn/tests)
 # run them in the debug profile too. Only these third-party compute crates are optimized: the
 # workspace crates (katago-core: debug assertions, overflow checks) keep the dev profile.

@@ -1,0 +1,302 @@
+// The engine worker (a module Worker): loads the wasm, fetches / caches / verifies the network weights,
+// picks the backend, runs the analysis engine and relays its JSON lines. Speaks messages.ts with
+// KataGoClient; the analysis protocol itself passes through verbatim ("lines" in, "line" out).
+
+import init, { Engine, compiledNetworks, sha256Hex } from "./wasm/katago_wasm.js";
+import type { Backend, EngineInitOptions, EngineStats, FromWorker, ReadyInfo, ToWorker } from "./messages.js";
+
+interface WorkerScope {
+  postMessage(message: FromWorker): void;
+  addEventListener(type: "message", listener: (e: MessageEvent<ToWorker>) => void): void;
+  addEventListener(type: "error", listener: (e: ErrorEvent) => void): void;
+  addEventListener(type: "unhandledrejection", listener: (e: PromiseRejectionEvent) => void): void;
+}
+const scope = globalThis as unknown as WorkerScope;
+const post = (m: FromWorker) => scope.postMessage(m);
+
+// Workaround (docs/M0-report.md §4.2): wgpu's WebGPU backend never requests the "subgroups" device feature,
+// but cubecl's WGSL matmul always emits `enable subgroups;`, which Chrome rejects on a device without it.
+// Request it whenever the adapter has it. Remove once fixed upstream (docs/upstream-issues.md).
+function installSubgroupsShim(): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const GPUAdapterCtor = (globalThis as any).GPUAdapter;
+  if (!GPUAdapterCtor) return;
+  const requestDevice = GPUAdapterCtor.prototype.requestDevice;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  GPUAdapterCtor.prototype.requestDevice = function (this: any, desc: { requiredFeatures?: string[] } = {}) {
+    const required = new Set(desc.requiredFeatures ?? []);
+    if (this.features.has("subgroups")) required.add("subgroups");
+    return requestDevice.call(this, { ...desc, requiredFeatures: [...required] });
+  };
+}
+installSubgroupsShim();
+
+const CACHE_NAME = "katago-web-models-v1";
+const INTERNAL = "__kgw_";
+
+let engine: Engine | null = null;
+let ready = false;
+let pendingLines: string[] = [];
+/** Handler of the worker's own queries (ids starting with INTERNAL), set while one is in flight. */
+let internalHandler: ((response: Record<string, unknown>) => void) | null = null;
+
+function onEngineLine(line: string): void {
+  if (line.includes(`"${INTERNAL}`)) {
+    let obj: Record<string, unknown> | null = null;
+    try {
+      obj = JSON.parse(line) as Record<string, unknown>;
+    } catch {
+      obj = null;
+    }
+    if (obj && typeof obj.id === "string" && obj.id.startsWith(INTERNAL)) {
+      internalHandler?.(obj);
+      return;
+    }
+  }
+  post({ type: "line", line });
+}
+
+function onEngineLog(kind: string, text: string): void {
+  post({ type: "log", kind, text });
+}
+
+/** Sends one internal query and resolves with every response line until `isDone` says so. */
+function internalQuery(query: Record<string, unknown>, isDone: (r: Record<string, unknown>) => boolean): Promise<Record<string, unknown>[]> {
+  return new Promise((resolve, reject) => {
+    const got: Record<string, unknown>[] = [];
+    internalHandler = (r) => {
+      got.push(r);
+      if (typeof r.error === "string") {
+        internalHandler = null;
+        reject(new Error(`engine: ${r.error}${r.field ? ` (field ${String(r.field)})` : ""}`));
+      } else if (isDone(r)) {
+        internalHandler = null;
+        resolve(got);
+      }
+    };
+    engine!.sendLines([JSON.stringify(query)]);
+  });
+}
+
+/** The WebGPU adapter ("vendor/architecture/description"), or why there is none. */
+async function webgpuAdapter(): Promise<{ adapter?: string; unavailable?: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gpu = (navigator as any).gpu;
+  if (!gpu) return { unavailable: "navigator.gpu is missing (no WebGPU in this browser or context)" };
+  try {
+    const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
+    if (!adapter) return { unavailable: "navigator.gpu.requestAdapter() returned no adapter" };
+    const info = adapter.info ?? {};
+    return { adapter: [info.vendor, info.architecture, info.description].filter((x: string) => x).join("/") || "unknown" };
+  } catch (e) {
+    return { unavailable: `navigator.gpu.requestAdapter() failed: ${String(e)}` };
+  }
+}
+
+async function readBody(res: Response, total: number | undefined): Promise<Uint8Array> {
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+  let lastPost = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    const now = performance.now();
+    if (now - lastPost > 100) {
+      lastPost = now;
+      post({ type: "progress", phase: "model", loaded, total });
+    }
+  }
+  const out = new Uint8Array(loaded);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.length;
+  }
+  post({ type: "progress", phase: "model", loaded, total: total ?? loaded });
+  return out;
+}
+
+/** The weights: from the Cache API when present and intact, else fetched, verified and cached. */
+async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Array; source: "network" | "cache"; fetchMs: number; verifyMs: number }> {
+  const spec = options.model;
+  const sha = spec.sha256.toLowerCase();
+  // Content-addressed key (same weights, any URL); the URL itself is only a key, never fetched.
+  const key = new URL(`/__katago-web__/models/${sha}.bpk`, self.location.origin).href;
+  let cache: Cache | null = null;
+  if (options.cacheModels !== false && typeof caches !== "undefined") {
+    try {
+      cache = await caches.open(CACHE_NAME);
+    } catch {
+      cache = null; // e.g. opaque origins
+    }
+  }
+  let fetchMs = 0;
+  let verifyMs = 0;
+  if (cache) {
+    const t0 = performance.now();
+    const hit = await cache.match(key);
+    if (hit) {
+      const bytes = new Uint8Array(await hit.arrayBuffer());
+      fetchMs = performance.now() - t0;
+      const t1 = performance.now();
+      const got = sha256Hex(bytes);
+      verifyMs = performance.now() - t1;
+      if (got === sha) return { bytes, source: "cache", fetchMs, verifyMs };
+      onEngineLog("warn", `cached ${spec.network} weights are corrupt (sha256 ${got}), fetching them again`);
+      await cache.delete(key);
+    }
+  }
+  const t0 = performance.now();
+  const res = await fetch(new URL(spec.url, self.location.href).href);
+  if (!res.ok) throw new Error(`fetching ${spec.url}: HTTP ${res.status}`);
+  const lengthHeader = res.headers.get("content-length");
+  const bytes = await readBody(res, spec.size ?? (lengthHeader ? Number(lengthHeader) : undefined));
+  fetchMs += performance.now() - t0;
+  const t1 = performance.now();
+  const got = sha256Hex(bytes);
+  verifyMs += performance.now() - t1;
+  if (got !== sha) throw new Error(`${spec.network} weights from ${spec.url}: sha256 ${got} does not match the expected ${sha}`);
+  if (cache) {
+    try {
+      await cache.put(key, new Response(bytes as Uint8Array<ArrayBuffer>, { headers: { "content-type": "application/octet-stream" } }));
+    } catch (e) {
+      onEngineLog("warn", `could not cache the ${spec.network} weights: ${String(e)}`);
+    }
+  }
+  return { bytes, source: "network", fetchMs, verifyMs };
+}
+
+async function createEngine(backend: Backend, options: EngineInitOptions, bytes: Uint8Array): Promise<Engine> {
+  return Engine.create(
+    {
+      backend,
+      network: options.model.network,
+      modelFile: options.modelFile,
+      config: options.config,
+      overrides: options.overrides,
+      analysisThreads: options.analysisThreads,
+    },
+    bytes,
+    onEngineLine,
+    onEngineLog,
+  );
+}
+
+async function start(options: EngineInitOptions): Promise<void> {
+  const tStart = performance.now();
+  post({ type: "progress", phase: "wasm" });
+  await init(options.wasmUrl ? { module_or_path: new URL(options.wasmUrl, self.location.href) } : undefined);
+  const wasmInitMs = performance.now() - tStart;
+  const networks = compiledNetworks();
+  if (!networks.includes(options.model.network)) {
+    throw new Error(`network ${options.model.network} is not compiled into this build (${networks.join(", ")})`);
+  }
+
+  const model = await loadModel(options);
+
+  const choice = options.backend ?? "auto";
+  let backend: Backend = choice === "cpu" ? "cpu" : "webgpu";
+  let fallbackReason: string | undefined;
+  let adapter: string | undefined;
+  if (backend === "webgpu") {
+    const probe = await webgpuAdapter();
+    adapter = probe.adapter;
+    if (probe.unavailable && choice === "auto") {
+      backend = "cpu";
+      fallbackReason = probe.unavailable;
+    }
+  }
+  post({ type: "progress", phase: "engine" });
+  const tEngine = performance.now();
+  try {
+    engine = await createEngine(backend, options, model.bytes);
+  } catch (e) {
+    if (choice !== "auto" || backend === "cpu") throw e;
+    fallbackReason = `WebGPU engine failed: ${String((e as Error)?.message ?? e)}`;
+    backend = "cpu";
+    engine = await createEngine(backend, options, model.bytes);
+  }
+  const configText = engine.configText;
+  engine.finished().then(
+    (code: number) => post({ type: "exit", code }),
+    (e: unknown) => post({ type: "fatal", message: `engine exited: ${String((e as Error)?.message ?? e)}` }),
+  );
+  // The first response arrives once the evaluator is up (model built, weights on the device).
+  const [version] = await internalQuery({ id: `${INTERNAL}version`, action: "query_version" }, () => true);
+  const engineStartMs = performance.now() - tEngine;
+  const modelBuildMs = (engine.stats() as EngineStats).modelBuildMs;
+
+  // One search on WebGPU: before its first batch the engine runs one batch of every batch-shape bucket
+  // (katago-wasm StatsNeuralNet), so no kernel compiles while a real search waits on it.
+  const warmupVisits = options.warmupVisits ?? (backend === "webgpu" ? 1 : 0);
+  let warmupMs = 0;
+  if (warmupVisits > 0) {
+    post({ type: "progress", phase: "warmup" });
+    const t0 = performance.now();
+    await internalQuery(
+      { id: `${INTERNAL}warmup`, moves: [], rules: "tromp-taylor", komi: 7.5, boardXSize: 19, boardYSize: 19, maxVisits: warmupVisits },
+      (r) => r.isDuringSearch === false,
+    );
+    warmupMs = performance.now() - t0;
+  }
+
+  const info: ReadyInfo = {
+    backend,
+    adapter: backend === "webgpu" ? adapter : undefined,
+    network: options.model.network,
+    version: String(version.version),
+    gitHash: String(version.git_hash),
+    modelSource: model.source,
+    fallbackReason,
+    configText,
+    timings: {
+      wasmInitMs,
+      modelFetchMs: model.fetchMs,
+      modelVerifyMs: model.verifyMs,
+      engineStartMs,
+      modelBuildMs,
+      warmupMs,
+      bucketWarmupMs: (engine.stats() as EngineStats).warmupMs,
+      totalMs: performance.now() - tStart,
+    },
+  };
+  ready = true;
+  post({ type: "ready", info });
+  if (pendingLines.length > 0) {
+    const lines = pendingLines;
+    pendingLines = [];
+    engine.sendLines(lines);
+  }
+}
+
+const zeroStats: EngineStats = { batches: 0, rows: 0, busyMs: 0, lastBatchMs: 0, maxBatchMs: 0, lastBatchRows: 0, maxBatchRows: 0, modelBuildMs: 0, warmupMs: 0, warmupBatches: 0, batchesSinceLastInput: 0, rowsSinceLastInput: 0 };
+
+scope.addEventListener("message", (e: MessageEvent<ToWorker>) => {
+  const m = e.data;
+  switch (m.type) {
+    case "init":
+      start(m.options).catch((err: unknown) => post({ type: "fatal", message: String((err as Error)?.message ?? err) }));
+      break;
+    case "lines":
+      if (ready && engine) engine.sendLines(m.lines);
+      else pendingLines.push(...m.lines);
+      break;
+    case "stats":
+      post({ type: "stats", requestId: m.requestId, stats: engine ? (engine.stats() as EngineStats) : zeroStats });
+      break;
+    case "close":
+      engine?.closeInput();
+      break;
+  }
+});
+
+// A panic in the wasm (console_error_panic_hook logs it) traps; the instance is unusable afterwards.
+scope.addEventListener("error", (e: ErrorEvent) => {
+  e.preventDefault(); // reported here; not again through the Worker object's error event
+  post({ type: "fatal", message: String(e.message ?? e) });
+});
+scope.addEventListener("unhandledrejection", (e: PromiseRejectionEvent) => post({ type: "fatal", message: String((e.reason as Error)?.message ?? e.reason) }));

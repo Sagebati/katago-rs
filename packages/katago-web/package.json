@@ -1,0 +1,29 @@
+{
+  "name": "katago-web",
+  "version": "0.1.0",
+  "description": "KataGo's analysis engine in the browser: a Rust port compiled to wasm, on WebGPU or the wasm CPU, in a Web Worker.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./worker": "./dist/worker.js"
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts",
+    "dist/wasm/",
+    "LICENSE-KATAGO"
+  ],
+  "sideEffects": [
+    "./dist/worker.js"
+  ],
+  "scripts": {
+    "build": "cd ../.. && just web-build",
+    "test": "cd ../.. && just web-test"
+  }
+}

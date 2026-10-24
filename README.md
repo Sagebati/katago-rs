@@ -12,6 +12,9 @@ Status:
   upstream oracles, natively and on wasm32. Search with the NN skipped is bit-exact with upstream;
   burn-backed searches give the same visit counts as upstream's Eigen build.
 - `katago-cli`: native `katago-rs analysis` speaking upstream's analysis protocol on stdin/stdout.
+- **M4** the engine in the browser ([docs/M4-report.md](docs/M4-report.md)): `katago-wasm` in a Web
+  Worker, on WebGPU or the wasm CPU, and the `katago-web` npm package (`KataGoClient`); upstream's
+  analysis goldens pass in Chromium on both backends.
 - Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
   [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -24,6 +27,8 @@ Status:
 | `crates/katago-core` | the port, mirroring upstream `cpp/` (core, game, neuralnet, search, program, command) |
 | `crates/katago-nn-burn` | networks imported with burn-onnx; GPU conv lowering; the NN backend |
 | `crates/katago-cli` | native `katago-rs analysis` binary (analysis protocol over stdin/stdout) |
+| `crates/katago-wasm` | browser host: wasm-bindgen `Engine` running the analysis engine in a Web Worker (WebGPU / wasm CPU) |
+| `packages/katago-web` | npm package: module worker, `KataGoClient`, analysis protocol types; Playwright tests (`just web-build`, `just web-test`) |
 | `crates/katago-web-bench` | browser spike: parity + throughput on WebGPU and wasm CPU |
 | `fixtures/` | reference data generated from upstream KataGo |
 

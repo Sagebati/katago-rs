@@ -3816,6 +3816,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "katago-wasm"
+version = "0.0.0"
+dependencies = [
+ "burn",
+ "console_error_panic_hook",
+ "futures",
+ "getrandom 0.4.3",
+ "js-sys",
+ "katago-core",
+ "katago-nn-burn",
+ "log",
+ "sha2",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "katago-web-bench"
 version = "0.0.0"
 dependencies = [
