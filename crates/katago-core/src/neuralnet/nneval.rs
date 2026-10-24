@@ -940,7 +940,7 @@ impl NNEvaluator {
       nn_input_params.policy_optimism = 0.0;
     }
 
-    let nn_hash: Hash128 = NNInputs::get_hash(board, history, next_player, &nn_input_params);
+    let mut nn_hash: Hash128 = NNInputs::get_hash(board, history, next_player, &nn_input_params);
     if self.num_input_meta_channels > 0 {
       match sgf_meta {
         None => Global::fatal_error(&("SGFMetadata is required for ".to_string() + &self.model_name + " but was not provided")),
@@ -952,10 +952,7 @@ impl NNEvaluator {
                 + " but was not initialized. Did you specify humanSLProfile=... in katago's config or via overrides?"),
             );
           }
-          // TODO(port): deferred (sgfmetadata.cpp, M8): `nnHash ^= sgfMeta->getHash(nextPlayer);`
-          // SGFMetadata::getHash is not ported yet; only human-SL nets (numInputMetaChannels > 0)
-          // get here, and tools/bin2onnx cannot convert them.
-          Global::fatal_error("SGFMetadata::getHash is not ported yet (human-SL nets are not supported)");
+          nn_hash ^= sgf_meta.get_hash(next_player);
         }
       }
     }
@@ -1035,9 +1032,8 @@ impl NNEvaluator {
                   + " but was not initialized. Did you specify humanSLProfile=... in katago's config or via overrides?"),
               );
             }
-            // TODO(port): deferred (sgfmetadata.cpp, M8): SGFMetadata::fillMetadataRow(sgfMeta,
-            // buf.rowMetaBuf.data(), nextPlayer, board.x_size*board.y_size); buf.hasRowMeta = true;
-            Global::fatal_error("SGFMetadata::fillMetadataRow is not ported yet (human-SL nets are not supported)");
+            SGFMetadata::fill_metadata_row(Some(sgf_meta), &mut buf.row_meta_buf.borrow_mut(), next_player, board.x_size * board.y_size);
+            buf.has_row_meta.set(true);
           }
         }
       } else {

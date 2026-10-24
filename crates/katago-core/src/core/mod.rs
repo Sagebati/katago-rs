@@ -10,3 +10,4 @@ pub mod test;
 pub mod timer;
 pub mod fancymath;
 pub mod config_parser;
+pub mod datetime;
