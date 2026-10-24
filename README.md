@@ -15,6 +15,9 @@ Status:
 - **M4** the engine in the browser ([docs/M4-report.md](docs/M4-report.md)): `katago-wasm` in a Web
   Worker, on WebGPU or the wasm CPU, and the `katago-web` npm package (`KataGoClient`); upstream's
   analysis goldens pass in Chromium on both backends.
+- **M6a** full-game review in the browser ([docs/M6-report.md](docs/M6-report.md)): `katago-annotate`
+  (katago-ws's annotation, wasm-safe, byte-identical payloads on recorded games) and
+  `KataGoClient.reviewGame`, which returns the payload v3 that baduk_review stores for a server analysis.
 - Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
   [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -27,8 +30,9 @@ Status:
 | `crates/katago-core` | the port, mirroring upstream `cpp/` (core, game, neuralnet, search, program, command) |
 | `crates/katago-nn-burn` | networks imported with burn-onnx; GPU conv lowering; the NN backend |
 | `crates/katago-cli` | native `katago-rs analysis` binary (analysis protocol over stdin/stdout) |
+| `crates/katago-annotate` | katago-ws's game annotation (SGF → queries → payload v3), IO-free and wasm-safe; parity tool in `tools/annotate-parity` |
 | `crates/katago-wasm` | browser host: wasm-bindgen `Engine` running the analysis engine in a Web Worker (WebGPU / wasm CPU) |
-| `packages/katago-web` | npm package: module worker, `KataGoClient`, analysis protocol types; Playwright tests (`just web-build`, `just web-test`) |
+| `packages/katago-web` | npm package: module worker, `KataGoClient` (`analyze`, `reviewGame`), protocol and payload types; Playwright tests (`just web-build`, `just web-test`) |
 | `crates/katago-web-bench` | browser spike: parity + throughput on WebGPU and wasm CPU |
 | `fixtures/` | reference data generated from upstream KataGo |
 
