@@ -27,6 +27,11 @@
 //         respawn             killServerThreads(); spawnServerThreads(); (as testsearchv8.cpp does)
 //       and writes one record per eval/avg line: 1 word buf.symmetry after the call (the symmetry
 //       the serve thread used; for avg the last sampled one), then the 737 words of `eval`.
+//   nneval_eigen humanevals <outdir>
+//       Writes <outdir>/evals_human.txt: eval lines for the human-SL net (b18c384nbt-humanv0, model v15,
+//       metaEncoderVersion 1) over the positions of positions.txt (same generator, no extra draws), each
+//       with a trailing <humanSLProfile> token. `eval` then passes SGFMetadata::getProfile(profile) as
+//       evaluate's sgfMeta (no token: NULL, as for every other eval file).
 //   nneval_eigen gtp <positions.txt> <posId>
 //       Prints the GTP commands (boardsize/komi/kata-set-rules/play) that set up that position, to
 //       cross-check the oracle against `katago gtp` + `kata-raw-nn <sym>`.
@@ -43,6 +48,7 @@
 //   eval <posId> <evalIdx> <nextPla> <drawEquivF64Hex16> <conservativePassAndIsRoot01>
 //        <enablePassingHacks01> <playoutDoublingAdvantageF64Hex16> <nnPolicyTemperatureF32Hex8>
 //        <avoidMYTDaggerHack01> <symmetry> <policyOptimismF64Hex16> <maxHistory> <nnXLen> <nnYLen>
+//        [<humanSLProfile>]
 //
 // NNEvaluator settings: nnXLen = nnYLen = 19, requireExactNNLen false, inputsUseNHWC true (the
 // Eigen backend requires it), nnCacheSizePowerOfTwo -1 (no cache) and skipCache, fp16 False,
@@ -66,6 +72,9 @@
 //   /tmp/nneval_eigen eval $M/g170e-b10c128.bin.gz $N/positions.txt $N/evals.txt $N/g170e-b10c128.out.bin
 //   /tmp/nneval_eigen eval $M/kata1-b18c384nbt.bin.gz $N/positions.txt $N/evals_b18.txt $N/kata1-b18c384nbt.out.bin
 //   /tmp/nneval_eigen evalrand $M/g170-b6c96.bin.gz $N/positions.txt $N/evals_rand.txt $N/g170-b6c96.rand.out.bin
+//   /tmp/nneval_eigen humanevals $N
+//   H=/home/sam/src/web/baduk_review/backend/docker/models/b18c384nbt-humanv0.bin.gz
+//   /tmp/nneval_eigen eval $H $N/positions.txt $N/evals_human.txt $N/b18c384nbt-humanv0.out.bin
 // Generated with g++ (GCC) 16.2.1 / glibc 2.44 on x86-64 (Intel i7-8700K, FMA), Eigen 3.4.0.
 #include <cstdint>
 #include <cstdio>
@@ -84,6 +93,7 @@
 #include "neuralnet/nneval.h"
 #include "neuralnet/nninputs.h"
 #include "neuralnet/nninterface.h"
+#include "neuralnet/sgfmetadata.h"
 
 using namespace std;
 
@@ -350,6 +360,7 @@ static vector<PosSpec> allPositions() {
 struct EvalSpec {
   int posId, evalIdx, nextPla;
   MiscNNInputParams params;
+  string profile; // humanSLProfile ("" = no SGFMetadata)
 };
 
 static string evalLine(const EvalSpec& e) {
@@ -359,6 +370,8 @@ static string evalLine(const EvalSpec& e) {
     << (int)q.conservativePassAndIsRoot << " " << (int)q.enablePassingHacks << " " << f64hex(q.playoutDoublingAdvantage) << " "
     << f32hex(q.nnPolicyTemperature) << " " << (int)q.avoidMYTDaggerHack << " " << q.symmetry << " " << f64hex(q.policyOptimism)
     << " " << q.maxHistory << " 19 19";
+  if(!e.profile.empty())
+    o << " " << e.profile;
   return o.str();
 }
 
@@ -370,6 +383,9 @@ static EvalSpec parseEval(const string& line) {
   in >> e.posId >> e.evalIdx >> e.nextPla >> dr >> cpr >> ph >> pda >> temp >> dag >> e.params.symmetry >> opt >> e.params.maxHistory >> nnx >> nny;
   testAssert(!in.fail());
   testAssert(nnx == 19 && nny == 19);
+  string profile;
+  if(in >> profile)
+    e.profile = profile;
   e.params.drawEquivalentWinsForWhite = hexf64(dr);
   e.params.conservativePassAndIsRoot = cpr != 0;
   e.params.enablePassingHacks = ph != 0;
@@ -514,6 +530,39 @@ static int genPositions(const string& outdir) {
   return 0;
 }
 
+// evals_human.txt: every third position, two evals with rotating profiles, symmetries and policyOptimism
+// (NNEvaluator zeroes it for meta nets: policyOptimismUsed must be 0), passing hacks on some; and the
+// empty board (position 0) under every profile at symmetry 0, so a profile-insensitive import fails.
+static int genHumanEvals(const string& outdir) {
+  vector<PosSpec> ps = allPositions();
+  ofstream ev(outdir + "/evals_human.txt");
+  const char* profiles[8] = {"preaz_18k", "rank_9d", "rank_3k", "rank_1d_15k", "preaz_5k_2d", "proyear_1850", "proyear_1990", "proyear_2022"};
+  int evalIdx = 0;
+  for(const PosSpec& p: ps) {
+    Board board; BoardHistory hist;
+    replay(p, board, hist);
+    int nextPla = hist.presumedNextMovePla;
+    if(p.id == 0) {
+      for(int k = 0; k < 8; k++) {
+        EvalSpec e{p.id, evalIdx++, nextPla, MiscNNInputParams(), profiles[k]};
+        e.params.symmetry = 0;
+        ev << evalLine(e) << "\n";
+      }
+    }
+    if(p.id % 3 == 0) {
+      for(int k = 0; k < 2; k++) {
+        EvalSpec e{p.id, evalIdx++, nextPla, MiscNNInputParams(), profiles[(p.id / 3 * 2 + k) % 8]};
+        e.params.symmetry = (p.id + 3 * k) % 8;
+        if(k == 1) e.params.policyOptimism = 0.5;
+        if(p.id % 9 == 0 && k == 0) e.params.enablePassingHacks = true;
+        ev << evalLine(e) << "\n";
+      }
+    }
+  }
+  cout << evalIdx << " human evals" << endl;
+  return 0;
+}
+
 static vector<string> readLines(const string& path) {
   ifstream in(path);
   testAssert(in.good());
@@ -550,7 +599,13 @@ static int runEval(const string& modelFile, const string& posFile, const string&
     replay(p, board, hist);
     testAssert(e.nextPla == hist.presumedNextMovePla);
     NNResultBuf buf;
-    nnEval->evaluate(board, hist, (Player)e.nextPla, e.params, buf, true, true);
+    SGFMetadata meta;
+    const SGFMetadata* metaPtr = NULL;
+    if(!e.profile.empty()) {
+      meta = SGFMetadata::getProfile(e.profile);
+      metaPtr = &meta;
+    }
+    nnEval->evaluate(board, hist, (Player)e.nextPla, metaPtr, e.params, buf, true, true);
     const NNOutput& o = *buf.result;
     putU32(out, (uint32_t)o.nnHash.hash0); putU32(out, (uint32_t)(o.nnHash.hash0 >> 32));
     putU32(out, (uint32_t)o.nnHash.hash1); putU32(out, (uint32_t)(o.nnHash.hash1 >> 32));
@@ -690,6 +745,8 @@ int main(int argc, char** argv) {
     return genPositions(args[1]);
   if(args.size() == 5 && args[0] == "eval")
     return runEval(args[1], args[2], args[3], args[4]);
+  if(args.size() == 2 && args[0] == "humanevals")
+    return genHumanEvals(args[1]);
   if(args.size() == 5 && args[0] == "evalrand")
     return runEvalRand(args[1], args[2], args[3], args[4]);
   if(args.size() == 3 && args[0] == "gtp")
