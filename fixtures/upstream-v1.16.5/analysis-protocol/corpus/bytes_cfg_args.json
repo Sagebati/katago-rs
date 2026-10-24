@@ -1,0 +1,1217 @@
+[
+{
+"name": "rules_unsup_0",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"ko\":\"SPIGHT\"},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_unk_0",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"ko\":\"SPIGHT\"},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"zz\":1,\"overrideSettings\":{\"qq\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_1",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"scoring\":\"TERRITORY\",\"hasButton\":true},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_unk_1",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"scoring\":\"TERRITORY\",\"hasButton\":true},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"zz\":1,\"overrideSettings\":{\"qq\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_2",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"koSPIGHTscoreAREAtaxNONEsui1\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_unk_2",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"koSPIGHTscoreAREAtaxNONEsui1\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"zz\":1,\"overrideSettings\":{\"qq\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_3",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"koSIMPLEscoreTERRITORYtaxNONEsui0button1\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_unk_3",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"koSIMPLEscoreTERRITORYtaxNONEsui0button1\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"zz\":1,\"overrideSettings\":{\"qq\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_4",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"ko\":\"SPIGHT\",\"scoring\":\"TERRITORY\",\"hasButton\":true,\"komi\":5},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": ""
+},
+{
+"name": "rules_unsup_unk_4",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"ko\":\"SPIGHT\",\"scoring\":\"TERRITORY\",\"hasButton\":true,\"komi\":5},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"zz\":1,\"overrideSettings\":{\"qq\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "bytes_nul_in_string",
+"lines": [
+"{\"id\":\"a\u0000b\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_nul_outside",
+"lines": [
+"{\"id\":\"a\"}\u0000"
+],
+"extra": ""
+},
+{
+"name": "bytes_nul_only",
+"lines": [
+"\u0000"
+],
+"extra": ""
+},
+{
+"name": "bytes_invalid_utf8_in_string",
+"lines": [
+{
+"hex": "7b226964223a2261ff62222c22616374696f6e223a2271756572795f76657273696f6e227d"
+},
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_invalid_utf8_outside",
+"lines": [
+{
+"hex": "ff7b226964223a2261222c22616374696f6e223a2271756572795f76657273696f6e227d"
+},
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_truncated_utf8",
+"lines": [
+{
+"hex": "7b226964223a2261e282222c22616374696f6e223a2271756572795f76657273696f6e227d"
+},
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_overlong_utf8",
+"lines": [
+{
+"hex": "7b226964223a22c0af222c22616374696f6e223a2271756572795f76657273696f6e227d"
+},
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_cesu_surrogate",
+"lines": [
+{
+"hex": "7b226964223a22eda080222c22616374696f6e223a2271756572795f76657273696f6e227d"
+},
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_lone_cr",
+"lines": [
+"\r",
+"{\"id\":\"after\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_del_char",
+"lines": [
+"{\"id\":\"ab\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_c1_char",
+"lines": [
+"{\"id\":\"ab\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_nbsp_lead",
+"lines": [
+" {\"id\":\"a\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "bytes_4byte",
+"lines": [
+"{\"id\":\"😀􏿿\",\"action\":\"query_version\"}"
+],
+"extra": ""
+},
+{
+"name": "parse_err_multibyte",
+"lines": [
+"{\"id\":é}",
+"{\"id\":\"a\",é:1}",
+"{\"id\":\"a\"}é",
+"é",
+"{\"é\"}",
+"😀"
+],
+"extra": ""
+},
+{
+"name": "parse_err_long_token",
+"lines": [
+"{\"id\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",}"
+],
+"extra": ""
+},
+{
+"name": "parse_err_newline_pos",
+"lines": [
+"{\"id\":\"a\",\n\"b\"}"
+],
+"extra": ""
+},
+{
+"name": "deep_obj",
+"lines": [
+"{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}"
+],
+"extra": ""
+},
+{
+"name": "deep_ok_query",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"extra\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_00",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":10.0}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_01",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":1.0}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_02",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":1e-07,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_03",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":-0.0,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_04",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":18446744073709551615}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_05",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":-9223372036854775809}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_06",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":\"  3 \"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_07",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":\"3\\t\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_08",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":\"0x3\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_09",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":\"+3\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_10",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":\"3.5\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_11",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"nnRandomize\":\"TRUE\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_12",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"nnRandomize\":\"yes\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_13",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"nnRandomize\":\"t\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_14",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"nnRandomize\":1,\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_15",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":\"inf\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_16",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":\"nan\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_17",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":\"1e400\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_18",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"cpuctExploration\":\".5\",\"maxVisits\":3}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_19",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"a=b\":1}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_20",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"x,y\":1}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_21",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"k\":\"v,w=z\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_22",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"#c\":1}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_23",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"numVirtualLossesPerThread\":2}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_24",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"nnPolicyTemperature\":2}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_25",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"rootNoiseEnabled\":true}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_26",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"humanSLProfile\":\"\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_27",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"@include\":\"x.cfg\"}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_28",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"fooBar\":\"x\",\"fooBaz\":2}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_29",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"playoutDoublingAdvantagePla\":\"WHITE\",\"playoutDoublingAdvantage\":0.5}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_30",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"dynamicPlayoutDoublingAdvantageCapPerOppLead\":0.1}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_31",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"searchFactorWhenWinningThreshold\":0.9}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_32",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"useNoisePruning\":false}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_33",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"subtreeValueBiasFactor\":0.5}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_34",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"useEvalCache\":true}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_35",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"enableMorePassingHacks\":false}}"
+],
+"extra": ""
+},
+{
+"name": "ovr2_36",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"overrideSettings\":{\"maxVisits\":3,\"antiMirror\":true}}"
+],
+"extra": ""
+},
+{
+"name": "hcap_0",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"chinese\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "hcap_1",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"chinese\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"whiteHandicapBonus\":\"0\",\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "hcap_2",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"chinese\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"whiteHandicapBonus\":\"N-1\",\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "hcap_3",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"japanese\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "hcap_4",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"aga\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"initialPlayer\":\"W\",\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "hcap_5",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"chinese\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3,\"initialStones\":[[\"B\",\"C3\"],[\"B\",\"G7\"],[\"B\",\"C7\"],[\"B\",\"G3\"]],\"whiteHandicapBonus\":\"N\",\"initialPlayer\":\"B\",\"includeOwnership\":true}"
+],
+"extra": ""
+},
+{
+"name": "long_turns",
+"lines": [
+"{\"id\":\"q\",\"moves\":[[\"B\",\"L5\"],[\"W\",\"N2\"],[\"B\",\"C18\"],[\"W\",\"D12\"],[\"B\",\"T2\"],[\"W\",\"R7\"],[\"B\",\"B3\"],[\"W\",\"O14\"],[\"B\",\"C8\"],[\"W\",\"O2\"],[\"B\",\"T4\"],[\"W\",\"H19\"],[\"B\",\"B19\"],[\"W\",\"T13\"],[\"B\",\"B8\"],[\"W\",\"B18\"],[\"B\",\"E10\"],[\"W\",\"O5\"],[\"B\",\"S4\"],[\"W\",\"T10\"],[\"B\",\"S6\"],[\"W\",\"D19\"],[\"B\",\"T7\"],[\"W\",\"M4\"],[\"B\",\"S3\"],[\"W\",\"G16\"],[\"B\",\"S14\"],[\"W\",\"L15\"],[\"B\",\"T15\"],[\"W\",\"M10\"],[\"B\",\"H6\"],[\"W\",\"H3\"],[\"B\",\"R16\"],[\"W\",\"K3\"],[\"B\",\"D17\"],[\"W\",\"O6\"],[\"B\",\"Q14\"],[\"W\",\"S19\"],[\"B\",\"L11\"],[\"W\",\"M16\"]],\"rules\":\"tromp-taylor\",\"boardXSize\":19,\"boardYSize\":19,\"maxVisits\":2,\"analyzeTurns\":[0,5,10,15,20,25,30,35,40]}"
+],
+"extra": "",
+"sort": false
+},
+{
+"name": "long_turns_own",
+"lines": [
+"{\"id\":\"q\",\"moves\":[[\"B\",\"L5\"],[\"W\",\"N2\"],[\"B\",\"C18\"],[\"W\",\"D12\"],[\"B\",\"T2\"],[\"W\",\"R7\"],[\"B\",\"B3\"],[\"W\",\"O14\"],[\"B\",\"C8\"],[\"W\",\"O2\"],[\"B\",\"T4\"],[\"W\",\"H19\"],[\"B\",\"B19\"],[\"W\",\"T13\"],[\"B\",\"B8\"],[\"W\",\"B18\"],[\"B\",\"E10\"],[\"W\",\"O5\"],[\"B\",\"S4\"],[\"W\",\"T10\"],[\"B\",\"S6\"],[\"W\",\"D19\"],[\"B\",\"T7\"],[\"W\",\"M4\"],[\"B\",\"S3\"],[\"W\",\"G16\"],[\"B\",\"S14\"],[\"W\",\"L15\"],[\"B\",\"T15\"],[\"W\",\"M10\"],[\"B\",\"H6\"],[\"W\",\"H3\"],[\"B\",\"R16\"],[\"W\",\"K3\"],[\"B\",\"D17\"],[\"W\",\"O6\"],[\"B\",\"Q14\"],[\"W\",\"S19\"],[\"B\",\"L11\"],[\"W\",\"M16\"]],\"rules\":\"tromp-taylor\",\"boardXSize\":19,\"boardYSize\":19,\"maxVisits\":2,\"analyzeTurns\":[10,40],\"includeOwnership\":true,\"includeMovesOwnership\":true,\"includePolicy\":true}"
+],
+"extra": ""
+},
+{
+"name": "long_turns_prios",
+"lines": [
+"{\"id\":\"q\",\"moves\":[[\"B\",\"L5\"],[\"W\",\"N2\"],[\"B\",\"C18\"],[\"W\",\"D12\"],[\"B\",\"T2\"],[\"W\",\"R7\"],[\"B\",\"B3\"],[\"W\",\"O14\"],[\"B\",\"C8\"],[\"W\",\"O2\"],[\"B\",\"T4\"],[\"W\",\"H19\"],[\"B\",\"B19\"],[\"W\",\"T13\"],[\"B\",\"B8\"],[\"W\",\"B18\"],[\"B\",\"E10\"],[\"W\",\"O5\"],[\"B\",\"S4\"],[\"W\",\"T10\"],[\"B\",\"S6\"],[\"W\",\"D19\"],[\"B\",\"T7\"],[\"W\",\"M4\"],[\"B\",\"S3\"],[\"W\",\"G16\"],[\"B\",\"S14\"],[\"W\",\"L15\"],[\"B\",\"T15\"],[\"W\",\"M10\"],[\"B\",\"H6\"],[\"W\",\"H3\"],[\"B\",\"R16\"],[\"W\",\"K3\"],[\"B\",\"D17\"],[\"W\",\"O6\"],[\"B\",\"Q14\"],[\"W\",\"S19\"],[\"B\",\"L11\"],[\"W\",\"M16\"]],\"rules\":\"tromp-taylor\",\"boardXSize\":19,\"boardYSize\":19,\"maxVisits\":2,\"analyzeTurns\":[40,0,20],\"priorities\":[1,2,3]}"
+],
+"extra": ""
+},
+{
+"name": "threads2_sorted",
+"lines": [
+"{\"id\":\"a\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"b\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"c\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"d\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":5}"
+],
+"extra": "numAnalysisThreads=2",
+"sort": true
+},
+{
+"name": "searchthreads2",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":4}"
+],
+"extra": "numSearchThreadsPerAnalysisThread=2",
+"sort": true
+},
+{
+"name": "cfg_00",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "analysisPVLen=0"
+},
+{
+"name": "cfg_01",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "analysisPVLen=101"
+},
+{
+"name": "cfg_02",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "numAnalysisThreads=0"
+},
+{
+"name": "cfg_03",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "numAnalysisThreads=x"
+},
+{
+"name": "cfg_04",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "fooBarCfg=1"
+},
+{
+"name": "cfg_05",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "reportAnalysisWinratesAs=x"
+},
+{
+"name": "cfg_06",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logToStderr=false"
+},
+{
+"name": "cfg_07",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "warnUnusedFields=x"
+},
+{
+"name": "cfg_08",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "maxVisits=0"
+},
+{
+"name": "cfg_09",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "numSearchThreads=2"
+},
+{
+"name": "cfg_10",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "humanSLProfile=rank_5k"
+},
+{
+"name": "cfg_11",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "avoidSgfPatternUtility=0.1"
+},
+{
+"name": "cfg_12",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logFile=/nonexistent/dir/x.log"
+},
+{
+"name": "cfg_13",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logDir=/proc/nope"
+},
+{
+"name": "cfg_14",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logToStdout=true"
+},
+{
+"name": "cfg_15",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "preventCleanupPhase=x"
+},
+{
+"name": "cfg_16",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "useEvalCache=true"
+},
+{
+"name": "cfg_17",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "nnCacheSizePowerOfTwo=-1"
+},
+{
+"name": "cfg_18",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "nnMaxBatchSize=0"
+},
+{
+"name": "cfg_19",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logConfigContents=false"
+},
+{
+"name": "args_threads_conflict",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+"2"
+]
+},
+{
+"name": "args_quit_without_waiting",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":50}",
+"{\"id\":\"r\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":50}"
+],
+"extra": "",
+"args": [
+"-quit-without-waiting"
+]
+},
+{
+"name": "args_threads_ok",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":3}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+"1"
+]
+},
+{
+"name": "bytes_nul_then_ff",
+"lines": [
+{
+"hex": "7b226964223a2261222c22616374696f6e223a2271756572795f76657273696f6e227d00ff"
+}
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_ff_in_key",
+"lines": [
+{
+"hex": "7b22ff223a317d"
+}
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_lone_continuation",
+"lines": [
+{
+"hex": "80"
+}
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_f5_lead",
+"lines": [
+{
+"hex": "7b226964223a22f5808080227d"
+}
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_ff_logall",
+"lines": [
+{
+"hex": "7b226964223a2261ff62227d"
+}
+],
+"extra": "logAllRequests=true",
+"stderr": true
+},
+{
+"name": "bytes_ff_after_queries",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9}",
+{
+"hex": "c0af"
+},
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_trailing_e9",
+"lines": [
+{
+"hex": "7b226964223a2261227d20c3"
+}
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "argv_00",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"--quit-without-waiting"
+],
+"stderr": true
+},
+{
+"name": "argv_01",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-quit-without-waiting=1"
+],
+"stderr": true
+},
+{
+"name": "argv_02",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-quit-without-waiting",
+"-quit-without-waiting"
+],
+"stderr": true
+},
+{
+"name": "argv_03",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+"2x"
+],
+"stderr": true
+},
+{
+"name": "argv_04",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+"99999999999"
+],
+"stderr": true
+},
+{
+"name": "argv_05",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+"2 3"
+],
+"stderr": true
+},
+{
+"name": "argv_06",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+""
+],
+"stderr": true
+},
+{
+"name": "argv_07",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-model",
+"x"
+],
+"stderr": true
+},
+{
+"name": "argv_08",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"extra"
+],
+"stderr": true
+},
+{
+"name": "argv_09",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-human-model"
+],
+"stderr": true
+},
+{
+"name": "argv_10",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"--",
+"-zz"
+],
+"stderr": true
+},
+{
+"name": "argv_11",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-"
+],
+"stderr": true
+},
+{
+"name": "argv_12",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads",
+" 1"
+],
+"stderr": true
+},
+{
+"name": "argv_13",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-h"
+],
+"stderr": true
+},
+{
+"name": "argv_14",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-help",
+"-zz"
+],
+"stderr": true
+},
+{
+"name": "argv_15",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-config",
+"/nonexistent.cfg"
+],
+"stderr": true
+},
+{
+"name": "argv_16",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-config"
+],
+"stderr": true
+},
+{
+"name": "argv_17",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-override-config",
+"maxVisits=3"
+],
+"stderr": true
+},
+{
+"name": "argv_18",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-override-config",
+"nonsense"
+],
+"stderr": true
+},
+{
+"name": "argv_19",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-model x.bin.gz"
+],
+"stderr": true
+},
+{
+"name": "argv_20",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"args": [
+"-analysis-threads 2"
+],
+"stderr": true
+},
+{
+"name": "logcfg_0",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logDirDated=/proc/nope",
+"stderr": true
+},
+{
+"name": "logcfg_1",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logFile=/proc/nope/x.log",
+"stderr": true
+},
+{
+"name": "logcfg_2",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logToStderr=false, logToStdout=true",
+"stderr": true
+},
+{
+"name": "logcfg_3",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logTimeStamp=x",
+"stderr": true
+},
+{
+"name": "logcfg_4",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logToStdout=yes",
+"stderr": true
+},
+{
+"name": "logcfg_5",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logToStderr=t",
+"stderr": true
+},
+{
+"name": "logcfg_6",
+"lines": [
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "logFile=/dev/null, logDir=/tmp",
+"stderr": true
+},
+{
+"name": "multibyte_0",
+"lines": [
+"{\"id\":é}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_1",
+"lines": [
+"{\"id\":\"a\",é:1}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_2",
+"lines": [
+"{\"id\":\"a\"}é",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_3",
+"lines": [
+"é",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_4",
+"lines": [
+"😀",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_5",
+"lines": [
+"{\"é\"}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_6",
+"lines": [
+" {\"id\":\"a\"}",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_7",
+"lines": [
+"{\"id\":\"a\"} \"\"é",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "multibyte_8",
+"lines": [
+"[1,é]",
+"{\"id\":\"v\",\"action\":\"query_version\"}"
+],
+"extra": "",
+"stderr": true
+},
+{
+"name": "bytes_ff_during_long_search",
+"lines": [
+"{\"id\":\"long\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":1000000}",
+{
+"hex": "7b226964223a2261ff62227d"
+}
+],
+"extra": "",
+"stderr": true
+}
+]

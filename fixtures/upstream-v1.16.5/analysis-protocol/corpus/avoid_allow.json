@@ -1,0 +1,78 @@
+[
+{
+"name": "deep_am_0",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"avoidMoves\":[{\"player\":\"B\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":1}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_1",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"avoidMoves\":[{\"player\":\"B\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":2}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_2",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"avoidMoves\":[{\"player\":\"B\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":3}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_3",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"avoidMoves\":[{\"player\":\"W\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":1}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_4",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"avoidMoves\":[{\"player\":\"W\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":2}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_5",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"allowMoves\":[{\"player\":\"B\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":2}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_6",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"allowMoves\":[{\"player\":\"W\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":1}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "deep_am_7",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"allowMoves\":[{\"player\":\"W\",\"moves\":[\"E5\",\"D5\",\"F5\",\"E4\",\"E6\",\"D4\",\"F6\",\"D6\",\"F4\"],\"untilDepth\":3}],\"maxVisits\":40,\"analysisPVLen\":6}"
+],
+"extra": ""
+},
+{
+"name": "m40_rules_float",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"komi\":1.5e+300},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":2}",
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"ko\":\"SIMPLE\",\"komi\":1e+21},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":2}",
+"{\"id\":\"q\",\"moves\":[],\"rules\":{\"komi\":0.1,\"foo\":1},\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":2}"
+],
+"extra": ""
+},
+{
+"name": "two_override_configs",
+"lines": [
+"{\"id\":\"q\",\"moves\":[],\"rules\":\"tromp-taylor\",\"boardXSize\":9,\"boardYSize\":9,\"maxVisits\":10}"
+],
+"extra": "",
+"args": [
+"-override-config",
+"analysisPVLen=1"
+]
+}
+]
