@@ -1,0 +1,1 @@
+{"sgf": "fixtures/katago-annotate/hand-9x9/game.sgf", "humanProfile": "rank_5k", "engine": {"model": "g170e-b10c128.bin.gz", "max_visits": 50, "top_k": 5, "analysis_pv_len": 5, "include_ownership_stdev": false, "include_policy": false}}

@@ -3770,6 +3770,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "katago-annotate"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "katago-core",
+ "log",
+ "serde",
+ "serde_json",
+ "sgf-parse",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "katago-cli"
 version = "0.0.0"
 dependencies = [
@@ -5775,6 +5788,12 @@ checksum = "4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c"
 dependencies = [
  "serde_core",
 ]
+
+[[package]]
+name = "sgf-parse"
+version = "4.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b11229a863fdd9fb55912b1493e4c0e03d449a12e93c80f606ba8d241bce3756"
 
 [[package]]
 name = "sha1"
