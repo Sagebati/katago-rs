@@ -1,0 +1,18 @@
+{
+  "humanProfile": "rank_5k",
+  "options": {
+    "analysisPvLen": 5,
+    "defaultBoardSize": 19,
+    "defaultKomi": 7.5,
+    "humanModel": "",
+    "includeOwnership": true,
+    "includeOwnershipStdev": false,
+    "includePolicy": false,
+    "maxVisits": 50,
+    "model": "g170e-b10c128.bin.gz",
+    "refineScoreDelta": 1.0,
+    "refineWinrateDelta": 0.029999999329447746,
+    "screenVisits": 0,
+    "topK": 5
+  }
+}
