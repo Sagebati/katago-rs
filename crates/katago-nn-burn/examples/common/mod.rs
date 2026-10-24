@@ -4,7 +4,8 @@ pub fn device(name: &str) -> Device {
     match name {
         #[cfg(feature = "flex")]
         "flex" => burn::backend::FlexDevice::default().into(),
-        #[cfg(feature = "wgpu")]
+        // `wgpu-fixed-kernels` alone is the browser build's setup (no autotune), `wgpu` adds autotune.
+        #[cfg(any(feature = "wgpu", feature = "wgpu-fixed-kernels"))]
         "wgpu" => burn::backend::WgpuDevice::default().into(),
         other => panic!("backend {other} not compiled in"),
     }

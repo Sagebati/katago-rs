@@ -126,7 +126,8 @@ Python tools run with the repo venv and `-I`: `.venv/bin/python -I tools/...`. R
   with the `simd` feature directly: burn's `flex` feature omits it (3.5× slower in wasm).
 - Convs are routed through `katago_nn_burn::conv::conv2d_same` by the `SameConv` burn-onnx
   `OpOverride` in `crates/katago-nn-burn/build.rs` (im2col + matmul on GPU, ~7× faster than
-  burn's direct conv on RDNA2). Keep it when regenerating models; the `.bpk` is unchanged.
+  burn's direct conv on RDNA2; 1x1 convs too: without autotune burn's 1x1 conv was 78% of b18's
+  GPU time, docs/M7-report.md). Keep it when regenerating models; the `.bpk` is unchanged.
 - WebGPU in Chrome needs the `subgroups` shim (wgpu never requests the feature but cubecl's
   WGSL uses it): see `crates/katago-web-bench/www/index.html`. Any new page must include it.
 - `+relaxed-simd` does not build (macerator 0.5.1). Weights are loaded at runtime

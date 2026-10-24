@@ -257,7 +257,7 @@ Native: `cargo test -p katago-nn-burn -p katago-wasm` (debug: 21 passed, 4 ignor
 - Cache API only (no OPFS fallback); without a secure context nothing is cached.
 - `.bpk` files differ in bytes between builds (burn's metadata), so `models.json`'s hashes change with
   each `just web-build` and caches refill; the weights themselves are the same.
-- One network per engine: no human-SL model (M8). b18c384nbt compiles in with the `net-b18c384nbt`
-  feature (`just web-build --features net-b18c384nbt`) but was not run in the browser.
+- One network per engine: no human-SL model (M8). b18c384nbt runs in the browser since M7 (docs/M7-report.md:
+  default feature, `cpuModel` / `allowSlowCpu` client options, `just web-test-b18`).
 - Bundler integration (Vite: worker and wasm URLs) is M5's; the client accepts `worker` / `workerUrl` /
   `wasmUrl` for it.

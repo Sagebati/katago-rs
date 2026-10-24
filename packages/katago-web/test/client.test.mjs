@@ -28,10 +28,11 @@ class FakeWorker {
   }
 }
 
-function setup(backend = "auto") {
+function setup(backend = "auto", extra = {}) {
   const workers = [];
   const client = new KataGoClient({
     model: { network: "g170e-b10c128", url: "http://x/model.bpk", sha256: "00" },
+    ...extra,
     backend,
     worker: () => {
       const w = new FakeWorker(workers.length);
@@ -168,4 +169,31 @@ test("reviewGame: cancel before and after it is posted; errors", async () => {
   workers[0].emit({ type: "fatal", message: "device lost" });
   await assert.rejects(pending.result, /device lost/);
   void aborted.result.catch(() => {});
+});
+
+test("cpuModel and allowSlowCpu reach the worker, on the first start and on the CPU restart", () => {
+  const cpuModel = { network: "g170e-b10c128", url: "http://x/b10.bpk", sha256: "11" };
+  const { client, workers } = setup("auto", { model: { network: "kata1-b18c384nbt", url: "http://x/b18.bpk", sha256: "22" }, cpuModel, allowSlowCpu: true });
+  const init = (w) => w.sent.find((m) => m.type === "init").options;
+  assert.equal(init(workers[0]).model.network, "kata1-b18c384nbt");
+  assert.deepEqual(init(workers[0]).cpuModel, cpuModel);
+  assert.equal(init(workers[0]).allowSlowCpu, true);
+  workers[0].emit({ type: "fatal", message: "simulated WebGPU failure" });
+  assert.equal(workers.length, 2);
+  assert.deepEqual(init(workers[1]).cpuModel, cpuModel);
+  client.dispose();
+});
+
+test("a refusal (retry: false) is fatal at once, with no CPU restart", async () => {
+  const { client, workers } = setup();
+  workers[0].emit({ type: "fatal", message: "kata1-b18c384nbt needs WebGPU", retry: false });
+  assert.equal(workers.length, 1);
+  await assert.rejects(client.ready, /needs WebGPU/);
+});
+
+test("a failure of the CPU restart names the WebGPU failure", async () => {
+  const { client, workers } = setup();
+  workers[0].emit({ type: "fatal", message: "kernel did not compile" });
+  workers[1].emit({ type: "fatal", message: "kata1-b18c384nbt needs WebGPU", retry: false });
+  await assert.rejects(client.ready, (e) => /needs WebGPU/.test(e.message) && /kernel did not compile/.test(e.message));
 });

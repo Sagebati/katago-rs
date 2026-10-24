@@ -124,7 +124,11 @@ web_pkg := "packages/katago-web"
 web-build *features="":
     #!/usr/bin/env bash
     set -euo pipefail
-    cargo build --profile web -p katago-wasm --target wasm32-unknown-unknown {{features}}
+    # The .bpk files come from the out dir of the katago-nn-burn build this very build used (a `ls -t` over
+    # target/ would also find the nets of an earlier build with other features).
+    mkdir -p target
+    cargo build --profile web -p katago-wasm --target wasm32-unknown-unknown --message-format=json-render-diagnostics {{features}} > target/web-build-messages.json
+    nn_out="$(jq -r 'select(.reason=="build-script-executed" and (.package_id|test("katago-nn-burn"))) | .out_dir' target/web-build-messages.json | tail -1)"
     wasm=target/wasm32-unknown-unknown/web/katago_wasm.wasm
     rm -rf {{web_pkg}}/src/wasm {{web_pkg}}/dist
     wasm-bindgen --target web --out-dir {{web_pkg}}/src/wasm "$wasm"
@@ -143,8 +147,8 @@ web-build *features="":
     mkdir -p {{web_pkg}}/dist/models
     entries=()
     for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0; do
-        bpk="$(ls -t target/wasm32-unknown-unknown/web/build/katago-nn-burn-*/out/model/$net.bpk 2>/dev/null | head -1 || true)"
-        [ -n "$bpk" ] || continue
+        bpk="$nn_out/model/$net.bpk"
+        [ -f "$bpk" ] || continue
         sha="$(sha256sum "$bpk" | cut -d' ' -f1)"
         file="$net.${sha:0:12}.bpk"
         cp "$bpk" "{{web_pkg}}/dist/models/$file"
@@ -162,6 +166,12 @@ web-build *features="":
 # terminate latency, partial reports, throughput. `just web-build` first. Options: see packages/katago-web/test/run.mjs.
 web-test *args="":
     node {{web_pkg}}/test/run.mjs {{args}}
+
+# The b18c384nbt cases of the browser tests (M7): goldens vs the Eigen reference on WebGPU, the 105 MB weights
+# cache, adapter limits, throughput, terminate, and the CPU guard. Needs a build with that net:
+# `just web-build` (b18 is a default feature of katago-wasm). Several minutes (cold kernels, a 105 MB download per fresh context).
+web-test-b18 *args="":
+    node {{web_pkg}}/test/run.mjs --only b18 {{args}}
 
 # Unit tests of the katago-web client against a fake worker (no wasm, no browser). `just web-build` first.
 web-test-client:

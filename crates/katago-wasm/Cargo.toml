@@ -11,11 +11,13 @@ description = "Browser host of the ported analysis engine: a wasm-bindgen Engine
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# b6c96: the upstream analysis goldens' net (Playwright parity); b10c128: the default live-analysis net.
-default = ["net-b6c96", "net-b10c128"]
+# b6c96: the upstream analysis goldens' net (Playwright parity); b10c128: the default live-analysis net;
+# b18c384nbt: the strong net (WebGPU only). The nets are selected at run time (`network` option); each adds only its
+# generated model code to the wasm (b18c384nbt: +0.2 MB of 17 MB, docs/M7-report.md), its weights are fetched on demand.
+default = ["net-b6c96", "net-b10c128", "net-b18c384nbt"]
 net-b6c96 = ["katago-nn-burn/net-b6c96"]
 net-b10c128 = ["katago-nn-burn/net-b10c128"]
-# GPU-only in practice (~9x b10's compute, 105 MB of weights).
+# GPU-only in practice (~9x b10's compute, 105 MB of weights; the worker refuses it on the CPU unless allowed).
 net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
 # The human-SL net as the engine's (only) network, with humanSLProfile set in the config or per query
 # (no `-human-model` second evaluator in the browser host). GPU-only in practice, as b18c384nbt; 107 MB.

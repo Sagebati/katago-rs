@@ -18,6 +18,9 @@ Status:
 - **M6a** full-game review in the browser ([docs/M6-report.md](docs/M6-report.md)): `katago-annotate`
   (katago-ws's annotation, wasm-safe, byte-identical payloads on recorded games) and
   `KataGoClient.reviewGame`, which returns the payload v3 that baduk_review stores for a server analysis.
+- **M7** kata1-b18c384nbt in the browser ([docs/M7-report.md](docs/M7-report.md)): same wasm (+0.2 MB), 105 MB
+  weights fetched on demand, WebGPU only (~2 s per 100 visits on an RX 6800 XT; `cpuModel` falls back to b10c128
+  without WebGPU). Checked against Eigen-generated goldens in Chromium (`just web-test-b18`).
 - Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
   [docs/DECISIONS.md](docs/DECISIONS.md).
 

@@ -4,7 +4,7 @@
 
 import init, { Engine, compiledNetworks, kernelCacheExport, kernelCacheImport, kernelCacheStats, sha256Hex } from "./wasm/katago_wasm.js";
 import { BUILD_ID } from "./wasm/build-id.js";
-import type { Backend, EngineInitOptions, EngineStats, FromWorker, ReadyInfo, ToWorker } from "./messages.js";
+import type { Backend, EngineInitOptions, EngineStats, FromWorker, ModelSpec, ReadyInfo, ToWorker } from "./messages.js";
 import type { ReviewProgress } from "./review.js";
 
 interface WorkerScope {
@@ -36,6 +36,25 @@ installSubgroupsShim();
 const CACHE_NAME = "katago-web-models-v1";
 const KERNEL_CACHE_NAME = "katago-web-kernels-v1";
 const INTERNAL = "__kgw_";
+
+/** Networks that are not usable on the wasm CPU (docs/M7-report.md: b18c384nbt runs ~1 eval/s there, 100 visits
+ * take about two minutes): refused on the CPU unless `allowSlowCpu` or replaced by `cpuModel`. */
+const GPU_ONLY_NETWORKS = new Set(["kata1-b18c384nbt"]);
+
+/** The network to run on the CPU: `cpuModel` when given, else `model` if it is practical there (or `allowSlowCpu`). */
+class CpuRefused extends Error {}
+
+function cpuSpec(options: EngineInitOptions): ModelSpec {
+  if (options.cpuModel) return options.cpuModel;
+  const net = options.model.network;
+  if (GPU_ONLY_NETWORKS.has(net) && !options.allowSlowCpu) {
+    throw new CpuRefused(
+      `${net} needs WebGPU: on the CPU it runs at ~1 eval/s (100 visits take about two minutes). ` +
+        "Give a smaller network as cpuModel (e.g. g170e-b10c128), or set allowSlowCpu to run it anyway.",
+    );
+  }
+  return options.model;
+}
 
 let engine: Engine | null = null;
 let ready = false;
@@ -85,7 +104,7 @@ function internalQuery(query: Record<string, unknown>, isDone: (r: Record<string
 }
 
 /** The WebGPU adapter ("vendor/architecture/description"), or why there is none. */
-async function webgpuAdapter(): Promise<{ adapter?: string; unavailable?: string }> {
+async function webgpuAdapter(): Promise<{ adapter?: string; limits?: ReadyInfo["adapterLimits"]; unavailable?: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gpu = (navigator as any).gpu;
   if (!gpu) return { unavailable: "navigator.gpu is missing (no WebGPU in this browser or context)" };
@@ -93,7 +112,10 @@ async function webgpuAdapter(): Promise<{ adapter?: string; unavailable?: string
     const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
     if (!adapter) return { unavailable: "navigator.gpu.requestAdapter() returned no adapter" };
     const info = adapter.info ?? {};
-    return { adapter: [info.vendor, info.architecture, info.description].filter((x: string) => x).join("/") || "unknown" };
+    return {
+      adapter: [info.vendor, info.architecture, info.description].filter((x: string) => x).join("/") || "unknown",
+      limits: { maxStorageBufferBindingSize: Number(adapter.limits?.maxStorageBufferBindingSize), maxBufferSize: Number(adapter.limits?.maxBufferSize) },
+    };
   } catch (e) {
     return { unavailable: `navigator.gpu.requestAdapter() failed: ${String(e)}` };
   }
@@ -142,8 +164,7 @@ async function sha256(bytes: Uint8Array): Promise<string> {
 }
 
 /** The weights: from the Cache API when present and intact, else fetched, verified and cached. */
-async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Array; source: "network" | "cache"; fetchMs: number; verifyMs: number }> {
-  const spec = options.model;
+async function loadModel(options: EngineInitOptions, spec: ModelSpec): Promise<{ bytes: Uint8Array; source: "network" | "cache"; fetchMs: number; verifyMs: number }> {
   const sha = spec.sha256.toLowerCase();
   // Content-addressed key (same weights, any URL); the URL itself is only a key, never fetched.
   const key = new URL(`/__katago-web__/models/${sha}.bpk`, self.location.origin).href;
@@ -236,11 +257,11 @@ async function saveKernels(options: EngineInitOptions, adapter: string): Promise
   }
 }
 
-async function createEngine(backend: Backend, options: EngineInitOptions, bytes: Uint8Array): Promise<Engine> {
+async function createEngine(backend: Backend, options: EngineInitOptions, network: string, bytes: Uint8Array): Promise<Engine> {
   return Engine.create(
     {
       backend,
-      network: options.model.network,
+      network,
       modelFile: options.modelFile,
       config: options.config,
       overrides: options.overrides,
@@ -255,11 +276,11 @@ async function createEngine(backend: Backend, options: EngineInitOptions, bytes:
 async function start(options: EngineInitOptions): Promise<void> {
   const tStart = performance.now();
   post({ type: "progress", phase: "wasm" });
-  await init(options.wasmUrl ? { module_or_path: new URL(options.wasmUrl, self.location.href) } : undefined);
+  const wasm = await init(options.wasmUrl ? { module_or_path: new URL(options.wasmUrl, self.location.href) } : undefined);
   const wasmInitMs = performance.now() - tStart;
   const networks = compiledNetworks();
-  if (!networks.includes(options.model.network)) {
-    throw new Error(`network ${options.model.network} is not compiled into this build (${networks.join(", ")})`);
+  for (const m of [options.model, options.cpuModel]) {
+    if (m && !networks.includes(m.network)) throw new Error(`network ${m.network} is not compiled into this build (${networks.join(", ")})`);
   }
 
   // The weights, the adapter probe and the cached kernels (which need the adapter) in parallel.
@@ -267,12 +288,14 @@ async function start(options: EngineInitOptions): Promise<void> {
   let backend: Backend = choice === "cpu" ? "cpu" : "webgpu";
   let fallbackReason: string | undefined;
   let adapter: string | undefined;
+  let adapterLimits: ReadyInfo["adapterLimits"];
   let kernelsLoaded = 0;
   let kernelCacheLoadMs = 0;
   const probing = (async () => {
     if (backend !== "webgpu") return;
     const probe = await webgpuAdapter();
     adapter = probe.adapter;
+    adapterLimits = probe.limits;
     if (probe.unavailable && choice === "auto") {
       backend = "cpu";
       fallbackReason = probe.unavailable;
@@ -283,16 +306,41 @@ async function start(options: EngineInitOptions): Promise<void> {
       kernelCacheLoadMs = performance.now() - t0;
     }
   })();
-  const [model] = await Promise.all([loadModel(options), probing]);
+  // Which weights depend on the backend only when the net has a CPU replacement or is GPU-only: then (with
+  // `auto`) the 105 MB of b18 must not be fetched before the probe says there is a GPU.
+  const backendMatters = options.cpuModel !== undefined || GPU_ONLY_NETWORKS.has(options.model.network);
+  let spec = options.model;
+  let loading: Promise<Awaited<ReturnType<typeof loadModel>>>;
+  if (choice === "cpu") {
+    spec = cpuSpec(options);
+    loading = loadModel(options, spec);
+  } else if (choice === "auto" && backendMatters) {
+    await probing;
+    if (backend === "cpu") spec = cpuSpec(options);
+    loading = loadModel(options, spec);
+  } else {
+    loading = loadModel(options, spec);
+  }
+  const [model] = await Promise.all([loading, probing]);
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
   try {
-    engine = await createEngine(backend, options, model.bytes);
+    engine = await createEngine(backend, options, spec.network, model.bytes);
   } catch (e) {
     if (choice !== "auto" || backend === "cpu") throw e;
     fallbackReason = `WebGPU engine failed: ${String((e as Error)?.message ?? e)}`;
     backend = "cpu";
-    engine = await createEngine(backend, options, model.bytes);
+    let cpu: ModelSpec;
+    try {
+      cpu = cpuSpec(options);
+    } catch (err) {
+      throw new CpuRefused(`${String((err as Error).message)} (${fallbackReason})`);
+    }
+    const cpuModel = cpu === spec ? model : await loadModel(options, cpu);
+    spec = cpu;
+    model.bytes = cpuModel.bytes;
+    model.source = cpuModel.source;
+    engine = await createEngine(backend, options, spec.network, model.bytes);
   }
   const configText = engine.configText;
   engine.finished().then(
@@ -321,10 +369,14 @@ async function start(options: EngineInitOptions): Promise<void> {
   const info: ReadyInfo = {
     backend,
     adapter: backend === "webgpu" ? adapter : undefined,
-    network: options.model.network,
+    adapterLimits: backend === "webgpu" ? adapterLimits : undefined,
+    network: spec.network,
+    requestedNetwork: spec.network !== options.model.network ? options.model.network : undefined,
     version: String(version.version),
     gitHash: String(version.git_hash),
     modelSource: model.source,
+    // The wasm heap never shrinks: this is the peak so far (the weights pass through it once on their way to the device).
+    wasmMemoryBytes: wasm.memory.buffer.byteLength,
     fallbackReason,
     configText,
     timings: {
@@ -391,7 +443,7 @@ scope.addEventListener("message", (e: MessageEvent<ToWorker>) => {
   const m = e.data;
   switch (m.type) {
     case "init":
-      start(m.options).catch((err: unknown) => post({ type: "fatal", message: String((err as Error)?.message ?? err) }));
+      start(m.options).catch((err: unknown) => post({ type: "fatal", message: String((err as Error)?.message ?? err), retry: !(err instanceof CpuRefused) }));
       break;
     case "lines":
       if (ready && engine) engine.sendLines(m.lines);
