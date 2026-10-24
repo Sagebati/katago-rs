@@ -2,8 +2,6 @@
 //
 // PORT NOTE: playout-path helpers take &self (PORTING.md §3/§11). `SearchThread* thread` is
 // nullable (searchresults.cpp passes NULL outside search): `Option<&mut SearchThread>`.
-// Anti-mirror (searchmirror.cpp) and the eval cache (evalcache.cpp) are deferred (D7): their call
-// sites are kept behind their upstream conditions, which cannot hold in the port.
 
 use std::rc::Rc;
 
@@ -18,6 +16,8 @@ use crate::neuralnet::nninputs::NNPos;
 use crate::port::cpp;
 use crate::port::math;
 use crate::port::node_arena::NodeIdx;
+use crate::search::evalcache::EvalCacheEntry;
+use crate::search::evalcache::FirstExploreEval;
 use crate::search::search::Search;
 use crate::search::search::SearchThread;
 use crate::search::searchnode::SearchChildPointer;
@@ -146,7 +146,6 @@ impl Search {
     count_edge_visit: bool,
     mut thread: Option<&mut SearchThread>,
   ) -> f64 {
-    let _ = parent_utility;
     let move_pos: i32 = self.get_pos(move_loc);
     let mut nn_policy_prob: f32 = parent_policy_probs[move_pos as usize];
 
@@ -243,11 +242,19 @@ impl Search {
       }
     }
     if is_during_search && anti_mirror && nn_policy_prob >= 0.0 && count_edge_visit {
-      // TODO(port): deferred (searchmirror.cpp):
-      // maybeApplyAntiMirrorPolicy(nnPolicyProb, moveLoc, parentPolicyProbs, parent.nextPla, thread);
-      // maybeApplyAntiMirrorForcedExplore(childUtility, parentUtility, moveLoc, parentPolicyProbs, childWeight, totalChildWeight, parent.nextPla, thread, parent);
-      // Unreachable: antiMirror is false at every caller while mirroringPla stays C_EMPTY.
-      unreachable!("anti-mirror is deferred (searchmirror.cpp)");
+      let thread_ref: &SearchThread = thread.as_deref().expect("isDuringSearch implies a thread");
+      self.maybe_apply_anti_mirror_policy(&mut nn_policy_prob, move_loc, parent_policy_probs, parent.next_pla, thread_ref);
+      self.maybe_apply_anti_mirror_forced_explore(
+        &mut child_utility,
+        parent_utility,
+        move_loc,
+        parent_policy_probs,
+        child_weight,
+        total_child_weight,
+        parent.next_pla,
+        thread_ref,
+        parent,
+      );
     }
 
     self.get_explore_selection_value(explore_scaling, nn_policy_prob as f64, child_weight, child_utility, parent.next_pla)
@@ -543,11 +550,8 @@ impl Search {
     );
 
     let mut poses_with_child_buf: [bool; NNPos::MAX_NN_POLICY_SIZE as usize] = [false; NNPos::MAX_NN_POLICY_SIZE as usize]; // Initialize all to false
-    // TODO(port): deferred (searchmirror.cpp): the last conjunct is `isMirroringSinceSearchStart(thread.history,0)`;
-    // unreachable while updateMirroring is deferred (mirroringPla stays C_EMPTY).
-    let anti_mirror: bool = self.search_params.anti_mirror
-      && self.mirroring_pla != C_EMPTY
-      && unreachable!("anti-mirror is deferred (searchmirror.cpp)");
+    let anti_mirror: bool =
+      self.search_params.anti_mirror && self.mirroring_pla != C_EMPTY && self.is_mirroring_since_search_start(&thread.history, 0);
 
     let explore_scaling: f64;
     if use_human_sl {
@@ -615,13 +619,58 @@ impl Search {
       && self.mirroring_pla == C_EMPTY
       && !node.force_non_terminal
     {
-      // TODO(port): deferred (evalcache.cpp): the loop over `node.evalCacheEntry->firstExploreEvals` that scores each
-      // not-yet-tried legal (root-allowed, not avoided) move with getNewExploreSelectionValue using the cached
-      // `getResultUtility(eval.avgWinLoss,0.0) + getScoreUtility(eval.avgScoreMean, eval.avgScoreMean * eval.avgScoreMean)`
-      // instead of fpuValue, and takes it as the best child (index numChildrenFound) if it beats maxSelectionValue.
-      // EvalCacheEntry has no values (D7), so this is unreachable.
-      let entry: Rc<crate::search::searchnode::EvalCacheEntry> = node.eval_cache_entry.borrow().clone().expect("checked is_some");
-      match *entry {}
+      let entry: Rc<EvalCacheEntry> = node.eval_cache_entry.borrow().clone().expect("checked is_some");
+      for (pair_first, pair_second) in entry.first_explore_evals.iter() {
+        let move_loc: Loc = *pair_first;
+        let move_pos: i32 = self.get_pos(move_loc);
+        let already_tried: bool = poses_with_child_buf[move_pos as usize];
+        if already_tried {
+          continue;
+        }
+
+        //Quit immediately for illegal moves
+        let nn_policy_prob: f32 = policy_probs[move_pos as usize];
+        if nn_policy_prob < 0.0 {
+          continue;
+        }
+
+        //Special logic for the root
+        if is_root {
+          debug_assert!(thread.board.pos_hash == self.root_board.pos_hash);
+          debug_assert!(thread.pla == self.root_pla);
+          if !self.is_allowed_root_move(move_loc) {
+            continue;
+          }
+        }
+        if !avoid_move_until_by_loc.is_empty() {
+          debug_assert!(avoid_move_until_by_loc.len() >= Board::MAX_ARR_SIZE as usize);
+          let until_depth: i32 = avoid_move_until_by_loc[move_loc as usize];
+          // PORT NOTE: size_t arithmetic: the difference is unsigned and untilDepth converts to size_t (§6 item 8).
+          if (thread.history.move_history.len() as u64).wrapping_sub(self.root_history.move_history.len() as u64) < until_depth as u64 {
+            continue;
+          }
+        }
+
+        let eval: FirstExploreEval = *pair_second;
+        let cache_avg_utility: f64 = self.get_result_utility(eval.avg_win_loss as f64, 0.0)
+          + self.get_score_utility(eval.avg_score_mean as f64, (eval.avg_score_mean * eval.avg_score_mean) as f64);
+
+        let selection_value: f64 = self.get_new_explore_selection_value(
+          node,
+          explore_scaling,
+          nn_policy_prob,
+          cache_avg_utility,
+          parent_weight_per_visit,
+          max_child_weight,
+          *count_edge_visit,
+          Some(&mut *thread),
+        );
+        if selection_value > max_selection_value {
+          max_selection_value = selection_value;
+          *best_child_idx = *num_children_found;
+          *best_child_move_loc = move_loc;
+        }
+      }
     }
 
     //Try the new child with the best policy value
@@ -634,7 +683,7 @@ impl Search {
       }
 
       //Quit immediately for illegal moves
-      let nn_policy_prob: f32 = policy_probs[move_pos as usize];
+      let mut nn_policy_prob: f32 = policy_probs[move_pos as usize];
       if nn_policy_prob < 0.0 {
         continue;
       }
@@ -662,8 +711,7 @@ impl Search {
       }
 
       if anti_mirror {
-        // TODO(port): deferred (searchmirror.cpp): `maybeApplyAntiMirrorPolicy(nnPolicyProb, moveLoc, policyProbs, node.nextPla, &thread);`
-        unreachable!("anti-mirror is deferred (searchmirror.cpp)");
+        self.maybe_apply_anti_mirror_policy(&mut nn_policy_prob, move_loc, policy_probs, node.next_pla, thread);
       }
 
       if nn_policy_prob > best_new_nn_policy_prob {

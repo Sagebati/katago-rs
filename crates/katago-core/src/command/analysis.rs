@@ -35,8 +35,8 @@
 //   it is queued), and a popped request starts its search only once the request loop is waiting for
 //   input (upstream's request thread handles the rest of a burst of lines while the AsyncBot's search
 //   thread wakes up). See `request_loop` and `analysis_loop`.
-// - Deferred (D7): eval cache (`useEvalCache`: evalCache stays None, TODO(port)) and avoid-SGF pattern
-//   bonus tables (Setup::loadAvoidSgfPatternBonusTables fails if one is configured). Human-SL nets (M8):
+// - Avoid-SGF pattern bonus tables: Setup::loadAvoidSgfPatternBonusTables reads their keys as upstream but
+//   cannot load SGF files (IO/M8), so a fully configured set is an error. Human-SL nets (M8):
 //   the code paths are ported, but no backend can load such a net yet.
 
 use std::cell::Cell;
@@ -83,8 +83,8 @@ use crate::search::asyncbot::AnalyzeCallback;
 use crate::search::asyncbot::AsyncBot;
 use crate::search::asyncbot::AsyncBotStopHandle;
 use crate::search::asyncbot::SearchBegunCallback;
-use crate::search::search::EvalCacheTable;
-use crate::search::search::PatternBonusTable;
+use crate::search::evalcache::EvalCacheTable;
+use crate::search::patternbonustable::PatternBonusTable;
 use crate::search::search::Search;
 use crate::search::searchparams::SearchParams;
 use crate::search::timecontrols::TimeControls;
@@ -942,9 +942,8 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
       if let Some(human_eval) = &ctx.human_eval {
         human_eval.clear_cache();
       }
-      if ctx.eval_cache.is_some() {
-        // TODO(port): deferred (evalcache.cpp): `evalCache->clear();` (evalCache is always None).
-        unreachable!("EvalCacheTable is deferred, so evalCache is always None");
+      if let Some(eval_cache) = &ctx.eval_cache {
+        eval_cache.clear();
       }
       ctx.push_to_write(nlohmann::dump(&input));
     } else if action == "terminate" {
@@ -1802,10 +1801,9 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   .collect();
 
   // Common eval cache for all analysis threads
-  let eval_cache: Option<Rc<EvalCacheTable>> = None;
+  let mut eval_cache: Option<Rc<EvalCacheTable>> = None;
   if default_params.use_eval_cache {
-    // TODO(port): deferred (evalcache.cpp): `evalCache = std::make_shared<EvalCacheTable>(defaultParams.subtreeValueBiasTableNumShards);`
-    // EvalCacheTable is not ported (D7), so useEvalCache has no effect.
+    eval_cache = Some(Rc::new(EvalCacheTable::new(default_params.subtree_value_bias_table_num_shards)));
   }
 
   let mut bots: Vec<AsyncBot> = Vec::new();

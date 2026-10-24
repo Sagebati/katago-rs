@@ -22,16 +22,12 @@ use crate::neuralnet::nninputs::NNPos;
 use crate::port::cpp;
 use crate::port::node_arena::NodeIdx;
 use crate::search::search::SearchThread;
+use crate::search::evalcache::EvalCacheEntry;
 use crate::search::subtreevaluebiastable::SubtreeValueBiasEntry;
 use crate::testAssert;
 
 /// upstream: SearchNodeState (searchnode.h)
 pub type SearchNodeState = i32; // See SearchNode::STATE_*
-
-/// upstream: EvalCacheEntry (evalcache.h)
-/// TODO(port): deferred (evalcache.cpp): placeholder with no values (DECISIONS.md D7), so
-/// `SearchNode::evalCacheEntry` is always None until the eval cache is ported.
-pub enum EvalCacheEntry {}
 
 /// upstream: NodeStatsAtomic (searchnode.h)
 pub struct NodeStatsAtomic {
@@ -464,7 +460,6 @@ pub struct SearchNode {
   //Graph hash of this node.
   //Note that this is NOT a unique key for evaluations due to nodes varying by forceNonTerminal.
   pub graph_hash: Hash128,
-  // TODO(port): deferred (evalcache.cpp): always None (EvalCacheEntry has no values, D7).
   pub eval_cache_entry: RefCell<Option<Rc<EvalCacheEntry>>>,
 
   pub dirty_counter: Cell<i32>,

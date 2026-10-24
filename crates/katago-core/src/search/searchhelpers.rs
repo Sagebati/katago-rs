@@ -2,8 +2,7 @@
 //
 // PORT NOTE: `std::shared_ptr<NNOutput>*` results are `Rc<NNOutput>`; maybeAddPolicyNoiseAndTemp,
 // addDirichletNoise and computeDirichletAlphaDistribution return Result because
-// computeDirichletAlphaDistribution throws and Rand::nextGamma throws (PORTING.md §7). Pattern bonus
-// tables are deferred (D7): patternBonusTable is always None.
+// computeDirichletAlphaDistribution throws and Rand::nextGamma throws (PORTING.md §7).
 
 use std::rc::Rc;
 
@@ -420,10 +419,7 @@ impl Search {
     if prev_move_pla != self.pla_that_search_is_for {
       return 0.0;
     }
-    let _ = pattern_bonus_hash;
-    // TODO(port): deferred (patternbonustable.cpp): `return patternBonusTable->get(patternBonusHash).utilityBonus;`
-    // PatternBonusTable has no values (D7), so this is unreachable.
-    match **pattern_bonus_table {}
+    pattern_bonus_table.get(pattern_bonus_hash).utility_bonus
   }
 
   /// upstream: Search::getEndingWhiteScoreBonus (searchhelpers.cpp)

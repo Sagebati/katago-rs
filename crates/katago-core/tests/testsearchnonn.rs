@@ -19,14 +19,14 @@
 //! Two `log::info!` calls of `SearchParams::print_params` stand for lines upstream writes straight to
 //! `std::cout` (no ": " prefix); the logger below writes those two raw (see `PLAIN_COUT_LINES`).
 //!
-//! Sections not compared ("pending"), see `SECTIONS`: "Board size distribution" needs GameInitializer
-//! (program/play.cpp, [[ignored]] in port-manifest.toml). "SearchParams for GTP/Analysis/Match/Benchmark/
-//! Other/Distributed" use the ported `Setup::loadSingleParams` (program/setup.rs).
+//! Every section is compared. "Board size distribution" runs a test-local copy of the GameInitializer
+//! pieces it needs (program/play.cpp is [[ignored]]; see `GameInitializer` below). "SearchParams for
+//! GTP/Analysis/Match/Benchmark/Other/Distributed" use the ported `Setup::loadSingleParams` (program/setup.rs).
 //!
 //! Timing dependence: none (no maxTime/time controls; the injected clock is a constant).
 //! Not a port of upstream code.
 
-#![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop)]
+#![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::assign_op_pattern)]
 
 mod common;
 
@@ -2186,12 +2186,659 @@ fn search_params_for_distributed(_ctx: &mut Ctx) {
   search_params_for(Setup::SETUP_FOR_DISTRIBUTED);
 }
 
+
+//------------------------------------------------------------------------------------------------
+// Board size distribution: test-local copy of the GameInitializer pieces it uses
+//
+// PORTING.md §13 "test-local copies": program/play.cpp (GameInitializer) and program/playsettings.cpp are
+// [[ignored]] (selfplay / match machinery the analysis engine never runs), and a full port would need
+// dataio/sgf (Sgf::PositionSample: start/hint positions, M8) and file IO. This copy is faithful for the
+// path the test runs: GameInitializer(cfg, logger, randSeed) without startPosesFromSgfDir / hintPosesDir,
+// createGame(..., initialPosition=NULL, PlaySettings(), ..., startPosSample=NULL), plus the PlayUtils komi
+// helpers it calls (playutils.cpp; they take play.h's ExtraBlackAndKomi). Omitted branches panic.
+
+/// upstream: ExtraBlackAndKomi (play.h) — test-local copy
+#[allow(dead_code)] // fields kept as upstream; the test reads only some
+#[derive(Clone, Copy, Debug)]
+struct ExtraBlackAndKomi {
+  extra_black: i32,
+  komi_mean: f32,
+  komi_stdev: f32,
+  make_game_fair: bool,
+  make_game_fair_for_empty_board: bool,
+  allow_integer: bool,
+  interp_zero: bool,
+}
+
+impl Default for ExtraBlackAndKomi {
+  fn default() -> Self {
+    ExtraBlackAndKomi {
+      extra_black: 0,
+      komi_mean: 7.5f32,
+      komi_stdev: 7.5f32,
+      make_game_fair: false,
+      make_game_fair_for_empty_board: false,
+      allow_integer: true,
+      interp_zero: false,
+    }
+  }
+}
+
+/// upstream: OtherGameProperties (play.h) — test-local copy
+#[allow(dead_code)] // fields kept as upstream; the test reads only some
+#[derive(Clone, Copy, Debug)]
+struct OtherGameProperties {
+  is_sgf_pos: bool,
+  is_hint_pos: bool,
+  allow_policy_init: bool,
+  is_fork: bool,
+  is_hint_fork: bool,
+  hint_turn: i32,
+  hint_loc: Loc,
+  training_weight: f64,
+  playout_doubling_advantage: f64,
+  playout_doubling_advantage_pla: Player,
+}
+
+impl Default for OtherGameProperties {
+  fn default() -> Self {
+    OtherGameProperties {
+      is_sgf_pos: false,
+      is_hint_pos: false,
+      allow_policy_init: true,
+      is_fork: false,
+      is_hint_fork: false,
+      hint_turn: -1,
+      hint_loc: Board::NULL_LOC,
+      training_weight: 1.0,
+      playout_doubling_advantage: 0.0,
+      playout_doubling_advantage_pla: C_EMPTY,
+    }
+  }
+}
+
+/// upstream: PlaySettings (playsettings.h) — test-local copy of the fields createGame reads, with
+/// PlaySettings::PlaySettings()'s values.
+struct PlaySettings {
+  handicap_asymmetric_playout_prob: f64,
+  normal_asymmetric_playout_prob: f64,
+  max_asymmetric_ratio: f64,
+  // PORT NOTE: left uninitialized by upstream's default constructor; read only when an asymmetric
+  // playout probability is positive, which the defaults never are.
+  min_asymmetric_compensate_komi_prob: f64,
+}
+
+impl PlaySettings {
+  /// upstream: PlaySettings::PlaySettings (playsettings.cpp) — test-local copy
+  fn new() -> Self {
+    PlaySettings { handicap_asymmetric_playout_prob: 0.0, normal_asymmetric_playout_prob: 0.0, max_asymmetric_ratio: 2.0, min_asymmetric_compensate_komi_prob: 0.0 }
+  }
+}
+
+/// upstream: getDefaultMaxExtraBlack (playutils.cpp) static — test-local copy
+fn get_default_max_extra_black(sqrt_board_area: f64) -> i32 {
+  if sqrt_board_area <= 10.00001 {
+    return 0;
+  }
+  if sqrt_board_area <= 14.00001 {
+    return 1;
+  }
+  if sqrt_board_area <= 16.00001 {
+    return 2;
+  }
+  if sqrt_board_area <= 17.00001 {
+    return 3;
+  }
+  if sqrt_board_area <= 18.00001 {
+    return 4;
+  }
+  5
+}
+
+/// upstream: PlayUtils::chooseExtraBlackAndKomi (playutils.cpp) — test-local copy
+fn choose_extra_black_and_komi(
+  base: f32,
+  stdev: f32,
+  allow_integer_prob: f64,
+  handicap_prob: f64,
+  num_extra_black_fixed: i32,
+  big_stdev_prob: f64,
+  big_stdev: f32,
+  bigger_stdev_prob: f64,
+  bigger_stdev: f32,
+  sqrt_board_area: f64,
+  rand: &mut Rand,
+) -> ExtraBlackAndKomi {
+  let mut extra_black: i32 = 0;
+  let komi: f32 = base;
+
+  let mut stdev_to_use: f32 = 0.0f32;
+  if stdev > 0.0f32 {
+    stdev_to_use = stdev;
+  }
+  if big_stdev > 0.0f32 && rand.next_bool(big_stdev_prob) {
+    stdev_to_use = big_stdev;
+  }
+  if bigger_stdev > 0.0f32 && bigger_stdev_prob > 0.0 && rand.next_bool(bigger_stdev_prob) {
+    stdev_to_use = bigger_stdev;
+  }
+  //Adjust for board size, so that we don't give the same massive komis on smaller boards
+  stdev_to_use = stdev_to_use * (sqrt_board_area / 19.0) as f32;
+
+  //Add handicap stones
+  let default_max_extra_black: i32 = get_default_max_extra_black(sqrt_board_area);
+  if (num_extra_black_fixed > 0 || default_max_extra_black > 0) && rand.next_bool(handicap_prob) {
+    if num_extra_black_fixed > 0 {
+      extra_black = num_extra_black_fixed;
+    } else {
+      extra_black += 1 + rand.next_uint_n(default_max_extra_black as u32) as i32;
+    }
+  }
+
+  let allow_integer: bool = rand.next_bool(allow_integer_prob);
+
+  let mut ret: ExtraBlackAndKomi = ExtraBlackAndKomi::default();
+  ret.extra_black = extra_black;
+  ret.komi_mean = komi;
+  ret.komi_stdev = stdev_to_use;
+  //These are set later
+  ret.make_game_fair = false;
+  ret.make_game_fair_for_empty_board = false;
+  ret.interp_zero = false;
+  //This is recorded for application later, since other things may adjust the komi in between.
+  ret.allow_integer = allow_integer;
+  ret
+}
+
+/// upstream: roundKomiWithLinearProb (playutils.cpp) static — test-local copy
+fn round_komi_with_linear_prob(mut komi: f32, rand: &mut Rand) -> f32 {
+  //Discretize komi
+  let lower: f32 = (komi * 2.0f32).floor() / 2.0f32;
+  let upper: f32 = (komi * 2.0f32).ceil() / 2.0f32;
+
+  if lower == upper {
+    komi = lower;
+  } else {
+    assert!(upper > lower);
+    if rand.next_double() < ((komi - lower) / (upper - lower)) as f64 {
+      komi = upper;
+    } else {
+      komi = lower;
+    }
+  }
+  komi
+}
+
+/// upstream: PlayUtils::roundAndClipKomi (playutils.cpp) — test-local copy
+fn round_and_clip_komi(mut unrounded: f64, board: &Board) -> f32 {
+  //Just in case, make sure komi is reasonable
+  let range: f32 = NNPos::KOMI_CLIP_RADIUS + (board.x_size * board.y_size) as f32;
+  if unrounded < -range as f64 {
+    unrounded = -range as f64;
+  }
+  if unrounded > range as f64 {
+    unrounded = range as f64;
+  }
+  (0.5 * (2.0 * unrounded).round()) as f32
+}
+
+/// upstream: PlayUtils::setKomiWithNoise (playutils.cpp) — test-local copy
+fn set_komi_with_noise(extra_black_and_komi: &ExtraBlackAndKomi, hist: &mut BoardHistory, rand: &mut Rand) {
+  let mut komi: f32 = extra_black_and_komi.komi_mean;
+  if extra_black_and_komi.komi_stdev > 0.0 {
+    komi += extra_black_and_komi.komi_stdev * rand.next_gaussian_truncated(3.0) as f32;
+  }
+  if extra_black_and_komi.interp_zero {
+    komi = komi * rand.next_double() as f32;
+  }
+  komi = round_komi_with_linear_prob(komi, rand);
+  komi = round_and_clip_komi(komi as f64, hist.get_recent_board(0));
+  testAssert!(Rules::komi_is_int_or_half_int(komi));
+  // PORT NOTE: `(int)komi` is in range: komi was clipped above.
+  if !extra_black_and_komi.allow_integer && komi == (komi as i32) as f32 {
+    komi += if rand.next_bool(0.5) { -0.5f32 } else { 0.5f32 };
+  }
+  hist.set_komi(komi);
+}
+
+/// upstream: GameInitializer (play.h) — test-local copy (the fields the copied functions use)
+#[allow(dead_code)] // fields kept as upstream; the test reads only some
+struct GameInitializer {
+  rand: Rand,
+  allowed_ko_rule_strs: Vec<String>,
+  allowed_scoring_rule_strs: Vec<String>,
+  allowed_tax_rule_strs: Vec<String>,
+  allowed_multi_stone_suicide_legals: Vec<bool>,
+  allowed_buttons: Vec<bool>,
+  allowed_ko_rules: Vec<i32>,
+  allowed_scoring_rules: Vec<i32>,
+  allowed_tax_rules: Vec<i32>,
+  allowed_b_sizes: Vec<(i32, i32)>,
+  allowed_b_size_rel_probs: Vec<f64>,
+  komi_mean: f32,
+  komi_stdev: f32,
+  komi_allow_integer_prob: f64,
+  handicap_prob: f64,
+  handicap_compensate_komi_prob: f64,
+  fork_compensate_komi_prob: f64,
+  sgf_compensate_komi_prob: f64,
+  komi_big_stdev_prob: f64,
+  komi_big_stdev: f32,
+  komi_bigger_stdev_prob: f64,
+  komi_bigger_stdev: f32,
+  handicap_komi_interp_zero_prob: f64,
+  sgf_komi_interp_zero_prob: f64,
+  komi_auto: bool,
+  num_extra_black_fixed: i32,
+  no_result_stdev: f64,
+  draw_rand_radius: f64,
+  start_poses_prob: f64,
+  hint_poses_prob: f64,
+  min_board_x_size: i32,
+  min_board_y_size: i32,
+  max_board_x_size: i32,
+  max_board_y_size: i32,
+}
+
+impl GameInitializer {
+  /// upstream: GameInitializer::GameInitializer(ConfigParser&, Logger&, const string& randSeed) (play.cpp) — test-local copy
+  fn new_rand_seed(cfg: &mut ConfigParser, rand_seed: &str) -> Result<GameInitializer, KataError> {
+    let mut g = GameInitializer {
+      rand: Rand::new_seed(rand_seed),
+      allowed_ko_rule_strs: Vec::new(),
+      allowed_scoring_rule_strs: Vec::new(),
+      allowed_tax_rule_strs: Vec::new(),
+      allowed_multi_stone_suicide_legals: Vec::new(),
+      allowed_buttons: Vec::new(),
+      allowed_ko_rules: Vec::new(),
+      allowed_scoring_rules: Vec::new(),
+      allowed_tax_rules: Vec::new(),
+      allowed_b_sizes: Vec::new(),
+      allowed_b_size_rel_probs: Vec::new(),
+      komi_mean: 0.0,
+      komi_stdev: 0.0,
+      komi_allow_integer_prob: 0.0,
+      handicap_prob: 0.0,
+      handicap_compensate_komi_prob: 0.0,
+      fork_compensate_komi_prob: 0.0,
+      sgf_compensate_komi_prob: 0.0,
+      komi_big_stdev_prob: 0.0,
+      komi_big_stdev: 0.0,
+      komi_bigger_stdev_prob: 0.0,
+      komi_bigger_stdev: 0.0,
+      handicap_komi_interp_zero_prob: 0.0,
+      sgf_komi_interp_zero_prob: 0.0,
+      komi_auto: false,
+      num_extra_black_fixed: 0,
+      no_result_stdev: 0.0,
+      draw_rand_radius: 0.0,
+      start_poses_prob: 0.0,
+      hint_poses_prob: 0.0,
+      min_board_x_size: 0,
+      min_board_y_size: 0,
+      max_board_x_size: 0,
+      max_board_y_size: 0,
+    };
+    g.init_shared(cfg)?;
+    Ok(g)
+  }
+
+  /// upstream: GameInitializer::initShared (play.cpp) — test-local copy (Logger& dropped)
+  fn init_shared(&mut self, cfg: &mut ConfigParser) -> Result<(), KataError> {
+    self.allowed_ko_rule_strs = cfg.get_strings_possibles("koRules", &Rules::ko_rule_strings())?;
+    self.allowed_scoring_rule_strs = cfg.get_strings_possibles("scoringRules", &Rules::scoring_rule_strings())?;
+    self.allowed_tax_rule_strs = cfg.get_strings_possibles("taxRules", &Rules::tax_rule_strings())?;
+    self.allowed_multi_stone_suicide_legals = cfg.get_bools("multiStoneSuicideLegals")?;
+    self.allowed_buttons = cfg.get_bools("hasButtons")?;
+
+    for i in 0..self.allowed_ko_rule_strs.len() {
+      self.allowed_ko_rules.push(Rules::parse_ko_rule(&self.allowed_ko_rule_strs[i])?);
+    }
+    for i in 0..self.allowed_scoring_rule_strs.len() {
+      self.allowed_scoring_rules.push(Rules::parse_scoring_rule(&self.allowed_scoring_rule_strs[i])?);
+    }
+    for i in 0..self.allowed_tax_rule_strs.len() {
+      self.allowed_tax_rules.push(Rules::parse_tax_rule(&self.allowed_tax_rule_strs[i])?);
+    }
+
+    if self.allowed_ko_rules.is_empty() {
+      return Err(KataError::IOError("koRules must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+    if self.allowed_scoring_rules.is_empty() {
+      return Err(KataError::IOError("scoringRules must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+    if self.allowed_tax_rules.is_empty() {
+      return Err(KataError::IOError("taxRules must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+    if self.allowed_multi_stone_suicide_legals.is_empty() {
+      return Err(KataError::IOError("multiStoneSuicideLegals must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+    if self.allowed_buttons.is_empty() {
+      return Err(KataError::IOError("hasButtons must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+
+    {
+      let mut has_area_scoring: bool = false;
+      for i in 0..self.allowed_scoring_rules.len() {
+        if self.allowed_scoring_rules[i] == Rules::SCORING_AREA {
+          has_area_scoring = true;
+        }
+      }
+      let mut has_true_button: bool = false;
+      for i in 0..self.allowed_buttons.len() {
+        if self.allowed_buttons[i] {
+          has_true_button = true;
+        }
+      }
+      if !has_area_scoring && has_true_button {
+        return Err(KataError::IOError("If scoringRules does not include AREA, hasButtons must be false in ".to_string() + &cfg.get_file_name()));
+      }
+    }
+
+    if cfg.contains("bSizes") == cfg.contains("bSizesXY") {
+      return Err(KataError::IOError("Must specify exactly one of bSizes or bSizesXY".to_string()));
+    }
+
+    if cfg.contains("bSizes") {
+      let allowed_b_edges: Vec<i32> = cfg.get_ints("bSizes", 2, Board::MAX_LEN)?;
+      let allowed_b_edge_rel_probs: Vec<f64> = cfg.get_doubles("bSizeRelProbs", 0.0, 1e100)?;
+      let mut rel_prob_sum: f64 = 0.0;
+      for p in allowed_b_edge_rel_probs.iter() {
+        rel_prob_sum += *p;
+      }
+      if rel_prob_sum <= 1e-100 {
+        return Err(KataError::IOError("bSizeRelProbs must sum to a positive value".to_string()));
+      }
+      let allow_rectangle_prob: f64 = if cfg.contains("allowRectangleProb") { cfg.get_double("allowRectangleProb", 0.0, 1.0)? } else { 0.0 };
+
+      if allowed_b_edges.is_empty() {
+        return Err(KataError::IOError("bSizes must have at least one value in ".to_string() + &cfg.get_file_name()));
+      }
+      if allowed_b_edges.len() != allowed_b_edge_rel_probs.len() {
+        return Err(KataError::IOError("bSizes and bSizeRelProbs must have same number of values in ".to_string() + &cfg.get_file_name()));
+      }
+
+      self.allowed_b_sizes.clear();
+      self.allowed_b_size_rel_probs.clear();
+      for i in 0..allowed_b_edges.len() {
+        for j in 0..allowed_b_edges.len() {
+          let x: i32 = allowed_b_edges[i];
+          let y: i32 = allowed_b_edges[j];
+          if x == y {
+            self.allowed_b_sizes.push((x, y));
+            self.allowed_b_size_rel_probs.push(
+              (1.0 - allow_rectangle_prob) * allowed_b_edge_rel_probs[i] / rel_prob_sum
+                + allow_rectangle_prob * allowed_b_edge_rel_probs[i] * allowed_b_edge_rel_probs[j] / rel_prob_sum / rel_prob_sum,
+            );
+          } else {
+            if allow_rectangle_prob > 0.0 {
+              self.allowed_b_sizes.push((x, y));
+              self.allowed_b_size_rel_probs
+                .push(allow_rectangle_prob * allowed_b_edge_rel_probs[i] * allowed_b_edge_rel_probs[j] / rel_prob_sum / rel_prob_sum);
+            }
+          }
+        }
+      }
+    } else if cfg.contains("bSizesXY") {
+      if cfg.contains("allowRectangleProb") {
+        return Err(KataError::IOError(
+          "Cannot specify allowRectangleProb when specifying bSizesXY, please adjust the relative frequency of rectangles yourself".to_string(),
+        ));
+      }
+      self.allowed_b_sizes = cfg.get_non_negative_int_dashed_pairs("bSizesXY", 2, Board::MAX_LEN)?;
+      self.allowed_b_size_rel_probs = cfg.get_doubles("bSizeRelProbs", 0.0, 1e100)?;
+
+      let mut rel_prob_sum: f64 = 0.0;
+      for p in self.allowed_b_size_rel_probs.iter() {
+        rel_prob_sum += *p;
+      }
+      if rel_prob_sum <= 1e-100 {
+        return Err(KataError::IOError("bSizeRelProbs must sum to a positive value".to_string()));
+      }
+    }
+
+    if !cfg.contains("komiMean") && !(cfg.contains("komiAuto") && cfg.get_bool("komiAuto")?) {
+      return Err(KataError::IOError("Must specify either komiMean=<komi value> or komiAuto=True in config".to_string()));
+    }
+    if cfg.contains("komiMean") && (cfg.contains("komiAuto") && cfg.get_bool("komiAuto")?) {
+      return Err(KataError::IOError("Must specify only one of komiMean=<komi value> or komiAuto=True in config".to_string()));
+    }
+
+    self.komi_mean = if cfg.contains("komiMean") { cfg.get_float("komiMean", Rules::MIN_USER_KOMI, Rules::MAX_USER_KOMI)? } else { 7.5f32 };
+    self.komi_stdev = if cfg.contains("komiStdev") { cfg.get_float("komiStdev", 0.0f32, 60.0f32)? } else { 0.0f32 };
+    self.handicap_prob = if cfg.contains("handicapProb") { cfg.get_double("handicapProb", 0.0, 1.0)? } else { 0.0 };
+    self.handicap_compensate_komi_prob =
+      if cfg.contains("handicapCompensateKomiProb") { cfg.get_double("handicapCompensateKomiProb", 0.0, 1.0)? } else { 0.0 };
+    self.komi_big_stdev_prob = if cfg.contains("komiBigStdevProb") { cfg.get_double("komiBigStdevProb", 0.0, 1.0)? } else { 0.0 };
+    self.komi_big_stdev = if cfg.contains("komiBigStdev") { cfg.get_float("komiBigStdev", 0.0f32, 60.0f32)? } else { 10.0f32 };
+    self.komi_bigger_stdev_prob = if cfg.contains("komiBiggerStdevProb") { cfg.get_double("komiBiggerStdevProb", 0.0, 1.0)? } else { 0.0 };
+    self.komi_bigger_stdev = if cfg.contains("komiBiggerStdev") { cfg.get_float("komiBiggerStdev", 0.0f32, 120.0f32)? } else { 30.0f32 };
+    self.handicap_komi_interp_zero_prob =
+      if cfg.contains("handicapKomiInterpZeroProb") { cfg.get_double("handicapKomiInterpZeroProb", 0.0, 1.0)? } else { 0.0 };
+    self.sgf_komi_interp_zero_prob = if cfg.contains("sgfKomiInterpZeroProb") { cfg.get_double("sgfKomiInterpZeroProb", 0.0, 1.0)? } else { 0.0 };
+    self.komi_auto = if cfg.contains("komiAuto") { cfg.get_bool("komiAuto")? } else { false };
+
+    self.fork_compensate_komi_prob =
+      if cfg.contains("forkCompensateKomiProb") { cfg.get_double("forkCompensateKomiProb", 0.0, 1.0)? } else { self.handicap_compensate_komi_prob };
+    self.sgf_compensate_komi_prob =
+      if cfg.contains("sgfCompensateKomiProb") { cfg.get_double("sgfCompensateKomiProb", 0.0, 1.0)? } else { self.fork_compensate_komi_prob };
+    self.komi_allow_integer_prob = if cfg.contains("komiAllowIntegerProb") { cfg.get_double("komiAllowIntegerProb", 0.0, 1.0)? } else { 1.0 };
+
+    // Omitted from this copy: the generateCumProbs lambda and the startPosesFromSgfDir / hintPosesDir
+    // branches (SGF and file loading; Sgf::PositionSample is not ported). The test sets neither key.
+    self.start_poses_prob = 0.0;
+    if cfg.contains("startPosesFromSgfDir") {
+      panic!("test-local GameInitializer: startPosesFromSgfDir is not supported (SGF loading)");
+    }
+    self.hint_poses_prob = 0.0;
+    if cfg.contains("hintPosesDir") {
+      panic!("test-local GameInitializer: hintPosesDir is not supported (file loading)");
+    }
+
+    if self.allowed_b_sizes.is_empty() {
+      return Err(KataError::IOError("bSizes or bSizesXY must have at least one value in ".to_string() + &cfg.get_file_name()));
+    }
+    if self.allowed_b_sizes.len() != self.allowed_b_size_rel_probs.len() {
+      return Err(KataError::IOError("bSizes or bSizesXY and bSizeRelProbs must have same number of values in ".to_string() + &cfg.get_file_name()));
+    }
+
+    self.min_board_x_size = self.allowed_b_sizes[0].0;
+    self.min_board_y_size = self.allowed_b_sizes[0].1;
+    self.max_board_x_size = self.allowed_b_sizes[0].0;
+    self.max_board_y_size = self.allowed_b_sizes[0].1;
+    for b_size in self.allowed_b_sizes.iter() {
+      self.min_board_x_size = std::cmp::min(self.min_board_x_size, b_size.0);
+      self.min_board_y_size = std::cmp::min(self.min_board_y_size, b_size.1);
+      self.max_board_x_size = std::cmp::max(self.max_board_x_size, b_size.0);
+      self.max_board_y_size = std::cmp::max(self.max_board_y_size, b_size.1);
+    }
+    //for(const Sgf::PositionSample& pos : hintPoses) ... (hintPoses is empty in this copy)
+
+    self.no_result_stdev = if cfg.contains("noResultStdev") { cfg.get_double("noResultStdev", 0.0, 1.0)? } else { 0.0 };
+    self.num_extra_black_fixed = if cfg.contains("numExtraBlackFixed") { cfg.get_int("numExtraBlackFixed", 1, 18)? } else { 0 };
+    self.draw_rand_radius = if cfg.contains("drawRandRadius") { cfg.get_double("drawRandRadius", 0.0, 1.0)? } else { 0.0 };
+    Ok(())
+  }
+
+  /// upstream: GameInitializer::createGame (play.cpp), the overload without SearchParams — test-local copy
+  /// (initialPosition and startPosSample are NULL at the only caller, so they are not parameters here).
+  fn create_game(
+    &mut self,
+    board: &mut Board,
+    pla: &mut Player,
+    hist: &mut BoardHistory,
+    extra_black_and_komi: &mut ExtraBlackAndKomi,
+    play_settings: &PlaySettings,
+    other_game_props: &mut OtherGameProperties,
+  ) -> Result<(), KataError> {
+    //Multiple threads will be calling this, and we have some mutable state such as rand.
+    self.create_game_shared_unsynchronized(board, pla, hist, extra_black_and_komi, play_settings, other_game_props);
+    if self.no_result_stdev != 0.0 || self.draw_rand_radius != 0.0 {
+      return Err(KataError::StringError(
+        "GameInitializer::createGame called in a mode that doesn't support specifying noResultStdev or drawRandRadius".to_string(),
+      ));
+    }
+    Ok(())
+  }
+
+  /// upstream: GameInitializer::createRulesUnsynchronized (play.cpp) — test-local copy
+  fn create_rules_unsynchronized(&mut self) -> Rules {
+    let mut rules: Rules = Rules::new();
+    rules.ko_rule = self.allowed_ko_rules[self.rand.next_uint_n(self.allowed_ko_rules.len() as u32) as usize];
+    rules.scoring_rule = self.allowed_scoring_rules[self.rand.next_uint_n(self.allowed_scoring_rules.len() as u32) as usize];
+    rules.tax_rule = self.allowed_tax_rules[self.rand.next_uint_n(self.allowed_tax_rules.len() as u32) as usize];
+    rules.multi_stone_suicide_legal =
+      self.allowed_multi_stone_suicide_legals[self.rand.next_uint_n(self.allowed_multi_stone_suicide_legals.len() as u32) as usize];
+
+    if rules.scoring_rule == Rules::SCORING_AREA {
+      rules.has_button = self.allowed_buttons[self.rand.next_uint_n(self.allowed_buttons.len() as u32) as usize];
+    } else {
+      rules.has_button = false;
+    }
+    rules
+  }
+
+  /// upstream: GameInitializer::createGameSharedUnsynchronized (play.cpp) — test-local copy, for
+  /// initialPosition == NULL and startPosSample == NULL with no start/hint positions loaded.
+  fn create_game_shared_unsynchronized(
+    &mut self,
+    board: &mut Board,
+    pla: &mut Player,
+    hist: &mut BoardHistory,
+    extra_black_and_komi: &mut ExtraBlackAndKomi,
+    play_settings: &PlaySettings,
+    other_game_props: &mut OtherGameProperties,
+  ) {
+    //if(initialPosition != NULL) {...}: initialPosition is NULL here.
+
+    let mut make_game_fair_prob: f64;
+
+    let b_size_idx: i32 = self.rand.next_uint_rel_probs_n(&self.allowed_b_size_rel_probs, self.allowed_b_size_rel_probs.len()) as i32;
+    let rules: Rules = self.create_rules_unsynchronized();
+
+    //posSample stays NULL: startPosSample is NULL, startPosesProb and hintPosesProb are 0 (no rand draw).
+    assert!(self.start_poses_prob == 0.0 && self.hint_poses_prob == 0.0);
+
+    {
+      let x_size: i32 = self.allowed_b_sizes[b_size_idx as usize].0;
+      let y_size: i32 = self.allowed_b_sizes[b_size_idx as usize].1;
+      *board = Board::new_x_y(x_size, y_size).expect("upstream: allowed sizes are in [2, Board::MAX_LEN]");
+      *pla = P_BLACK;
+      hist.clear(board, *pla, &rules, 0);
+
+      *extra_black_and_komi = choose_extra_black_and_komi(
+        self.komi_mean,
+        self.komi_stdev,
+        self.komi_allow_integer_prob,
+        self.handicap_prob,
+        self.num_extra_black_fixed,
+        self.komi_big_stdev_prob,
+        self.komi_big_stdev,
+        self.komi_bigger_stdev_prob,
+        self.komi_bigger_stdev,
+        ((board.x_size * board.y_size) as f64).sqrt(),
+        &mut self.rand,
+      );
+      set_komi_with_noise(extra_black_and_komi, hist, &mut self.rand);
+
+      other_game_props.is_sgf_pos = false;
+      other_game_props.is_hint_pos = false;
+      other_game_props.allow_policy_init = true; //Handicap and regular games do allow policy init
+      other_game_props.is_fork = false;
+      other_game_props.is_hint_fork = false;
+      other_game_props.hint_loc = Board::NULL_LOC;
+      other_game_props.hint_turn = -1;
+      other_game_props.training_weight = 1.0;
+      make_game_fair_prob = if extra_black_and_komi.extra_black > 0 { self.handicap_compensate_komi_prob } else { 0.0 };
+      extra_black_and_komi.interp_zero = if self.handicap_komi_interp_zero_prob > 0.0 && extra_black_and_komi.extra_black > 0 {
+        self.rand.next_bool(self.handicap_komi_interp_zero_prob)
+      } else {
+        false
+      };
+    }
+
+    let asymmetric_prob: f64 =
+      if extra_black_and_komi.extra_black > 0 { play_settings.handicap_asymmetric_playout_prob } else { play_settings.normal_asymmetric_playout_prob };
+    if asymmetric_prob > 0.0 && self.rand.next_bool(asymmetric_prob) {
+      testAssert!(play_settings.max_asymmetric_ratio >= 1.0);
+      let max_num_doublings: f64 = katago_core::port::math::ln(play_settings.max_asymmetric_ratio) / katago_core::port::math::ln(2.0);
+      let num_doublings: f64 = self.rand.next_double_n(max_num_doublings);
+      if extra_black_and_komi.extra_black > 0 || self.rand.next_bool(0.5) {
+        other_game_props.playout_doubling_advantage_pla = C_WHITE;
+        other_game_props.playout_doubling_advantage = num_doublings;
+      } else {
+        other_game_props.playout_doubling_advantage_pla = C_BLACK;
+        other_game_props.playout_doubling_advantage = num_doublings;
+      }
+      make_game_fair_prob = katago_core::port::cpp::cpp_max(make_game_fair_prob, play_settings.min_asymmetric_compensate_komi_prob);
+    }
+
+    if self.komi_auto {
+      if make_game_fair_prob > 0.0 {
+        extra_black_and_komi.make_game_fair = self.rand.next_bool(make_game_fair_prob);
+      }
+      extra_black_and_komi.make_game_fair_for_empty_board = !extra_black_and_komi.make_game_fair;
+    } else {
+      if make_game_fair_prob > 0.0 {
+        extra_black_and_komi.make_game_fair = self.rand.next_bool(make_game_fair_prob);
+      }
+      extra_black_and_komi.make_game_fair_for_empty_board = false;
+    }
+  }
+}
+
+/// The "Board size distribution" block of Tests::runNNLessSearchTests, then the function's tail
+/// (`NeuralNet::globalCleanup(); cout << "Done" << endl;`), whose line ends the expected section.
+fn board_size_distribution(_ctx: &mut Ctx) {
+  let mut cfg = ConfigParser::new(false, true);
+  cfg.override_key("koRules", "SIMPLE");
+  cfg.override_key("scoringRules", "AREA");
+  cfg.override_key("taxRules", "SEKI");
+  cfg.override_key("multiStoneSuicideLegals", "false");
+  cfg.override_key("hasButtons", "false");
+  cfg.override_key("bSizes", "2,4,6,8");
+  cfg.override_key("bSizeRelProbs", "1,2,3,4");
+  cfg.override_key("allowRectangleProb", "0.3");
+  cfg.override_key("komiAuto", "true");
+  let mut game_init = GameInitializer::new_rand_seed(&mut cfg, "board size distribution random seed").expect("upstream: valid config");
+
+  let mut board_size_distribution: BTreeMap<(i32, i32), i32> = BTreeMap::new();
+  // Boxed: BoardHistory is ~34 KB (wasm debug stack, PORTING.md §13).
+  let mut hist: Box<BoardHistory> = Box::new(BoardHistory::new());
+  for _i in 0..100000 {
+    let mut board: Board = Board::new();
+    let mut pla: Player = C_EMPTY;
+    // PORT NOTE: upstream declares a fresh `BoardHistory hist;` per iteration; createGame clears it
+    // (hist.clear) before any read, so one boxed history is reused.
+    let mut extra_black_and_komi: ExtraBlackAndKomi = ExtraBlackAndKomi::default();
+    let mut other_game_props: OtherGameProperties = OtherGameProperties::default();
+    game_init
+      .create_game(&mut board, &mut pla, &mut hist, &mut extra_black_and_komi, &PlaySettings::new(), &mut other_game_props)
+      .expect("upstream: createGame succeeds");
+    *board_size_distribution.entry((board.x_size, board.y_size)).or_insert(0) += 1;
+  }
+  let mut x = 2;
+  while x <= 8 {
+    let mut y = 2;
+    while y <= 8 {
+      coutln!("{}x{} {}", x, y, board_size_distribution.entry((x, y)).or_insert(0));
+      y += 2;
+    }
+    x += 2;
+  }
+
+  //NeuralNet::globalCleanup();
+  coutln!("Done");
+}
+
 //------------------------------------------------------------------------------------------------
 // Driver
 
 enum Kind {
   Run(fn(&mut Ctx)),
-  /// Not transcribed: the reason. The expected section is not compared.
+  /// Not transcribed: the reason. The expected section is not compared. (None left; kept for sections a
+  /// later upstream adds.)
+  #[allow(dead_code)]
   Pending(&'static str),
 }
 
@@ -2252,15 +2899,13 @@ const SECTIONS: [(&str, Kind); 43] = [
   ("SearchParams for Benchmark", Kind::Run(search_params_for_benchmark)),
   ("SearchParams for Other", Kind::Run(search_params_for_other)),
   ("SearchParams for Distributed", Kind::Run(search_params_for_distributed)),
-  // TODO(port): needs GameInitializer (program/play.cpp, [[ignored]] in port-manifest.toml): `GameInitializer
-  // gameInit(cfg, logger, seed); gameInit.createGame(...)` x 100000, then the board size histogram. This
-  // section's expected text also holds the final "Done" line.
-  ("Board size distribution", Kind::Pending("needs GameInitializer (program/play.cpp, not ported)")),
+  // Its expected text also holds the final "Done" line of runNNLessSearchTests.
+  ("Board size distribution", Kind::Run(board_size_distribution)),
 ];
 
 /// Number of sections that are compared (the preamble "Running neuralnetless search tests" plus every `Kind::Run`).
-const NUM_COMPARED: usize = 1 + 42;
-const NUM_PENDING: usize = 1;
+const NUM_COMPARED: usize = 1 + 43;
+const NUM_PENDING: usize = 0;
 
 /// `(title, text)` for every section of the expected stdout: the preamble (title "") and one per header
 /// trio (a line of 67 '=', a title, a line of 67 '='); a section runs up to the next trio.
@@ -2382,7 +3027,7 @@ fn run_all(expected: &str) -> Vec<(String, Status)> {
       }
     }
   }
-  //NeuralNet::globalCleanup(); cout << "Done" << endl;  -- the "Done" line is part of the pending last section
+  //NeuralNet::globalCleanup(); cout << "Done" << endl;  -- printed by board_size_distribution, the last section
   results
 }
 

@@ -7,7 +7,9 @@
 //! by what the ops printed (root visits, every root child, getRootValues/getPrunedRootValues/..., all
 //! AnalysisData fields, printTree/printPV text, getAnalysisJson dumps, chosen moves, play selection
 //! values, ownership, node table sizes and key hashes, crafted extreme root ownership (XO), time carried over by
-//! tree reuse (ECT) ...; floats as IEEE-754 hex bits) and "END <n>".
+//! tree reuse (ECT), the eval cache (EC/NE/ECC/ECN/ECS: dumps of the cache and of the nodes' entries, a second Search sharing it),
+//! the pattern bonus table (PB/PBN/PBH and the nodes' patternBonusHash) and anti-mirror state (MI, HC for handicap) ...;
+//! floats as IEEE-754 hex bits) and "END <n>".
 //! This test rebuilds each case from its CASE line alone, executes the same op stream through the
 //! port on a futures LocalPool and compares the text with `common::compare_lines`, per case: every
 //! mismatching case is reported with its first differing line (the test fails at the end if any).
@@ -29,6 +31,7 @@ mod common;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::fmt::Write as _;
 use std::rc::Rc;
@@ -42,6 +45,7 @@ use common::run_or_stall_panic;
 use futures::executor::LocalPool;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
+use katago_core::core::hash::Hash128;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
@@ -57,6 +61,8 @@ use katago_core::port::executor::Spawner;
 use katago_core::port::node_arena::NodeIdx;
 use katago_core::port::nlohmann;
 use katago_core::search::analysisdata::AnalysisData;
+use katago_core::search::evalcache::EvalCacheTable;
+use katago_core::search::patternbonustable::PatternBonusTable;
 use katago_core::search::reportedsearchvalues::ReportedSearchValues;
 use katago_core::search::search::Search;
 use katago_core::search::searchnode::SearchNode;
@@ -464,6 +470,11 @@ fn set_param(p: &mut SearchParams, k: &str, v: &str) -> bool {
     "treeReuseCarryOverTimeFactor" => p.tree_reuse_carry_over_time_factor = d,
     "avoidMYTDaggerHackPla" => p.avoid_myt_dagger_hack_pla = l as Player,
     "playoutDoublingAdvantagePla" => p.playout_doubling_advantage_pla = l as Player,
+    "useEvalCache" => p.use_eval_cache = b,
+    "evalCacheMinVisits" => p.eval_cache_min_visits = l,
+    "subtreeValueBiasTableNumShards" => p.subtree_value_bias_table_num_shards = l as i32,
+    "antiMirror" => p.anti_mirror = b,
+    "avoidRepeatedPatternUtility" => p.avoid_repeated_pattern_utility = d,
     "nnPolicyTemperature" => p.nn_policy_temperature = v.parse::<f32>().unwrap_or(0.0),
     _ => return false,
   }
@@ -502,6 +513,170 @@ fn print_node_table_keys(search: &Search) {
     }
   }
   coutln!("ntkeys n={} fnv={:016X}", n, fnv64(&text));
+}
+
+/// upstream mirror: printEvalCache (search_nonn.cpp), op EC: "noec" if the search has no eval cache, else a count line
+/// and the first EC_FULL entries in full; the count/FNV-1a 64 cover every shard in order, each shard's map in Hash128 order.
+const EC_FULL: usize = 2;
+
+fn print_eval_cache(search: &Search) {
+  let ec = match &search.eval_cache {
+    None => {
+      coutln!("noec");
+      return;
+    }
+    Some(ec) => ec,
+  };
+  let entries = ec.entries.borrow();
+  let mut text = String::new();
+  let mut head = String::new();
+  let (mut n, mut nnull, mut nfe) = (0usize, 0usize, 0usize);
+  for (i, shard) in entries.iter().enumerate() {
+    for (k, v) in shard.iter() {
+      let mut line = format!("{} {:016X} {:016X}", i, k.hash1, k.hash0);
+      match v {
+        None => {
+          line.push_str(" null");
+          nnull += 1;
+        }
+        Some(e) => {
+          let _ = write!(
+            line,
+            " w={:08X} wl={:08X} nr={:08X} sm={:08X} lead={:08X} fe={}",
+            e.cache_weight.to_bits(),
+            e.avg_win_loss.to_bits(),
+            e.avg_no_result.to_bits(),
+            e.avg_score_mean.to_bits(),
+            e.avg_lead.to_bits(),
+            e.first_explore_evals.len()
+          );
+          for (loc, fe) in &e.first_explore_evals {
+            let _ = write!(line, " {}:{:08X}:{:08X}:{:08X}", loc, fe.avg_win_loss.to_bits(), fe.avg_score_mean.to_bits(), fe.cache_weight.to_bits());
+            nfe += 1;
+          }
+        }
+      }
+      line.push('\n');
+      if n < EC_FULL {
+        head.push_str(&line);
+      }
+      text.push_str(&line);
+      n += 1;
+    }
+  }
+  coutln!("ec shards={} n={} null={} fe={} fnv={:016X}", entries.len(), n, nnull, nfe, fnv64(&text));
+  cout!("{}", head);
+}
+
+/// upstream mirror: printNodeExtras (search_nonn.cpp), op NE: per node of the tree (enumerateTreePostOrder order): whether it
+/// holds an evalCacheEntry (and its cacheWeight), its patternBonusHash.
+fn print_node_extras(search: &Search) {
+  if search.root_node.is_none() {
+    coutln!("noroot");
+    return;
+  }
+  let nodes = search.enumerate_tree_post_order();
+  let (mut with_entry, mut with_pattern) = (0, 0);
+  let mut text = String::new();
+  for idx in &nodes {
+    let node: Rc<SearchNode> = search.node_arena.get(*idx);
+    let entry = node.eval_cache_entry.borrow();
+    let he = entry.is_some();
+    let ph = node.pattern_bonus_hash.get();
+    let hp = ph.hash0 != 0 || ph.hash1 != 0;
+    with_entry += he as i32;
+    with_pattern += hp as i32;
+    let _ = writeln!(text, "{} {:016X} {:016X} {:08X}", he as i32, ph.hash1, ph.hash0, entry.as_ref().map_or(0u32, |e| e.cache_weight.to_bits()));
+  }
+  coutln!("ne nodes={} ece={} pbh={} fnv={:016X}", nodes.len(), with_entry, with_pattern, fnv64(&text));
+}
+
+/// upstream mirror: printPatternBonusTable (search_nonn.cpp): a count and FNV-1a 64 of "<shard> <hash1> <hash0> <utilityBonus bits>"
+/// lines (shard by shard, each map in Hash128 order) and the sum of the bonuses in that order.
+fn print_pattern_bonus_table(label: &str, t: &PatternBonusTable) {
+  let mut text = String::new();
+  let mut n = 0usize;
+  let mut sum = 0.0f64;
+  for (i, shard) in t.entries.iter().enumerate() {
+    for (k, v) in shard.iter() {
+      let _ = writeln!(text, "{} {:016X} {:016X} {:016X}", i, k.hash1, k.hash0, v.utility_bonus.to_bits());
+      sum += v.utility_bonus;
+      n += 1;
+    }
+  }
+  coutln!("{} shards={} n={} sum={:016X} fnv={:016X}", label, t.entries.len(), n, sum.to_bits(), fnv64(&text));
+}
+
+/// upstream mirror: patternBonusHashOp (search_nonn.cpp), op PBH:<n>: the PatternBonusTable on the root position, no search involved.
+fn pattern_bonus_hash_op(search: &Search, num_add: i32) {
+  let board: &Board = search.get_root_board();
+  let hist: &BoardHistory = search.get_root_hist();
+  let mut locs: Vec<Loc> = vec![Board::NULL_LOC, Board::PASS_LOC];
+  for y in 0..board.y_size {
+    for x in 0..board.x_size {
+      locs.push(Location::get_loc(x, y, board.x_size));
+    }
+  }
+  let mut t = PatternBonusTable::new_num_shards(11);
+  {
+    let mut text = String::new();
+    let mut nonzero = 0;
+    for pla in [P_BLACK, P_WHITE] {
+      for &loc in &locs {
+        let h: Hash128 = t.get_hash(pla, loc, board);
+        let _ = writeln!(text, "{} {} {:016X} {:016X}", pla, loc, h.hash1, h.hash0);
+        if h.hash0 != 0 || h.hash1 != 0 {
+          nonzero += 1;
+        }
+      }
+    }
+    coutln!("pbh hashes n={} nonzero={} fnv={:016X}", text.len(), nonzero, fnv64(&text));
+  }
+  let mut seen: BTreeSet<Hash128> = BTreeSet::new();
+  let mut added = 0;
+  'outer: for y in 0..board.y_size {
+    for x in 0..board.x_size {
+      if added >= num_add {
+        break 'outer;
+      }
+      let loc = Location::get_loc(x, y, board.x_size);
+      if board.colors[loc as usize] != C_EMPTY {
+        continue;
+      }
+      let pla = if added % 2 == 0 { P_BLACK } else { P_WHITE };
+      for flip in 0..2 {
+        for sym in 0..8 {
+          t.add_bonus(pla, loc, board, 0.25 * ((added + 1) as f64) * (if flip != 0 { -1.0 } else { 1.0 }), sym, flip != 0, &mut seen);
+        }
+      }
+      added += 1;
+    }
+  }
+  cout!("pbh added={} seen={} ", added, seen.len());
+  print_pattern_bonus_table("table", &t);
+  {
+    let mut text = String::new();
+    let mut nonzero = 0;
+    for pla in [P_BLACK, P_WHITE] {
+      for &loc in &locs {
+        let e = t.get_pla_move_loc_board(pla, loc, board);
+        let _ = writeln!(text, "{} {} {:016X}", pla, loc, e.utility_bonus.to_bits());
+        if e.utility_bonus != 0.0 {
+          nonzero += 1;
+        }
+      }
+    }
+    coutln!("pbh gets n={} nonzero={} fnv={:016X}", text.len(), nonzero, fnv64(&text));
+  }
+  let mut t2 = PatternBonusTable::new_num_shards(11);
+  t2.add_bonus_for_game_moves(hist, 0.5);
+  print_pattern_bonus_table("game", &t2);
+  let mut t3 = PatternBonusTable::new_num_shards(7);
+  t3.add_bonus_for_game_moves_only_pla(hist, -0.3, P_WHITE);
+  print_pattern_bonus_table("gameW", &t3);
+  let mut t4 = PatternBonusTable::new();
+  t4.add_bonus_for_game_moves_only_pla(hist, 0.2, P_BLACK);
+  print_pattern_bonus_table("gameB", &t4);
 }
 
 fn parse_persp(s: &str) -> Player {
@@ -621,6 +796,12 @@ struct Runner<'a> {
   search: Box<Search>,
   cur_params: SearchParams,
   owner_on: bool,
+  /// Op HC (before P): setAssumeMultipleStartingBlackMovesAreHandicap / setOverrideNumHandicapStones
+  hc_assume: bool,
+  hc_override: i32,
+  /// Op ECS: a second Search (same evaluator) sharing the first one's eval cache
+  nn_eval: Rc<NNEvaluator>,
+  search2: Option<Box<Search>>,
 }
 
 fn boxed_history(board: &Board, pla: Player, rules: &Rules) -> Box<BoardHistory> {
@@ -637,6 +818,12 @@ impl<'a> Runner<'a> {
         let spec = self.spec;
         let mut board = Board::new_x_y(spec.xs, spec.ys)?;
         let mut hist = boxed_history(&board, spec.initial_pla, &spec.rules);
+        if self.hc_assume {
+          hist.set_assume_multiple_starting_black_moves_are_handicap(true);
+        }
+        if self.hc_override >= 0 {
+          hist.set_override_num_handicap_stones(self.hc_override);
+        }
         for (loc, pla) in &spec.moves {
           hist.make_board_move_assume_legal(&mut board, *loc, *pla, None, false);
         }
@@ -861,6 +1048,77 @@ impl<'a> Runner<'a> {
         }
         coutln!("ect {:016X}", self.search.effective_search_time_carried_over.to_bits());
       }
+      "HC" => {
+        self.hc_assume = t[1] == "1";
+        self.hc_override = int(2);
+        coutln!("hc assume={} override={}", self.hc_assume as i32, self.hc_override);
+      }
+      "EC" => print_eval_cache(&self.search),
+      "NE" => print_node_extras(&self.search),
+      "ECC" => {
+        if let Some(ec) = &self.search.eval_cache {
+          ec.clear();
+        }
+        coutln!("ecc {}", self.search.eval_cache.is_some() as i32);
+      }
+      "ECN" => {
+        let shards = int(1);
+        self.search.set_external_eval_cache(&Some(Rc::new(EvalCacheTable::new(shards))));
+        coutln!("ecn {}", shards);
+      }
+      "ECS" => {
+        // upstream mirror: op ECS (search_nonn.cpp)
+        if self.search.eval_cache.is_none() {
+          coutln!("noec");
+          return Ok(());
+        }
+        self.search2 = None;
+        let mut s2 = Box::new(Search::new(&self.cur_params, self.nn_eval.clone(), &format!("{}second", self.spec.search_seed)));
+        s2.set_external_eval_cache(&self.search.eval_cache);
+        s2.set_position(self.search.get_root_pla(), self.search.get_root_board(), self.search.get_root_hist())?;
+        run_or_stall_panic(&mut self.ctx.pool, "runWholeSearch", s2.run_whole_search(int(1) as Player))?;
+        coutln!("playouts2={}", s2.last_search_num_playouts);
+        Self::dump_root_of(&s2);
+        print_node_extras(&s2);
+        self.search2 = Some(s2);
+      }
+      "PB" => {
+        // upstream mirror: op PB (search_nonn.cpp): PB:<0 external|1 copy>:<shards, 0 = default>:<bonus>:<onlyPla>:<moves replayed, -1 = all>
+        let spec = self.spec;
+        let mut board = Board::new_x_y(spec.xs, spec.ys)?;
+        let mut hist = boxed_history(&board, spec.initial_pla, &spec.rules);
+        let n = int(5);
+        for (i, (loc, pla)) in spec.moves.iter().enumerate() {
+          if n >= 0 && i as i32 >= n {
+            break;
+          }
+          hist.make_board_move_assume_legal(&mut board, *loc, *pla, None, false);
+        }
+        let shards = int(2);
+        let mut table = if shards > 0 { PatternBonusTable::new_num_shards(shards) } else { PatternBonusTable::new() };
+        table.add_bonus_for_game_moves_only_pla(&hist, t[3].parse::<f64>().unwrap_or(0.0), int(4) as Player);
+        print_pattern_bonus_table("pb", &table);
+        if t[1] == "0" {
+          self.search.set_external_pattern_bonus_table(Some(Box::new(table)));
+        } else {
+          self.search.set_copy_of_external_pattern_bonus_table(&Some(Box::new(table)));
+        }
+      }
+      "PBN" => {
+        if t[1] == "0" {
+          self.search.set_external_pattern_bonus_table(None);
+        } else {
+          self.search.set_copy_of_external_pattern_bonus_table(&None);
+        }
+        coutln!("pbn {}", t[1]);
+      }
+      "PBH" => pattern_bonus_hash_op(&self.search, int(1)),
+      "MI" => coutln!(
+        "mirror pla={} adv={:016X} err={:016X}",
+        self.search.mirroring_pla,
+        self.search.mirror_advantage.to_bits(),
+        self.search.mirror_center_symmetry_error.to_bits()
+      ),
       "CL" => self.search.clear_search(),
       "KOMI" => self.search.set_komi_if_new(f32::from_bits(u32::from_str_radix(t[1], 16).unwrap())),
       "PIN" => self.search.set_player_if_new(int(1) as Player)?,
@@ -965,7 +1223,11 @@ impl<'a> Runner<'a> {
   }
 
   fn dump_root(&mut self) {
-    let search = &*self.search;
+    Self::dump_root_of(&self.search);
+  }
+
+  /// upstream mirror: Runner::dumpRootOf (search_nonn.cpp)
+  fn dump_root_of(search: &Search) {
     coutln!("root visits={} lastPlayouts={}", search.get_root_visits(), search.last_search_num_playouts);
     let root: Option<Rc<SearchNode>> = search.get_root_node();
     if let Some(root) = &root {
@@ -1064,7 +1326,7 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
     params.num_threads = t;
   }
   let search = Box::new(Search::new(&params, nn_eval.clone(), &spec.search_seed));
-  let mut runner = Runner { spec, ctx: &mut ctx, search, cur_params: params, owner_on: false };
+  let mut runner = Runner { spec, ctx: &mut ctx, search, cur_params: params, owner_on: false, hc_assume: false, hc_override: -1, nn_eval: nn_eval.clone(), search2: None };
   let ops: &[String] = variant.ops.unwrap_or(&spec.ops);
   for op in ops {
     if let Err(e) = runner.exec(op) {
@@ -1076,8 +1338,10 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
   if let Some(check) = variant.check.as_mut() {
     check(&runner.search);
   }
-  let Runner { search, .. } = runner;
+  let Runner { search, search2, nn_eval: runner_nn_eval, .. } = runner;
+  drop(search2);
   drop(search);
+  drop(runner_nn_eval);
   delete_nn_eval(&mut ctx, nn_eval);
   let out = OUT.with(|o| o.borrow().clone());
   format!("{}\n{}END {}\n", spec.line, out, spec.idx)
@@ -1088,7 +1352,7 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
 // ScoreValue's table arguments (DECISIONS.md D13), so the bit-exact comparison holds there too. On wasm32 a panic
 // cannot be caught (`try_catch`), so the first mismatching case aborts the test instead of being collected.
 
-const NUM_CASES: usize = 382;
+const NUM_CASES: usize = 480;
 
 /// Cases of the multi-thread test taken from the fixture (spread over all generators).
 const NUM_MT_CASES: usize = 36;

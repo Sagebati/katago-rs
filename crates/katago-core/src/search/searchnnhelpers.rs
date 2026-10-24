@@ -85,18 +85,18 @@ impl Search {
     is_re_init: bool,
   ) -> Result<bool, KataError> {
     let include_owner_map: bool = is_root || self.always_include_owner_map;
-    let anti_mirror_difficult: bool = false;
+    let mut include_owner_map: bool = include_owner_map;
+    let mut anti_mirror_difficult: bool = false;
     if self.search_params.anti_mirror
       && self.mirroring_pla != C_EMPTY
       && self.mirror_advantage >= -0.5
       && Location::get_center_loc(&thread.board) != Board::NULL_LOC
       && thread.board.colors[Location::get_center_loc(&thread.board) as usize] == get_opp(self.root_pla)
+      && self.is_mirroring_since_search_start(&thread.history, 4)
+    // skip recent 4 ply to be a bit tolerant
     {
-      // TODO(port): deferred (searchmirror.cpp): the last conjunct
-      // `isMirroringSinceSearchStart(thread.history,4)` (skip recent 4 ply to be a bit tolerant) and the
-      // body `includeOwnerMap = true; antiMirrorDifficult = true;`. Unreachable while updateMirroring
-      // is deferred: mirroringPla stays C_EMPTY.
-      unreachable!("anti-mirror is deferred (searchmirror.cpp): mirroringPla is always C_EMPTY");
+      include_owner_map = true;
+      anti_mirror_difficult = true;
     }
     let mut nn_input_params: MiscNNInputParams = MiscNNInputParams::new();
     nn_input_params.draw_equivalent_wins_for_white = self.search_params.draw_equivalent_wins_for_white;
@@ -193,9 +193,9 @@ impl Search {
 
     if anti_mirror_difficult {
       // Copy
-      // TODO(port): deferred (searchmirror.cpp): `result = new shared_ptr(new NNOutput(**result)); hackNNOutputForMirror(*result);`
-      // Unreachable (see above).
-      unreachable!("anti-mirror is deferred (searchmirror.cpp)");
+      let mut new_nn_output: NNOutput = (*result.take().expect("set above")).clone();
+      self.hack_nn_output_for_mirror(&mut new_nn_output);
+      result = Some(Rc::new(new_nn_output));
     }
 
     debug_assert!(result.as_ref().expect("set above").noised_policy_probs.is_none());
