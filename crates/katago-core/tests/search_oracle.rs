@@ -1352,7 +1352,7 @@ fn run_case(spec: &Spec, mut variant: Variant) -> String {
 // ScoreValue's table arguments (DECISIONS.md D13), so the bit-exact comparison holds there too. On wasm32 a panic
 // cannot be caught (`try_catch`), so the first mismatching case aborts the test instead of being collected.
 
-const NUM_CASES: usize = 480;
+const NUM_CASES: usize = 536;
 
 /// Cases of the multi-thread test taken from the fixture (spread over all generators).
 const NUM_MT_CASES: usize = 36;

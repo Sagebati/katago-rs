@@ -119,8 +119,8 @@ fn golden_evalcache_loop() {
   assert_ok("evalcache", &c);
 }
 
-/// The eval-cache form (regen.sh `eval_cache`, runcmdtests.sh's fifo test): b10c128, useGraphSearch=true,
-/// useEvalCache=true, evalCacheMinVisits=10, the queries' own maxVisits (50/100/50), and line N+1 is fed
+/// The eval-cache form (regen.sh `eval_cache`, runcmdtests.sh's fifo test): b10c128, rootSymmetryPruning=false,
+/// useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10, the queries' own maxVisits (50/100/50), and line N+1 is fed
 /// only after response N. The cache changes the result: C differs from A, B reuses A's entries.
 #[test]
 fn golden_eval_cache() {
@@ -128,7 +128,7 @@ fn golden_eval_cache() {
   let gold = read_golden(name);
   assert!(!gold.is_empty(), "{name}: empty golden");
   let t0 = std::time::Instant::now();
-  let got = run_analysis_handshake("tests/analysis/evalcache.txt", M10, "useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10");
+  let got = run_analysis_handshake("tests/analysis/evalcache.txt", M10, "rootSymmetryPruning=false, useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10");
   let c = compare(&gold, &got);
   eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
   assert_ok("eval_cache", &c);

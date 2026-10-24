@@ -56,12 +56,13 @@ fi
 
 # eval_cache: upstream runs this through fifos (the harness feeds line N+1 only after the response
 # to line N arrived, so the eval cache is populated by the previous request) and throws stdout away.
-# We do the same, but keep the responses.
+# We do the same, but keep the responses. rootSymmetryPruning=false is runcmdtests.sh:71's (it is in the command line there,
+# not in the loop's overrides).
 (
   T=$LOGDIR/evalcachecmdtest
   rm -rf "$T"; mkdir -p "$T"; mkfifo "$T/input" "$T/feedback"
   echo eval_cache >&2
-  "$KATAGO" analysis -config "$CFG" -model "$M10" -override-config "logFile=$LOGDIR/eval_cache.txt.log, $COMMON, useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10" \
+  "$KATAGO" analysis -config "$CFG" -model "$M10" -override-config "logFile=$LOGDIR/eval_cache.txt.log, $COMMON, rootSymmetryPruning=false, useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10" \
     < "$T/input" 2> "$LOGDIR/eval_cache.stderr" | tee "$OUT/eval_cache.stdout" > "$T/feedback" &
   { head -1 "tests/analysis/evalcache.txt"; tail -n +2 "tests/analysis/evalcache.txt" | while read -r L; do read -r _ < "$T/feedback"; echo "$L"; done; } > "$T/input"
   wait

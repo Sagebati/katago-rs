@@ -107,6 +107,15 @@
 // become the root; some with subtreeValueBiasFactor, useNoisePruning, useEvalCache), patternbonus (26: avoidRepeatedPatternUtility
 // +-0.1..0.5 on corner openings, mirror games, random games with passes and kos; external tables PB/PBN; PBH table dumps; one move or
 // two moves in a row between searches). 480 cases in all.
+// Appended after a mutation-testing review of the three ports (cases 0..479 kept their inputs and outputs; the first 480 case blocks are
+// byte-identical to the previous version; section 18, 56 cases): targeted-ecpass (6: the root eval-cache update with the pass edge-visit
+// fraction in (1/9, 1/8] and a pass utility not within 0.05 of the best: found by probing random games, the probes are not printed),
+// targeted-ecavoid (6: the cache is filled, then the root player's three most visited moves are avoided and the same position is searched
+// again: firstExploreEvals of the cached entry must skip avoided root moves), targeted-pbhit (8: a pattern bonus that certainly fires: the
+// player's lone 3-3 stone, the same corner pattern in the other three corners, a root hint at tengen-ish), targeted-mirroradv (16:
+// mirrorAdvantage exactly -5, 5 and -0.5 and just beside them, with territory scoring, a clean 20-pair mirror, the mirroring player on
+// tengen or not), targeted-mirrorwin (20: the opponent's mirror pattern with mirrorEwms/totalEwms either side of 0.45 and 0.46, and decay
+// 0.75 vs 0.8 patterns). 536 cases in all.
 // For exploration only (not the fixture): ORACLE_SEED=<str> ORACLE_STRESS_ONLY=<n> prints n stress cases for another
 // seed; the Rust test replays such a file when SEARCH_ORACLE_FILE names it; ORACLE_TRACE=1 echoes the ops to stderr.
 // At exit, stderr lists how often features/params occurred ("stat:" lines: searches whose tree had evalCacheEntry/patternBonusHash
@@ -899,6 +908,7 @@ struct Gen {
 
 static int numCases = 0;
 static map<string, int> featureCounts;
+static bool g_keep = true;  // false: a search-only probe whose output is discarded (section 18 looks for a certain input first)
 
 static void runCase(Case& c, const function<void(Gen&)>& script) {
   O.str("");
@@ -924,6 +934,7 @@ static void runCase(Case& c, const function<void(Gen&)>& script) {
   delete nnEval;
   string line = caseLine(c);
   string out = O.str();
+  if(!g_keep) return;
   printf("%s\n%sEND %d\n", line.c_str(), out.c_str(), c.idx);
   numCases++;
   for(const auto& kv : c.params) featureCounts[kv.first]++;
@@ -1647,6 +1658,266 @@ static int mirrorGame(Pos& p, int xs, int ys, Player rootPla, int pairs, int cen
     done++;
   }
   return done;
+}
+
+// ---------------- Section 18: targeted cases for branches the random sections rarely reach ----------------
+// (found by mutation testing the port: each generator is built so that the mutated line is certainly executed with a decisive input)
+// E05 target: root eval-cache update where the pass edge-visit fraction is in (1/9, 1/8] and pass utility is not within 0.05.
+static bool rootPassWindow(Search* search, int lo, int hi) {
+  const SearchNode* node = search->rootNode;
+  if(node == NULL || node->forceNonTerminal) return false;
+  if(node->stats.visits.load() < search->searchParams.evalCacheMinVisits) return false;
+  ConstSearchNodeChildrenReference children = node->getChildren();
+  int64_t tot = 0, pass = 0; double mx = -1e50, ps = -1e50;
+  for(int i = 0; i < children.getCapacity(); i++) {
+    const SearchNode* c = children[i].getIfAllocated();
+    if(c == NULL) break;
+    int64_t e = children[i].getEdgeVisits();
+    double u = c->stats.utilityAvg.load();
+    double su = node->nextPla == P_WHITE ? u : -u;
+    tot += e; mx = std::max(mx, su);
+    if(children[i].getMoveLocRelaxed() == Board::PASS_LOC) { pass += e; ps = su; }
+  }
+  return pass * lo < tot && pass * hi >= tot && !(ps + 0.05 >= mx);
+}
+
+static void targetedSections() {
+  int want = getenv("REVIEW_N") ? atoi(getenv("REVIEW_N")) : 6;
+  // R1. eval cache root pass window (kills `passEdgeVisits * 8` -> `* 9`).
+  int found = 0;
+  for(int tries = 0; tries < 4000 && found < want; tries++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int xs = 5 + rnd(3), ys = xs;
+    c.kind = "targeted-ecpass-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    randomMoves(p, xs, ys, xs * ys + rnd(xs * ys), 10, 0);
+    addParams(c, ys, true);
+    auto add = [&](const string& k, const string& v) { c.params.push_back(make_pair(k, v)); };
+    add("maxPlayouts", "1125899906842624");
+    add("useGraphSearch", "1");
+    add("useEvalCache", "1");
+    add("evalCacheMinVisits", "2");
+    c.maxVisits = 40 + rnd(200);
+    prepCase(c, p);
+    bool hit = false;
+    g_keep = false;
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      g.run("R:" + to_string((int)c.pla));
+      hit = !g.failed && rootPassWindow(g.r->search, 8, 9);
+      g.run("EC");
+      g.run("RS");
+    });
+    if(hit) {
+      g_keep = true;
+      Case c2 = c; c2.ops.clear();
+      runCase(c2, [&](Gen& g) { g.run("P"); g.run("R:" + to_string((int)c2.pla)); g.run("EC"); g.run("RS"); });
+      found++;
+    }
+  }
+  fprintf(stderr, "targeted ecpass: %d\n", found);
+  g_keep = true;
+
+  // R3. eval cache + avoided root moves (kills skipping isAllowedRootMove / avoidMoveUntilByLoc in the firstExploreEvals loop):
+  // a first search fills the cache, then the root player's top children are avoided and the same position is searched again.
+  for(int i = 0; i < want; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int xs = 6 + rnd(3), ys = xs;
+    c.kind = "targeted-ecavoid-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    randomMoves(p, xs, ys, rnd(xs * ys / 2), 0, 0);
+    addParams(c, ys, true);
+    auto add = [&](const string& k, const string& v) { c.params.push_back(make_pair(k, v)); };
+    add("maxPlayouts", "1125899906842624");
+    add("useGraphSearch", "1");
+    add("useEvalCache", "1");
+    add("evalCacheMinVisits", "2");
+    c.maxVisits = 80 + rnd(150);
+    prepCase(c, p);
+    g_keep = true;
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      g.run("R:" + to_string((int)c.pla));
+      g.run("EC");
+      // the 3 most visited non-pass root children
+      vector<pair<int64_t, Loc>> kids;
+      ConstSearchNodeChildrenReference ch = g.r->search->rootNode->getChildren();
+      for(int k = 0; k < ch.getCapacity(); k++) {
+        if(ch[k].getIfAllocated() == NULL) break;
+        if(ch[k].getMoveLocRelaxed() != Board::PASS_LOC) kids.push_back(make_pair(-ch[k].getEdgeVisits(), ch[k].getMoveLocRelaxed()));
+      }
+      sort(kids.begin(), kids.end());
+      string spec;
+      for(size_t k = 0; k < kids.size() && k < 3; k++) spec += (spec.empty() ? "" : ",") + to_string((int)kids[k].second) + "/" + to_string(1 + (int)k);
+      if(spec.empty()) spec = "-";
+      g.run(c.pla == P_BLACK ? ("V:" + spec + ":-") : ("V:-:" + spec));
+      g.run("CL");
+      g.run("R:" + to_string((int)c.pla));
+      g.run("RS");
+      g.run("NE");
+    });
+  }
+
+
+  // R4. pattern bonus that certainly fires: plaThatSearchIsFor played a lone 3-3-ish corner stone in history and the
+  // other three corners hold the same 9x9 pattern (up to symmetry); root hint on one of them so it gets visits.
+  for(int v = 0; v < 8; v++) {
+    Case c;
+    c.rules = Rules::parseRules(v % 2 ? "japanese" : "chinese");
+    int xs = 13, ys = 13;
+    c.kind = string("targeted-pbhit-") + (v % 2 ? "territory" : "area");
+    c.xs = xs; c.ys = ys; c.nnX = xs; c.nnY = ys;
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    Player me = (v / 2) % 2 ? P_WHITE : P_BLACK;
+    if(me == P_WHITE) p.play(Location::getLoc(6, 12, xs), P_BLACK);   // edge stone outside every corner window used below
+    p.play(Location::getLoc(3, 3, xs), me);
+    p.play(Location::getLoc(12, 0, xs), getOpp(me));
+    p.play(Location::getLoc(0, 12, xs), me);
+    p.play(Location::getLoc(12, 1, xs), getOpp(me));
+    static const char* utils[] = {"0.5", "-0.5", "0.3", "-0.3"};
+    c.params.push_back(make_pair(string("avoidRepeatedPatternUtility"), string(pick(utils))));
+    c.params.push_back(make_pair(string("maxPlayouts"), string("1125899906842624")));
+    c.params.push_back(make_pair(string("rootDesiredPerChildVisitsCoeff"), string("2.0")));
+    if(v >= 4) c.params.push_back(make_pair(string("useGraphSearch"), string("1")));
+    c.maxVisits = 150 + rnd(150);
+    prepCase(c, p);
+    Loc hint = Location::getLoc(9, 9, xs);
+    g_keep = true;
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      g.run("H:" + to_string((int)hint));
+      g.run("R:" + to_string((int)c.pla));
+      g.run("NE");
+      g.run("RS");
+      g.run(hsOp(false, c.xs, c.ys));
+    });
+  }
+
+
+  // R5. exact mirrorAdvantage thresholds (-5, 5, -0.5) with territory scoring (blackExtraPoints 0): mirroring black
+  // (it moves first, optionally on tengen), root white, a clean 20-pair mirror; then a search deep enough that the
+  // mirroring player's mirror replies go through maybeApplyAntiMirrorForcedExplore.
+  {
+    struct V { float komi; bool tengen; };
+    V vs[] = {{5.0f, false}, {-5.0f, false}, {0.5f, true}, {5.0f, true}, {-5.0f, true}, {0.5f, false}, {-0.5f, true}, {-4.5f, false}};
+    for(int vi = 0; vi < 8; vi++) {
+      for(int rep = 0; rep < 2; rep++) {
+        Case c;
+        c.rules = Rules::parseRules("japanese");
+        c.rules.komi = vs[vi].komi;
+        int xs = rep ? 11 : 9, ys = xs;
+        c.kind = "targeted-mirroradv-territory";
+        c.xs = xs; c.ys = ys; c.nnX = xs; c.nnY = ys;
+        c.initialPla = P_BLACK;
+        Pos p(xs, ys, c.rules, c.initialPla);
+        Loc center = Location::getCenterLoc(xs, ys);
+        if(vs[vi].tengen) p.play(center, P_BLACK);
+        else { Loc l; do { l = Location::getLoc(rnd(xs), rnd(ys), xs); } while(l == center || Location::getMirrorLoc(l, xs, ys) == l); p.play(l, P_BLACK); }
+        bool ok = true;
+        for(int k = 0; k < 20 && ok; k++) {
+          bool done = false;
+          for(int attempt = 0; attempt < 200 && !done; attempt++) {
+            Pos q = p;
+            Loc rm = Location::getLoc(rnd(xs), rnd(ys), xs);
+            if(rm == center) continue;
+            if(!q.play(rm, P_WHITE)) continue;
+            if(!q.play(Location::getMirrorLoc(rm, xs, ys), P_BLACK)) continue;
+            p = q; done = true;
+          }
+          ok = done;
+        }
+        if(!ok) continue;
+        addParams(c, ys, false);
+        c.params.push_back(make_pair(string("antiMirror"), string("1")));
+        c.params.push_back(make_pair(string("maxPlayouts"), string("1125899906842624")));
+        c.params.push_back(make_pair(string("fpuLossProp"), string("0.0")));
+        c.maxVisits = 300 + rnd(200);
+        prepCase(c, p);
+        g_keep = true;
+        runCase(c, [&](Gen& g) {
+          g.run("P");
+          g.run("R:" + to_string((int)c.pla));
+          g.run("MI");
+          g.run("RS");
+          g.run(hsOp(false, c.xs, c.ys));
+        });
+      }
+    }
+  }
+
+  // R2. anti-mirror ewms window: opponent mirror pattern with mirrorEwms/totalEwms in [0.45, 0.46) (kills 0.45 -> 0.46),
+  // and patterns just outside / at the count threshold.
+  const char* pats[] = {
+    "11111111111111110101010001", "11111111111111011110010001", "111111111111111100111100001", "111111111111111111101100001",
+    "1111111011111101111110010001", "111111111111111101101010001",
+    "111111111111111111000001", "111111111111111110100001", "1111111111111111110100001", "11111111111111101110010001",
+  };
+  for(int pi = 0; pi < 10; pi++) {
+    string pat = pats[pi];
+    for(int rp = 0; rp < 2; rp++) {
+      Case c;
+      c.rules = Rules::parseRules(pi % 2 ? "japanese" : "chinese");
+      int xs = 13, ys = 13;
+      c.kind = string("targeted-mirrorwin-") + (pi % 2 ? "territory" : "area");
+      c.xs = xs; c.ys = ys; c.nnX = xs; c.nnY = ys;
+      c.initialPla = P_BLACK;
+      Player rootPla = rp ? P_WHITE : P_BLACK;
+      Player mir = getOpp(rootPla);
+      Pos p(xs, ys, c.rules, c.initialPla);
+      Loc center = Location::getCenterLoc(xs, ys);
+      bool ok = true;
+      if(rootPla == P_WHITE) {
+        // black (the opponent) moves first: not counted
+        Loc l;
+        do { l = Location::getLoc(rnd(xs), rnd(ys), xs); } while(l == center);
+        p.play(l, P_BLACK);
+      }
+      for(size_t k = 0; k < pat.size() && ok; k++) {
+        bool done = false;
+        for(int attempt = 0; attempt < 200 && !done; attempt++) {
+          Pos q = p;
+          Loc rm = Location::getLoc(rnd(xs), rnd(ys), xs);
+          if(rm == center) continue;
+          if(!q.play(rm, rootPla)) continue;
+          Loc mm = Location::getMirrorLoc(rm, xs, ys);
+          if(pat[k] == '0') {
+            Loc o;
+            int t2 = 0;
+            do { o = Location::getLoc(rnd(xs), rnd(ys), xs); t2++; } while((o == mm || o == center || !q.hist.isLegal(q.board, o, mir)) && t2 < 100);
+            if(t2 >= 100) continue;
+            mm = o;
+          }
+          if(!q.play(mm, mir)) continue;
+          p = q;
+          done = true;
+        }
+        ok = done;
+      }
+      if(!ok) { fprintf(stderr, "mirror pattern %d failed\n", pi); continue; }
+      addParams(c, ys, false);
+      c.params.push_back(make_pair(string("antiMirror"), string("1")));
+      c.params.push_back(make_pair(string("maxPlayouts"), string("1125899906842624")));
+      c.params.push_back(make_pair(string("fpuLossProp"), string("0.0")));
+      c.maxVisits = 30 + rnd(40);
+      prepCase(c, p);
+      g_keep = true;
+      runCase(c, [&](Gen& g) {
+        g.run("P");
+        g.run("R:" + to_string((int)c.pla));
+        g.run("MI");
+        g.run("RS");
+      });
+    }
+  }
 }
 
 int main() {
@@ -2444,6 +2715,8 @@ int main() {
       }
     });
   }
+
+  if(detailed) targetedSections();
 
   fprintf(stderr, "cases: %d\n", numCases);
   for(const auto& kv : featureCounts) fprintf(stderr, "  %-45s %d\n", kv.first.c_str(), kv.second);
