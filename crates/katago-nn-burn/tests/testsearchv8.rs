@@ -1601,14 +1601,15 @@ const ALLOWLIST: &[Allowed] = &[
   Allowed {
     label: "#81 Pattern bonus",
     reason: "one visit moves between near-tied root children (L4 27 -> 26, C4 80 -> 81) in Bot1's tree-reuse search after D18 \
-             (1000 visits, ~1e-5 NN differences); the other 7 searches of the section, including all pattern-bonus ones \
-             and Bot1's next reuse search, are exact",
+             (1000 visits, ~1e-5 NN differences). The C++ result itself depends on the NN cache contents left by earlier \
+             sections: the same search run standalone in C++ gives C4 81 / L4 27, in the full group C4 80 / L4 27. The other \
+             7 searches of the section, including all pattern-bonus ones and Bot1's next reuse search, are exact",
   },
   Allowed {
     label: "#82 Pattern bonus does not care about ko",
-    reason: "Bot0 (baseline, no pattern bonus) already differs: same visits everywhere shown, root/R17 W -53.81c vs \
-             -53.87c (6e-4, accumulated NN differences of a 1000-visit ladder line); Bot1 (avoid repeat 0.2) prints exactly \
-             Bot0's lines in both builds, which is what the section checks",
+    reason: "a single visit at a depth-10 near-tie (O18 vs R19) goes elsewhere; NN outputs agree to 1e-6. Bot0 (baseline, no \
+             pattern bonus) already differs the same way; Bot1 (avoid repeat 0.2) prints exactly Bot0's lines in both builds, \
+             which is what the section checks",
   },
   Allowed {
     label: "#83 Pattern bonus does not multi-count shapes",
