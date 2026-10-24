@@ -3814,10 +3814,12 @@ name = "katago-nn-burn"
 version = "0.0.0"
 dependencies = [
  "burn",
+ "burn-cubecl",
  "burn-flex",
  "burn-onnx",
  "burn-store",
  "futures",
+ "half",
  "js-sys",
  "katago-core",
  "log",

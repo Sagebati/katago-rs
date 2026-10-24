@@ -23,7 +23,7 @@ flex = ["burn/flex", "dep:burn-flex"]
 wgpu = ["wgpu-fixed-kernels", "burn/autotune"]
 # wgpu without autotune: burn's default kernel for each op, no tuning pass. katago-wasm uses this: in the browser
 # the tuning results cannot be kept across page loads and the pass cost ~8 s per load (docs/M4-report.md).
-wgpu-fixed-kernels = ["burn/wgpu"]
+wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "dep:burn-cubecl", "dep:half"]
 # Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
 vulkan = ["wgpu", "burn/vulkan"]
 fusion = ["burn/fusion"]
@@ -37,6 +37,9 @@ burn = { workspace = true, features = ["std"] }
 burn-store.workspace = true
 # burn enables flex without its SIMD kernels (macerator, gemm's wasm simd128).
 burn-flex = { version = "0.22.1", default-features = false, features = ["std", "simd"], optional = true }
+# GPU kernels written in cubecl (wino.rs), reached through a burn backend extension.
+burn-cubecl = { version = "0.22.1", default-features = false, optional = true }
+half = { version = "2", optional = true }
 
 # wasm32: the CPU backend yields to the JS event loop between batches (host.rs, PORTING.md §11).
 [target.'cfg(target_arch = "wasm32")'.dependencies]

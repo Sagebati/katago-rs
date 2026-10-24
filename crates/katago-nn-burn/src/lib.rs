@@ -2,6 +2,8 @@
 
 pub mod backend;
 pub mod conv;
+#[cfg(feature = "wgpu-fixed-kernels")]
+pub mod wino;
 #[cfg(target_arch = "wasm32")]
 pub mod host;
 
