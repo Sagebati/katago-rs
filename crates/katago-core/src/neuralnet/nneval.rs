@@ -70,7 +70,7 @@ impl Entry {
 /// RefCell so get/set/clear take `&self` (called during search).
 pub struct NNCacheTable {
   pub(crate) entries: RefCell<Box<[Entry]>>,
-  pub(crate) table_size: u64,
+  pub table_size: u64,
   pub(crate) table_mask: u64,
 }
 
@@ -112,19 +112,19 @@ pub struct NNEvaluator {
   pub(crate) model_file_name: String,
   pub(crate) nn_x_len: i32,
   pub(crate) nn_y_len: i32,
-  pub(crate) require_exact_nn_len: bool,
+  pub require_exact_nn_len: bool,
   pub(crate) policy_size: i32,
-  pub(crate) inputs_use_nhwc: bool,
+  pub inputs_use_nhwc: bool,
   pub(crate) using_fp16_mode: enabled_t,
   pub(crate) using_nhwc_mode: enabled_t,
-  pub(crate) num_threads: Cell<i32>,
-  pub(crate) gpu_idx_by_server_thread: RefCell<Vec<i32>>,
-  pub(crate) rand_seed: String,
+  pub num_threads: Cell<i32>,
+  pub gpu_idx_by_server_thread: RefCell<Vec<i32>>,
+  pub rand_seed: String,
   pub(crate) debug_skip_neural_net: bool,
 
   pub(crate) compute_context: Option<Box<dyn ComputeContext>>,
   pub(crate) loaded_model: Option<Box<dyn LoadedModel>>,
-  pub(crate) nn_cache_table: Option<Box<NNCacheTable>>,
+  pub nn_cache_table: Option<Box<NNCacheTable>>,
 
   pub(crate) internal_model_name: String,
   pub(crate) model_version: i32,

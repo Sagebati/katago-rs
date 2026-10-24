@@ -53,6 +53,24 @@ fn comparator_catches_differences() {
   assert!(compare(&gold, &g6).divergence.is_some());
   // A missing line.
   assert!(compare(&gold, &gold[1..]).divergence.is_some());
+
+  let line = |l: &str| vec![l.to_string()];
+  let differs = |g: &str, o: &str| compare(&line(g), &line(o)).divergence.is_some();
+  // A tiny policy value off by 5e-6 (twice itself): relative tolerance below 1e-2.
+  assert!(differs(r#"{"policy":[2.5e-06]}"#, r#"{"policy":[7.5e-06]}"#));
+  assert!(!differs(r#"{"prior":0.25}"#, r#"{"prior":0.250004}"#));
+  assert!(!differs(r#"{"prior":2.5e-06}"#, r#"{"prior":2.5001e-06}"#));
+  // The same value written in exponent form where nlohmann would not: format class.
+  assert!(differs(r#"{"winrate":0.000123}"#, r#"{"winrate":1.23e-04}"#));
+  // Straddling 1e-4 within tolerance is fine.
+  assert!(!differs(r#"{"winrate":0.0001}"#, r#"{"winrate":9.9999e-05}"#));
+  // An unrounded f32 (17 digits, exactly a float) where upstream wrote a rounded 9-digit double.
+  #[allow(clippy::excessive_precision)]
+  let raw_f32 = format!("{:?}", 0.455756152f32 as f64);
+  assert!(differs(r#"{"winrate":0.455756152}"#, &format!(r#"{{"winrate":{raw_f32}}}"#)));
+  // Score keys: PORTING.md §13 NN tier (5e-4).
+  assert!(!differs(r#"{"scoreStdev":4.59838054}"#, r#"{"scoreStdev":4.59825107}"#));
+  assert!(differs(r#"{"scoreLead":1.5}"#, r#"{"scoreLead":1.5006}"#));
 }
 
 #[test]

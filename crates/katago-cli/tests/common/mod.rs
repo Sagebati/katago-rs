@@ -42,6 +42,17 @@ pub fn run_analysis(query_file: &str, model: &str, extra: &str) -> Vec<String> {
 
 /// As run_analysis, with the input lines given (all available at once, like a file on stdin).
 pub fn run_analysis_lines(lines: Vec<String>, model: &str, extra: &str) -> Vec<String> {
+  let (out, code) = run_analysis_bytes(lines.into_iter().map(String::into_bytes).collect(), model, extra);
+  match code {
+    Ok(c) => assert_eq!(c, 0),
+    Err(e) => panic!("analysis failed: {}", e.what()),
+  }
+  out
+}
+
+/// As run_analysis_lines with byte lines; returns the stdout lines and `analysis`'s result (an Err is
+/// the exception that terminates the process upstream).
+pub fn run_analysis_bytes(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
   let model = model.to_string();
   let extra = extra.to_string();
   std::thread::Builder::new()
@@ -52,7 +63,7 @@ pub fn run_analysis_lines(lines: Vec<String>, model: &str, extra: &str) -> Vec<S
     .expect("analysis run panicked")
 }
 
-fn run_analysis_inner(lines: Vec<String>, model: &str, extra: &str) -> Vec<String> {
+fn run_analysis_inner(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
   katago_cli::install_clock_and_sleep();
   let cpp = cpp_dir();
   let override_config = format!("{COMMON}, {extra}");
@@ -77,11 +88,13 @@ fn run_analysis_inner(lines: Vec<String>, model: &str, extra: &str) -> Vec<Strin
     write_stdout: Box::new(move |s: &str| out2.borrow_mut().push(s.to_string())),
     write_stderr: Box::new(|_s: &str| {}),
     nn_host: &nn_host,
+    // No log backend in tests: the Logger's file / directory setup is the CLI's (tests/cli_*.rs).
+    init_logger: Box::new(|_settings| Ok(())),
   };
-  let code = pool.run_until(katago_core::command::analysis::analysis(cfg, host)).unwrap_or_else(|e| panic!("analysis failed: {}", e.what()));
+  let code = pool.run_until(katago_core::command::analysis::analysis(cfg, host));
   pool.run_until_stalled();
-  assert_eq!(code, 0);
-  out.borrow().clone()
+  let out = out.borrow().clone();
+  (out, code)
 }
 
 //------------------------------------------------------------------------------------------------
@@ -91,15 +104,23 @@ fn run_analysis_inner(lines: Vec<String>, model: &str, extra: &str) -> Vec<Strin
 /// katago-nn-burn tests/nn_parity.rs and search_smoke.rs). Everything that is not a JSON float must be
 /// byte-identical: punctuation, key order, strings (ids, moves, pv entries, warnings), integers (visits,
 /// edgeVisits, order, turnNumber, pvVisits...), booleans, null, and whether a number is written as an
-/// integer or a float. Floats compare by key:
-/// - "score" keys (any key containing `score`/`Score`/`lead`/`Lead`): |a - b| <= SCORE_TOL;
+/// integer or a float. Floats must have the same format class (exponent form or not, and float-sized
+/// (<= 9 significant digits, an f32 widened) vs double-sized digit counts: an f32 stored as f64 or the
+/// reverse shows there) and compare by key:
+/// - "score" keys (any key containing `score`/`Score`/`lead`/`Lead`): |a - b| <= SCORE_TOL, the NN tier's
+///   score tolerance of PORTING.md §13 (≤5e-4 score lead/mean: the score heads are scaled by ~20, so their
+///   accumulation-order noise is ~20× the value heads');
 /// - weight keys (`weight`, `edgeWeight`, `playSelectionValue`, which scale with visits): |a - b| <=
 ///   WEIGHT_REL_TOL * max(1, |gold|);
-/// - every other float (winrate, lcb, utility, utilityLcb, prior, policy, ownership, ownershipStdev, raw*,
-///   noResultValue...): |a - b| <= VALUE_TOL.
+/// - probability keys (`prior`, `policy` entries, `humanPrior`): |a - b| <= min(VALUE_TOL, POLICY_REL_TOL * |gold|)
+///   (at least 1e-9): absolute 1e-5 above 1e-2, relative 1e-3 below, so a tiny prior cannot drift by
+///   several times its own size;
+/// - every other float (winrate, lcb, utility, utilityLcb, ownership, ownershipStdev, raw*, noResultValue...):
+///   |a - b| <= VALUE_TOL.
 pub const VALUE_TOL: f64 = 1e-5;
-pub const SCORE_TOL: f64 = 1e-4;
+pub const SCORE_TOL: f64 = 5e-4;
 pub const WEIGHT_REL_TOL: f64 = 1e-5;
+pub const POLICY_REL_TOL: f64 = 1e-3;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tok {
@@ -156,11 +177,46 @@ fn is_float_literal(s: &str) -> bool {
   s.contains('.') || s.contains('e') || s.contains('E')
 }
 
+/// (exponent form, significant digits of the mantissa)
+fn float_format(s: &str) -> (bool, usize) {
+  let (mant, exp) = match s.find(['e', 'E']) {
+    Some(p) => (&s[..p], true),
+    None => (s, false),
+  };
+  let digits: String = mant.chars().filter(|c| c.is_ascii_digit()).collect();
+  let sig = digits.trim_start_matches('0').trim_end_matches('0');
+  (exp, sig.len().max(1))
+}
+
+/// The format class of two float literals that compare within tolerance:
+/// - exponent form: nlohmann writes `x.ye-05` below 1e-4 (and from 1e15): both the same, unless the two
+///   values straddle such a boundary;
+/// - storage: a JSON value that upstream stored as a float (an f32 widened to f64: exactly representable
+///   as f32, and written with more than 4 significant digits, so not just a short decimal like 0.5) must
+///   be one in the port too, and the reverse (an f32/f64 mix-up in the port shows up here).
+fn same_float_class(a: &str, b: &str) -> bool {
+  let (ea, da) = float_format(a);
+  let (eb, db) = float_format(b);
+  let (x, y): (f64, f64) = (a.parse().unwrap(), b.parse().unwrap());
+  let exp_form = |v: f64| v != 0.0 && (v.abs() < 1e-4 || v.abs() >= 1e15);
+  if ea != eb && exp_form(x) == exp_form(y) {
+    return false;
+  }
+  let is_f32 = |v: f64, d: usize| d > 4 && (v as f32) as f64 == v;
+  let (fa, fb) = (is_f32(x, da), is_f32(y, db));
+  if fa != fb && (da > 4 && db > 4) {
+    return false;
+  }
+  true
+}
+
 fn tol_class(key: &str) -> &'static str {
   if key.contains("score") || key.contains("Score") || key.contains("lead") || key.contains("Lead") {
     "score"
   } else if key == "weight" || key == "edgeWeight" || key == "playSelectionValue" {
     "weight"
+  } else if key == "prior" || key == "policy" || key == "humanPrior" || key == "humanPolicy" {
+    "policy"
   } else {
     "value"
   }
@@ -192,6 +248,51 @@ impl Comparison {
   }
 }
 
+/// Compares one line with its golden line; Err is the first violation.
+pub fn compare_line(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>) -> Result<(), String> {
+  if g == o {
+    return Ok(());
+  }
+  let (tg, to) = match (tokenize(g), tokenize(o)) {
+    (Ok(a), Ok(b)) => (a, b),
+    (e1, e2) => return Err(format!("not tokenizable ({:?} / {:?})\n  expected: {g}\n  got:      {o}", e1.err(), e2.err())),
+  };
+  if tg.len() != to.len() {
+    return Err(format!("{} tokens vs {} expected\n  expected: {g}\n  got:      {o}", to.len(), tg.len()));
+  }
+  let mut key = String::new();
+  for i in 0..tg.len() {
+    if let (Tok::Str(s), Some(Tok::Punct(':'))) = (&tg[i], tg.get(i + 1)) {
+      key = s.trim_matches('"').to_string();
+    }
+    let ok = match (&tg[i], &to[i]) {
+      (Tok::Num(a), Tok::Num(b)) if a != b => {
+        if is_float_literal(a) && is_float_literal(b) && same_float_class(a, b) {
+          let (x, y): (f64, f64) = (a.parse().unwrap(), b.parse().unwrap());
+          let d = (x - y).abs();
+          let e = max_dev.entry(key.clone()).or_insert(0.0);
+          if d > *e {
+            *e = d;
+          }
+          match tol_class(&key) {
+            "score" => d <= SCORE_TOL,
+            "weight" => d <= WEIGHT_REL_TOL * x.abs().max(1.0),
+            "policy" => d <= (POLICY_REL_TOL * x.abs()).clamp(1e-9, VALUE_TOL),
+            _ => d <= VALUE_TOL,
+          }
+        } else {
+          false
+        }
+      }
+      (a, b) => a == b,
+    };
+    if !ok {
+      return Err(format!("key {:?}: {:?} vs expected {:?}\n  expected: {g}\n  got:      {o}", key, to[i], tg[i]));
+    }
+  }
+  Ok(())
+}
+
 /// Compares `got` with `gold` line by line under the policy above.
 pub fn compare(gold: &[String], got: &[String]) -> Comparison {
   let mut c = Comparison { num_lines: gold.len(), byte_identical: gold == got, ..Default::default() };
@@ -200,49 +301,9 @@ pub fn compare(gold: &[String], got: &[String]) -> Comparison {
     return c;
   }
   for (ln, (g, o)) in gold.iter().zip(got.iter()).enumerate() {
-    if g == o {
-      continue;
-    }
-    let (tg, to) = match (tokenize(g), tokenize(o)) {
-      (Ok(a), Ok(b)) => (a, b),
-      (e1, e2) => {
-        c.divergence = Some(format!("line {}: not tokenizable ({:?} / {:?})", ln + 1, e1.err(), e2.err()));
-        return c;
-      }
-    };
-    if tg.len() != to.len() {
-      c.divergence = Some(format!("line {}: {} tokens vs {} expected\n  expected: {g}\n  got:      {o}", ln + 1, to.len(), tg.len()));
+    if let Err(e) = compare_line(g, o, &mut c.max_dev) {
+      c.divergence = Some(format!("line {}, {e}", ln + 1));
       return c;
-    }
-    let mut key = String::new();
-    for i in 0..tg.len() {
-      if let (Tok::Str(s), Some(Tok::Punct(':'))) = (&tg[i], tg.get(i + 1)) {
-        key = s.trim_matches('"').to_string();
-      }
-      let ok = match (&tg[i], &to[i]) {
-        (Tok::Num(a), Tok::Num(b)) if a != b => {
-          if is_float_literal(a) && is_float_literal(b) {
-            let (x, y): (f64, f64) = (a.parse().unwrap(), b.parse().unwrap());
-            let d = (x - y).abs();
-            let e = c.max_dev.entry(key.clone()).or_insert(0.0);
-            if d > *e {
-              *e = d;
-            }
-            match tol_class(&key) {
-              "score" => d <= SCORE_TOL,
-              "weight" => d <= WEIGHT_REL_TOL * x.abs().max(1.0),
-              _ => d <= VALUE_TOL,
-            }
-          } else {
-            false
-          }
-        }
-        (a, b) => a == b,
-      };
-      if !ok {
-        c.divergence = Some(format!("line {}, key {:?}: {:?} vs expected {:?}\n  expected: {g}\n  got:      {o}", ln + 1, key, to[i], tg[i]));
-        return c;
-      }
     }
   }
   c

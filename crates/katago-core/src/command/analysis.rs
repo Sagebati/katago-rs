@@ -16,12 +16,25 @@
 //   capture (PORT NOTE: captures passed explicitly). The body of the request loop's `while(getline)` is
 //   `handle_request_line` (`continue` -> `return Ok(())`).
 // - Logger -> log crate (`logger.write(s)` -> `log::info!`); the Logger constructor's config reads are
-//   kept (`logger_config_reads`) so used keys and `logToStderr` decisions are unchanged; the host
-//   implements logFile / logDir / timestamps from the same keys.
+//   kept (`logger_config_reads`) so used keys and `logToStderr` decisions are unchanged, and its
+//   outputs (stdout / stderr / timestamps / logFile / logDir / logDirDated) are the host's
+//   (`AnalysisHost::init_logger`, called where the constructor opens its file).
+// - Input lines are bytes (`std::string` from getline): JSON parsing is `nlohmann::parse_bytes`, and an
+//   unparseable line whose error text is not valid UTF-8 makes reportError's dump() throw
+//   type_error.316 out of the request loop, as upstream.
 // - `Version::` strings (main.cpp, [[ignored]]) are the constants below: [upstream].tag and commit.
 // - Errors: an exception escaping the request loop or an analysis loop kills the process upstream
-//   (logThreadUncaught rethrows); here every loop is stopped (as quitWithoutWaiting) and the error is
-//   returned from `analysis`. The 5 s sleep of logThreadUncaught is dropped.
+//   (logThreadUncaught logs it, sleeps 5 s while the other threads keep running, rethrows ->
+//   std::terminate). Here the failing loop logs the same line and sleeps 5 s (port::executor::sleep),
+//   then the process counts as terminated: nothing more is written, every loop stops, and `analysis`
+//   returns the error without its normal closing log lines. The host ends the process (katago-cli:
+//   std::terminate's message and abort()).
+// - Virtual-thread scheduling (PORTING.md §11): threads interleave only at awaits, so where upstream's
+//   output order is a race, the port picks the interleaving upstream shows in practice: after a line
+//   enqueues requests the request loop yields (an idle analysis thread pops the first request as soon as
+//   it is queued), and a popped request starts its search only once the request loop is waiting for
+//   input (upstream's request thread handles the rest of a burst of lines while the AsyncBot's search
+//   thread wakes up). See `request_loop` and `analysis_loop`.
 // - Deferred (D7): eval cache (`useEvalCache`: evalCache stays None, TODO(port)) and avoid-SGF pattern
 //   bonus tables (Setup::loadAvoidSgfPatternBonusTables fails if one is configured). Human-SL nets (M8):
 //   the code paths are ported, but no backend can load such a net yet.
@@ -30,7 +43,10 @@ use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::future::Future;
+use std::pin::Pin;
 use std::rc::Rc;
+use std::task::Poll;
 
 use futures::Stream;
 use futures::StreamExt;
@@ -176,19 +192,48 @@ pub struct AnalysisArgs {
   pub override_configs: Vec<String>,
 }
 
+/// The settings the `Logger` constructor reads from the config (logger.cpp), handed to the host, which
+/// implements the Logger's outputs.
+/// PORT NOTE: not upstream (file header).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LoggerSettings {
+  /// `logToStdout` (log lines also go to stdout)
+  pub log_to_stdout: bool,
+  /// `logToStderr`
+  pub log_to_stderr: bool,
+  /// `logTimeStamp` (`DateTime::timeFormat` prefix instead of ": ")
+  pub log_time: bool,
+  /// `addFile(cfg.getString("logFile"))`: open for append; on failure the Logger writes
+  /// "WARNING: could not open file for logging: <IOError>" to the log and stderr and goes on.
+  pub log_file: Option<String>,
+  /// `MakeDir::make(logDir)` (StringError "Error creating directory: <dir>" on failure, uncaught),
+  /// then `addFile(logDir + "/" + compact date-time + "-" + random hex + ".log")`.
+  pub log_dir: Option<String>,
+  /// As log_dir with an extra date-time subdirectory.
+  pub log_dir_dated: Option<String>,
+}
+
 /// What MainCmds::analysis gets from the process and the build.
 /// PORT NOTE: not upstream (file header).
 pub struct AnalysisHost<'a> {
   pub args: AnalysisArgs,
-  /// `getline(cin, line)`: the input lines, without their '\n'; the stream ends at end of input.
-  pub input: &'a mut (dyn Stream<Item = String> + Unpin),
+  /// `getline(cin, line)`: the input lines as bytes (a std::string), without their '\n'; the stream
+  /// ends at end of input. A line that is Ready without waiting counts as already available (part of a
+  /// burst: see `request_loop`).
+  pub input: &'a mut (dyn Stream<Item = Vec<u8>> + Unpin),
   /// `cout << message << endl`: one response line (the sink adds the newline and flushes).
   pub write_stdout: Box<dyn Fn(&str)>,
   /// `cerr << text`: `text` includes its newlines.
   pub write_stderr: Box<dyn Fn(&str)>,
   /// The NN backend, the model files and the executor (Setup::initializeNNEvaluator).
   pub nn_host: &'a dyn NNEvaluatorHost,
+  /// The `Logger` constructor's outputs (see LoggerSettings), called once where it opens its file, before
+  /// its config header is logged. An Err is the constructor's (uncaught) exception.
+  pub init_logger: InitLoggerFn,
 }
+
+/// AnalysisHost::init_logger.
+pub type InitLoggerFn = Box<dyn Fn(&LoggerSettings) -> Result<(), KataError>>;
 
 /// The locals of MainCmds::analysis that its lambdas capture, shared by the virtual threads.
 /// PORT NOTE: not upstream (file header).
@@ -218,10 +263,15 @@ pub struct AnalysisContext {
   open_requests: RefCell<BTreeMap<i64, Rc<AnalyzeRequest>>>,
   eval_cache: Option<Rc<EvalCacheTable>>,
   bots: Vec<AsyncBotStopHandle>,
-  /// PORT NOTE: set when an analysis loop fails (upstream: the process terminates), so the request
-  /// loop stops waiting for input.
+  /// PORT NOTE: set when a loop's exception has terminated the process upstream (after
+  /// logThreadUncaught's 5 s sleep): nothing more is written and every loop stops.
   loop_failed: Cell<bool>,
   loop_failed_notify: WakerList,
+  /// PORT NOTE: scheduling (file header): true while the request loop waits for input that is not
+  /// immediately available, and once it has ended; `request_loop_idle_notify` is notified when it
+  /// becomes true.
+  request_loop_waiting: Cell<bool>,
+  request_loop_idle_notify: WakerList,
 }
 
 /// upstream: the `loadParams` lambda of MainCmds::analysis (analysis.cpp)
@@ -237,37 +287,55 @@ fn load_params(human_model_file: &str, config: &mut ConfigParser, params: &mut S
   Ok(())
 }
 
-/// upstream: the config reads of `Logger logger(&cfg, logToStdoutDefault, logToStderrDefault)` (logger.cpp), as MainCmds::analysis constructs it
-/// PORT NOTE: the Logger is replaced by the log crate (the host installs the backend and implements the
-/// file/stdout/timestamp options from these same keys); its constructor's config reads are kept so the
-/// used keys match upstream. Returns `logger.isLoggingToStderr()`. Throws -> Result.
-fn logger_config_reads(cfg: &mut ConfigParser, log_to_stdout_default: bool, log_to_stderr_default: bool) -> Result<bool, KataError> {
+/// upstream: Logger::Logger(ConfigParser*, bool, bool, bool, bool) (logger.cpp), as MainCmds::analysis constructs it
+/// (`Logger logger(&cfg, logToStdoutDefault, logToStderrDefault)`: logTimeDefault = true, logConfigContents = true)
+/// PORT NOTE: the Logger is replaced by the log crate; the constructor's config reads are kept so the used
+/// keys match upstream, its outputs (and addFile / MakeDir) are the host's `init_logger`, called where the
+/// constructor sets up its file, and the config header is logged last, as upstream. Returns
+/// `logger.isLoggingToStderr()`. Throws -> Result.
+fn logger_config_reads(
+  cfg: &mut ConfigParser,
+  log_to_stdout_default: bool,
+  log_to_stderr_default: bool,
+  init_logger: &dyn Fn(&LoggerSettings) -> Result<(), KataError>,
+) -> Result<bool, KataError> {
+  let log_time_default: bool = true;
   let log_config_contents: bool = true;
-  let mut _log_to_stdout: bool = log_to_stdout_default;
-  let mut log_to_stderr: bool = log_to_stderr_default;
+  let mut settings: LoggerSettings =
+    LoggerSettings { log_to_stdout: log_to_stdout_default, log_to_stderr: log_to_stderr_default, log_time: log_time_default, ..LoggerSettings::default() };
+  let mut header: String = String::new();
   // Also avoid logging if cfg specifies it
   if log_config_contents && !(cfg.contains("logConfigContents") && !cfg.get_bool("logConfigContents")?) {
-    log::info!("{}", "Running with following config:\n".to_string() + &cfg.get_all_key_vals());
+    header = "Running with following config:\n".to_string() + &cfg.get_all_key_vals();
   }
   if cfg.contains("logToStdout") {
-    _log_to_stdout = cfg.get_bool("logToStdout")?;
+    settings.log_to_stdout = cfg.get_bool("logToStdout")?;
   }
+
   if cfg.contains("logToStderr") {
-    log_to_stderr = cfg.get_bool("logToStderr")?;
+    settings.log_to_stderr = cfg.get_bool("logToStderr")?;
   }
+
   if cfg.contains("logTimeStamp") {
-    let _log_time: bool = cfg.get_bool("logTimeStamp")?;
+    settings.log_time = cfg.get_bool("logTimeStamp")?;
   }
+
   if (cfg.contains("logFile") as i32) + (cfg.contains("logDir") as i32) + (cfg.contains("logDirDated") as i32) > 1 {
     return Err(KataError::StringError("Cannot specify more than one of logFile and logDir and logDirDated in config".to_string()));
   } else if cfg.contains("logFile") {
-    let _ = cfg.get_string("logFile")?;
+    settings.log_file = Some(cfg.get_string("logFile")?);
   } else if cfg.contains("logDir") {
-    let _ = cfg.get_string("logDir")?;
+    settings.log_dir = Some(cfg.get_string("logDir")?);
   } else if cfg.contains("logDirDated") {
-    let _ = cfg.get_string("logDirDated")?;
+    settings.log_dir_dated = Some(cfg.get_string("logDirDated")?);
   }
-  Ok(log_to_stderr)
+  // PORT NOTE: addFile / MakeDir::make, and the stream setup, by the host.
+  init_logger(&settings)?;
+
+  if !header.is_empty() {
+    log::info!("{}", header);
+  }
+  Ok(settings.log_to_stderr)
 }
 
 impl AnalysisContext {
@@ -287,6 +355,16 @@ impl AnalysisContext {
     if self.log_errors_and_warnings {
       log::info!("{}", "Error: ".to_string() + &nlohmann::dump(&ret));
     }
+  }
+
+  /// upstream: the `reportError` lambda of MainCmds::analysis (analysis.cpp), for a `const string& s`
+  /// holding any bytes
+  /// PORT NOTE: `ret["error"] = s; ret.dump()` throws type_error.316 when `s` is not valid UTF-8
+  /// (serde_json strings cannot hold it, so the dump of the string is checked first); throws -> Result.
+  fn report_error_bytes(&self, s: &[u8]) -> Result<(), KataError> {
+    nlohmann::dump_string_bytes(s)?;
+    self.report_error(std::str::from_utf8(s).expect("dump_string_bytes accepted it: valid UTF-8"));
+    Ok(())
   }
 
   /// upstream: the `reportErrorForId` lambda of MainCmds::analysis (analysis.cpp)
@@ -388,6 +466,10 @@ async fn write_loop(ctx: &AnalysisContext) {
       None => break,
       Some(m) => m,
     };
+    if ctx.loop_failed.get() {
+      // PORT NOTE: the process has terminated upstream (file header): nothing more is written.
+      continue;
+    }
     (ctx.write_stdout)(&message);
     if ctx.log_all_responses {
       log::info!("{}", "Response: ".to_string() + &message);
@@ -421,6 +503,12 @@ async fn analysis_loop(ctx: &Rc<AnalysisContext>, bot: &mut AsyncBot, thread_idx
 
       let pla: Player = request.next_pla;
       let search_factor: f64 = 1.0;
+
+      // PORT NOTE: scheduling (file header). genMoveSynchronous hands the search to the AsyncBot's own
+      // thread; upstream's request thread processes the rest of a burst of input lines before that
+      // thread has begun the search (so a terminate in the same burst finds this request popped, not
+      // yet searching). The port's search begins once the request loop waits for input.
+      ctx.request_loop_idle_notify.wait_until(|| ctx.request_loop_waiting.get()).await;
 
       //Handle termination between the time we pop and the search starts
       let on_search_begun: SearchBegunCallback = {
@@ -499,51 +587,95 @@ async fn analysis_loop(ctx: &Rc<AnalysisContext>, bot: &mut AsyncBot, thread_idx
   Ok(())
 }
 
+/// upstream: Logger::logThreadUncaught (logger.cpp), after its `catch(const exception& e)`
+/// PORT NOTE: logs, sleeps 5 s (the other loops keep running), then, where upstream's rethrow terminates
+/// the process, flags the process as terminated (file header) and stops every loop.
+async fn log_thread_uncaught_failed(ctx: &AnalysisContext, name: &str, e: &KataError) {
+  log::info!("{}", "ERROR: ".to_string() + name + " loop thread failed: " + e.what());
+  crate::port::executor::sleep(5.0).await;
+  ctx.loop_failed.set(true);
+  ctx.loop_failed_notify.notify_all();
+  ctx.to_write_queue.set_read_only();
+  ctx.to_analyze_queue.set_read_only();
+  for i in 0..ctx.bots.len() {
+    ctx.bots[i].stop_without_wait();
+  }
+  for i in 0..ctx.bots.len() {
+    ctx.bots[i].set_killed();
+  }
+}
+
 /// upstream: the `analysisLoopProtected` lambda of MainCmds::analysis (analysis.cpp), i.e. Logger::logThreadUncaught("analysis loop", ...)
-/// PORT NOTE: on error, logs as logThreadUncaught does (without its 5 s sleep), flags the failure so the
-/// request loop stops (upstream: the rethrow terminates the process), and returns the error.
+/// PORT NOTE: on error see log_thread_uncaught_failed; the error is returned.
 async fn analysis_loop_protected(ctx: &Rc<AnalysisContext>, mut bot: AsyncBot, thread_idx: i32) -> Result<(), KataError> {
   let r: Result<(), KataError> = analysis_loop(ctx, &mut bot, thread_idx).await;
   if let Err(e) = &r {
-    log::info!("{}", "ERROR: analysis loop loop thread failed: ".to_string() + e.what());
-    ctx.loop_failed.set(true);
-    ctx.loop_failed_notify.notify_all();
+    if !ctx.loop_failed.get() {
+      log_thread_uncaught_failed(ctx, "analysis loop", e).await;
+    }
   }
   // delete bot (upstream: after all threads joined): dropped here.
   r
 }
 
 /// upstream: `getline(cin,line)` in the requestLoop lambda of MainCmds::analysis (analysis.cpp)
-/// PORT NOTE: None at end of input, or when an analysis loop failed (see analysis_loop_protected).
-async fn next_input_line(ctx: &AnalysisContext, input: &mut (dyn Stream<Item = String> + Unpin)) -> Option<String> {
+/// PORT NOTE: None at end of input, or once the process has terminated (see log_thread_uncaught_failed).
+/// A line that is not immediately available marks the request loop as waiting (scheduling, file header).
+async fn next_input_line(ctx: &AnalysisContext, input: &mut (dyn Stream<Item = Vec<u8>> + Unpin)) -> Option<Vec<u8>> {
   if ctx.loop_failed.get() {
     return None;
   }
+  let mut next = input.next();
+  if let Poll::Ready(line) = futures::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut next).poll(cx))).await {
+    return line;
+  }
+  ctx.request_loop_waiting.set(true);
+  ctx.request_loop_idle_notify.notify_all();
   let failed = ctx.loop_failed_notify.wait_until(|| ctx.loop_failed.get());
-  match futures::future::select(input.next(), failed).await {
+  let line: Option<Vec<u8>> = match futures::future::select(next, failed).await {
     futures::future::Either::Left((line, _)) => line,
     futures::future::Either::Right(((), _)) => None,
+  };
+  if line.is_some() {
+    ctx.request_loop_waiting.set(false);
   }
+  line
+}
+
+/// upstream: Global::trim(line) (global.cpp) on the bytes of a std::string
+/// PORT NOTE: Global::trim takes a &str; getline's line is bytes (they may be invalid UTF-8).
+fn trim_bytes(s: &[u8]) -> &[u8] {
+  let d: &[u8] = Global::TRIM_DEFAULT_DELIM.as_bytes();
+  let p2 = match s.iter().rposition(|c| !d.contains(c)) {
+    None => return &[],
+    Some(p) => p,
+  };
+  let p1 = s.iter().position(|c| !d.contains(c)).unwrap_or(0);
+  &s[p1..p2 + 1]
 }
 
 /// upstream: the `requestLoop` lambda of MainCmds::analysis (analysis.cpp)
 /// PORT NOTE: async (getline -> the input stream); the loop body is handle_request_line. Throws -> Result.
-async fn request_loop(ctx: &Rc<AnalysisContext>, input: &mut (dyn Stream<Item = String> + Unpin)) -> Result<(), KataError> {
+/// Ends (Ok) once the process has terminated because of an analysis loop (that loop returns the error).
+async fn request_loop(ctx: &Rc<AnalysisContext>, input: &mut (dyn Stream<Item = Vec<u8>> + Unpin)) -> Result<(), KataError> {
   while let Some(line) = next_input_line(ctx, input).await {
-    let line: String = Global::trim(&line, Global::TRIM_DEFAULT_DELIM);
+    let line: &[u8] = trim_bytes(&line);
     if line.len() == 0 {
       continue;
     }
 
     if ctx.log_all_requests {
-      log::info!("{}", "Request: ".to_string() + &line);
+      // PORT NOTE: the log crate takes text; invalid UTF-8 bytes are logged as U+FFFD.
+      log::info!("{}", "Request: ".to_string() + &String::from_utf8_lossy(line));
     }
 
-    handle_request_line(ctx, &line)?;
-  }
-  if ctx.loop_failed.get() {
-    // PORT NOTE: upstream's process has terminated by now (an analysis loop's exception).
-    return Err(KataError::StringError("analysis loop thread failed".to_string()));
+    let num_requests_before: i64 = ctx.num_requests_so_far.get();
+    handle_request_line(ctx, line)?;
+    // PORT NOTE: scheduling (file header): an idle analysis loop pops what this line queued before the
+    // next line is handled.
+    if ctx.num_requests_so_far.get() != num_requests_before {
+      crate::port::executor::yield_now().await;
+    }
   }
   Ok(())
 }
@@ -744,11 +876,18 @@ fn parse_board_moves(
 /// trim, the empty-line check and the "Request: " log line.
 /// PORT NOTE: a fn of its own (`continue` -> `return Ok(())`); the request loop's reused `json input`
 /// is a local. Throws (uncaught upstream) -> Result.
-pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &str) -> Result<(), KataError> {
-  let mut input: Value = match nlohmann::parse(line) {
+/// `line` is the trimmed input line's bytes.
+pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(), KataError> {
+  let mut input: Value = match nlohmann::parse_bytes(line) {
     Ok(v) => v,
     Err(e) => {
-      ctx.report_error(&(e.what().to_string() + " - could not parse input line as json request: " + line));
+      // `e.what() + string(...)`: what() is a C string (it ends at a NUL); `line` is all its bytes.
+      let what: &[u8] = e.what();
+      let what: &[u8] = &what[..what.iter().position(|&c| c == 0).unwrap_or(what.len())];
+      let mut s: Vec<u8> = what.to_vec();
+      s.extend_from_slice(b" - could not parse input line as json request: ");
+      s.extend_from_slice(line);
+      ctx.report_error_bytes(&s)?;
       return Ok(());
     }
   };
@@ -1486,7 +1625,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   let log_to_stdout_default: bool = false;
   let log_to_stderr_default: bool = true;
   // PORT NOTE: `Logger logger(&cfg, logToStdoutDefault, logToStderrDefault);` (file header).
-  let log_to_stderr: bool = logger_config_reads(&mut cfg, log_to_stdout_default, log_to_stderr_default)?;
+  let log_to_stderr: bool = logger_config_reads(&mut cfg, log_to_stdout_default, log_to_stderr_default, &*host.init_logger)?;
 
   log::info!("Analysis Engine starting...");
   log::info!("{}", KATAGO_VERSION_FOR_HELP);
@@ -1708,6 +1847,8 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     bots: bots.iter().map(|b| b.get_stop_handle()).collect(),
     loop_failed: Cell::new(false),
     loop_failed_notify: WakerList::new(),
+    request_loop_waiting: Cell::new(false),
+    request_loop_idle_notify: WakerList::new(),
   });
 
   log::info!("{}", "Analyzing up to ".to_string() + &Global::int_to_string(num_analysis_threads) + " positions at a time in parallel");
@@ -1716,7 +1857,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     write_stderr("Started, ready to begin handling requests\n");
   }
 
-  let input: &mut (dyn Stream<Item = String> + Unpin) = host.input;
+  let input: &mut (dyn Stream<Item = Vec<u8>> + Unpin) = host.input;
   let shutdown = |ctx: &AnalysisContext, quit_without_waiting: bool| {
     if quit_without_waiting {
       //Making this readOnly will halt futher output that isn't already queued and signal the write loop thread to terminate.
@@ -1741,12 +1882,17 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   //hiding the real exception.
   let main_thread = async {
     let r: Result<(), KataError> = request_loop(&ctx, input).await;
+    // PORT NOTE: scheduling (file header): no more input.
+    ctx.request_loop_waiting.set(true);
+    ctx.request_loop_idle_notify.notify_all();
     if let Err(e) = &r {
       // upstream: Logger::logThreadUncaught("request loop", &logger, requestLoop) (logger.cpp)
-      log::info!("{}", "ERROR: request loop loop thread failed: ".to_string() + e.what());
+      if !ctx.loop_failed.get() {
+        log_thread_uncaught_failed(&ctx, "request loop", e).await;
+      }
     }
-    // PORT NOTE: on error, stop everything as quitWithoutWaiting does, so the joins complete.
-    shutdown(&ctx, quit_without_waiting || r.is_err());
+    // PORT NOTE: once the process has terminated, the loops are already stopping (quitWithoutWaiting).
+    shutdown(&ctx, quit_without_waiting || ctx.loop_failed.get());
     r
   };
   let analysis_threads = async {
@@ -1762,6 +1908,20 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
 
   // delete bots: dropped with their loops.
 
+  if ctx.loop_failed.get() {
+    // PORT NOTE: the process has terminated upstream (file header): no closing log lines. The serve
+    // tasks still end (PORTING.md §11 Lifecycle) so the host's executor can stop.
+    nn_eval.kill_server_threads();
+    if let Some(human_eval) = &human_eval {
+      human_eval.kill_server_threads();
+    }
+    main_result?;
+    for r in thread_results {
+      r?;
+    }
+    unreachable!("loop_failed is set only by a failing loop, whose error is returned");
+  }
+
   log::info!("{}", nn_eval.get_model_file_name());
   log::info!("{}", "NN rows: ".to_string() + &Global::uint64_to_string(nn_eval.num_rows_processed()));
   log::info!("{}", "NN batches: ".to_string() + &Global::uint64_to_string(nn_eval.num_batches_processed()));
@@ -1774,10 +1934,13 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   }
   // delete nnEval; delete humanEval;
   // PORT NOTE (PORTING.md §11 Lifecycle): the serve tasks hold an Rc, so the evaluators are killed
-  // explicitly here; the host runs its executor until the tasks end.
+  // explicitly here; `delete` joins the server threads (each logs "GPU ... finishing" as it ends) before
+  // the next log line, so their end is awaited (D8's join).
   nn_eval.kill_server_threads();
+  nn_eval.server_threads_exited.wait_until(|| nn_eval.num_server_threads_alive.get() == 0).await;
   if let Some(human_eval) = &human_eval {
     human_eval.kill_server_threads();
+    human_eval.server_threads_exited.wait_until(|| human_eval.num_server_threads_alive.get() == 0).await;
   }
   host.nn_host.global_cleanup();
   ScoreValue::free_tables();

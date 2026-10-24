@@ -4,10 +4,16 @@ KataGo's analysis engine ported to Rust, compiled to WebAssembly to run in the b
 (WebGPU, with a wasm CPU fallback). The port mirrors upstream's `cpp/` file by file so that
 following upstream releases stays cheap.
 
-Status: **M0 spike done** ([docs/M0-report.md](docs/M0-report.md)); **M0.5 pilot done**: porting
-guide ([docs/PORTING.md](docs/PORTING.md)), ownership table, upstream manifest, and a pilot port of
-`core/hash`, `core/rand`, `game/rules`, `game/board` (`crates/katago-core`) that matches upstream
-bit for bit natively and on wasm32. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
+Status:
+- **M0** spike ([docs/M0-report.md](docs/M0-report.md)) and **M0.5** pilot: porting guide
+  ([docs/PORTING.md](docs/PORTING.md)), ownership table, upstream manifest.
+- **M1** game rules (`board`, `boardhistory`, `rules`, `graphhash`), **M2** NN inputs and the
+  NNEvaluator on burn, **M3** search and the analysis engine protocol: ported and checked against
+  upstream oracles, natively and on wasm32. Search with the NN skipped is bit-exact with upstream;
+  burn-backed searches give the same visit counts as upstream's Eigen build.
+- `katago-cli`: native `katago-rs analysis` speaking upstream's analysis protocol on stdin/stdout.
+- Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
+  [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Layout
 
@@ -15,8 +21,9 @@ bit for bit natively and on wasm32. Decisions: [docs/DECISIONS.md](docs/DECISION
 |---|---|
 | `upstream/KataGo` | upstream KataGo (submodule, pinned to a release tag) |
 | `tools/bin2onnx` | KataGo `.bin.gz` → ONNX converter and its verifier against real KataGo |
-| `crates/katago-core` | the port, mirroring `cpp/` (pilot: hash, rand, rules, board) |
-| `crates/katago-nn-burn` | networks imported with burn-onnx; GPU conv lowering |
+| `crates/katago-core` | the port, mirroring upstream `cpp/` (core, game, neuralnet, search, program, command) |
+| `crates/katago-nn-burn` | networks imported with burn-onnx; GPU conv lowering; the NN backend |
+| `crates/katago-cli` | native `katago-rs analysis` binary (analysis protocol over stdin/stdout) |
 | `crates/katago-web-bench` | browser spike: parity + throughput on WebGPU and wasm CPU |
 | `fixtures/` | reference data generated from upstream KataGo |
 

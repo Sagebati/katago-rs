@@ -289,8 +289,11 @@ Some upstream code or tests hit UB (e.g. `isAdjacentToPla(PASS_LOC)` reads `colo
     `0`; otherwise f64, correctly rounded like strtod), UTF-8 BOM skipped, a NUL byte outside a string
     ends the input, last duplicate key wins, no nesting limit, and `e.what()` texts byte-identical
     (`parse_error.101` with line/column/last read/expected, `out_of_range.406` for `1e400`). Oracle:
-    `tests/nlohmann_parse.rs`. Known gap: `KataError` holds a `String`, so a `what()` that ends
-    inside a multi-byte character (invalid non-ASCII input) gets U+FFFD there.
+    `tests/nlohmann_parse.rs`. `KataError` holds a `String`, so `parse`'s `what()` is lossy where it is
+    not UTF-8 (a "last read" excerpt cut inside a multi-byte character, raw invalid bytes): where the C++
+    bytes matter (a `std::string` from `getline`), use `parse_bytes(&[u8])`, whose `Exception::what()` is
+    the bytes, and `dump_string_bytes`, the port of `dump_escaped`'s UTF-8 check (`type_error.316`,
+    strict) for a JSON string built from such bytes (`tests/nlohmann_bytes.rs`).
   - nlohmann `is_number_integer()` ≈ `Value::is_i64() || is_u64()`; `is_number()` ≈ `is_number()`.
     serde_json cannot tell nlohmann's integer `-0` from unsigned `0` (`is_number_unsigned()` differs
     only there). `get<int64_t>()` on a u64 > i64::MAX wraps in C++: `TODO(port)` if it matters.
@@ -364,6 +367,12 @@ Rules:
   { Box::pin(async move { … }) }`, marked `// PERF(port): one allocation per depth`.
 - `Search` methods on the playout path take `&self`. `runWholeSearch(&mut self)` mutates before
   the join (`beginSearch`), reborrows `&*self` for the joined futures, then mutates after.
+- **Where upstream's output order is a race between OS threads, pick its dominant outcome** (measure it on
+  the reference build, several runs) and make the virtual-thread interleaving produce it deterministically,
+  with a PORT NOTE and the measured frequencies in the module's manifest notes. Example: `MainCmds::analysis`
+  yields after a request line enqueues work (an idle analysis thread pops at once) and starts a popped
+  request's search only when the request loop waits for input (upstream's request thread outruns the
+  AsyncBot's search-thread wake-up). Don't add awaits on the eval path for this.
 - Parity fixtures use `numSearchThreads = 1`, `nnRandomize = false` and `forDeterministicTesting`
   (see `tests/results/analysis/*.stderr`). With one virtual thread the port must match upstream
   playout for playout.
@@ -426,6 +435,15 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 | Corpus (M3) | deterministic Eigen `katago analysis`, b10c128, 100 visits | ≥99% same top move, ≥95% identical visit vectors |
 
 **Comparisons.** Unit blocks use `TestCommon::expect` (upstream's per-line trim). Oracle-program outputs are compared **byte-exact** by `tests/common::compare_lines` (line endings and trailing newline included). `tests/fixture_coverage.rs` fails if an extracted expected block is consumed by no test and isn't on its allowlist with a reason.
+
+**Analysis protocol.** `fixtures/upstream-v1.16.5/analysis-protocol` holds request corpora and the reference
+binary's stdout / exit status / filtered stderr for each (`regen.py` records the exact command; racy
+multi-line cases keep every distinct outcome of several runs); `katago-cli tests/analysis_protocol_corpus.rs`
+replays them through the `katago-rs` binary with the analysis comparator of `katago-cli tests/common`:
+structure exact; floats by key: values 1e-5, probabilities (`prior`, `policy`) 1e-5 absolute above 1e-2 and
+1e-3 relative below, weights 1e-5 relative, score keys 5e-4 (the NN tier's score tolerance above: the search
+values are NN outputs); and the same float format class (exponent form; an f32 widened vs a rounded double).
+Known divergences are listed with reasons in the test, which fails when one disappears.
 
 **Async tests** drive pools through `tests/common::run_or_stall_panic`, which panics when the pool stalls while the future is pending and unwoken, so a lost wakeup fails fast instead of hanging.
 

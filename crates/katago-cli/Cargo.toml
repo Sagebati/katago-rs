@@ -25,4 +25,6 @@ katago-nn-burn = { path = "../katago-nn-burn", default-features = false }
 burn = { workspace = true, features = ["std"] }
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 log = "0.4"
+# Local-time log stamps (strftime, as DateTime::writeTimeToStream) and mkdir errno (MakeDir::make).
+libc = "0.2"
 serde_json = { version = "1", features = ["float_roundtrip"] }

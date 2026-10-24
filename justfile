@@ -58,7 +58,7 @@ check-features:
 # yields to the JS event loop between batches (PORTING.md §11).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
@@ -78,6 +78,14 @@ search-smoke *flags="":
 # the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
 analysis-goldens *flags="":
     cargo test --release -p katago-cli {{flags}} -- --nocapture
+
+# Analysis-protocol corpora (fixtures/upstream-v1.16.5/analysis-protocol): regenerate the expected outputs with
+# the reference build (`just katago-eigen` first; ~10 min), or replay them through katago-rs (release, ~1.5 min).
+analysis-protocol-regen *corpora="":
+    cd fixtures/upstream-v1.16.5/analysis-protocol && python3 -I regen.py {{corpora}}
+
+analysis-protocol *flags="":
+    cargo test --release -p katago-cli --test analysis_protocol_corpus {{flags}} -- --nocapture
 
 # Real-net search tests (testsearchv9 / testsearchv8 transcriptions, b6c96 via burn flex vs the Eigen expected
 # outputs). Release: the two heaviest v8 groups are ignored in debug (~15 min release in parallel).

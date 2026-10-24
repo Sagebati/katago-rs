@@ -8,7 +8,9 @@
 // PORT NOTE: `dump(&Value)` is the only serializer entry point (docs/PORTING.md appendix), so the
 // pretty-print branches (indent >= 0), ensure_ascii and the binary value type are not ported.
 // PORT NOTE: serde_json strings are always valid UTF-8, so dump_escaped's UTF8_REJECT and
-// incomplete-sequence paths (type_error 316) are unreachable and not ported.
+// incomplete-sequence paths (type_error 316) are unreachable from `dump`. They are ported over
+// raw bytes in `dump_escaped_bytes` (`check_dump_string`): a C++ string_t is bytes, and a
+// std::string built from invalid input makes upstream's dump() throw.
 
 use serde_json::Map;
 use serde_json::Number;
@@ -916,6 +918,147 @@ fn dump_escaped(o: &mut String, s: &str) {
   }
 }
 
+/// upstream: nlohmann::detail::serializer::UTF8_ACCEPT, UTF8_REJECT (json.hpp)
+const UTF8_ACCEPT: u8 = 0;
+const UTF8_REJECT: u8 = 1;
+
+/// upstream: nlohmann::detail::serializer::decode (json.hpp)
+/// check whether a string is UTF-8 encoded
+///
+/// The function checks each byte of a string whether it is UTF-8 encoded. The
+/// result of the check is stored in the @a state parameter. The function must
+/// be called initially with state 0 (accept). State 1 means the string must
+/// be rejected, because the current byte is not allowed. If the string is
+/// completely processed, but the state is non-zero, the string ended
+/// prematurely; that is, the last byte indicated more bytes should have
+/// followed.
+///
+/// @copyright Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+/// @sa http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+fn decode(state: &mut u8, codep: &mut u32, byte: u8) -> u8 {
+  #[rustfmt::skip]
+  const UTF8D: [u8; 400] = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 00..1F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 20..3F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 40..5F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 60..7F
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, // 80..9F
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // A0..BF
+    8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // C0..DF
+    0xA, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x4, 0x3, 0x3, // E0..EF
+    0xB, 0x6, 0x6, 0x6, 0x5, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, // F0..FF
+    0x0, 0x1, 0x2, 0x3, 0x5, 0x8, 0x7, 0x1, 0x1, 0x1, 0x4, 0x6, 0x1, 0x1, 0x1, 0x1, // s0..s0
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, // s1..s2
+    1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, // s3..s4
+    1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, // s5..s6
+    1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // s7..s8
+  ];
+
+  let type_: u8 = UTF8D[byte as usize];
+
+  *codep = if *state != UTF8_ACCEPT { ((byte as u32) & 0x3f) | (*codep << 6) } else { (0xFFu32 >> type_) & (byte as u32) };
+
+  let index: usize = 256 + (*state as usize) * 16 + (type_ as usize);
+  debug_assert!(index < 400);
+  *state = UTF8D[index];
+  *state
+}
+
+/// upstream: nlohmann::detail::type_error::create (json.hpp), as `KataError::NlohmannJson(e.what())`
+fn type_error_create(id_: i32, what_arg: &str) -> KataError {
+  KataError::NlohmannJson(Exception::name("type_error", id_) + what_arg)
+}
+
+/// upstream: nlohmann::detail::serializer::dump_escaped (json.hpp)
+/// dump escaped string
+///
+/// Escape a string by replacing certain special characters by a sequence of an
+/// escape character (backslash) and another character and other control
+/// characters by a sequence of "\u" followed by a four-digit hex
+/// representation. The escaped string is written to output stream @a o.
+///
+/// @param[in] s  the string to escape
+/// @param[in] ensure_ascii  whether to escape non-ASCII characters with
+///                          \uXXXX sequences
+///
+/// @complexity Linear in the length of string @a s.
+/// PORT NOTE: over raw bytes (a C++ string_t holds any bytes), with ensure_ascii = false and
+/// error_handler = strict (the defaults of dump()); the string_buffer chunking is folded into
+/// `o.extend`. The throw is `Err(KataError::NlohmannJson(type_error.316))`.
+fn dump_escaped_bytes(o: &mut Vec<u8>, s: &[u8]) -> Result<(), KataError> {
+  let mut codepoint: u32 = 0;
+  let mut state: u8 = UTF8_ACCEPT;
+  // the bytes of the code point being decoded (string_buffer between accepts)
+  let mut pending: Vec<u8> = Vec::new();
+
+  for i in 0..s.len() {
+    let byte: u8 = s[i];
+
+    match decode(&mut state, &mut codepoint, byte) {
+      UTF8_ACCEPT => {
+        // decode found a new code point
+        match codepoint {
+          0x08 => o.extend_from_slice(b"\\b"),  // backspace
+          0x09 => o.extend_from_slice(b"\\t"),  // horizontal tab
+          0x0A => o.extend_from_slice(b"\\n"),  // newline
+          0x0C => o.extend_from_slice(b"\\f"),  // formfeed
+          0x0D => o.extend_from_slice(b"\\r"),  // carriage return
+          0x22 => o.extend_from_slice(b"\\\""), // quotation mark
+          0x5C => o.extend_from_slice(b"\\\\"), // reverse solidus
+          _ => {
+            // escape control characters (0x00..0x1F) or, if
+            // ensure_ascii parameter is used, non-ASCII characters
+            if codepoint <= 0x1F {
+              o.extend_from_slice(crate::port::fmt::printf("\\u%04x", &[crate::port::fmt::PrintfArg::U32(codepoint)]).as_bytes());
+            } else {
+              // copy byte to buffer (all previous bytes
+              // been copied have in default case above)
+              o.extend_from_slice(&pending);
+              o.push(byte);
+            }
+          }
+        }
+        pending.clear();
+      }
+
+      UTF8_REJECT => {
+        // decode found invalid UTF-8 byte
+        // error_handler_t::strict
+        let sn: String = crate::port::fmt::printf("%.2X", &[crate::port::fmt::PrintfArg::U32(byte as u32)]);
+        return Err(type_error_create(316, &("invalid UTF-8 byte at index ".to_string() + &i.to_string() + ": 0x" + &sn)));
+      }
+
+      _ => {
+        // decode found yet incomplete multi-byte code point
+        // code point will not be escaped - copy byte to buffer
+        pending.push(byte);
+      }
+    }
+  }
+
+  // we finished processing the string
+  if state == UTF8_ACCEPT {
+    // write buffer: already written
+    Ok(())
+  } else {
+    // we finish reading, but do not accept: string was incomplete
+    // error_handler_t::strict
+    let sn: String = crate::port::fmt::printf("%.2X", &[crate::port::fmt::PrintfArg::U32(*s.last().expect("non-accept state implies a byte") as u32)]);
+    Err(type_error_create(316, &("incomplete UTF-8 string; last byte: 0x".to_string() + &sn)))
+  }
+}
+
+/// `json j = s; j.dump()` for a string value whose C++ bytes are `s` (std::string, any bytes):
+/// Ok(the dump) for valid UTF-8, else the type_error.316 that dump() throws.
+/// PORT NOTE: serde_json strings cannot hold invalid UTF-8; callers that build a JSON string from
+/// raw input bytes (analysis.cpp's reportError of an unparseable line) check it here first.
+pub fn dump_string_bytes(s: &[u8]) -> Result<Vec<u8>, KataError> {
+  let mut o: Vec<u8> = vec![b'"'];
+  dump_escaped_bytes(&mut o, s)?;
+  o.push(b'"');
+  Ok(o)
+}
+
 /// upstream: nlohmann::detail::serializer::dump (json.hpp)
 // PORT NOTE: pretty_print = false (compact) branches only.
 fn dump_impl(o: &mut String, val: &Value) {
@@ -1156,8 +1299,8 @@ pub fn is_number_integer(v: &Value) -> bool {
 // PORT NOTE: only the JSON text format over a contiguous byte input (`input_adapter(std::string)`
 // = iterator_input_adapter), without parser callbacks (KataGo never passes one), with
 // allow_exceptions = true. Errors are KataError::NlohmannJson(e.what()).
-// PORT NOTE: the input is `&str`, so it is always valid UTF-8; the lexer still checks UTF-8
-// byte ranges exactly like upstream (those error paths are unreachable from `parse`).
+// PORT NOTE: `parse` takes a `&str` (always valid UTF-8); `parse_bytes` takes any bytes (as a
+// std::string holds them), and the lexer checks UTF-8 byte ranges exactly like upstream.
 // PORT NOTE: the C locale is assumed (KataGo never calls setlocale), so
 // get_decimal_point() is '.'.
 // ---------------------------------------------------------------------------------------
@@ -1204,9 +1347,10 @@ impl Exception {
   }
 
   /// `catch(nlohmann::detail::exception& e)` → KataError::NlohmannJson(e.what()).
-  /// TODO(port): KataError holds a String; a what() that ends inside a multi-byte UTF-8 character
-  /// (only for invalid input whose offending character is non-ASCII) gets U+FFFD there.
-  fn into_kata_error(self) -> KataError {
+  /// PORT NOTE: KataError holds a String; a what() that is not valid UTF-8 (a token string cut
+  /// inside a multi-byte character, or raw invalid input bytes) gets U+FFFD there. Callers that
+  /// need the C++ bytes use `parse_bytes`, which returns the Exception itself.
+  pub fn into_kata_error(self) -> KataError {
     KataError::NlohmannJson(String::from_utf8_lossy(&self.m).into_owned())
   }
 }
@@ -2292,6 +2436,8 @@ struct json_sax_dom_parser<'a> {
   ref_stack: Vec<DomRef>,
   errored: bool,
   allow_exceptions: bool,
+  /// PORT NOTE: the exception parse_error throws, kept with its C++ bytes (see `parse_bytes`).
+  thrown: Option<Exception>,
 }
 
 /// An open container on json_sax_dom_parser's `ref_stack`.
@@ -2301,10 +2447,11 @@ enum DomRef {
   Object(Map<String, Value>, Option<String>),
 }
 
-/// The DOM's string_t is a Rust String; the lexer's buffer is always valid UTF-8 (the input is a
-/// `&str` and `\u` escapes are checked for surrogates), so this cannot fail.
+/// The DOM's string_t is a Rust String; the lexer's buffer is always valid UTF-8 (scan_string
+/// rejects ill-formed UTF-8 bytes exactly like upstream, and `\u` escapes are checked for
+/// surrogates), so this cannot fail.
 fn dom_string(val: &[u8]) -> String {
-  String::from_utf8(val.to_vec()).expect("lexer token_buffer is valid UTF-8: input is &str and \\u escapes are surrogate-checked")
+  String::from_utf8(val.to_vec()).expect("lexer token_buffer is valid UTF-8: scan_string checks UTF-8 and \\u escapes are surrogate-checked")
 }
 
 impl<'a> json_sax_dom_parser<'a> {
@@ -2313,7 +2460,7 @@ impl<'a> json_sax_dom_parser<'a> {
   ///                    parsing
   /// @param[in] allow_exceptions_  whether parse errors yield exceptions
   fn new(r: &'a mut Value, allow_exceptions_: bool) -> json_sax_dom_parser<'a> {
-    json_sax_dom_parser { root: r, ref_stack: Vec::new(), errored: false, allow_exceptions: allow_exceptions_ }
+    json_sax_dom_parser { root: r, ref_stack: Vec::new(), errored: false, allow_exceptions: allow_exceptions_, thrown: None }
   }
 
   /// upstream: nlohmann::detail::json_sax_dom_parser::is_errored (json.hpp)
@@ -2420,7 +2567,8 @@ impl<'a> Sax for json_sax_dom_parser<'a> {
     self.errored = true;
     if self.allow_exceptions {
       // PORT NOTE: the C++ rethrows by id class (1 parse_error, 4 out_of_range); all are
-      // KataError::NlohmannJson.
+      // KataError::NlohmannJson. The exception is also kept with its bytes (`parse_bytes`).
+      self.thrown = Some(Exception { id: ex.id, m: ex.m.clone() });
       return Err(Exception { id: ex.id, m: ex.m.clone() }.into_kata_error());
     }
     Ok(false)
@@ -2460,15 +2608,23 @@ impl<'a> parser<'a> {
   /// @throw parse_error.101 in case of an unexpected token
   /// @throw parse_error.102 if to_unicode fails or surrogate error
   /// @throw parse_error.103 if to_unicode fails
-  /// PORT NOTE: only the `callback == nullptr` branch.
-  fn parse(&mut self, strict: bool, result: &mut Value) -> Result<(), KataError> {
+  /// PORT NOTE: only the `callback == nullptr` branch. The throw is `Err(Exception)` (C++ bytes).
+  fn parse(&mut self, strict: bool, result: &mut Value) -> Result<(), Exception> {
     let mut sdp = json_sax_dom_parser::new(result, self.allow_exceptions);
-    self.sax_parse_internal(&mut sdp)?;
+    // PORT NOTE: every Err of the DOM parser comes from its parse_error, which kept the exception.
+    let thrown = |sdp: &mut json_sax_dom_parser, e: KataError| -> Exception {
+      sdp.thrown.take().unwrap_or_else(|| Exception { id: -1, m: e.what().as_bytes().to_vec() })
+    };
+    if let Err(e) = self.sax_parse_internal(&mut sdp) {
+      return Err(thrown(&mut sdp, e));
+    }
 
     // in strict mode, input must be completely read
     if strict && (self.get_token() != token_type::end_of_input) {
       let ex = Exception::parse_error_create(101, &self.m_lexer.get_position(), &self.exception_message(token_type::end_of_input, "value"));
-      sdp.parse_error(self.m_lexer.get_position().chars_read_total, &self.m_lexer.get_token_string(), &ex)?;
+      if let Err(e) = sdp.parse_error(self.m_lexer.get_position().chars_read_total, &self.m_lexer.get_token_string(), &ex) {
+        return Err(thrown(&mut sdp, e));
+      }
     }
 
     // in case of an error, return discarded value
@@ -2752,8 +2908,18 @@ impl<'a> parser<'a> {
 /// non-negative integer as u64, so the only value whose class changes is integer `-0`
 /// (`is_number_unsigned()` false upstream, `is_u64()` true here). `sax_parse` keeps the classes.
 pub fn parse(s: &str) -> Result<Value, KataError> {
+  parse_bytes(s.as_bytes()).map_err(Exception::into_kata_error)
+}
+
+/// upstream: nlohmann::basic_json::parse(InputType&&, const parser_callback_t, const bool) (json.hpp)
+/// `json::parse(s)` over the raw bytes of a std::string (any bytes, as `getline` returns them):
+/// as `parse`, but the throw is the Exception itself, whose `what()` keeps the C++ bytes (a
+/// "last read" token string may hold invalid UTF-8 or end inside a multi-byte character).
+/// Ill-formed UTF-8 inside a string is a parse_error.101 ("invalid string: ill-formed UTF-8
+/// byte"), so the Value's strings are always valid UTF-8.
+pub fn parse_bytes(s: &[u8]) -> Result<Value, Exception> {
   let mut result = Value::Null;
-  parser::new(iterator_input_adapter { current: 0, input: s.as_bytes() }, true).parse(true, &mut result)?;
+  parser::new(iterator_input_adapter { current: 0, input: s }, true).parse(true, &mut result)?;
   Ok(result)
 }
 

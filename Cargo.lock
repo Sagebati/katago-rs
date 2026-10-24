@@ -3779,6 +3779,7 @@ dependencies = [
  "futures",
  "katago-core",
  "katago-nn-burn",
+ "libc",
  "log",
  "serde_json",
 ]

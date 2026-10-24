@@ -25,12 +25,16 @@ use crate::game::board::C_EMPTY;
 use crate::game::board::P_BLACK;
 use crate::game::board::P_WHITE;
 use crate::game::rules::Rules;
+use crate::neuralnet::desc::ModelDesc;
 use crate::neuralnet::nneval::NNEvaluator;
+use crate::neuralnet::nneval::NNResultBuf;
 use crate::neuralnet::nninputs::NNPos;
 use crate::neuralnet::nninputs::SymmetryHelpers;
-use crate::neuralnet::nninterface::NeuralNet;
+use crate::neuralnet::nninputs::NNOutput;
+use crate::neuralnet::nninterface::*;
 use crate::neuralnet::sgfmetadata::SGFMetadata;
 use crate::port::cpp::cpp_min;
+use crate::port::executor::LocalBoxFuture;
 use crate::port::executor::Spawner;
 use crate::search::search::PatternBonusTable;
 use crate::search::searchparams::SearchParams;
@@ -69,10 +73,79 @@ pub trait NNEvaluatorHost {
   /// `NeuralNet::globalCleanup()` (the end of the commands that called initializeSession).
   fn global_cleanup(&self);
   /// The backend (`NeuralNet::` functions) for this model, and the contents of `nn_model_file`
-  /// (what NNEvaluator's constructor would read; empty when the file is "/dev/null").
+  /// (what NNEvaluator's constructor would read). Asked for only when the net is used: with
+  /// debugSkipNeuralNet (the config key, or the "/dev/null" default) upstream never opens the model
+  /// file, so this is not called; and, as upstream's constructor, only after NNEvaluator's own
+  /// argument checks (board size, batch size) passed.
   fn load_model(&self, nn_model_name: &str, nn_model_file: &str) -> Result<(Rc<dyn NeuralNet>, Vec<u8>), KataError>;
   /// The host's local executor (NNEvaluator::spawnServerThreads spawns the server tasks on it).
   fn spawner(&self) -> Rc<dyn Spawner>;
+}
+
+/// The `NeuralNet` of an evaluator with debugSkipNeuralNet: NNEvaluator never calls its backend then
+/// (no model is loaded, no compute context or handle is made, nothing is evaluated), so there is
+/// nothing to run and every function that would need a model fails.
+/// PORT NOTE: port-only (D6). NNEvaluator::new takes the backend as a parameter; upstream links one
+/// at build time and skips the net without ever touching it.
+struct SkippedNeuralNet;
+
+impl SkippedNeuralNet {
+  fn skipped<T>() -> T {
+    panic!("debugSkipNeuralNet: no neural net backend is used")
+  }
+}
+
+impl NeuralNet for SkippedNeuralNet {
+  fn global_initialize(&self) {}
+  fn global_cleanup(&self) {}
+  fn print_devices(&self) {}
+  fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
+    SkippedNeuralNet::skipped()
+  }
+  fn get_model_desc<'a>(&self, _: &'a dyn LoadedModel) -> &'a ModelDesc {
+    SkippedNeuralNet::skipped()
+  }
+  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: &str, _: bool, _: enabled_t, _: enabled_t, _: &dyn LoadedModel) -> Result<Box<dyn ComputeContext>, KataError> {
+    SkippedNeuralNet::skipped()
+  }
+  fn create_compute_handle(&self, _: &dyn ComputeContext, _: &dyn LoadedModel, _: i32, _: bool, _: bool, _: i32, _: i32) -> Result<Box<dyn ComputeHandle>, KataError> {
+    SkippedNeuralNet::skipped()
+  }
+  fn is_using_fp16(&self, _: &dyn ComputeHandle) -> bool {
+    SkippedNeuralNet::skipped()
+  }
+  fn create_input_buffers(&self, _: &dyn LoadedModel, _: i32, _: i32, _: i32) -> Box<dyn InputBuffers> {
+    SkippedNeuralNet::skipped()
+  }
+  fn get_output<'a>(
+    &'a self,
+    _: &'a mut dyn ComputeHandle,
+    _: &'a mut dyn InputBuffers,
+    _: i32,
+    _: &'a [Rc<NNResultBuf>],
+    _: &'a mut [NNOutput],
+  ) -> LocalBoxFuture<'a, Result<(), KataError>> {
+    SkippedNeuralNet::skipped()
+  }
+}
+
+/// The checks at the top of upstream's NNEvaluator constructor, which run before it opens the model
+/// file (nneval.cpp), repeated here because the port's model open (`NNEvaluatorHost::load_model`)
+/// happens in Setup, before `NNEvaluator::new`. `NNEvaluator::new` checks them again.
+fn check_nn_evaluator_args(max_batch_size: i32, nn_x_len: i32, nn_y_len: i32, num_threads: i32, gpu_idx_by_server_thread: &[i32]) -> Result<(), KataError> {
+  if nn_x_len > NNPos::MAX_BOARD_LEN {
+    return Err(KataError::StringError("Maximum supported nnEval board size is ".to_string() + &Global::int_to_string(NNPos::MAX_BOARD_LEN)));
+  }
+  if nn_y_len > NNPos::MAX_BOARD_LEN {
+    return Err(KataError::StringError("Maximum supported nnEval board size is ".to_string() + &Global::int_to_string(NNPos::MAX_BOARD_LEN)));
+  }
+  if max_batch_size <= 0 {
+    return Err(KataError::StringError("maxBatchSize is negative: ".to_string() + &Global::int_to_string(max_batch_size)));
+  }
+  if gpu_idx_by_server_thread.len() as u64 != num_threads as u64 {
+    return Err(KataError::StringError("gpuIdxByServerThread.size() != numThreads".to_string()));
+  }
+  Ok(())
 }
 
 /// upstream: namespace Setup (setup.h)
@@ -406,8 +479,16 @@ impl Setup {
         use_fp16_mode = enabled_t::False;
       }
 
-      // PORT NOTE (D6): the backend and the model file's bytes come from the host.
-      let (backend, model_bytes): (Rc<dyn NeuralNet>, Vec<u8>) = host.load_model(nn_model_name, nn_model_file)?;
+      // PORT NOTE (D6): the backend and the model file's bytes come from the host. Upstream's NNEvaluator constructor opens
+      // the model file only when !debugSkipNeuralNet, and only after its own argument checks, so the host is asked under
+      // the same two conditions (a missing model file must not hide "maxBatchSize is negative", and a skipped net
+      // never touches the file system). NNEvaluator::new does not call the backend when it skips the net.
+      let (backend, model_bytes): (Rc<dyn NeuralNet>, Vec<u8>) = if debug_skip_neural_net {
+        (Rc::new(SkippedNeuralNet), Vec::new())
+      } else {
+        check_nn_evaluator_args(nn_max_batch_size, nn_x_len, nn_y_len, num_nn_server_threads_per_model, &gpu_idx_by_server_thread)?;
+        host.load_model(nn_model_name, nn_model_file)?
+      };
       let nn_eval: Rc<NNEvaluator> = Rc::new(NNEvaluator::new(
         nn_model_name,
         nn_model_file,
