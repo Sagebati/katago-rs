@@ -16,7 +16,8 @@
 //! - the NN backend: the burn networks compiled into katago-nn-burn -> [`BurnHost`].
 //!
 //! Model files: there is no runtime `.bin.gz` loader. `-model` names one of the networks compiled into
-//! katago-nn-burn (`g170-b6c96`, `g170e-b10c128`, `kata1-b18c384nbt`), matched on the file name (with or
+//! katago-nn-burn (`g170-b6c96`, `g170e-b10c128`, `kata1-b18c384nbt`, and the human-SL net
+//! `b18c384nbt-humanv0` for `-human-model` or `-model`), matched on the file name (with or
 //! without directories and `.bin.gz` / `.txt.gz` / `.onnx` / `.bpk`, and the full internal name such as
 //! `g170-b6c96-s175395328-d26788732`; a symlink is also matched by its target's name). The weights are the
 //! `.bpk` generated at build time (`katago_nn_burn::<net>::BPK_PATH`) unless `-model` is itself a `.bpk`
@@ -686,6 +687,8 @@ pub enum Net {
   B6c96,
   B10c128,
   B18c384nbt,
+  /// The human-SL net (SGF metadata input): `-human-model`, or `-model` with humanSLProfile.
+  B18c384nbtHumanv0,
 }
 
 impl Net {
@@ -694,6 +697,7 @@ impl Net {
       Net::B6c96 => "g170-b6c96",
       Net::B10c128 => "g170e-b10c128",
       Net::B18c384nbt => "kata1-b18c384nbt",
+      Net::B18c384nbtHumanv0 => "b18c384nbt-humanv0",
     }
   }
 }
@@ -701,8 +705,12 @@ impl Net {
 fn resolve_net_by_name(model_file: &str) -> Option<Net> {
   let base = std::path::Path::new(model_file).file_name().and_then(|s| s.to_str()).unwrap_or(model_file);
   let stem = [".bin.gz", ".txt.gz", ".onnx", ".bpk", ".gz", ".bin"].iter().fold(base.to_string(), |s, ext| s.strip_suffix(ext).map(str::to_string).unwrap_or(s));
-  let candidates: [(Net, &str); 3] =
-    [(Net::B6c96, "g170-b6c96-s175395328-d26788732"), (Net::B10c128, "g170e-b10c128-s1141046784-d204142634"), (Net::B18c384nbt, "kata1-b18c384nbt")];
+  let candidates: [(Net, &str); 4] = [
+    (Net::B6c96, "g170-b6c96-s175395328-d26788732"),
+    (Net::B10c128, "g170e-b10c128-s1141046784-d204142634"),
+    (Net::B18c384nbt, "kata1-b18c384nbt"),
+    (Net::B18c384nbtHumanv0, "b18c384nbt-humanv0"),
+  ];
   for (net, full) in candidates {
     if stem == net.name() || stem == full || stem.starts_with(&(net.name().to_string() + "-")) && full.starts_with(&stem) {
       return Some(net);
@@ -726,7 +734,7 @@ pub fn resolve_net(model_file: &str) -> Result<Net, KataError> {
     )));
   }
   Err(KataError::StringError(format!(
-    "Error loading or parsing model file {model_file}: katago-rs has no runtime .bin.gz loader; -model must name a network compiled into katago-nn-burn (g170-b6c96, g170e-b10c128, kata1-b18c384nbt)"
+    "Error loading or parsing model file {model_file}: katago-rs has no runtime .bin.gz loader; -model must name a network compiled into katago-nn-burn (g170-b6c96, g170e-b10c128, kata1-b18c384nbt, b18c384nbt-humanv0)"
   )))
 }
 
@@ -781,6 +789,11 @@ impl NNEvaluatorHost for BurnHost {
       Net::B18c384nbt => Ok((
         Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b18c384nbt::Model>::new(self.device.clone())),
         read_bpk(nn_model_file, katago_nn_burn::b18c384nbt::BPK_PATH)?,
+      )),
+      #[cfg(feature = "net-b18c384nbt-humanv0")]
+      Net::B18c384nbtHumanv0 => Ok((
+        Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(self.device.clone())),
+        read_bpk(nn_model_file, katago_nn_burn::b18c384nbt_humanv0::BPK_PATH)?,
       )),
       #[allow(unreachable_patterns)]
       other => Err(KataError::StringError(format!("network {} is not compiled in (enable the katago-cli feature for it)", other.name()))),

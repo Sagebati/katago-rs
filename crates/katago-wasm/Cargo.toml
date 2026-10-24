@@ -17,6 +17,9 @@ net-b6c96 = ["katago-nn-burn/net-b6c96"]
 net-b10c128 = ["katago-nn-burn/net-b10c128"]
 # GPU-only in practice (~9x b10's compute, 105 MB of weights).
 net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
+# The human-SL net as the engine's (only) network, with humanSLProfile set in the config or per query
+# (no `-human-model` second evaluator in the browser host). GPU-only in practice, as b18c384nbt; 107 MB.
+net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }

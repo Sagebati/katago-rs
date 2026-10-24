@@ -12,12 +12,13 @@ path = "src/main.rs"
 
 [features]
 # CPU (burn flex) with every compile-time net. GPU: `-F wgpu` then `-backend wgpu` on the command line.
-default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt"]
+default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt", "net-b18c384nbt-humanv0"]
 flex = ["katago-nn-burn/flex"]
 wgpu = ["katago-nn-burn/wgpu"]
 net-b6c96 = ["katago-nn-burn/net-b6c96"]
 net-b10c128 = ["katago-nn-burn/net-b10c128"]
 net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
+net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }

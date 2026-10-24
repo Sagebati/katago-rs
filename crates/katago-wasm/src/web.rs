@@ -178,6 +178,8 @@ enum Net {
   B10c128,
   #[cfg(feature = "net-b18c384nbt")]
   B18c384nbt,
+  #[cfg(feature = "net-b18c384nbt-humanv0")]
+  B18c384nbtHumanv0,
 }
 
 impl Net {
@@ -189,6 +191,8 @@ impl Net {
       "g170e-b10c128" => Some(Net::B10c128),
       #[cfg(feature = "net-b18c384nbt")]
       "kata1-b18c384nbt" => Some(Net::B18c384nbt),
+      #[cfg(feature = "net-b18c384nbt-humanv0")]
+      "b18c384nbt-humanv0" => Some(Net::B18c384nbtHumanv0),
       _ => None,
     }
   }
@@ -202,6 +206,10 @@ impl Net {
       Net::B10c128 => Rc::new(BurnNeuralNet::<katago_nn_burn::b10c128::Model>::new(device).with_batch_buckets(batch_buckets)),
       #[cfg(feature = "net-b18c384nbt")]
       Net::B18c384nbt => Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt::Model>::new(device).with_batch_buckets(batch_buckets)),
+      #[cfg(feature = "net-b18c384nbt-humanv0")]
+      Net::B18c384nbtHumanv0 => {
+        Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(device).with_batch_buckets(batch_buckets))
+      }
     }
   }
 }
