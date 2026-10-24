@@ -12,6 +12,9 @@ default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt"]
 net-b6c96 = []
 net-b10c128 = []
 net-b18c384nbt = []
+# Human-SL net b18c384nbt-humanv0 (models/onnx/b18c384nbt-humanv0.onnx, `just convert`): not default
+# (+100 MB weights, +~30 s release build).
+net-b18c384nbt-humanv0 = []
 # CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
 flex = ["burn/flex", "dep:burn-flex"]
 # GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser.

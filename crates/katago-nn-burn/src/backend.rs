@@ -429,12 +429,6 @@ async fn get_output_impl<N: Network>(
     );
   }
 
-  if num_meta_features > 0 {
-    // TODO(port): human-SL nets (SGF metadata encoder input) are not supported by tools/bin2onnx,
-    // so no generated network takes a meta input.
-    return Err(KataError::StringError("Burn backend: networks with SGF metadata inputs are not supported".to_string()));
-  }
-
   // PORT NOTE: Eigen maps the buffers as tensors and calls Model::apply; here the batch is copied
   // into burn tensors (NCHW) and the generated network runs, padded to a batch bucket if configured
   // (rows n..n_run of the input buffers hold stale inputs; their outputs are not read).
@@ -453,7 +447,16 @@ async fn get_output_impl<N: Network>(
     TensorData::new(input_buffers.global_input[..input_buffers.single_input_global_elts * n_run].to_vec(), [n_run, num_global_features as usize]),
     device,
   );
-  let raw = compute_handle.model.forward(input, input_global);
+  // PORT NOTE: Eigen maps `inputMeta` only when numMetaFeatures > 0 (else NULL); likewise the meta tensor.
+  let input_meta: Option<Tensor<2>> = if num_meta_features > 0 {
+    Some(Tensor::<2>::from_data(
+      TensorData::new(input_buffers.meta_input[..input_buffers.single_input_meta_elts * n_run].to_vec(), [n_run, num_meta_features as usize]),
+      device,
+    ))
+  } else {
+    None
+  };
+  let raw = compute_handle.model.forward(input, input_global, input_meta);
 
   // PORT NOTE: one readback for all four outputs (one GPU->CPU round trip per batch).
   let policy_row_len = num_policy_channels as usize * (hw + 1);

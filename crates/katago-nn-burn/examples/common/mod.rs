@@ -10,7 +10,7 @@ pub fn device(name: &str) -> Device {
     }
 }
 
-/// Runs `$body` with `$net` bound to the network type named by `$name` (b10 | b18).
+/// Runs `$body` with `$net` bound to the network type named by `$name` (b10 | b18 | human).
 #[macro_export]
 macro_rules! with_net {
     ($name:expr, $net:ident => $body:expr) => {
@@ -27,7 +27,13 @@ macro_rules! with_net {
                 const BPK: &str = katago_nn_burn::bpk_path!("kata1-b18c384nbt");
                 $body(BPK)
             }
-            other => panic!("network {other} not compiled in (b10 | b18)"),
+            #[cfg(feature = "net-b18c384nbt-humanv0")]
+            "human" => {
+                type $net = katago_nn_burn::b18c384nbt_humanv0::Model;
+                const BPK: &str = katago_nn_burn::bpk_path!("b18c384nbt-humanv0");
+                $body(BPK)
+            }
+            other => panic!("network {other} not compiled in (b10 | b18 | human)"),
         }
     };
 }

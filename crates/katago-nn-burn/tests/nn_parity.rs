@@ -13,6 +13,10 @@
 //! chosen symmetry must equal upstream's exactly), killServerThreads -> spawnServerThreads (the new
 //! server's Rand stream), averageMultipleSymmetries, and passing hacks where the 95% pass cap binds.
 //! Pools are driven by `run_watchdog`, so a lost wakeup fails instead of hanging.
+//!
+//! `nn_parity_b18c384nbt_humanv0` (feature `net-b18c384nbt-humanv0`): the human-SL net, whose eval lines
+//! (`evals_human.txt`) carry a humanSLProfile: SGFMetadata::getProfile -> evaluate's sgfMeta, so the
+//! nnHash includes SGFMetadata::getHash and the net gets fillMetadataRow's row as `meta_input`.
 #![cfg(feature = "flex")]
 
 use std::cell::RefCell;
@@ -35,6 +39,7 @@ use katago_core::neuralnet::nninputs::MiscNNInputParams;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::core::rand::Rand;
 use katago_core::neuralnet::nninputs::ScoreValue;
+use katago_core::neuralnet::sgfmetadata::SGFMetadata;
 use katago_core::port::executor::Spawner;
 use katago_nn_burn::Network;
 use katago_nn_burn::backend::BurnNeuralNet;
@@ -165,6 +170,8 @@ struct Eval {
   pos_id: usize,
   next_pla: i8,
   params: MiscNNInputParams,
+  /// The optional trailing humanSLProfile token.
+  profile: Option<String>,
 }
 
 fn parse_evals(file: &str) -> Vec<Eval> {
@@ -174,7 +181,10 @@ fn parse_evals(file: &str) -> Vec<Eval> {
     let t: Vec<&str> = line.split_whitespace().collect();
     assert_eq!(t[0], "eval");
     assert_eq!(t[2].parse::<usize>().unwrap(), i);
-    out.push(parse_eval_tokens(&t));
+    let mut e = parse_eval_tokens(&t);
+    assert!(t.len() == 15 || t.len() == 16, "{line}");
+    e.profile = t.get(15).map(|p| p.to_string());
+    out.push(e);
   }
   out
 }
@@ -193,7 +203,7 @@ fn parse_eval_tokens(t: &[&str]) -> Eval {
     params.policy_optimism = f64::from_bits(hex_u64(t[11]));
     params.max_history = t[12].parse().unwrap();
     assert_eq!((t[13], t[14]), ("19", "19"));
-    Eval { pos_id: t[1].parse().unwrap(), next_pla: t[3].parse().unwrap(), params }
+    Eval { pos_id: t[1].parse().unwrap(), next_pla: t[3].parse().unwrap(), params, profile: None }
   }
 }
 
@@ -336,7 +346,8 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
         let e = &evals[i];
         let (board, hist) = replay(&positions[e.pos_id]);
         assert_eq!(e.next_pla, hist.presumed_next_move_pla);
-        nn_eval.evaluate(&board, &hist, e.next_pla, &e.params, &buf, true, true).await.unwrap();
+        let meta: Option<SGFMetadata> = e.profile.as_ref().map(|p| SGFMetadata::get_profile(p).unwrap());
+        nn_eval.evaluate_sgf_meta(&board, &hist, e.next_pla, meta.as_ref(), &e.params, &buf, true, true).await.unwrap();
         let r = buf.result.borrow_mut().take().expect("result");
         results.borrow_mut()[i] = Some(r);
         i += NUM_VIRTUAL_THREADS;
@@ -518,6 +529,19 @@ fn nn_parity_b18c384nbt() {
   check(&d);
 }
 
+#[cfg(feature = "net-b18c384nbt-humanv0")]
+#[test]
+fn nn_parity_b18c384nbt_humanv0() {
+  let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
+    "flex",
+    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    "evals_human.txt",
+    "b18c384nbt-humanv0.out.bin",
+    usize::MAX,
+  );
+  check(&d);
+}
+
 /// wgpu (native Vulkan/Metal): PORTING.md §13 / CLAUDE.md: 2e-4 on logits, 1e-4 on win rate and
 /// ownership. After post-processing that is 1e-4 absolute on probabilities, policy and
 /// ownership, and 1e-4 relative (floor 1e-4) on the score-like outputs.
@@ -543,6 +567,19 @@ fn nn_parity_b10c128_wgpu() {
 #[test]
 fn nn_parity_b18c384nbt_wgpu() {
   let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  check_wgpu(&d);
+}
+
+#[cfg(all(feature = "wgpu", feature = "net-b18c384nbt-humanv0"))]
+#[test]
+fn nn_parity_b18c384nbt_humanv0_wgpu() {
+  let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
+    "wgpu",
+    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    "evals_human.txt",
+    "b18c384nbt-humanv0.out.bin",
+    usize::MAX,
+  );
   check_wgpu(&d);
 }
 

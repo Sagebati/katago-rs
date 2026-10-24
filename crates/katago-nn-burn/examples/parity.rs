@@ -1,7 +1,10 @@
 //! Raw outputs from burn vs onnxruntime on the verify.py positions
 //! (`fixtures/m0/<fixture>.*.f32`, written from `verify.py --dump-features`).
+//! `human` (b18c384nbt-humanv0, feature `net-b18c384nbt-humanv0`): the same positions (its spatial and
+//! global inputs are b18c384nbt's files) with `meta_input` = the rows of humanSLProfile rank_1k_15k
+//! (`verify.py --human-sl-profiles rank_1k_15k --dump-features`, the npz arrays written as raw f32).
 //!
-//! cargo run --release -p katago-nn-burn --example parity [-F wgpu,net-b18c384nbt] -- <flex|wgpu> [b10|b18]
+//! cargo run --release -p katago-nn-burn --example parity [-F wgpu,net-b18c384nbt] -- <flex|wgpu> [b10|b18|human]
 
 mod common;
 
@@ -26,14 +29,18 @@ fn max_diff(name: &str, got: Tensor<2>, want: &[f32]) -> f32 {
     d
 }
 
-fn parity<N: Network>(backend: &str, bpk: &str, fixture: &str) -> f32 {
+fn parity<N: Network>(backend: &str, bpk: &str, fixture: &str, input_fixture: &str) -> f32 {
     let device = common::device(backend);
     let model = N::from_bpk(std::fs::read(bpk).unwrap(), &device);
-    let bin = read(fixture, "bin_input");
+    let bin = read(input_fixture, "bin_input");
     let n = bin.len() / (22 * 19 * 19);
     let bin = Tensor::<4>::from_data(TensorData::new(bin, [n, 22, 19, 19]), &device);
-    let global = Tensor::<2>::from_data(TensorData::new(read(fixture, "global_input"), [n, 19]), &device);
-    let out = model.forward(bin, global);
+    let global = Tensor::<2>::from_data(TensorData::new(read(input_fixture, "global_input"), [n, 19]), &device);
+    let meta = (N::NUM_INPUT_META_CHANNELS > 0).then(|| {
+        let c = N::NUM_INPUT_META_CHANNELS as usize;
+        Tensor::<2>::from_data(TensorData::new(read(fixture, "meta_input"), [n, c]), &device)
+    });
+    let out = model.forward(bin, global, meta);
     println!("{} on {backend}: {n} positions, raw outputs vs onnxruntime", N::NAME);
     [
         max_diff("policy", out.policy.flatten::<2>(1, 2), &read(fixture, "policy")),
@@ -49,11 +56,12 @@ fn main() {
     let mut args = std::env::args().skip(1);
     let backend = args.next().unwrap_or_else(|| "flex".into());
     let net = args.next().unwrap_or_else(|| "b10".into());
-    let fixture = match net.as_str() {
-        "b18" => "b18c384nbt",
-        _ => "b10c128",
+    let (fixture, input_fixture) = match net.as_str() {
+        "b18" => ("b18c384nbt", "b18c384nbt"),
+        "human" => ("b18c384nbt-humanv0", "b18c384nbt"),
+        _ => ("b10c128", "b10c128"),
     };
-    let worst = with_net!(net.as_str(), Net => |bpk| parity::<Net>(&backend, bpk, fixture));
+    let worst = with_net!(net.as_str(), Net => |bpk| parity::<Net>(&backend, bpk, fixture, input_fixture));
     // Raw logits; KataGo's own fp16/fp32 backends disagree by more than this.
     let tol = if backend == "wgpu" { 2e-3 } else { 1e-4 };
     println!("{}", if worst <= tol { "PASS" } else { "FAIL" });
