@@ -32,8 +32,8 @@ use crate::port::cpp;
 use crate::port::executor::sleep;
 use crate::port::executor::LocalBoxFuture;
 use crate::search::reportedsearchvalues::ReportedSearchValues;
-use crate::search::search::EvalCacheTable;
-use crate::search::search::PatternBonusTable;
+use crate::search::evalcache::EvalCacheTable;
+use crate::search::patternbonustable::PatternBonusTable;
 use crate::search::search::ConcurrentTask;
 use crate::search::search::Search;
 use crate::search::searchparams::SearchParams;
@@ -220,19 +220,16 @@ impl AsyncBot {
     self.search.set_params_no_clearing(params);
   }
   /// upstream: AsyncBot::setExternalPatternBonusTable (asyncbot.cpp)
-  /// TODO(port): deferred (patternbonustable.cpp): PatternBonusTable has no values, so `table` is always None.
   pub fn set_external_pattern_bonus_table(&mut self, table: Option<Box<PatternBonusTable>>) {
     self.stop_and_wait();
     self.search.set_external_pattern_bonus_table(table);
   }
   /// upstream: AsyncBot::setCopyOfExternalPatternBonusTable (asyncbot.cpp)
-  /// TODO(port): deferred (patternbonustable.cpp): PatternBonusTable has no values, so `table` is always None.
   pub fn set_copy_of_external_pattern_bonus_table(&mut self, table: &Option<Box<PatternBonusTable>>) {
     self.stop_and_wait();
     self.search.set_copy_of_external_pattern_bonus_table(table);
   }
   /// upstream: AsyncBot::setExternalEvalCache (asyncbot.cpp)
-  /// TODO(port): deferred (evalcache.cpp): EvalCacheTable has no values, so `cache` is always None.
   pub fn set_external_eval_cache(&mut self, cache: &Option<Rc<EvalCacheTable>>) {
     self.stop_and_wait();
     self.search.set_external_eval_cache(cache);
@@ -243,12 +240,10 @@ impl AsyncBot {
     self.search.clear_search();
   }
   /// upstream: AsyncBot::clearEvalCache (asyncbot.cpp)
-  /// TODO(port): deferred (evalcache.cpp): `search->evalCache->clear()`; evalCache is always None, so
-  /// the branch is never taken.
   pub fn clear_eval_cache(&mut self) {
     self.stop_and_wait();
-    if self.search.eval_cache.is_some() {
-      unreachable!("EvalCacheTable is deferred, so Search::eval_cache is always None");
+    if let Some(eval_cache) = &self.search.eval_cache {
+      eval_cache.clear();
     }
   }
 

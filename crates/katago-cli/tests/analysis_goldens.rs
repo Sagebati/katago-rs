@@ -6,8 +6,6 @@
 //! Each test prints "exact" / "within tolerance (max deviations)" / "DIVERGED (first difference)".
 //!
 //! Pending (not run here):
-//! - eval_cache.stdout: needs the eval cache (evalcache.cpp, deferred D7; `useEvalCache` has no effect).
-//!   TODO(port): deferred (evalcache.cpp).
 //! - humansl_sidetomove.stdout: needs a human-SL net (M8; tools/bin2onnx rejects them).
 //!
 //! Debug runs take a few minutes (the two 1000-visit pvvisits goldens dominate); `just analysis-goldens`
@@ -119,6 +117,25 @@ fn golden_symmetry_with_pruning() {
 fn golden_evalcache_loop() {
   let c = check_golden("evalcache.txt.stdout", "tests/analysis/evalcache.txt", M6, LOOP_OVERRIDES);
   assert_ok("evalcache", &c);
+}
+
+/// The eval-cache form (regen.sh `eval_cache`, runcmdtests.sh's fifo test): b10c128, useGraphSearch=true,
+/// useEvalCache=true, evalCacheMinVisits=10, the queries' own maxVisits (50/100/50), and line N+1 is fed
+/// only after response N. The cache changes the result: C differs from A, B reuses A's entries.
+#[test]
+fn golden_eval_cache() {
+  let name = "eval_cache.stdout";
+  let gold = read_golden(name);
+  assert!(!gold.is_empty(), "{name}: empty golden");
+  let t0 = std::time::Instant::now();
+  let got = run_analysis_handshake("tests/analysis/evalcache.txt", M10, "useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10");
+  let c = compare(&gold, &got);
+  eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
+  assert_ok("eval_cache", &c);
+  // The cache must matter: without it, C equals A (golden_evalcache_loop).
+  assert_eq!(c.num_lines, 3);
+  let strip = |l: &str| l.replacen("\"id\":\"C\"", "\"id\":\"A\"", 1);
+  assert_ne!(strip(&got[2]), got[0], "eval_cache: C equals A, the cache had no effect");
 }
 
 /// 1000 visits (the queries' own maxVisits), graph search on.

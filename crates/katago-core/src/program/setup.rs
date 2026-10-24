@@ -7,8 +7,9 @@
 //   core does no file IO). Async, because NNEvaluator::spawnServerThreads is (PORTING.md §11, D8). The
 //   non-Eigen branches (`#ifndef USE_EIGEN_BACKEND`) are the ported ones: the burn backend is not Eigen.
 // - Not ported: computeDefaultEigenBackendThreads (Eigen backend only, std::thread::hardware_concurrency),
-//   saveAutoPatternBonusData and loadAndPruneAutoPatternBonusTables (file IO, PatternBonusTable deferred).
-//   loadAvoidSgfPatternBonusTables keeps its key scan; a configured avoidSgf pattern is a TODO(port): deferred.
+//   saveAutoPatternBonusData and loadAndPruneAutoPatternBonusTables (file IO and SGF/pos files).
+//   loadAvoidSgfPatternBonusTables reads every key as upstream; its PatternBonusTable::avoidRepeatedSgfMoves call
+//   (SGF loading) is a TODO(port) IO/M8 gap: a fully configured avoid-SGF set is an error.
 
 use std::collections::BTreeSet;
 use std::rc::Rc;
@@ -36,7 +37,7 @@ use crate::neuralnet::sgfmetadata::SGFMetadata;
 use crate::port::cpp::cpp_min;
 use crate::port::executor::LocalBoxFuture;
 use crate::port::executor::Spawner;
-use crate::search::search::PatternBonusTable;
+use crate::search::patternbonustable::PatternBonusTable;
 use crate::search::searchparams::SearchParams;
 use crate::testAssert;
 
@@ -1621,7 +1622,7 @@ impl Setup {
       //Indexes different bots, such as in a match config
       let idx_str: String = Global::int_to_string(i);
 
-      let pattern_bonus_table: Option<Box<PatternBonusTable>> = None;
+      let mut pattern_bonus_table: Option<Box<PatternBonusTable>> = None;
       // PERF(port): 100000 iterations of string building and containsAny per bot, as upstream.
       for j in 1..100000 {
         //Indexes different sets of params for different sets of files, to combine into one bot.
@@ -1630,14 +1631,35 @@ impl Setup {
 
         //Tries to find prefix+suffix+optional index
         //E.g. "avoidSgf"+"PatternUtility"+(optional integer indexing which bot for match)
+        // PORT NOTE: captures passed explicitly (aliasing): `cfg` is also borrowed mutably by the getters.
         let contains = |cfg: &ConfigParser, suffix: &str| -> bool { cfg.contains_any(&[prefix.clone() + suffix + &idx_str, prefix.clone() + suffix]) };
+        let find = |cfg: &ConfigParser, suffix: &str| -> Result<String, KataError> {
+          cfg.first_found_or_fail(&[prefix.clone() + suffix + &idx_str, prefix.clone() + suffix])
+        };
 
         if contains(cfg, "PatternUtility") {
-          // TODO(port): deferred (patternbonustable.cpp): reading avoidSgf<k>PatternUtility / Lambda /
-          // MinTurnNumber / MaxFiles / AllowedNames / Dirs and PatternBonusTable::avoidRepeatedSgfMoves
-          // (SGF file IO, dataio/sgf) are not ported, so a configured avoid-SGF set is an error here.
+          let penalty: f64 = cfg.get_double(&find(cfg, "PatternUtility")?, -3.0, 3.0)?;
+          let lambda: f64 = if contains(cfg, "PatternLambda") { cfg.get_double(&find(cfg, "PatternLambda")?, 0.0, 1.0)? } else { 1.0 };
+          let min_turn_number: i32 =
+            if contains(cfg, "PatternMinTurnNumber") { cfg.get_int(&find(cfg, "PatternMinTurnNumber")?, 0, 1000000)? } else { 0 };
+          let max_files: u64 = if contains(cfg, "PatternMaxFiles") { cfg.get_int(&find(cfg, "PatternMaxFiles")?, 1, 1000000)? as u64 } else { 1000000 };
+          let allowed_player_names: Vec<String> =
+            if contains(cfg, "PatternAllowedNames") { cfg.get_strings_non_empty_trim(&find(cfg, "PatternAllowedNames")?)? } else { Vec::new() };
+          let sgf_dirs: Vec<String> = cfg.get_strings(&find(cfg, "PatternDirs")?)?;
+          if pattern_bonus_table.is_none() {
+            pattern_bonus_table = Some(Box::new(PatternBonusTable::new()));
+          }
+          let log_source: String = "bot ".to_string() + &idx_str;
+          // TODO(port): IO/M8: `patternBonusTable->avoidRepeatedSgfMoves(sgfDirs,penalty,lambda,minTurnNumber,maxFiles,
+          // allowedPlayerNames,logger,logSource);` collects and parses SGF files (FileHelpers, dataio/sgf: not ported,
+          // core does no file IO), so a configured avoid-SGF set is an error here, after upstream's key checks.
+          let _ = (penalty, lambda, min_turn_number, max_files, allowed_player_names, log_source, &pattern_bonus_table);
           return Err(KataError::ConfigParsingError(
-            "avoidSgf".to_string() + &set_str + "PatternUtility is not supported yet in katago-rs (pattern bonus tables are deferred)",
+            "avoidSgf".to_string()
+              + &set_str
+              + "PatternDirs ("
+              + &sgf_dirs.join(",")
+              + "): loading SGF files for pattern bonus tables is not supported in katago-rs (PatternBonusTable::avoidRepeatedSgfMoves, dataio/sgf)",
           ));
         }
       }
@@ -1647,7 +1669,7 @@ impl Setup {
   }
 
   // upstream: Setup::saveAutoPatternBonusData, Setup::loadAndPruneAutoPatternBonusTables (setup.cpp)
-  // PORT NOTE: not ported (file IO; PatternBonusTable deferred). See the manifest notes.
+  // PORT NOTE: not ported (file IO: SGF / pos files; dataio/sgf is not ported, M8). See the manifest notes.
 }
 
 /// upstream: parsePlayer (setup.cpp) static

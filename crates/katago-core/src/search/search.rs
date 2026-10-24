@@ -10,9 +10,6 @@
 // and mutate only Cell/RefCell fields. Nodes live in `node_arena`; stored node pointers are
 // NodeIdx. Every mutex/spin lock is removed (their bodies kept); `createMutexIdxForNode` still
 // draws from the thread's Rand (D12). `Logger*` is replaced by the log crate (ctor param dropped).
-// Deferred (DECISIONS.md D7, manifest [[ignored]] deferred): eval cache (evalcache.cpp), pattern
-// bonus tables (patternbonustable.cpp), anti-mirror (searchmirror.cpp): their fields and call
-// sites stay, their types have no values, so the fields are always None.
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -34,6 +31,7 @@ use crate::game::board::Location;
 use crate::game::board::Player;
 use crate::game::board::C_EMPTY;
 use crate::game::board::P_BLACK;
+use crate::game::board::P_WHITE;
 use crate::game::boardhistory::BoardHistory;
 use crate::game::boardhistory::KoHashTable;
 use crate::game::graphhash::GraphHash;
@@ -52,6 +50,8 @@ use crate::port::node_arena::NodeIdx;
 use crate::search::distributiontable::DistributionTable;
 use crate::search::searchnode::MoreNodeStats;
 use crate::search::searchnode::SearchChildPointer;
+use crate::search::evalcache::EvalCacheTable;
+use crate::search::patternbonustable::PatternBonusTable;
 use crate::search::searchnode::SearchNode;
 use crate::search::searchnode::SearchNodeChildrenReference;
 use crate::search::searchnode::SearchNodeState;
@@ -62,15 +62,7 @@ use crate::search::subtreevaluebiastable::SubtreeValueBiasTable;
 use crate::search::timecontrols::TimeControls;
 use crate::testAssert;
 
-/// upstream: PatternBonusTable (patternbonustable.h)
-/// TODO(port): deferred (patternbonustable.cpp): placeholder with no values (DECISIONS.md D7), so
-/// `Search::patternBonusTable` / `externalPatternBonusTable` are always None until it is ported.
-pub enum PatternBonusTable {}
 
-/// upstream: EvalCacheTable (evalcache.h)
-/// TODO(port): deferred (evalcache.cpp): placeholder with no values (DECISIONS.md D7), so
-/// `Search::evalCache` is always None until it is ported.
-pub enum EvalCacheTable {}
 
 //-----------------------------------------------------------------------------------------
 
@@ -226,11 +218,9 @@ pub struct Search {
 
   //Pattern bonuses are currently only looked up for shapes completed by the player who the search is for.
   //Implicitly these utility adjustments "assume" the opponent likes the negative of our adjustments.
-  // TODO(port): deferred (patternbonustable.cpp): always None.
   pub pattern_bonus_table: Option<Box<PatternBonusTable>>,
   pub external_pattern_bonus_table: Option<Box<PatternBonusTable>>,
 
-  // TODO(port): deferred (evalcache.cpp): always None.
   pub eval_cache: Option<Rc<EvalCacheTable>>,
 
   /// PORT NOTE: RefCell because applyRecursively* (which run through &self, see search_node_age)
@@ -540,8 +530,8 @@ impl Search {
   }
 
   /// upstream: Search::setExternalPatternBonusTable (search.cpp)
-  /// TODO(port): deferred (patternbonustable.cpp): PatternBonusTable has no values, so `table` is
-  /// always None. `table == externalPatternBonusTable` compares the unique_ptrs (both null here).
+  /// PORT NOTE: `table == externalPatternBonusTable` compares two unique_ptrs, equal only when both
+  /// are null.
   pub fn set_external_pattern_bonus_table(&mut self, table: Option<Box<PatternBonusTable>>) {
     if table.is_none() && self.external_pattern_bonus_table.is_none() {
       return;
@@ -553,18 +543,13 @@ impl Search {
   }
 
   /// upstream: Search::setCopyOfExternalPatternBonusTable (search.cpp)
-  /// TODO(port): deferred (patternbonustable.cpp): the copy constructor is not ported; a non-null
-  /// table cannot exist yet.
   pub fn set_copy_of_external_pattern_bonus_table(&mut self, table: &Option<Box<PatternBonusTable>>) {
-    let copy: Option<Box<PatternBonusTable>> = match table {
-      None => None,
-      Some(t) => match **t {},
-    };
+    let copy: Option<Box<PatternBonusTable>> =
+      if table.is_none() { None } else { Some(Box::new((**table.as_ref().expect("checked above")).clone())) };
     self.set_external_pattern_bonus_table(copy);
   }
 
   /// upstream: Search::setExternalEvalCache (search.cpp)
-  /// TODO(port): deferred (evalcache.cpp): EvalCacheTable has no values, so `cache` is always None.
   pub fn set_external_eval_cache(&mut self, cache: &Option<Rc<EvalCacheTable>>) {
     let same: bool = match (cache, &self.eval_cache) {
       (None, None) => true,
@@ -1134,9 +1119,7 @@ impl Search {
 
     //Prepare eval cache if we need it
     if self.search_params.use_eval_cache && self.search_params.use_graph_search && self.eval_cache.is_none() && self.mirroring_pla == C_EMPTY {
-      // TODO(port): deferred (evalcache.cpp): `evalCache = std::make_shared<EvalCacheTable>(searchParams.subtreeValueBiasTableNumShards);`
-      // The eval cache is not ported, so the search runs as with useEvalCache=false.
-      log::warn!("useEvalCache is not supported by this port yet (evalcache.cpp deferred); searching without the eval cache");
+      self.eval_cache = Some(Rc::new(EvalCacheTable::new(self.search_params.subtree_value_bias_table_num_shards)));
     }
 
     //Refresh pattern bonuses if needed
@@ -1144,11 +1127,16 @@ impl Search {
       self.pattern_bonus_table = None;
     }
     if self.search_params.avoid_repeated_pattern_utility != 0.0 || self.external_pattern_bonus_table.is_some() {
-      // TODO(port): deferred (patternbonustable.cpp): `patternBonusTable = new PatternBonusTable(...)`,
-      // `addBonusForGameMoves(rootHistory,bonus,plaThatSearchIsFor)` and clearing the root's
-      // patternBonusHash. Pattern bonuses are not ported, so the search runs as with
-      // avoidRepeatedPatternUtility=0.
-      log::warn!("avoidRepeatedPatternUtility / pattern bonus tables are not supported by this port yet (patternbonustable.cpp deferred)");
+      if let Some(external_pattern_bonus_table) = &self.external_pattern_bonus_table {
+        self.pattern_bonus_table = Some(Box::new((**external_pattern_bonus_table).clone()));
+      } else {
+        self.pattern_bonus_table = Some(Box::new(PatternBonusTable::new()));
+      }
+      if self.search_params.avoid_repeated_pattern_utility != 0.0 {
+        let bonus: f64 =
+          if self.pla_that_search_is_for == P_WHITE { -self.search_params.avoid_repeated_pattern_utility } else { self.search_params.avoid_repeated_pattern_utility };
+        self.pattern_bonus_table.as_mut().expect("just set").add_bonus_for_game_moves_only_pla(&self.root_history, bonus, self.pla_that_search_is_for);
+      }
       //Clear any pattern bonus on the root node itself
       if let Some(root_node_idx) = self.root_node {
         self.node_arena.get(root_node_idx).pattern_bonus_hash.set(Hash128::default());
@@ -1207,8 +1195,8 @@ impl Search {
       let root_graph_hash: Hash128 = self.root_graph_hash;
       self.root_node = Some(self.node_arena.alloc(|idx| SearchNode::new(idx, root_pla, force_non_terminal, mutex_idx, root_graph_hash)));
       if self.search_params.use_eval_cache && self.search_params.use_graph_search && self.eval_cache.is_some() && self.mirroring_pla == C_EMPTY {
-        // TODO(port): deferred (evalcache.cpp): `rootNode->evalCacheEntry = evalCache->find(rootNode->graphHash);`
-        match **self.eval_cache.as_ref().expect("checked is_some") {}
+        let root_node: Rc<SearchNode> = self.node_arena.get(self.root_node.expect("allocated above"));
+        *root_node.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(root_node.graph_hash);
       }
     } else {
       //If the root node has any existing children, then prune things down if there are moves that should not be allowed at the root.
@@ -1402,14 +1390,11 @@ impl Search {
         }
 
         if self.search_params.use_eval_cache && self.search_params.use_graph_search && self.eval_cache.is_some() && self.mirroring_pla == C_EMPTY {
-          // TODO(port): deferred (evalcache.cpp): `child->evalCacheEntry = evalCache->find(child->graphHash);`
-          match **self.eval_cache.as_ref().expect("checked is_some") {}
+          *new_child.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(new_child.graph_hash);
         }
 
         if let Some(pattern_bonus_table) = &self.pattern_bonus_table {
-          // TODO(port): deferred (patternbonustable.cpp):
-          // `child->patternBonusHash = patternBonusTable->getHash(getOpp(thread.pla), bestChildMoveLoc, thread.history.getRecentBoard(1));`
-          match **pattern_bonus_table {}
+          new_child.pattern_bonus_hash.set(pattern_bonus_table.get_hash(get_opp(thread.pla), best_child_move_loc, thread.history.get_recent_board(1)));
         }
 
         //Insert into map! Use insertLoc as hint.
@@ -1594,17 +1579,19 @@ impl Search {
   }
 
   /// upstream: Search::recursivelyRecordEvalCache (search.cpp)
-  /// TODO(port): deferred (evalcache.cpp): EvalCacheTable has no values, so this is only reached
-  /// with `evalCache != nullptr`, which cannot happen yet.
   pub(crate) fn recursively_record_eval_cache(&self, n: &SearchNode) {
     let mut f = |node: &SearchNode, thread_idx: i32| {
       let _ = thread_idx;
       let num_visits: i64 = node.stats.visits.get() /*acquire*/;
       if num_visits >= self.search_params.eval_cache_min_visits && !node.force_non_terminal {
         let is_root_node: bool = Some(node.idx) == self.root_node;
-        let _ = is_root_node;
-        // TODO(port): deferred (evalcache.cpp): `evalCache->update(node->graphHash, node, searchParams.evalCacheMinVisits, isRootNode);`
-        match **self.eval_cache.as_ref().expect("recursivelyRecordEvalCache needs an evalCache") {}
+        self.eval_cache.as_ref().expect("recursivelyRecordEvalCache needs an evalCache").update(
+          &self.node_arena,
+          node.graph_hash,
+          node,
+          self.search_params.eval_cache_min_visits,
+          is_root_node,
+        );
       }
     };
     let nodes: Vec<NodeIdx> = vec![n.idx];
@@ -1663,15 +1650,7 @@ impl Search {
 
     let opponent_was_mirroring_pla: Player = self.mirroring_pla;
     //Update mirroringPla, mirrorAdvantage, mirrorCenterSymmetryError
-    // TODO(port): deferred (searchmirror.cpp): `updateMirroring();`. Only its antiMirror=false effect
-    // (the first three assignments) is reproduced; with antiMirror the opponent is never detected as
-    // mirroring, so mirroringPla stays C_EMPTY and every anti-mirror path stays off.
-    self.mirroring_pla = C_EMPTY;
-    self.mirror_advantage = 0.0;
-    self.mirror_center_symmetry_error = 1e10;
-    if self.search_params.anti_mirror {
-      log::warn!("antiMirror is not supported by this port yet (searchmirror.cpp deferred); ignoring it");
-    }
+    self.update_mirroring();
 
     //Clear search if opponent mirror status changed, so that our tree adjusts appropriately
     if opponent_was_mirroring_pla != self.mirroring_pla {

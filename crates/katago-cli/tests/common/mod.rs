@@ -57,13 +57,40 @@ pub fn run_analysis_bytes(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec
   let extra = extra.to_string();
   std::thread::Builder::new()
     .stack_size(256 << 20)
-    .spawn(move || run_analysis_inner(lines, &model, &extra))
+    .spawn(move || run_analysis_inner(lines, &model, &extra, false))
     .unwrap()
     .join()
     .expect("analysis run panicked")
 }
 
-fn run_analysis_inner(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
+/// As run_analysis, but line N+1 of `query_file` is fed only after N responses were written: the fifo
+/// handshake of runcmdtests.sh's eval-cache test (regen.sh `eval_cache`), so each request finds the
+/// previous one's search done.
+pub fn run_analysis_handshake(query_file: &str, model: &str, extra: &str) -> Vec<String> {
+  let lines: Vec<Vec<u8>> =
+    std::fs::read_to_string(format!("{}/{query_file}", cpp_dir())).expect("query file").lines().map(|l| l.as_bytes().to_vec()).collect();
+  assert!(!lines.is_empty(), "{query_file}: no query lines");
+  let model = model.to_string();
+  let extra = extra.to_string();
+  let (out, code) = std::thread::Builder::new()
+    .stack_size(256 << 20)
+    .spawn(move || run_analysis_inner(lines, &model, &extra, true))
+    .unwrap()
+    .join()
+    .expect("analysis run panicked");
+  match code {
+    Ok(c) => assert_eq!(c, 0),
+    Err(e) => panic!("analysis failed: {}", e.what()),
+  }
+  out
+}
+
+fn run_analysis_inner(
+  lines: Vec<Vec<u8>>,
+  model: &str,
+  extra: &str,
+  handshake: bool,
+) -> (Vec<String>, Result<i32, katago_core::core::global::KataError>) {
   katago_cli::install_clock_and_sleep();
   let cpp = cpp_dir();
   let override_config = format!("{COMMON}, {extra}");
@@ -72,9 +99,31 @@ fn run_analysis_inner(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<Str
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let nn_host = BurnHost::new("flex", spawner).expect("flex backend");
-  let mut input = futures::stream::iter(lines);
   let out: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
   let out2 = out.clone();
+  // Handshake mode: the stream yields line i (0-based) once i responses were written; the stdout sink
+  // wakes it.
+  let waker: Rc<RefCell<Option<std::task::Waker>>> = Rc::new(RefCell::new(None));
+  let waker2 = waker.clone();
+  let out3 = out.clone();
+  let mut lines_iter = lines.into_iter().enumerate();
+  let mut pending: Option<(usize, Vec<u8>)> = None;
+  let mut input = futures::stream::poll_fn(move |cx| {
+    if pending.is_none() {
+      pending = lines_iter.next();
+    }
+    match &pending {
+      None => std::task::Poll::Ready(None),
+      Some((i, _)) => {
+        if !handshake || out3.borrow().len() >= *i {
+          std::task::Poll::Ready(pending.take().map(|(_, l)| l))
+        } else {
+          *waker.borrow_mut() = Some(cx.waker().clone());
+          std::task::Poll::Pending
+        }
+      }
+    }
+  });
   let host = AnalysisHost {
     args: AnalysisArgs {
       model_file: model.to_string(),
@@ -85,7 +134,12 @@ fn run_analysis_inner(lines: Vec<Vec<u8>>, model: &str, extra: &str) -> (Vec<Str
       override_configs: vec![override_config],
     },
     input: &mut input,
-    write_stdout: Box::new(move |s: &str| out2.borrow_mut().push(s.to_string())),
+    write_stdout: Box::new(move |s: &str| {
+      out2.borrow_mut().push(s.to_string());
+      if let Some(w) = waker2.borrow_mut().take() {
+        w.wake();
+      }
+    }),
     write_stderr: Box::new(|_s: &str| {}),
     nn_host: &nn_host,
     // No log backend in tests: the Logger's file / directory setup is the CLI's (tests/cli_*.rs).

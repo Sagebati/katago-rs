@@ -16,7 +16,7 @@
 //! process-wide state they share is the Logger, and getSearchRandSeed is not used by V8).
 //!
 //! Comparison: section by section, with the numeric tolerance of common_search (integers exact, decimals within one
-//! unit of the last printed digit); `policy_of` lists pending sections (features the port defers) and summary-only
+//! unit of the last printed digit); `policy_of` lists the summary-only
 //! sections, `ALLOWLIST` the sections known to diverge and why.
 //! `inputsNHWC=true useNHWC=true` of the Eigen run are `false` here (burn is NCHW only; outputs do not depend on them).
 //! 9x9 evaluators run through common_search's `PaddedNet` (the burn graph is fixed at 19x19).
@@ -1577,12 +1577,6 @@ const MULTITHREAD_SUMMARY: &[&str] = &["Winloss near", "Lead near", "Post order"
 fn policy_of(label: &str) -> Policy {
   let title = label.split_once(' ').map(|(_, t)| t).unwrap_or(label);
   match title {
-    "AntiMirror white" | "AntiMirror black negkomi" => {
-      Policy::Pending("antiMirror: searchmirror.cpp is deferred in katago-core (search.rs TODO(port) updateMirroring), the search ignores it")
-    }
-    "Pattern bonus" | "Pattern bonus does not care about ko" | "Pattern bonus does not multi-count shapes" => {
-      Policy::Pending("avoidRepeatedPatternUtility: patternbonustable.cpp is deferred in katago-core (search.rs TODO(port)), the search ignores it")
-    }
     "Multithreaded search test" | "Multithreaded graph search test" => Policy::SummaryOnly(MULTITHREAD_SUMMARY),
     _ => Policy::Full,
   }
@@ -1602,6 +1596,25 @@ const ALLOWLIST: &[Allowed] = &[
   Allowed { label: "#77 4 threads for search updates, 8k visits", reason: REASON_8K },
   Allowed { label: "#78 30 threads for search updates, 8k visits", reason: REASON_8K },
   Allowed { label: "#79 30 threads for search updates, 8k visits, graph search", reason: REASON_8K },
+  // Pattern bonus sections (enabled with patternbonustable.rs, 2026-10; release, group 3). Measured: every line
+  // matches except the ones named here.
+  Allowed {
+    label: "#81 Pattern bonus",
+    reason: "one visit moves between near-tied root children (L4 27 -> 26, C4 80 -> 81) in Bot1's tree-reuse search after D18 \
+             (1000 visits, ~1e-5 NN differences); the other 7 searches of the section, including all pattern-bonus ones \
+             and Bot1's next reuse search, are exact",
+  },
+  Allowed {
+    label: "#82 Pattern bonus does not care about ko",
+    reason: "Bot0 (baseline, no pattern bonus) already differs: same visits everywhere shown, root/R17 W -53.81c vs \
+             -53.87c (6e-4, accumulated NN differences of a 1000-visit ladder line); Bot1 (avoid repeat 0.2) prints exactly \
+             Bot0's lines in both builds, which is what the section checks",
+  },
+  Allowed {
+    label: "#83 Pattern bonus does not multi-count shapes",
+    reason: "only the group's closing 'GPU 0 finishing, processed N rows' line differs (55469 vs 55432): the evaluator's \
+             cumulative row count, shifted by #81/#82; every search of the section is exact",
+  },
 ];
 
 /// The expected sections of group `g`: from the g-th "<startNNEval>" (group 0: from the start) up to the next one.

@@ -19,10 +19,9 @@
 // Added in M3 wave 2a: upstream literals (0x3fffFFFF), the mirrored module path search::search,
 // and statement shapes kept verbatim (is_some() checks before expect, `mh[last_idx - 0]`,
 // `vector<T>&` params as &mut Vec<T> per PORTING.md §3, the TSV-prescribed
-// SearchNodeChildrenReference::index, `&*box` reborrows, unreachable!() inside deferred conditions).
+// SearchNodeChildrenReference::index, `&*box` reborrows).
 #![allow(clippy::mixed_case_hex_literals, clippy::module_inception, clippy::unnecessary_unwrap,
-         clippy::should_implement_trait, clippy::ptr_arg, clippy::identity_op, clippy::borrow_deref_ref,
-         clippy::diverging_sub_expression)]
+         clippy::should_implement_trait, clippy::ptr_arg, clippy::identity_op, clippy::borrow_deref_ref)]
 // Added in M3 wave 2b: upstream's `size() > 0`, `== ""`, `cond ? true : false`, try/catch-as-match, map
 // iteration over (key, value) and push-after-construct shapes kept verbatim (setup.cpp, analysis.cpp).
 #![allow(clippy::len_zero, clippy::comparison_to_empty, clippy::needless_bool, clippy::single_match,

@@ -39,9 +39,10 @@
 //! its section). `atan` (IBM Accurate Mathematical Library in glibc, LGPL, not correctly rounded)
 //! is a port of CORE-MATH's correctly rounded `cr_atan` (MIT) in math/atan.rs plus a table of
 //! glibc's misroundings on ScoreValue's table arguments (D13 b). `tan` (IBM, LGPL) wraps the
-//! platform libm (D13). `log10` (fdlibm) is [`log10`]. `tanh`, `atanf` (CORE-MATH) are not here yet: see
-//! the TODO(port) at the end of the file. `sqrt` is correctly rounded everywhere and stays
-//! `f64::sqrt`.
+//! platform libm (D13). `log10` (fdlibm) is [`log10`]. `tanh` and `atanh` (CORE-MATH, MIT,
+//! correctly rounded, = glibc 2.44) are ports of `cr_tanh` / `cr_atanh` in math/tanh.rs and
+//! math/atanh.rs ([`tanh`], [`atanh`]). `atanf` (CORE-MATH) is not here yet: see the TODO(port)
+//! at the end of the file. `sqrt` is correctly rounded everywhere and stays `f64::sqrt`.
 
 // ---------------------------------------------------------------------------------------
 // math_config.h helpers
@@ -1040,6 +1041,24 @@ pub use atan::GLIBC_ATAN_OVERRIDES;
 pub use atan::cr_atan;
 
 // ---------------------------------------------------------------------------------------
+// tanh, atanh (CORE-MATH, in math/tanh.rs and math/atanh.rs)
+// ---------------------------------------------------------------------------------------
+//
+// glibc 2.44 implements both with CORE-MATH's correctly rounded code (MIT), so the ports of
+// `cr_tanh` / `cr_atanh` (src/binary64/{tanh,atanh}/*.c at CORE-MATH commit 0ce0cbc15935e24c,
+// 2026-10-20) are bit-identical to the installed glibc, with no override table as `atan` needs.
+// Checked against the host glibc 2.44: see tests/math_tanh.rs (vs oracle/math_tanh.txt on every
+// target, including wasm32). Callers: nneval.cpp (v3 score value), searchmirror.cpp.
+
+mod atanh;
+mod tanh;
+
+pub use atanh::atanh;
+pub use atanh::cr_atanh;
+pub use tanh::cr_tanh;
+pub use tanh::tanh;
+
+// ---------------------------------------------------------------------------------------
 // e_log10.c
 // ---------------------------------------------------------------------------------------
 //
@@ -1099,12 +1118,14 @@ pub fn log10(mut x: f64) -> f64 {
 
 // TODO(port): glibc does not use optimized-routines for the other transcendentals the
 // upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
-// 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0%, expm1 0.24%,
+// 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0% (now ported), expm1 0.24%,
 // log10 3.8%, lgamma 37%, tanhf 8.0%, atanf 6.2%). Not needed by the modules ported so far
 // (rand.cpp only calls log/pow/sqrt). Before porting their callers, add them here:
-//   - tanh, atanf (nneval.cpp v3 score; searchmirror.cpp tanh): glibc 2.44 uses CORE-MATH's
-//     correctly rounded versions (MIT): port those, or do as tanhf above (any correctly rounded
-//     implementation is bit-identical; check exhaustively for atanf, on a large sample for tanh).
+//   - atanf (nneval.cpp v3 score): glibc 2.44 uses CORE-MATH's correctly rounded version (MIT):
+//     port it, or do as tanhf above (any correctly rounded implementation is bit-identical;
+//     check exhaustively for atanf).
+//   - tanh (searchmirror.cpp), atanh: done (CORE-MATH ports, math/tanh.rs and math/atanh.rs,
+//     checked against the host glibc 2.44 on 1.5*10^8 inputs each).
 //   - tanhf (nneval.cpp ownership): done above.
 //   - lgamma, expm1 (fancymath.cpp): done (lgamma: CORE-MATH port in math/lgamma.rs; expm1:
 //     fdlibm with glibc's FMA contractions, above).

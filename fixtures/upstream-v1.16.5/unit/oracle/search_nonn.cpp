@@ -25,7 +25,9 @@
 //     makeBoardMoveAssumeLegal(board,loc,pla,NULL) for each) sseed=<Search rand seed> base=<0 SearchParams()|
 //     1 forTestsV1|2 forTestsV2> maxvisits=<n> params=<key=value,...|-> ops=<op;op;...>
 //   The initial SearchParams are base + params (applied in order) + maxVisits; numThreads is 1. Values are
-//   parsed with strtod/strtol (the Rust side uses the same decimal text), bools are 0/1.
+//   parsed with strtod/strtol (the Rust side uses the same decimal text), bools are 0/1. Keys: see setParam (the
+//   eval cache, pattern bonus and anti-mirror ones are useEvalCache, evalCacheMinVisits, subtreeValueBiasTableNumShards (which is also
+//   the eval cache's shard count), antiMirror, avoidRepeatedPatternUtility).
 // Ops (':' separates the arguments; <pla> 1 B, 2 W; <persp> W, B or N (= P_EMPTY, the root player's)):
 //   P                          setPosition(pla, board, hist) from the CASE line; prints the board, encore phase, ...
 //   V:<bspec>:<wspec>          setAvoidMoveUntilByLoc; spec = "-" (empty vector) or "loc/until,..." on a
@@ -58,6 +60,28 @@
 //                              [-0.999, 0.999] (float math); prints the number of entries beyond +-0.95 ("noxo" if none)
 //   ECT:<f64 bits|->           sets effectiveSearchTimeCarriedOver (unless "-") and prints it. After a search it holds
 //                              real elapsed time upstream, so the generators set it before every print they compare
+//   HC:<0|1>:<n>               (before P) the history P builds gets setAssumeMultipleStartingBlackMovesAreHandicap(<0|1>) and, if n >= 0,
+//                              setOverrideNumHandicapStones(n): handicap for updateMirroring's mirrorAdvantage and the white handicap bonus
+//   EC                         the search's eval cache: "noec" if there is none, else "ec shards=<n> n=<entries> null=<null values>
+//                              fe=<firstExploreEvals elements> fnv=<FNV-1a 64>" and the first 2 entries in full. The hash covers every
+//                              shard in order, each std::map in Hash128 order, one line per entry: "<shard> <hash1> <hash0>" then "null"
+//                              (a nullptr value, which EvalCacheTable::update's operator[] inserts) or the float bits of cacheWeight,
+//                              avgWinLoss, avgNoResult, avgScoreMean, avgLead and every firstExploreEvals element "loc:wl:sm:weight"
+//   NE                         per node of enumerateTreePostOrder(): "ne nodes=<n> ece=<nodes with an evalCacheEntry> pbh=<nodes with a
+//                              nonzero patternBonusHash> fnv=<FNV-1a 64 of the per-node lines: entry present, patternBonusHash, cacheWeight>"
+//   ECC  ECN:<shards>          evalCache->clear() (if there is one) / setExternalEvalCache(make_shared<EvalCacheTable>(shards))
+//   ECS:<pla>                  a second Search (same evaluator, current params, seed <sseed>second) shares the first one's eval cache
+//                              (setExternalEvalCache), is set to the first's current position (root player, board, history), runs a whole
+//                              search for <pla>; prints its root summary (as RS) and NE of its tree. Cross-search cache hits and updates
+//   PB:<0|1>:<shards>:<bonus>:<onlyPla>:<k>
+//                              a PatternBonusTable (<shards>, 0 = default 1024) filled by addBonusForGameMoves(the first k moves of the CASE
+//                              line's game, -1 = all, <bonus>, <onlyPla> 0 both|1|2) is printed and handed to the search by
+//                              setExternalPatternBonusTable (0) or setCopyOfExternalPatternBonusTable (1)
+//   PBN:<0|1>                  setExternalPatternBonusTable(nullptr) / setCopyOfExternalPatternBonusTable(nullptr)
+//   PBH:<n>                    PatternBonusTable on the root position without any search: getHash/get of pass, NULL_LOC and every point for
+//                              both players (ko captures give the zero hash); addBonus of every symmetry and color flip for the first n
+//                              empty points (alternating players); the tables of addBonusForGameMoves(root history) (both overloads)
+//   MI                         mirroringPla, mirrorAdvantage, mirrorCenterSymmetryError (bits) as left by the last beginSearch
 // A thrown exception prints "EXC" and ends the case (the message goes to stderr only). Inputs that trip an upstream
 // testAssert (a fatal exit, not an exception) are avoided by the generators: a root player other than the history's
 // presumed next one (nneval.cpp), getChosenMoveLoc after beginSearch alone, chosenMoveTemperatureOnlyBelowProb.
@@ -71,9 +95,23 @@
 // Appended later (M3 wave-2a fixes; cases 0..340 kept their inputs and outputs, plus the ntkeys lines): widereuse (3:
 // makeMove into a child with more than 64 children), ownext (24: XO, ending score bonus / pass suppression / noise
 // pruning cap), collapse (6: root children filtered by rootSymmetryPruning in a reused tree, then regrown), timecarry
-// (8: ECT around makeMove with treeReuseCarryOverTimeFactor). 382 cases in all.
+// (8: ECT around makeMove with treeReuseCarryOverTimeFactor). 382 cases up to here.
+// Appended with the ports of the eval cache, the pattern bonus table and anti-mirror (cases 0..381 kept their inputs and outputs;
+// the first 382 case blocks of the file are byte-identical to the previous version): evalcache (32: useEvalCache + useGraphSearch on
+// boards where passing is plausible (a third endgame-like), min visits 2..20, 1..100 shards; clearSearch and re-searching the same
+// position with a warm cache, tree reuse, more and fewer visits than the cached entries, ECC/ECN, ECS (a second Search on the same
+// cache), komi/player changes; every 10th has useGraphSearch=0: the cache stays unused), antimirror (40: the opponent mirrored its last
+// 15..24 moves through the center; boards 7..19 odd/even/non-square, area and territory, komi around the thresholds, handicap stones
+// (HC), the mirroring player on tengen (the difficult case) or the root player, central asymmetries (mirrorCenterSymmetryError > 0),
+// histories that do not qualify or stop mirroring; follow-ups continue/break the mirror with two makeMoves, or let the mirroring player
+// become the root; some with subtreeValueBiasFactor, useNoisePruning, useEvalCache), patternbonus (26: avoidRepeatedPatternUtility
+// +-0.1..0.5 on corner openings, mirror games, random games with passes and kos; external tables PB/PBN; PBH table dumps; one move or
+// two moves in a row between searches). 480 cases in all.
 // For exploration only (not the fixture): ORACLE_SEED=<str> ORACLE_STRESS_ONLY=<n> prints n stress cases for another
 // seed; the Rust test replays such a file when SEARCH_ORACLE_FILE names it; ORACLE_TRACE=1 echoes the ops to stderr.
+// At exit, stderr lists how often features/params occurred ("stat:" lines: searches whose tree had evalCacheEntry/patternBonusHash
+// nodes, mirroring searches, ... measured on the finished searches of sections 15-17); ORACLE_DEPTH=1 also prints the depth of
+// their trees (the Rust test runs on wasm32 with a 1 MB stack: trees hundreds of plies deep overflow it in a debug build).
 // The search's Logger writes into the same buffer (": <message>" lines, as testsearchnonn's does).
 #include <cstdarg>
 #include <cstdio>
@@ -83,6 +121,8 @@
 #include <cstdlib>
 #include <functional>
 #include <map>
+#include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -96,6 +136,8 @@
 #include "neuralnet/nninputs.h"
 #include "neuralnet/nneval.h"
 #include "search/analysisdata.h"
+#include "search/evalcache.h"
+#include "search/patternbonustable.h"
 #include "search/reportedsearchvalues.h"
 #include "search/search.h"
 #include "search/searchnode.h"
@@ -172,6 +214,7 @@ static bool setParam(SearchParams& p, const string& k, const string& v) {
   D(subtreeValueBiasFactor) D(subtreeValueBiasFreeProp) D(subtreeValueBiasWeightExponent)
   I(nodeTableShardsPowerOfTwo) L(maxVisits) L(maxPlayouts) D(futileVisitsThreshold) D(searchFactorAfterOnePass) D(searchFactorAfterTwoPass)
   D(treeReuseCarryOverTimeFactor)
+  Bo(useEvalCache) L(evalCacheMinVisits) I(subtreeValueBiasTableNumShards) Bo(antiMirror) D(avoidRepeatedPatternUtility)
 #undef D
 #undef I
 #undef L
@@ -307,6 +350,153 @@ static void printNodeTableKeys(const Search* search) {
   pf("ntkeys n=%d fnv=%016llX\n", (int)n, (unsigned long long)fnv64(text));
 }
 
+// Op EC: the search's eval cache: "noec" if there is none, else a count line and the first EC_FULL entries in full.
+// The line count/FNV-1a 64 cover every shard in order, each shard's std::map in Hash128 order, one line per entry:
+// "<shard> <hash1> <hash0>" then "null" (the nullptr operator[] leaves behind in EvalCacheTable::update when it returns early) or
+// the entry's float bits (cacheWeight, avgWinLoss, avgNoResult, avgScoreMean, avgLead) and every firstExploreEvals element
+// "loc:avgWinLoss:avgScoreMean:cacheWeight" (float bits).
+static const size_t EC_FULL = 2;
+static void printEvalCache(const Search* search) {
+  const EvalCacheTable* ec = search->evalCache.get();
+  if(ec == NULL) { pf("noec\n"); return; }
+  string text, head;
+  size_t n = 0, nnull = 0, nfe = 0;
+  for(size_t i = 0; i < ec->entries.size(); i++) {
+    for(const auto& kv : ec->entries[i]) {
+      char buf[128];
+      snprintf(buf, sizeof buf, "%d %016llX %016llX", (int)i, (unsigned long long)kv.first.hash1, (unsigned long long)kv.first.hash0);
+      string line = buf;
+      if(kv.second == nullptr) {
+        line += " null";
+        nnull++;
+      }
+      else {
+        const EvalCacheEntry& e = *kv.second;
+        snprintf(buf, sizeof buf, " w=%08X wl=%08X nr=%08X sm=%08X lead=%08X fe=%d", fbits(e.cacheWeight), fbits(e.avgWinLoss), fbits(e.avgNoResult),
+                 fbits(e.avgScoreMean), fbits(e.avgLead), (int)e.firstExploreEvals.size());
+        line += buf;
+        for(const auto& fe : e.firstExploreEvals) {
+          snprintf(buf, sizeof buf, " %d:%08X:%08X:%08X", (int)fe.first, fbits(fe.second.avgWinLoss), fbits(fe.second.avgScoreMean), fbits(fe.second.cacheWeight));
+          line += buf;
+          nfe++;
+        }
+      }
+      line += "\n";
+      if(n < EC_FULL) head += line;
+      text += line;
+      n++;
+    }
+  }
+  pf("ec shards=%d n=%d null=%d fe=%d fnv=%016llX\n", (int)ec->entries.size(), (int)n, (int)nnull, (int)nfe, (unsigned long long)fnv64(text));
+  O << head;
+}
+
+// Op NE: per node of the tree (enumerateTreePostOrder order): whether it holds an evalCacheEntry (and its cacheWeight), its patternBonusHash.
+static void printNodeExtras(Search* search) {
+  if(search->rootNode == NULL) { pf("noroot\n"); return; }
+  vector<SearchNode*> nodes = search->enumerateTreePostOrder();
+  int withEntry = 0, withPattern = 0;
+  string text;
+  for(SearchNode* node : nodes) {
+    bool he = node->evalCacheEntry != nullptr;
+    bool hp = node->patternBonusHash.hash0 != 0 || node->patternBonusHash.hash1 != 0;
+    withEntry += he ? 1 : 0;
+    withPattern += hp ? 1 : 0;
+    char buf[128];
+    snprintf(buf, sizeof buf, "%d %016llX %016llX %08X\n", (int)he, (unsigned long long)node->patternBonusHash.hash1,
+             (unsigned long long)node->patternBonusHash.hash0, he ? fbits(node->evalCacheEntry->cacheWeight) : 0u);
+    text += buf;
+  }
+  pf("ne nodes=%d ece=%d pbh=%d fnv=%016llX\n", (int)nodes.size(), withEntry, withPattern, (unsigned long long)fnv64(text));
+}
+
+// A PatternBonusTable as a count and FNV-1a 64 of "<shard> <hash1> <hash0> <utilityBonus bits>" lines (shard by shard,
+// each map in Hash128 order) and the sum of the bonuses in that order.
+static void printPatternBonusTable(const char* label, const PatternBonusTable& t) {
+  string text;
+  size_t n = 0;
+  double sum = 0.0;
+  for(size_t i = 0; i < t.entries.size(); i++) {
+    for(const auto& kv : t.entries[i]) {
+      char line[96];
+      snprintf(line, sizeof line, "%d %016llX %016llX %016llX\n", (int)i, (unsigned long long)kv.first.hash1, (unsigned long long)kv.first.hash0, DB(kv.second.utilityBonus));
+      text += line;
+      sum += kv.second.utilityBonus;
+      n++;
+    }
+  }
+  pf("%s shards=%d n=%d sum=%016llX fnv=%016llX\n", label, (int)t.entries.size(), (int)n, DB(sum), (unsigned long long)fnv64(text));
+}
+
+// Op PBH:<n>: PatternBonusTable on the root position, no search involved. getHash/get of every point (and pass, NULL_LOC)
+// for both players on a fresh table; then addBonus (all 8 symmetries x both color flips, one shared hashesThisGame) for the
+// first n empty points, alternating players, and get() of every point again; then addBonusForGameMoves of the root history
+// (both overloads).
+static void patternBonusHashOp(const Search* search, int numAdd) {
+  const Board& board = search->getRootBoard();
+  const BoardHistory& hist = search->getRootHist();
+  vector<Loc> locs;
+  locs.push_back(Board::NULL_LOC);
+  locs.push_back(Board::PASS_LOC);
+  for(int y = 0; y < board.y_size; y++)
+    for(int x = 0; x < board.x_size; x++)
+      locs.push_back(Location::getLoc(x, y, board.x_size));
+  PatternBonusTable t(11);
+  {
+    string text;
+    int nonzero = 0;
+    for(Player pla = P_BLACK; pla <= P_WHITE; pla++) {
+      for(Loc loc : locs) {
+        Hash128 h = t.getHash(pla, loc, board);
+        char line[96];
+        snprintf(line, sizeof line, "%d %d %016llX %016llX\n", (int)pla, (int)loc, (unsigned long long)h.hash1, (unsigned long long)h.hash0);
+        text += line;
+        if(h.hash0 != 0 || h.hash1 != 0) nonzero++;
+      }
+    }
+    pf("pbh hashes n=%d nonzero=%d fnv=%016llX\n", (int)text.size(), nonzero, (unsigned long long)fnv64(text));
+  }
+  std::set<Hash128> seen;
+  int added = 0;
+  for(int y = 0; y < board.y_size && added < numAdd; y++) {
+    for(int x = 0; x < board.x_size && added < numAdd; x++) {
+      Loc loc = Location::getLoc(x, y, board.x_size);
+      if(board.colors[loc] != C_EMPTY)
+        continue;
+      Player pla = added % 2 == 0 ? P_BLACK : P_WHITE;
+      for(int flip = 0; flip < 2; flip++)
+        for(int sym = 0; sym < 8; sym++)
+          t.addBonus(pla, loc, board, 0.25 * (added + 1) * (flip ? -1 : 1), sym, flip != 0, seen);
+      added++;
+    }
+  }
+  pf("pbh added=%d seen=%d ", added, (int)seen.size());
+  printPatternBonusTable("table", t);
+  {
+    string text;
+    int nonzero = 0;
+    for(Player pla = P_BLACK; pla <= P_WHITE; pla++) {
+      for(Loc loc : locs) {
+        PatternBonusEntry e = t.get(pla, loc, board);
+        char line[64];
+        snprintf(line, sizeof line, "%d %d %016llX\n", (int)pla, (int)loc, DB(e.utilityBonus));
+        text += line;
+        if(e.utilityBonus != 0.0) nonzero++;
+      }
+    }
+    pf("pbh gets n=%d nonzero=%d fnv=%016llX\n", (int)text.size(), nonzero, (unsigned long long)fnv64(text));
+  }
+  PatternBonusTable t2(11);
+  t2.addBonusForGameMoves(hist, 0.5);
+  printPatternBonusTable("game", t2);
+  PatternBonusTable t3(7);
+  t3.addBonusForGameMoves(hist, -0.3, P_WHITE);
+  printPatternBonusTable("gameW", t3);
+  PatternBonusTable t4;
+  t4.addBonusForGameMoves(hist, 0.2, P_BLACK);
+  printPatternBonusTable("gameB", t4);
+}
+
 static Player parsePersp(const string& s) {
   if(s == "W") return P_WHITE;
   if(s == "B") return P_BLACK;
@@ -321,6 +511,13 @@ struct Runner {
   Search* search;
   SearchParams curParams;
   bool ownerOn = false;
+  // Op HC (before P): BoardHistory::setAssumeMultipleStartingBlackMovesAreHandicap / setOverrideNumHandicapStones
+  bool hcAssume = false;
+  int hcOverride = -1;
+  // Op ECS: a second Search sharing the first one's eval cache
+  NNEvaluator* nnEval = NULL;
+  Logger* logger = NULL;
+  Search* search2 = NULL;
 
   Runner(const Case& cc, Search* s, const SearchParams& p) : c(cc), search(s), curParams(p) {}
 
@@ -331,6 +528,8 @@ struct Runner {
     if(name == "P") {
       Board board(c.xs, c.ys);
       BoardHistory hist(board, c.initialPla, c.rules, 0);
+      if(hcAssume) hist.setAssumeMultipleStartingBlackMovesAreHandicap(true);
+      if(hcOverride >= 0) hist.setOverrideNumHandicapStones(hcOverride);
       for(const auto& m : c.moves)
         hist.makeBoardMoveAssumeLegal(board, m.first, m.second, NULL);
       search->setPosition(c.pla, board, hist);
@@ -482,6 +681,61 @@ struct Runner {
       }
       pf("ect %016llX\n", DB(search->effectiveSearchTimeCarriedOver));
     }
+    else if(name == "HC") {
+      hcAssume = t[1] == "1";
+      hcOverride = atoi(t[2].c_str());
+      pf("hc assume=%d override=%d\n", (int)hcAssume, hcOverride);
+    }
+    else if(name == "EC") printEvalCache(search);
+    else if(name == "NE") printNodeExtras(search);
+    else if(name == "ECC") {
+      if(search->evalCache != nullptr) search->evalCache->clear();
+      pf("ecc %d\n", (int)(search->evalCache != nullptr));
+    }
+    else if(name == "ECN") {
+      int shards = atoi(t[1].c_str());
+      search->setExternalEvalCache(std::make_shared<EvalCacheTable>(shards));
+      pf("ecn %d\n", shards);
+    }
+    else if(name == "ECS") {
+      // A second Search (same evaluator, same position and params as the first's right now) sharing the first one's eval cache
+      // runs a whole search for <pla>; its root is dumped (RS) and its nodes summarized (NE).
+      if(search->evalCache == nullptr) { pf("noec\n"); return; }
+      delete search2;
+      search2 = new Search(curParams, nnEval, logger, c.sseed + "second");
+      search2->setExternalEvalCache(search->evalCache);
+      search2->setPosition(search->getRootPla(), search->getRootBoard(), search->getRootHist());
+      search2->runWholeSearch((Player)atoi(t[1].c_str()));
+      pf("playouts2=%lld\n", (long long)search2->lastSearchNumPlayouts);
+      dumpRootOf(search2);
+      printNodeExtras(search2);
+    }
+    else if(name == "PB") {
+      // PB:<0 setExternalPatternBonusTable|1 setCopyOfExternalPatternBonusTable>:<shards, 0 = default>:<bonus>:<onlyPla>:<number of case moves replayed, -1 = all>
+      // A table filled by addBonusForGameMoves(case moves prefix, bonus, onlyPla) is handed to the search.
+      Board board(c.xs, c.ys);
+      BoardHistory hist(board, c.initialPla, c.rules, 0);
+      int n = atoi(t[5].c_str());
+      for(size_t i = 0; i < c.moves.size() && (n < 0 || (int)i < n); i++)
+        hist.makeBoardMoveAssumeLegal(board, c.moves[i].first, c.moves[i].second, NULL);
+      int shards = atoi(t[2].c_str());
+      std::unique_ptr<PatternBonusTable> table = shards > 0 ? std::make_unique<PatternBonusTable>(shards) : std::make_unique<PatternBonusTable>();
+      table->addBonusForGameMoves(hist, strtod(t[3].c_str(), NULL), (Player)atoi(t[4].c_str()));
+      printPatternBonusTable("pb", *table);
+      if(t[1] == "0") search->setExternalPatternBonusTable(std::move(table));
+      else search->setCopyOfExternalPatternBonusTable(table);
+    }
+    else if(name == "PBN") {
+      // PBN:<0|1>: setExternalPatternBonusTable(nullptr) / setCopyOfExternalPatternBonusTable(nullptr)
+      if(t[1] == "0") search->setExternalPatternBonusTable(nullptr);
+      else {
+        std::unique_ptr<PatternBonusTable> none;
+        search->setCopyOfExternalPatternBonusTable(none);
+      }
+      pf("pbn %s\n", t[1].c_str());
+    }
+    else if(name == "PBH") patternBonusHashOp(search, atoi(t[1].c_str()));
+    else if(name == "MI") pf("mirror pla=%d adv=%016llX err=%016llX\n", (int)search->mirroringPla, DB(search->mirrorAdvantage), DB(search->mirrorCenterSymmetryError));
     else if(name == "CL") search->clearSearch();
     else if(name == "KOMI") search->setKomiIfNew(fromBits((uint32_t)strtoul(t[1].c_str(), NULL, 16)));
     else if(name == "PIN") search->setPlayerIfNew((Player)atoi(t[1].c_str()));
@@ -562,7 +816,9 @@ struct Runner {
     printNodeTableKeys(search);
   }
 
-  void dumpRoot() {
+  void dumpRoot() { dumpRootOf(search); }
+
+  void dumpRootOf(Search* search) {
     pf("root visits=%lld lastPlayouts=%lld\n", (long long)search->getRootVisits(), (long long)search->lastSearchNumPlayouts);
     const SearchNode* root = search->getRootNode();
     if(root != NULL) {
@@ -657,9 +913,12 @@ static void runCase(Case& c, const function<void(Gen&)>& script) {
   params.maxVisits = c.maxVisits;
   Search* search = new Search(params, nnEval, &logger, c.sseed);
   Runner runner(c, search, params);
+  runner.nnEval = nnEval;
+  runner.logger = &logger;
   Gen g{c, &runner};
   if(getenv("ORACLE_TRACE")) fprintf(stderr, "case %d: %s\n", c.idx, caseLine(c).c_str());
   script(g);
+  delete runner.search2;
   delete search;
   nnEval->killServerThreads();
   delete nnEval;
@@ -704,6 +963,14 @@ struct Pos {
   bool play(Loc loc, Player pla) {
     if(hist.isGameFinished) return false;
     if(!hist.isLegal(board, loc, pla)) return false;
+    hist.makeBoardMoveAssumeLegal(board, loc, pla, NULL);
+    moves.push_back(make_pair(loc, pla));
+    return true;
+  }
+  // Any player may move (consecutive moves of one player: handicap stones), ko bans ignored.
+  bool playAny(Loc loc, Player pla) {
+    if(hist.isGameFinished) return false;
+    if(!hist.isLegalTolerant(board, loc, pla)) return false;
     hist.makeBoardMoveAssumeLegal(board, loc, pla, NULL);
     moves.push_back(make_pair(loc, pla));
     return true;
@@ -1240,6 +1507,148 @@ static Flow pickFlow() {
   return FLOW_PARAMS;
 }
 
+//-------------------------------------------------------------------------------------------------
+// Helpers of the generators appended for the eval cache, the pattern bonus table and anti-mirror (sections 15-17)
+
+static void bump(const string& key, int n = 1) { featureCounts[key] += n; }
+
+// Prepares a case whose op script is written out in the generator (see sections 11-14).
+static void prepCase(Case& c, const Pos& p) {
+  c.moves = p.moves;
+  c.pla = p.nextPla();
+  if(c.pla != P_BLACK && c.pla != P_WHITE) c.pla = P_BLACK;
+  c.idx = numCases;
+  c.sseed = "oracleSearch" + to_string(c.idx);
+  c.nnSeed = "oracle" + to_string(c.idx);
+}
+
+static int treeDepth(const SearchNode* n) {
+  int best = 0;
+  ConstSearchNodeChildrenReference children = n->getChildren();
+  int cap = children.getCapacity();
+  for(int i = 0; i < cap; i++) {
+    const SearchNode* c = children[i].getIfAllocated();
+    if(c == NULL) break;
+    best = std::max(best, 1 + treeDepth(c));
+  }
+  return best;
+}
+
+// Exploration-only statistics on stderr (never part of the fixture): did the new paths get hit?
+static void instrument(Gen& g) {
+  Search* s = g.r->search;
+  if(g.failed || s->rootNode == NULL) return;
+  vector<SearchNode*> nodes = s->enumerateTreePostOrder();
+  int withEntry = 0, withPattern = 0;
+  for(SearchNode* n : nodes) {
+    if(n->evalCacheEntry != nullptr) withEntry++;
+    if(n->patternBonusHash.hash0 != 0 || n->patternBonusHash.hash1 != 0) withPattern++;
+  }
+  bump("stat:searches");
+  if(getenv("ORACLE_DEPTH")) fprintf(stderr, "depth case %d %s: %d\n", g.c.idx, g.c.kind.c_str(), treeDepth(s->rootNode));
+  if(withEntry > 0) bump("stat:searches with evalCacheEntry nodes");
+  bump("stat:nodes with evalCacheEntry", withEntry);
+  if(s->rootNode->evalCacheEntry != nullptr) bump("stat:root has evalCacheEntry");
+  if(withPattern > 0) bump("stat:searches with patternBonusHash nodes");
+  bump("stat:nodes with patternBonusHash", withPattern);
+  if(s->patternBonusTable != NULL) bump("stat:searches with patternBonusTable");
+  if(s->mirroringPla != C_EMPTY) {
+    bump("stat:searches mirroring");
+    Loc center = Location::getCenterLoc(s->getRootBoard());
+    if(center != Board::NULL_LOC && s->getRootBoard().colors[center] == s->mirroringPla && s->mirrorAdvantage >= -0.5) bump("stat:searches difficult");
+    if(s->mirrorAdvantage >= 5.0) bump("stat:mirrorAdvantage>=5");
+    else if(s->mirrorAdvantage >= -5.0) bump("stat:mirrorAdvantage -5..5");
+    else bump("stat:mirrorAdvantage<-5");
+    if(s->mirrorCenterSymmetryError > 0.0 && s->mirrorCenterSymmetryError < 1e9) bump("stat:mirrorCenterSymmetryError>0");
+    if(s->mirrorCenterSymmetryError >= 1e9) bump("stat:mirrorCenterSymmetryError=1e10");
+  }
+  if(s->searchParams.useEvalCache && s->evalCache != nullptr) {
+    const SearchNode* root = s->rootNode;
+    std::shared_ptr<EvalCacheEntry> e = s->evalCache->find(root->graphHash);
+    int64_t rootVisits = root->stats.visits.load();
+    if(e != nullptr && rootVisits >= s->searchParams.evalCacheMinVisits) {
+      if((int64_t)e->cacheWeight == rootVisits) bump("stat:root eval recorded");
+      else bump("stat:root eval not recorded or older");
+    }
+    size_t n = 0;
+    for(const auto& shard : s->evalCache->entries) n += shard.size();
+    bump("stat:evalcache entries", (int)n);
+  }
+}
+
+// A mirror game for the antiMirror cases: `mir` (the opponent of rootPla) answers the root player's moves at the point
+// mirrored through the center (Location::getMirrorLoc), `pairs` times (the last answer is a different move if breakLast).
+// centerMode (odd x odd boards): 1 the mirroring player owns tengen, 2 the root player owns it. handicap > 1: the
+// first black moves are consecutive (the case then sets BoardHistory::assumeMultipleStartingBlackMovesAreHandicap).
+// `deviations` of the pairs (not the first) are played inside the 7x7 window around the center with an answer at another point of
+// the window, so the stones there are not symmetric (mirrorCenterSymmetryError > 0, unmatched stones of the mirroring player).
+// Returns the number of pairs played (illegal answers are retried with another root move).
+static int mirrorGame(Pos& p, int xs, int ys, Player rootPla, int pairs, int centerMode, int handicap, bool breakLast, int deviations = 0) {
+  Player mir = getOpp(rootPla);
+  Loc center = Location::getCenterLoc(xs, ys);
+  if(center == Board::NULL_LOC) centerMode = 0;
+  auto randPt = [&](const Pos& q, Player pla, bool central) {
+    for(int tries = 0; tries < 80; tries++) {
+      Loc l = central ? Location::getLoc(xs / 2 + rnd(7) - 3, ys / 2 + rnd(7) - 3, xs) : Location::getLoc(rnd(xs), rnd(ys), xs);
+      if(l == center) continue;
+      if(central && (xs / 2 + 3 >= xs || xs / 2 - 3 < 0 || ys / 2 + 3 >= ys || ys / 2 - 3 < 0)) continue;
+      if(q.hist.isLegalTolerant(q.board, l, pla)) return l;
+    }
+    return Board::NULL_LOC;
+  };
+  int rootMoves = 0, mirMoves = 0;
+  if(rootPla == P_BLACK) {
+    // black is the root player: its handicap stones come before the first pair (the last one is the first pair's root move)
+    for(int h = 0; h < handicap - 1; h++) {
+      Loc l = (h == 0 && centerMode == 2) ? center : randPt(p, P_BLACK, false);
+      if(l == Board::NULL_LOC || !p.playAny(l, P_BLACK)) return 0;
+      rootMoves++;
+    }
+  }
+  else {
+    // black is the mirroring player and moves first (handicap stones, the first one on tengen if it holds it)
+    int n = std::max(1, handicap);
+    for(int h = 0; h < n; h++) {
+      Loc l = (h == 0 && centerMode == 1) ? center : randPt(p, P_BLACK, false);
+      if(l == Board::NULL_LOC || !p.playAny(l, P_BLACK)) return 0;
+      mirMoves++;
+    }
+  }
+  int done = 0;
+  for(int k = 0; k < pairs; k++) {
+    bool deviate = k > 0 && k < pairs - 1 && deviations > 0 && rnd(pairs) < deviations * 2;
+    if(deviate) deviations--;
+    bool ok = false;
+    for(int attempt = 0; attempt < 30 && !ok; attempt++) {
+      Pos q = p;
+      bool rootCenter = centerMode == 2 && rootMoves == 0;
+      Loc rm = rootCenter ? center : randPt(q, rootPla, deviate);
+      if(rm == Board::NULL_LOC || !q.playAny(rm, rootPla)) continue;
+      Loc mm;
+      if(rootCenter || (centerMode == 1 && rootPla == P_BLACK && mirMoves == 0))
+        mm = (centerMode == 1) ? center : randPt(q, mir, false);  // tengen itself has no mirror point
+      else
+        mm = Location::getMirrorLoc(rm, xs, ys);
+      if(deviate) {
+        Loc other = randPt(q, mir, true);
+        if(other != Board::NULL_LOC && other != mm) mm = other;
+      }
+      if(breakLast && k == pairs - 1) {
+        Loc other = randPt(q, mir, false);
+        if(other != Board::NULL_LOC && other != mm) mm = other;
+      }
+      if(!q.playAny(mm, mir)) continue;
+      p = q;
+      ok = true;
+    }
+    if(!ok) break;
+    rootMoves++;
+    mirMoves++;
+    done++;
+  }
+  return done;
+}
+
 int main() {
   Board::initHash();
   ScoreValue::initTables();
@@ -1704,6 +2113,334 @@ int main() {
         g.run("ECT:-");
         g.run("R:" + to_string((int)g.r->search->getRootPla()));
         if(prob(0.5)) g.run("RS");
+      }
+    });
+  }
+
+  // Sections 15-17 were added after the first 382 cases (the eval cache, the pattern bonus table and anti-mirror were
+  // ported later); they only append, so cases 0..381 kept their inputs and outputs.
+
+  // 15. The eval cache (useEvalCache with useGraphSearch): several searches in a row on one Search (clearSearch and
+  // re-searching the same position, tree reuse, fewer/more visits than the cached entries, ECC/ECN, a second Search sharing
+  // the cache), on boards where passing is plausible. Every 10th case has useGraphSearch=0: the cache must stay unused.
+  for(int i = 0; detailed && i < 32; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    bool endgameLike = i % 3 == 0;
+    bool noGraph = i % 10 == 7;
+    int xs = endgameLike ? 5 + rnd(3) : 5 + rnd(5);
+    int ys = prob(0.25) ? 5 + rnd(4) : xs;
+    c.kind = "evalcache-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = prob(0.1) ? P_WHITE : P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    int area = xs * ys;
+    if(endgameLike) {
+      randomMoves(p, xs, ys, area + rnd(area), 10, 0);
+      if(i % 9 == 0) passPair(p);
+    }
+    else
+      randomMoves(p, xs, ys, prob(0.15) ? 0 : rnd(area), 3, 0);
+    addParams(c, ys, area <= 49);
+    auto add = [&](const string& k, const string& v) { c.params.push_back(make_pair(k, v)); };
+    add("maxPlayouts", "1125899906842624");
+    add("useGraphSearch", noGraph ? "0" : "1");
+    add("useEvalCache", "1");
+    static const char* minVisits[] = {"2", "3", "5", "8", "12", "20"};
+    add("evalCacheMinVisits", pick(minVisits));
+    static const char* shardCounts[] = {"1", "2", "3", "7", "16", "100"};
+    if(rnd(6) != 0) add("subtreeValueBiasTableNumShards", pick(shardCounts));
+    c.maxVisits = 60 + rnd(260);
+    bool ownerOn = prob(0.15);
+    prepCase(c, p);
+    runCase(c, [&](Gen& g) {
+      const string rp = to_string((int)c.pla);
+      auto search = [&](bool dumpAll) {
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        instrument(g);
+        g.run("NE");
+        g.run("EC");
+        g.run("RS");
+        if(dumpAll || prob(0.3)) g.run(hsOp(ownerOn, c.xs, c.ys));
+        if(prob(0.3)) g.run("PSV");
+      };
+      g.run("P");
+      if(ownerOn) g.run("O");
+      if(prob(0.3)) {
+        static const int shardsN[] = {1, 2, 5, 16, 64};
+        g.run("ECN:" + to_string(pick(shardsN)));
+      }
+      g.run("R:" + rp);
+      instrument(g);
+      g.run("NE");
+      g.run("EC");
+      report(g, true, c.maxVisits <= 30, ownerOn, c.xs, c.ys);
+      int rounds = 3 + rnd(3);
+      for(int k = 0; k < rounds; k++) {
+        int kind = rnd(14);
+        Player mp = g.r->search->getRootPla();
+        if(kind <= 3) {
+          g.run("CL");  // same position, empty tree, warm cache
+          search(k == rounds - 1);
+        }
+        else if(kind == 4) {
+          g.run("ECC");  // cache cleared, tree kept (its nodes keep their entries)
+          g.run("EC");
+          g.run("SPN:maxVisits=" + to_string((long long)(c.maxVisits + 20 + rnd(60))));
+          search(false);
+        }
+        else if(kind == 5) {
+          g.run("ECC");
+          g.run("CL");
+          search(false);
+        }
+        else if(kind <= 7) {
+          Loc mv = kind == 6 ? bestRootChild(g) : randomLegalRootMove(g, mp);
+          if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)mp) + ":0");
+          g.run("NE");
+          search(false);
+        }
+        else if(kind == 8) {
+          g.run("SPN:maxVisits=" + to_string((long long)(c.maxVisits * (2 + rnd(2)))));  // more visits: entries merged and replaced
+          search(false);
+        }
+        else if(kind == 9) {
+          g.run("SPN:maxVisits=" + to_string((long long)(std::max<int64_t>(5, c.maxVisits / (2 + rnd(3))))));  // fewer than 3/4 of the cached weights
+          g.run("CL");
+          search(false);
+        }
+        else if(kind == 10) {
+          g.run("ECS:" + to_string((int)mp));
+          g.run("EC");
+        }
+        else if(kind == 11) {
+          static const int shardsN[] = {1, 3, 8, 50};
+          g.run("ECN:" + to_string(pick(shardsN)));
+          search(false);
+        }
+        else if(kind == 12) {
+          static const float komis[] = {7.5f, 6.5f, 0.0f, 5.5f, -2.0f};
+          char buf[32];
+          snprintf(buf, sizeof buf, "%08X", fbits(pick(komis)));
+          g.run(string("KOMI:") + buf);
+          search(false);
+        }
+        else {
+          g.run("PCH:" + to_string((int)getOpp(mp)));
+          search(false);
+        }
+      }
+    });
+  }
+
+  // 16. Anti-mirror (antiMirror=1): the opponent of the root player has mirrored its last 14..19 moves through the center
+  // (and the last one is a mirror move, Search::updateMirroring); odd/even/non-square boards 7..19, area and territory scoring,
+  // komi around the thresholds, black handicap stones (assumeMultipleStartingBlackMovesAreHandicap or an override), the
+  // mirroring player on tengen (the difficult case: hackNNOutputForMirror, forced exploration) or not, and histories that do not
+  // qualify. Follow-ups: the mirror continues (two makeMoves), is broken, or the root passes to the mirroring player.
+  for(int i = 0; detailed && i < 40; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    bool territory = i % 2 == 1;
+    Rules t = Rules::parseRules(territory ? (i % 4 == 1 ? "japanese" : "korean") : (i % 4 == 0 ? "chinese" : (i % 4 == 2 ? "aga" : "tromp-taylor")));
+    t.koRule = rnd(3);
+    if(prob(0.4)) t.whiteHandicapBonusRule = rnd(3);
+    c.rules = t;
+    rname = territory ? "territory" : "area";
+    static const int sz[] = {7, 9, 13, 8, 11, 19, 10, 9, 12, 7, 15, 13, 9, 11, 7, 10};
+    int xs = sz[i % 16];
+    int ys = (i % 7 == 3) ? sz[(i + 5) % 16] : xs;
+    if(xs * ys > 150) ys = xs = 19;
+    c.kind = "antimirror-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Player rootPla = ((i / 2) % 2 == 0) ? P_BLACK : P_WHITE;
+    bool oddSquare = (xs % 2 == 1) && (ys % 2 == 1);
+    int centerMode = oddSquare ? i % 3 : 0;
+    int handicap = (i % 5 == 4) ? 2 + rnd(3) : 0;
+    int override = (handicap == 0 && i % 7 == 5) ? 2 + rnd(3) : -1;
+    bool qualifies = i % 8 != 7;
+    bool breakLast = i % 6 == 5;
+    // The komi: around the mirrorAdvantage thresholds (-5, -0.5, 5); most of the time such that the mirroring player's advantage
+    // is >= -0.5 when it owns tengen (the difficult case).
+    static const float komisAny[] = {-7.5f, -5.0f, -2.5f, -0.5f, 0.0f, 0.5f, 1.5f, 3.5f, 5.0f, 6.5f, 7.5f, 9.5f};
+    static const float komisBlackRoot[] = {1.5f, 3.5f, 5.0f, 6.5f, 7.5f, 9.5f};
+    static const float komisWhiteRoot[] = {-7.5f, -5.0f, -2.5f, -0.5f, 0.0f, 0.5f, 1.5f};
+    if(centerMode == 1 && prob(0.75)) c.rules.komi = rootPla == P_BLACK ? pick(komisBlackRoot) : pick(komisWhiteRoot);
+    else c.rules.komi = pick(komisAny);
+    int deviations = ((i / 3) % 3 != 0) ? 1 + rnd(xs >= 9 ? 3 : 2) : 0;
+    int pairs = qualifies ? ((centerMode > 0 ? 18 : 16) + 2 * deviations + rnd(3)) : 9 + rnd(4);
+    Pos p(xs, ys, c.rules, c.initialPla);
+    int done = mirrorGame(p, xs, ys, rootPla, pairs, centerMode, handicap, breakLast, deviations);
+    bump("stat:mirror game pairs", done);
+    addParams(c, ys, false);
+    auto add = [&](const string& k, const string& v) { c.params.push_back(make_pair(k, v)); };
+    add("antiMirror", "1");
+    add("maxPlayouts", "1125899906842624");
+    add("fpuLossProp", "0.0");  // fpuLossProp=1 makes the tree hundreds of plies deep (the recursive playout overflows the wasm stack)
+    if(i % 3 == 0) {
+      add("subtreeValueBiasFactor", i % 2 ? "0.35" : "0.8");
+      add("subtreeValueBiasTableNumShards", "8");
+    }
+    if(i % 4 == 1) add("useNoisePruning", "1");
+    if(i % 5 == 2) {
+      add("useGraphSearch", "1");
+      add("useEvalCache", "1");
+      add("evalCacheMinVisits", "5");
+      add("subtreeValueBiasTableNumShards", "4");
+    }
+    if(i % 6 == 4) add("useGraphSearch", "0");
+    c.maxVisits = (xs * ys > 150) ? 60 + rnd(60) : 200 + rnd(250);
+    bool ownerOn = prob(0.25);
+    bool hcAssume = handicap > 0;
+    prepCase(c, p);
+    runCase(c, [&](Gen& g) {
+      if(hcAssume || override >= 0) g.run(string("HC:") + (hcAssume ? "1" : "0") + ":" + to_string(override));
+      g.run("P");
+      if(ownerOn) g.run("O");
+      const Player root = c.pla;
+      bool deep = c.maxVisits <= 30;
+      g.run("R:" + to_string((int)root));
+      instrument(g);
+      g.run("MI");
+      report(g, true, deep, ownerOn, c.xs, c.ys);
+      int rounds = 1 + rnd(3);
+      for(int k = 0; k < rounds; k++) {
+        Player rp = g.r->search->getRootPla();
+        Player opp = getOpp(rp);
+        int mode = rnd(10);
+        Loc mv = prob(0.7) ? bestRootChild(g) : randomLegalRootMove(g, rp);
+        if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+        if(mode < 4) {
+          // the mirror continues: the root player's move and the mirrored answer (two makeMoves, the tree is reused)
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");
+          Loc reply = Location::getMirrorLoc(mv, c.xs, c.ys);
+          if(mv == Board::PASS_LOC || !g.r->search->isLegalTolerant(reply, opp)) reply = randomLegalRootMove(g, opp);
+          g.run("M:" + to_string((int)reply) + ":" + to_string((int)opp) + ":0");
+        }
+        else if(mode < 6) {
+          // the mirror is broken by an answer at another point
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");
+          Loc mirror = Location::getMirrorLoc(mv, c.xs, c.ys);
+          Loc reply = randomLegalRootMove(g, opp);
+          for(int tries = 0; tries < 10 && reply == mirror; tries++) reply = randomLegalRootMove(g, opp);
+          g.run("M:" + to_string((int)reply) + ":" + to_string((int)opp) + ":0");
+        }
+        else if(mode < 8) {
+          // only the root player moves: the next root player is the mirroring one
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");
+        }
+        else if(mode == 8)
+          g.run("SPN:maxVisits=" + to_string((long long)(c.maxVisits * 2)));
+        else
+          g.run("CL");
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        instrument(g);
+        g.run("MI");
+        g.run("NE");
+        if(prob(0.5)) g.run("RS");
+        else g.run(hsOp(ownerOn, c.xs, c.ys));
+        if(prob(0.4)) report(g, false, deep, ownerOn, c.xs, c.ys);
+      }
+    });
+  }
+
+  // 17. The pattern bonus table: avoidRepeatedPatternUtility +-0.1..0.5 (plaThatSearchIsFor of either color) on histories with
+  // repeated local shapes (corner openings, mirror games, random games with passes, kos), external tables (PB/PBN: hand-over
+  // and copy), the table itself (PBH), tree reuse across makeMove (two moves in a row keep the player the search is for).
+  for(int i = 0; detailed && i < 26; i++) {
+    Case c;
+    string rname;
+    c.rules = makeRules(rname);
+    int type = i % 4;
+    static const int bigSizes[] = {13, 19, 13, 15};
+    int xs, ys;
+    if(type == 0) { xs = bigSizes[(i / 4) % 4]; ys = xs; }
+    else if(type == 1) { xs = 9 + rnd(5); ys = xs; }
+    else if(type == 2) { xs = 7 + rnd(5); ys = prob(0.3) ? 7 + rnd(5) : xs; }
+    else { xs = 6 + rnd(4); ys = xs; }
+    static const char* kinds[] = {"corners", "mirror", "random", "ko"};
+    c.kind = string("patternbonus-") + kinds[type] + "-" + rname;
+    setSizes(c, xs, ys);
+    c.initialPla = P_BLACK;
+    Pos p(xs, ys, c.rules, c.initialPla);
+    if(type == 0) {
+      // black and white alternate moves at joseki points of the four corners
+      static const int offs[][2] = {{3, 3}, {2, 3}, {3, 2}, {2, 2}, {3, 4}, {4, 3}, {2, 4}};
+      int plies = 3 + rnd(6);
+      for(int k = 0; k < plies; k++) {
+        for(int tries = 0; tries < 30; tries++) {
+          int corner = rnd(4);
+          const int* o = offs[rnd(7)];
+          int x = (corner & 1) ? xs - 1 - o[0] : o[0];
+          int y = (corner & 2) ? ys - 1 - o[1] : o[1];
+          if(p.play(Location::getLoc(x, y, xs), p.nextPla())) break;
+        }
+      }
+    }
+    else if(type == 1)
+      mirrorGame(p, xs, ys, prob(0.5) ? P_BLACK : P_WHITE, 4 + rnd(6), 0, 0, false);
+    else if(type == 2)
+      randomMoves(p, xs, ys, 4 + rnd(xs * ys / 2), 12, 0);
+    else
+      koMoves(p, xs, ys, rnd(2), rnd(2), 1 + rnd(8), 0, prob(0.3) ? 1 : 0);
+    addParams(c, ys, false);
+    auto add = [&](const string& k, const string& v) { c.params.push_back(make_pair(k, v)); };
+    static const char* utils[] = {"0.1", "0.2", "0.3", "0.5", "-0.1", "-0.2", "-0.3", "-0.5"};
+    bool externalOnly = i % 6 == 5;
+    add("avoidRepeatedPatternUtility", externalOnly ? "0" : pick(utils));
+    add("maxPlayouts", "1125899906842624");
+    c.maxVisits = (xs * ys > 200) ? 30 + rnd(50) : 50 + rnd(150);
+    bool ownerOn = prob(0.15);
+    prepCase(c, p);
+    bool useTable = externalOnly || i % 3 == 1;
+    runCase(c, [&](Gen& g) {
+      g.run("P");
+      if(ownerOn) g.run("O");
+      if(i % 3 == 0 || i % 5 == 2) g.run("PBH:" + to_string(1 + rnd(12)));
+      if(useTable) {
+        static const char* shards[] = {"0", "16", "5"};
+        static const char* bonus[] = {"0.3", "-0.3", "0.15", "-0.5"};
+        int prefix = prob(0.5) ? -1 : (int)(rnd((int)c.moves.size() + 1));
+        g.run(string("PB:") + (i % 2 ? "1" : "0") + ":" + pick(shards) + ":" + pick(bonus) + ":" + to_string(rnd(3)) + ":" + to_string(prefix));
+      }
+      g.run("R:" + to_string((int)c.pla));
+      instrument(g);
+      g.run("NE");
+      report(g, true, c.maxVisits <= 30, ownerOn, c.xs, c.ys);
+      int rounds = 1 + rnd(3);
+      for(int k = 0; k < rounds; k++) {
+        Player rp = g.r->search->getRootPla();
+        Player opp = getOpp(rp);
+        int mode = rnd(10);
+        Loc mv = prob(0.7) ? bestRootChild(g) : randomLegalRootMove(g, rp);
+        if(mv == Board::NULL_LOC) mv = Board::PASS_LOC;
+        if(mode < 4) {
+          // two moves: the player the search is for stays, the tree is reused
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");
+          g.run("M:" + to_string((int)randomLegalRootMove(g, opp)) + ":" + to_string((int)opp) + ":0");
+        }
+        else if(mode < 6)
+          g.run("M:" + to_string((int)mv) + ":" + to_string((int)rp) + ":0");  // the player the search is for changes: clearSearch
+        else if(mode == 6)
+          g.run(string("SPN:avoidRepeatedPatternUtility=") + pick(utils));  // the table is refreshed at beginSearch with the tree kept
+        else if(mode == 7)
+          g.run(string("SP:avoidRepeatedPatternUtility=") + pick(utils) + ",maxVisits=" + to_string((long long)c.maxVisits));
+        else if(mode == 8) {
+          if(useTable) g.run(string("PBN:") + (prob(0.5) ? "0" : "1"));
+          else g.run("CL");
+        }
+        else
+          g.run("PCH:" + to_string((int)opp));
+        g.run("R:" + to_string((int)g.r->search->getRootPla()));
+        instrument(g);
+        g.run("NE");
+        if(prob(0.5)) g.run("RS");
+        else g.run(hsOp(ownerOn, c.xs, c.ys));
+        if(prob(0.3)) g.run("PBH:" + to_string(1 + rnd(8)));
       }
     });
   }

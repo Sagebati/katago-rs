@@ -155,10 +155,10 @@ Blocks are listed in appendix A; counts below are input boards.
 |---|---|---|
 | `CompactSgf` / `dataio/sgf` (`[[ignored]]`) | V9 section 1, V8 x7, V3, testsearch | `tests/testnninputs.rs` already has a test-local subset; reuse it (tag `test-local copy until M3`) |
 | `fillRowV3..V6`, v3-v7 models | testsearch (v1), V3, `runNNSymmetries` | only fillRowV7 and v8+ nets |
-| `GameInitializer` (`program/play.cpp`, `[[ignored]]`) | NN-less last section "Board size distribution" | 100000 `createGame` draws |
+| ~~`GameInitializer` (`program/play.cpp`, `[[ignored]]`)~~ | resolved: NN-less "Board size distribution" runs a faithful test-local copy (tests/testsearchnonn.rs, PORTING.md §13) | 100000 `createGame` draws, byte-exact |
 | `Setup::loadSingleParams` non-analysis branches | NN-less "SearchParams for GTP/Match/Benchmark/Other/Distributed" | manifest: only analysis ported |
 | human-SL net / `SGFMetadata` (M8) | analysis #11 | `bin2onnx` rejects `metaEncoderVersion > 0` |
-| avoid-SGF-pattern bonus (deferred) | none of the search tests (V8's pattern sections use the in-memory `avoidRepeatedPatternUtility`, `localpattern.rs`); `tests/gtp/avoidcorners` in runcmdtests only | listed to avoid confusion |
+| avoid-SGF-pattern bonus loading (`PatternBonusTable::avoidRepeatedSgfMoves`, SGF files, M8) | none of the search tests (V8's pattern sections use the in-memory `avoidRepeatedPatternUtility`, now ported in `patternbonustable.rs`); `tests/gtp/avoidcorners` in runcmdtests only | `Setup::loadAvoidSgfPatternBonusTables` reads the keys as upstream (protocol case cfg_11 matches) |
 
 ## 7. Determinism and regeneration checks
 
@@ -273,3 +273,22 @@ in the source; it is exact for the NN-less file (the 32 blocks map, in order, on
 |---|---|---|---|
 | `runnnontinyboard.input0.txt` | 22 | 5x5 | runNNOnTinyBoard |
 | `runnnsymmetries.input0.txt` | 58 | 9x13 | runNNSymmetries |
+
+## 8. Status after the M3 tail (2026-10-24)
+
+- Eval cache, pattern bonus table and anti-mirror (formerly deferred, D7) are ported: `search/evalcache.rs`,
+  `search/patternbonustable.rs` (minus its SGF/file loaders), `search/searchmirror.rs` (+ `port::math::tanh`/`atanh`).
+- Analysis golden #10 `eval_cache` passes (katago-cli `golden_eval_cache`: the fifo handshake is a stream that yields
+  line N+1 after response N; within tolerance, C differs from A as upstream). All analysis goldens but
+  `humansl_sidetomove` (M8) are compared.
+- `runNNLessSearchTests`: 44/44 sections byte-exact ("Board size distribution" through a test-local GameInitializer).
+- `runNNOnTinyBoard`: katago-nn-burn `tests/testsearchmisc.rs`, exact (39 lines). Only `runNNSymmetries` (g103 v5)
+  stays on the fixture_coverage allowlist from testsearchmisc.
+- V8: the antiMirror sections (2) are within tolerance; the pattern-bonus sections (3) are compared and allowlisted
+  with measured reasons (a 1-visit near-tie shift in one tree-reuse search, a drift already present in the baseline
+  search without pattern bonus, and the cumulative NN row count). No V8 section is pending.
+- NN-less differential oracle (`oracle/search_nonn.cpp`): 480 cases (+32 evalcache, +40 antimirror, +26 patternbonus),
+  bit-exact native and wasm32.
+- Analysis-protocol corpus: 1,398 cases, 1,394 match; known divergences cfg_10 / ovr_20 (human-SL profiles, M8),
+  cfg_18 (nnMaxBatchSize under Eigen), ovr_24 (an exact E4/F5 prior tie in the reference that burn's NN noise breaks
+  the other way; investigated, benign).

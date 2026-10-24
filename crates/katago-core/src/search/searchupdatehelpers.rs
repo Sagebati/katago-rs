@@ -2,8 +2,7 @@
 //
 // PORT NOTE: playout-path helpers take &self and write the node stats through their Cells
 // (PORTING.md §3/§11). The statsLock and the SubtreeValueBiasEntry entryLock spin locks are removed
-// (single-threaded), their bodies kept. The eval cache (evalcache.cpp) is deferred (D7):
-// `node.evalCacheEntry != nullptr` cannot hold in the port.
+// (single-threaded), their bodies kept.
 
 use std::rc::Rc;
 
@@ -18,7 +17,7 @@ use crate::port::math;
 use crate::port::node_arena::NodeIdx;
 use crate::search::search::Search;
 use crate::search::search::SearchThread;
-use crate::search::searchnode::EvalCacheEntry;
+use crate::search::evalcache::EvalCacheEntry;
 use crate::search::searchnode::MoreNodeStats;
 use crate::search::searchnode::NodeStats;
 use crate::search::searchnode::SearchChildPointer;
@@ -402,13 +401,7 @@ impl Search {
   }
 
   /// upstream: Search::adjustEvalsFromCacheHelper (searchupdatehelpers.cpp)
-  /// TODO(port): deferred (evalcache.cpp): EvalCacheEntry has no values (D7), so this is unreachable. Upstream body:
-  ///   cacheAvgWinLoss/NoResult/ScoreMean/Lead and cacheWeight from the entry; if cacheWeight > evalCacheMinVisits then
-  ///   cacheWeight = sqrt(evalCacheMinVisits * cacheWeight); visitsToCacheRatio = thisNodeVisits / cacheWeight;
-  ///   cacheFrac = 1 / (1 + 3*r*(1 + 2*r*r)); winLossValueAvg += cacheFrac*(cacheAvgWinLoss - winLossValueAvg); likewise
-  ///   noResult; scoreMeanAvg likewise with scoreMeanSqAvg = max(0, scoreMeanSqAvg - old^2 + new^2); leadAvg likewise;
-  ///   if utilityAvg != NULL, *utilityAvg += cacheFrac * (getResultUtility(cacheAvgWinLoss,cacheAvgNoResult)
-  ///   + getScoreUtility(cacheAvgScoreMean, max(0, scoreMeanSqAvg - scoreMeanAvg^2 + cacheAvgScoreMean^2)) - *utilityAvg).
+  /// PORT NOTE: `&self` (upstream non-const; it mutates only its out-params, PORTING.md §3).
   pub(crate) fn adjust_evals_from_cache_helper(
     &self,
     eval_cache_entry: &Rc<EvalCacheEntry>,
@@ -420,8 +413,34 @@ impl Search {
     lead_avg: &mut f64,
     utility_avg: Option<&mut f64>,
   ) {
-    let _ = (this_node_visits, win_loss_value_avg, no_result_value_avg, score_mean_avg, score_mean_sq_avg, lead_avg, utility_avg);
-    match **eval_cache_entry {}
+    let cache_avg_win_loss: f64 = eval_cache_entry.avg_win_loss as f64;
+    let cache_avg_no_result: f64 = eval_cache_entry.avg_no_result as f64;
+    let cache_avg_score_mean: f64 = eval_cache_entry.avg_score_mean as f64;
+    let cache_avg_lead: f64 = eval_cache_entry.avg_lead as f64;
+    let mut cache_weight: f64 = eval_cache_entry.cache_weight as f64;
+    // Squish down very heavily-weighted entries that are likely to have cache entries ahead of them, to somewhat
+    // reduce the impact of double-counting since child nodes will also apply their own averaging.
+    if cache_weight > self.search_params.eval_cache_min_visits as f64 {
+      cache_weight = (self.search_params.eval_cache_min_visits as f64 * cache_weight).sqrt();
+    }
+    let visits_to_cache_ratio: f64 = this_node_visits as f64 / cache_weight;
+    let cache_frac: f64 = 1.0 / (1.0 + 3.0 * visits_to_cache_ratio * (1.0 + 2.0 * visits_to_cache_ratio * visits_to_cache_ratio));
+
+    *win_loss_value_avg += cache_frac * (cache_avg_win_loss - *win_loss_value_avg);
+    *no_result_value_avg += cache_frac * (cache_avg_no_result - *no_result_value_avg);
+    let old_score_mean_avg: f64 = *score_mean_avg;
+    *score_mean_avg += cache_frac * (cache_avg_score_mean - *score_mean_avg);
+    *score_mean_sq_avg = cpp::cpp_max(0.0, *score_mean_sq_avg - old_score_mean_avg * old_score_mean_avg + *score_mean_avg * *score_mean_avg);
+    *lead_avg += cache_frac * (cache_avg_lead - *lead_avg);
+
+    if let Some(utility_avg) = utility_avg {
+      let cache_avg_utility: f64 = self.get_result_utility(cache_avg_win_loss, cache_avg_no_result)
+        + self.get_score_utility(
+          cache_avg_score_mean,
+          cpp::cpp_max(0.0, *score_mean_sq_avg - *score_mean_avg * *score_mean_avg + cache_avg_score_mean * cache_avg_score_mean),
+        );
+      *utility_avg += cache_frac * (cache_avg_utility - *utility_avg);
+    }
   }
 
   /// upstream: Search::downweightBadChildrenAndNormalizeWeight (searchupdatehelpers.cpp)

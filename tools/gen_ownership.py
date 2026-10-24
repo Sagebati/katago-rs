@@ -197,7 +197,7 @@ r(f,"SearchNode","lastSubtreeValueBiasDeltaSum","double","OWNED","Cell<f64>","gu
 r(f,"SearchNode","lastSubtreeValueBiasWeight","double","OWNED","Cell<f64>","guarded by entryLock upstream")
 r(f,"SearchNode","subtreeValueBiasTableEntry","std::shared_ptr<SubtreeValueBiasEntry>","SHARED","RefCell<Option<Rc<SubtreeValueBiasEntry>>>","set in allocateOrFindNode, cleared by removeSubtreeValueBias; strong_count matters (clearUnusedSynchronous)")
 r(f,"SearchNode","graphHash","Hash128","OWNED","Hash128","constant after construction")
-r(f,"SearchNode","evalCacheEntry","std::shared_ptr<EvalCacheEntry>","SHARED","RefCell<Option<Rc<EvalCacheEntry>>>","evalcache deferred: EvalCacheEntry is an uninhabited placeholder enum until ported, so always None; TODO(port): deferred (evalcache.cpp)")
+r(f,"SearchNode","evalCacheEntry","std::shared_ptr<EvalCacheEntry>","SHARED","RefCell<Option<Rc<EvalCacheEntry>>>","set by Search (find) when the eval cache is on; shared, replaced not mutated (evalcache.rs)")
 r(f,"SearchNode","dirtyCounter","std::atomic<int32_t>","OWNED","Cell<i32>","")
 r(f,"SearchNode","storeNNOutput(newNNOutput)","std::shared_ptr<NNOutput>*","OWNED","Rc<NNOutput>","param, ownership transferred; same for storeHumanOutput / *IfNull")
 r(f,"SearchNode","storeNNOutput(thread)","SearchThread&","BORROWED","&mut SearchThread","param")
@@ -225,9 +225,9 @@ r(f,"Search","rootSymDupLoc","bool[Board::MAX_ARR_SIZE]","OWNED",f"[bool; {A}]",
 r(f,"Search","rootSafeArea","Color*","OWNED",f"Box<[Color; {A}]>","new Color[MAX_ARR_SIZE] in ctor, delete[] in dtor")
 r(f,"Search","rootKoHashTable","KoHashTable*","OWNED","Box<KoHashTable>","new in ctor, never NULL")
 r(f,"Search","valueWeightDistribution","DistributionTable*","OWNED","Box<DistributionTable>","new in ctor, never NULL")
-r(f,"Search","patternBonusTable","PatternBonusTable*","OWNED","Option<Box<PatternBonusTable>>","patternbonustable deferred: placeholder uninhabited type, so always None; TODO(port): deferred (patternbonustable.cpp)")
-r(f,"Search","externalPatternBonusTable","std::unique_ptr<PatternBonusTable>","OWNED","Option<Box<PatternBonusTable>>","deferred, as patternBonusTable")
-r(f,"Search","evalCache","std::shared_ptr<EvalCacheTable>","SHARED","Option<Rc<EvalCacheTable>>","shared across bots (analysis.cpp); deferred, so always None; TODO(port): deferred (evalcache.cpp)")
+r(f,"Search","patternBonusTable","PatternBonusTable*","OWNED","Option<Box<PatternBonusTable>>","rebuilt by beginSearch (patternbonustable.rs)")
+r(f,"Search","externalPatternBonusTable","std::unique_ptr<PatternBonusTable>","OWNED","Option<Box<PatternBonusTable>>","as patternBonusTable; setCopyOfExternalPatternBonusTable clones")
+r(f,"Search","evalCache","std::shared_ptr<EvalCacheTable>","SHARED","Option<Rc<EvalCacheTable>>","shared across bots (analysis.cpp)")
 r(f,"Search","nonSearchRand","Rand","OWNED","Rand","")
 r(f,"Search","logger","Logger*","BORROWED","(removed)","log crate; ctor param dropped (PORT NOTE)")
 r(f,"Search","nnEvaluator","NNEvaluator*","BORROWED","Rc<NNEvaluator>","owned by the host (setup/analysis), outlives Search; setNNEval replaces it")
@@ -288,20 +288,20 @@ r(f2,"(file static)","ZOBRIST_MOVE_LOCS","static Hash128[Board::MAX_ARR_SIZE][2]
 r(f2,"(file static)","ZOBRIST_KO_BAN","static Hash128[Board::MAX_ARR_SIZE]","STATIC",f"[Hash128; {A}]","field of SubtreeValueBiasTableStatics")
 r(f2,"(file static)","isInited / initMutex","static std::atomic<bool> / static std::mutex","STATIC","(removed)","OnceLock state replaces both")
 
-# ---------------- search/evalcache.h (deferred) ----------------
+# ---------------- search/evalcache.h ----------------
 f = "cpp/search/evalcache.h"
-r(f,"EvalCacheEntry","firstExploreEvals","std::map<Loc,FirstExploreEval>","OWNED","BTreeMap<Loc, FirstExploreEval>","deferred module (manifest [[ignored]] deferred); type used once ported")
-r(f,"EvalCacheTable","entries","std::vector<std::map<Hash128,std::shared_ptr<EvalCacheEntry>>>","SHARED","RefCell<Vec<BTreeMap<Hash128, Option<Rc<EvalCacheEntry>>>>>","deferred; Option because update() reads via operator[], which inserts a null")
-r(f,"EvalCacheTable","mutexPool","MutexPool*","OWNED","(removed)","deferred")
-r(f,"EvalCacheTable","update(node)","const SearchNode*","BORROWED","&SearchNode","deferred; PORT NOTE: gains a nodes: &NodeArena param to dereference children")
-r(f,"EvalCacheTable","find(return)","std::shared_ptr<EvalCacheEntry>","SHARED","Option<Rc<EvalCacheEntry>>","deferred")
+r(f,"EvalCacheEntry","firstExploreEvals","std::map<Loc,FirstExploreEval>","OWNED","BTreeMap<Loc, FirstExploreEval>","value type of the entries map")
+r(f,"EvalCacheTable","entries","std::vector<std::map<Hash128,std::shared_ptr<EvalCacheEntry>>>","SHARED","RefCell<Vec<BTreeMap<Hash128, Option<Rc<EvalCacheEntry>>>>>","Option because update() reads via operator[], which inserts a null")
+r(f,"EvalCacheTable","mutexPool","MutexPool*","OWNED","(removed)","single-threaded")
+r(f,"EvalCacheTable","update(node)","const SearchNode*","BORROWED","&SearchNode","PORT NOTE: gains a nodes: &NodeArena param to dereference children")
+r(f,"EvalCacheTable","find(return)","std::shared_ptr<EvalCacheEntry>","SHARED","Option<Rc<EvalCacheEntry>>","")
 
-# ---------------- search/patternbonustable.h (deferred) ----------------
+# ---------------- search/patternbonustable.h ----------------
 f = "cpp/search/patternbonustable.h"
-r(f,"PatternBonusTable","entries","std::vector<std::map<Hash128,PatternBonusEntry>>","OWNED","Vec<BTreeMap<Hash128, PatternBonusEntry>>","deferred; read-only during search")
-r(f,"PatternBonusTable","addBonus(hashesThisGame)","std::set<Hash128>&","BORROWED","&mut BTreeSet<Hash128>","deferred; param")
+r(f,"PatternBonusTable","entries","std::vector<std::map<Hash128,PatternBonusEntry>>","OWNED","Vec<BTreeMap<Hash128, PatternBonusEntry>>","read-only during search")
+r(f,"PatternBonusTable","addBonus(hashesThisGame)","std::set<Hash128>&","BORROWED","&mut BTreeSet<Hash128>","param")
 f2 = "cpp/search/patternbonustable.cpp"
-r(f2,"(file static)","patternHasher / ZOBRIST_MOVE_LOCS","static LocalPatternHasher / static Hash128[Board::MAX_ARR_SIZE]","STATIC",f"PatternBonusTableStatics {{ patternHasher: LocalPatternHasher, ZOBRIST_MOVE_LOCS: [Hash128; {A}] }}","deferred; static PATTERNBONUSTABLE_STATICS: OnceLock<PatternBonusTableStatics>")
+r(f2,"(file static)","patternHasher / ZOBRIST_MOVE_LOCS","static LocalPatternHasher / static Hash128[Board::MAX_ARR_SIZE]","STATIC",f"PatternBonusTableStatics {{ patternHasher: LocalPatternHasher, ZOBRIST_MOVE_LOCS: [Hash128; {A}] }}","static PATTERNBONUSTABLE_STATICS: OnceLock<PatternBonusTableStatics>")
 
 # ---------------- search/distributiontable.h ----------------
 f = "cpp/search/distributiontable.h"

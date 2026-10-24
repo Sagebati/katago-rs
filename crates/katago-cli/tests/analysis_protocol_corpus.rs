@@ -58,9 +58,21 @@ const KEEP: &[&str] = &[
 const KNOWN_DIVERGENCES: &[(&str, &str)] = &[
   ("cfg_10", "humanSLProfile=rank_5k: SGFMetadata::getProfile's rank profiles are M8 (StringError in katago-rs)"),
   ("ovr_20", "humanSLProfile override: SGFMetadata::getProfile's rank profiles are M8"),
-  ("cfg_11", "avoidSgfPatternUtility: pattern bonus tables are deferred (D7); katago-rs fails on the key itself"),
   ("cfg_18", "nnMaxBatchSize=0: upstream's Eigen backend ignores nnMaxBatchSize; burn follows the non-Eigen branch (range 1..65536)"),
-  ("ovr_24", "rootNumSymmetriesToSample=8 with 3 visits: lcb differs by 0.03 (reported to the search owners; not a protocol issue)"),
+  // ovr_24 (investigated 2026-10, benign): on the empty 9x9 board the 8-symmetry average makes the four
+  // center-adjacent points symmetric, so their priors tie up to float noise. Reference (Eigen): E4 = F5 =
+  // 0.102564141 exactly, D5 = E6 = 0.102564074; selectBestChildToDescend's "best new child" loop takes the first
+  // strictly greater prior in movePos order, so F5 (row 4) wins over E4 (row 5). katago-rs (burn flex): E4 =
+  // 0.102564186, F5 = 0.102564178 (one f32 ulp, ~8e-9 apart: the ~1e-7 burn-vs-Eigen NN noise of the NN tier),
+  // so E4 wins. The second root child (E5) and every root/raw value agree within tolerance; F5 and E4 are
+  // different (single-symmetry) child evaluations, hence the different first moveInfo (lcb -0.807 vs -0.773).
+  // The search's tie-break and averageMultipleSymmetries are checked bit-exactly by tests/search_oracle.rs and
+  // nneval_skipnn.rs (katago-core); not a bug.
+  (
+    "ovr_24",
+    "rootNumSymmetriesToSample=8, 3 visits, empty 9x9: E4/F5 priors tie in the reference (equal floats, first in \
+     movePos order wins: F5) but differ by one f32 ulp under burn (E4 wins): NN float noise picks the symmetric twin",
+  ),
 ];
 
 fn fixture_dir() -> String {
