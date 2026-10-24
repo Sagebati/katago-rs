@@ -15,6 +15,9 @@ Status:
 - **M4** the engine in the browser ([docs/M4-report.md](docs/M4-report.md)): `katago-wasm` in a Web
   Worker, on WebGPU or the wasm CPU, and the `katago-web` npm package (`KataGoClient`); upstream's
   analysis goldens pass in Chromium on both backends.
+- **M7** kata1-b18c384nbt in the browser ([docs/M7-report.md](docs/M7-report.md)): same wasm (+0.2 MB), 105 MB
+  weights fetched on demand, WebGPU only (~2 s per 100 visits on an RX 6800 XT; `cpuModel` falls back to b10c128
+  without WebGPU). Checked against Eigen-generated goldens in Chromium (`just web-test-b18`).
 - Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
   [docs/DECISIONS.md](docs/DECISIONS.md).
 
