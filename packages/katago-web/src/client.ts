@@ -8,7 +8,7 @@ export interface KataGoClientOptions extends Omit<EngineInitOptions, "overrides"
   /** `-override-config`: "key=value, ..." string(s), or an object of key/values. */
   overrides?: string | string[] | Record<string, string | number | boolean>;
   /** The engine worker, or a factory for it (bundlers that need `new Worker(new URL(...))` in app code).
-   * Default: `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`. */
+   * Default: a module worker of the `worker.js` next to this file (not followed by bundlers: pass this). */
   worker?: Worker | (() => Worker);
   /** URL of worker.js when the default location does not work. */
   workerUrl?: string | URL;
@@ -26,6 +26,15 @@ export class KataGoError extends Error {
     this.name = "KataGoError";
     this.response = response;
   }
+}
+
+/** The default worker script, relative to this module. A variable rather than a literal in the
+ * `new URL(..., import.meta.url)` below: bundlers (Vite, webpack) emit any literal one into the build, even
+ * when the caller passes `worker` and it is never used, and that copy is not bundled (its imports break). */
+const DEFAULT_WORKER_SCRIPT = "./worker.js";
+
+function defaultWorker(url: string | URL | undefined): Worker {
+  return new Worker(url ?? new URL(DEFAULT_WORKER_SCRIPT, import.meta.url), { type: "module", name: "katago-web" });
 }
 
 function overridesToStrings(o: KataGoClientOptions["overrides"]): string[] | undefined {
@@ -183,6 +192,8 @@ export class KataGoClient {
   private readonly statsWaiters = new Map<number, Deferred<EngineStats>>();
   private readonly lineListeners = new Set<(line: string) => void>();
   private dead: Error | null = null;
+  /** Set by dispose(): no worker is started (or restarted on the CPU) after it. */
+  private disposed = false;
   private exitDeferred: Deferred<number> | null = null;
 
   constructor(options: KataGoClientOptions) {
@@ -192,19 +203,17 @@ export class KataGoClient {
   }
 
   private startWorker(backend: BackendChoice): void {
+    if (this.disposed) return;
     const w = this.options.worker;
-    const worker =
-      typeof w === "function"
-        ? w()
-        : w ?? new Worker(this.options.workerUrl ?? new URL("./worker.js", import.meta.url), { type: "module", name: "katago-web" });
+    const worker = typeof w === "function" ? w() : w ?? defaultWorker(this.options.workerUrl);
     this.worker = worker;
-    // Events of a replaced worker (the WebGPU one after a CPU restart) are ignored.
+    // Events of a replaced worker (the WebGPU one after a CPU restart) or of a disposed client are ignored.
     worker.onmessage = (e: MessageEvent<FromWorker>) => {
-      if (worker === this.worker) this.onMessage(e.data);
+      if (worker === this.worker && !this.disposed) this.onMessage(e.data);
     };
     worker.onerror = (e: ErrorEvent) => {
       e.preventDefault();
-      if (worker === this.worker) this.onFatal(`worker error: ${e.message}`);
+      if (worker === this.worker && !this.disposed) this.onFatal(`worker error: ${e.message}`);
     };
     const init: EngineInitOptions = {
       model: this.options.model,
@@ -269,7 +278,7 @@ export class KataGoClient {
     // the wasm): start over in a new worker on the CPU when the backend was "auto" (not possible with a
     // Worker instance passed in).
     const canRestart = !(this.options.worker && typeof this.options.worker !== "function");
-    if (!this.isReady && !this.dead && (this.options.backend ?? "auto") === "auto" && !this.retriedOnCpu && canRestart) {
+    if (!this.isReady && !this.dead && !this.disposed && (this.options.backend ?? "auto") === "auto" && !this.retriedOnCpu && canRestart) {
       this.retriedOnCpu = true;
       this.retryReason = `WebGPU engine failed before it was ready: ${message}`;
       this.worker.terminate();
@@ -412,8 +421,10 @@ export class KataGoClient {
     return this.exitDeferred.promise;
   }
 
-  /** Stops the worker. Pending queries fail. */
+  /** Stops the worker (also one starting up, or restarted on the CPU), for good: pending queries fail,
+   * `ready` rejects if it has not resolved, and no worker is started again. */
   dispose(): void {
+    this.disposed = true;
     this.worker.terminate();
     this.onFatal("disposed");
   }

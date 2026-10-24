@@ -141,3 +141,7 @@ web-build *features="":
 # terminate latency, partial reports, throughput. `just web-build` first. Options: see packages/katago-web/test/run.mjs.
 web-test *args="":
     node {{web_pkg}}/test/run.mjs {{args}}
+
+# Unit tests of the katago-web client against a fake worker (no wasm, no browser). `just web-build` first.
+web-test-client:
+    node --test {{web_pkg}}/test/client.test.mjs
