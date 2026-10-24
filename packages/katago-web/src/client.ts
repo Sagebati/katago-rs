@@ -224,6 +224,7 @@ export class KataGoClient {
       modelFile: this.options.modelFile,
       warmupVisits: this.options.warmupVisits,
       cacheModels: this.options.cacheModels,
+      cacheKernels: this.options.cacheKernels,
       wasmUrl: this.options.wasmUrl ? String(this.options.wasmUrl) : undefined,
     };
     this.post({ type: "init", options: init });

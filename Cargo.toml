@@ -57,3 +57,9 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.pulp]
 opt-level = 3
+
+# cubecl-wgpu 0.11.2 plus a WGSL kernel cache that katago-web persists across page loads (docs/M4-report.md,
+# "Start-up on WebGPU"). The vendored copy is the crates.io package; every change is marked `PATCH(katago-rs)`:
+# src/compute/wgsl_cache.rs (new), the lookup/record in WgpuServer::pipeline, two helpers made reachable.
+[patch.crates-io]
+cubecl-wgpu = { path = "third_party/cubecl-wgpu" }

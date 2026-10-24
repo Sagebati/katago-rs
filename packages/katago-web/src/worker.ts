@@ -2,7 +2,8 @@
 // picks the backend, runs the analysis engine and relays its JSON lines. Speaks messages.ts with
 // KataGoClient; the analysis protocol itself passes through verbatim ("lines" in, "line" out).
 
-import init, { Engine, compiledNetworks, sha256Hex } from "./wasm/katago_wasm.js";
+import init, { Engine, compiledNetworks, kernelCacheExport, kernelCacheImport, kernelCacheStats, sha256Hex } from "./wasm/katago_wasm.js";
+import { BUILD_ID } from "./wasm/build-id.js";
 import type { Backend, EngineInitOptions, EngineStats, FromWorker, ReadyInfo, ToWorker } from "./messages.js";
 
 interface WorkerScope {
@@ -32,6 +33,7 @@ function installSubgroupsShim(): void {
 installSubgroupsShim();
 
 const CACHE_NAME = "katago-web-models-v1";
+const KERNEL_CACHE_NAME = "katago-web-kernels-v1";
 const INTERNAL = "__kgw_";
 
 let engine: Engine | null = null;
@@ -120,6 +122,21 @@ async function readBody(res: Response, total: number | undefined): Promise<Uint8
   return out;
 }
 
+/** Lowercase hex SHA-256: WebCrypto when available (b10c128's 12 MB: ~30 ms, the wasm `sha256Hex` ~120 ms),
+ * else the wasm one (WebCrypto needs a secure context). */
+async function sha256(bytes: Uint8Array): Promise<string> {
+  const subtle = globalThis.crypto?.subtle;
+  if (subtle) {
+    try {
+      const digest = new Uint8Array(await subtle.digest("SHA-256", bytes as Uint8Array<ArrayBuffer>));
+      return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
+    } catch {
+      // fall through to the wasm implementation
+    }
+  }
+  return sha256Hex(bytes);
+}
+
 /** The weights: from the Cache API when present and intact, else fetched, verified and cached. */
 async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Array; source: "network" | "cache"; fetchMs: number; verifyMs: number }> {
   const spec = options.model;
@@ -143,7 +160,7 @@ async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Arra
       const bytes = new Uint8Array(await hit.arrayBuffer());
       fetchMs = performance.now() - t0;
       const t1 = performance.now();
-      const got = sha256Hex(bytes);
+      const got = await sha256(bytes);
       verifyMs = performance.now() - t1;
       if (got === sha) return { bytes, source: "cache", fetchMs, verifyMs };
       onEngineLog("warn", `cached ${spec.network} weights are corrupt (sha256 ${got}), fetching them again`);
@@ -157,7 +174,7 @@ async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Arra
   const bytes = await readBody(res, spec.size ?? (lengthHeader ? Number(lengthHeader) : undefined));
   fetchMs += performance.now() - t0;
   const t1 = performance.now();
-  const got = sha256Hex(bytes);
+  const got = await sha256(bytes);
   verifyMs += performance.now() - t1;
   if (got !== sha) throw new Error(`${spec.network} weights from ${spec.url}: sha256 ${got} does not match the expected ${sha}`);
   if (cache) {
@@ -168,6 +185,51 @@ async function loadModel(options: EngineInitOptions): Promise<{ bytes: Uint8Arra
     }
   }
   return { bytes, source: "network", fetchMs, verifyMs };
+}
+
+// Compiled WebGPU kernels (WGSL) persisted across page loads: cubecl compiles every kernel from its IR on each
+// load (~1 s of wasm CPU for b10c128, most of the warm-up), and the browser only caches the driver's side of it.
+// The blob (kernelCacheExport) is only valid for the wasm build that wrote it and is keyed by build and adapter;
+// entries of other builds are deleted when a new blob is written.
+const kernelCacheKey = (adapter: string) =>
+  new URL(`/__katago-web__/kernels/${BUILD_ID}/${encodeURIComponent(adapter)}.bin`, self.location.origin).href;
+
+async function openKernelCache(options: EngineInitOptions): Promise<Cache | null> {
+  if (options.cacheKernels === false || typeof caches === "undefined") return null;
+  try {
+    return await caches.open(KERNEL_CACHE_NAME);
+  } catch {
+    return null;
+  }
+}
+
+/** Imports the kernels a previous load of this build saved for this adapter; returns how many. */
+async function loadKernels(options: EngineInitOptions, adapter: string): Promise<number> {
+  const cache = await openKernelCache(options);
+  if (!cache) return 0;
+  try {
+    const hit = await cache.match(kernelCacheKey(adapter));
+    if (!hit) return 0;
+    return kernelCacheImport(new Uint8Array(await hit.arrayBuffer()));
+  } catch (e) {
+    onEngineLog("warn", `could not load the cached WebGPU kernels: ${String(e)}`);
+    return 0;
+  }
+}
+
+/** Saves the kernels when some were compiled since the last save; drops the blobs of other builds. */
+async function saveKernels(options: EngineInitOptions, adapter: string): Promise<void> {
+  if ((kernelCacheStats() as { added: number }).added === 0) return;
+  const cache = await openKernelCache(options);
+  if (!cache) return;
+  try {
+    const key = kernelCacheKey(adapter);
+    await cache.put(key, new Response(kernelCacheExport() as Uint8Array<ArrayBuffer>, { headers: { "content-type": "application/octet-stream" } }));
+    const current = new URL(`/__katago-web__/kernels/${BUILD_ID}/`, self.location.origin).href;
+    for (const req of await cache.keys()) if (!req.url.startsWith(current)) await cache.delete(req);
+  } catch (e) {
+    onEngineLog("warn", `could not cache the WebGPU kernels: ${String(e)}`);
+  }
 }
 
 async function createEngine(backend: Backend, options: EngineInitOptions, bytes: Uint8Array): Promise<Engine> {
@@ -196,20 +258,28 @@ async function start(options: EngineInitOptions): Promise<void> {
     throw new Error(`network ${options.model.network} is not compiled into this build (${networks.join(", ")})`);
   }
 
-  const model = await loadModel(options);
-
+  // The weights, the adapter probe and the cached kernels (which need the adapter) in parallel.
   const choice = options.backend ?? "auto";
   let backend: Backend = choice === "cpu" ? "cpu" : "webgpu";
   let fallbackReason: string | undefined;
   let adapter: string | undefined;
-  if (backend === "webgpu") {
+  let kernelsLoaded = 0;
+  let kernelCacheLoadMs = 0;
+  const probing = (async () => {
+    if (backend !== "webgpu") return;
     const probe = await webgpuAdapter();
     adapter = probe.adapter;
     if (probe.unavailable && choice === "auto") {
       backend = "cpu";
       fallbackReason = probe.unavailable;
     }
-  }
+    if (backend === "webgpu" && adapter) {
+      const t0 = performance.now();
+      kernelsLoaded = await loadKernels(options, adapter);
+      kernelCacheLoadMs = performance.now() - t0;
+    }
+  })();
+  const [model] = await Promise.all([loadModel(options), probing]);
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
   try {
@@ -261,9 +331,23 @@ async function start(options: EngineInitOptions): Promise<void> {
       modelBuildMs,
       warmupMs,
       bucketWarmupMs: (engine.stats() as EngineStats).warmupMs,
+      kernelCacheLoadMs,
       totalMs: performance.now() - tStart,
     },
   };
+  if (backend === "webgpu" && adapter) {
+    const k = kernelCacheStats() as { hits: number; misses: number };
+    info.kernelCache = { loaded: kernelsLoaded, hits: k.hits, compiled: k.misses };
+    // Saved before `ready` (a few ms, only when kernels were compiled), so a page closed right after still
+    // leaves them for the next load; kernels compiled later (rarely: a shape the warm-up did not cover) are
+    // saved periodically.
+    const key = adapter;
+    const t0 = performance.now();
+    await saveKernels(options, key);
+    info.timings.kernelCacheSaveMs = performance.now() - t0;
+    setInterval(() => void saveKernels(options, key), 30_000);
+  }
+  info.timings.totalMs = performance.now() - tStart;
   ready = true;
   post({ type: "ready", info });
   if (pendingLines.length > 0) {

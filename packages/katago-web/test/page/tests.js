@@ -153,9 +153,27 @@ export async function apiSmoke({ backend }) {
   return { backend: ready.backend, version, models, responses, error };
 }
 
+/** The compiled-kernel cache (WebGPU): a deterministic search (1 search thread, no NN randomization) in an engine
+ * that compiles its kernels (cache emptied first), then in one that loads them from the cache. Returns both ready
+ * infos and whether the final responses are identical. */
+export async function kernelCacheParity({ network, cacheKernels = true }) {
+  await caches.delete("katago-web-kernels-v1");
+  const overrides = "numAnalysisThreads=1, numSearchThreadsPerAnalysisThread=1, nnRandomize=false, nnRandSeed=kernelCache, forDeterministicTesting=true";
+  const run = async () => {
+    const { c, ready } = await client({ backend: "webgpu", network, overrides, cacheKernels });
+    const finals = await c.analyze({ id: "k", ...EMPTY_19, moves: GAME_MOVES.slice(0, 12), maxVisits: 48, includeOwnership: true, includePolicy: true }).done;
+    c.dispose();
+    return { ready, text: JSON.stringify(finals) };
+  };
+  const a = await run();
+  const b = await run();
+  const pick = (r) => ({ backend: r.ready.backend, kernelCache: r.ready.kernelCache ?? null, timings: r.ready.timings });
+  return { first: pick(a), second: pick(b), identical: a.text === b.text, length: a.text.length, texts: a.text === b.text ? undefined : [a.text, b.text] };
+}
+
 export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, throughput, terminateLatency, apiSmoke, takeLogs };
+window.kgwTests = { runGolden, loadModel, throughput, terminateLatency, apiSmoke, kernelCacheParity, takeLogs };
 window.kgwReady = true;

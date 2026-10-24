@@ -117,6 +117,10 @@ web-build *features="":
     else
         echo "web-build: wasm-opt not found, wasm left unoptimised"
     fi
+    # The worker keys its compiled-kernel cache by build: any change to the wasm invalidates it.
+    build_id="$(sha256sum {{web_pkg}}/src/wasm/katago_wasm_bg.wasm | cut -c1-16)"
+    echo "export const BUILD_ID = \"$build_id\";" > {{web_pkg}}/src/wasm/build-id.js
+    echo "export declare const BUILD_ID: string;" > {{web_pkg}}/src/wasm/build-id.d.ts
     {{tsc}} -p {{web_pkg}}
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
