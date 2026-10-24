@@ -11,10 +11,15 @@
 //!   flex), with the `.bpk` weights passed in as bytes (fetched, cached and sha256-checked by the worker);
 //! - config: built in memory, see [`config`].
 //!
+//! Plus a full-game review (`Engine.reviewGame`, M6): katago-ws's annotation (crate katago-annotate) over
+//! this engine, returning the payload v3 JSON (docs/M6-report.md).
+//!
 //! Natively only [`config`] and [`sha256_hex`] compile (for their unit tests); the engine is wasm32-only.
 //! Not a port of upstream code.
 
 pub mod config;
+#[cfg(target_arch = "wasm32")]
+mod review;
 #[cfg(target_arch = "wasm32")]
 mod web;
 

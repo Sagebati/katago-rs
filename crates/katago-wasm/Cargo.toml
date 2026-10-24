@@ -23,6 +23,9 @@ net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }
+# Full-game review (M6): katago-ws's annotation, IO-free (reviewGame).
+katago-annotate = { path = "../katago-annotate" }
+serde_json = { version = "1", features = ["float_roundtrip"] }
 sha2 = "0.10"
 log = "0.4"
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }

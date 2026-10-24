@@ -111,3 +111,61 @@ test("an engine failure after ready is fatal, with no restart", async () => {
   assert.equal(err.response, undefined, "an engine failure carries no error response");
   assert.match(err.message, /device lost/);
 });
+
+test("reviewGame: queued until ready (on the worker that gets ready), progress, payload", async () => {
+  const { client, workers } = setup();
+  const progress = [];
+  const run = client.reviewGame("(;SZ[9];B[ee])", { maxVisits: 10 }, (p) => progress.push(p));
+  assert.ok(!workers[0].sent.some((m) => m.type === "review"), "nothing posted before ready");
+  workers[0].emit({ type: "fatal", message: "simulated WebGPU failure" });
+  workers[1].emit({ type: "ready", info: READY });
+  await client.ready;
+  const posted = workers[1].sent.find((m) => m.type === "review");
+  assert.deepEqual({ ...posted, requestId: 0 }, { type: "review", requestId: 0, game: "(;SZ[9];B[ee])", options: { maxVisits: 10 } });
+  const p = { pass: "full", passes: 1, turnNumber: 0, done: 1, total: 2, analysed: 1 };
+  workers[1].emit({ type: "reviewProgress", requestId: posted.requestId, progress: p });
+  workers[1].emit({ type: "reviewDone", requestId: posted.requestId, payload: '{"payload_version":3,"moves":[]}' });
+  assert.deepEqual(await run.result, { payload_version: 3, moves: [] });
+  assert.equal(await run.json, '{"payload_version":3,"moves":[]}');
+  assert.deepEqual(progress, [p]);
+  client.dispose();
+});
+
+test("reviewGame: cancel before and after it is posted; errors", async () => {
+  const { client, workers } = setup();
+  const early = client.reviewGame("(;)");
+  early.cancel();
+  const e1 = await early.result.then(() => null, (e) => e);
+  assert.ok(e1?.cancelled, "cancelled before ready");
+  workers[0].emit({ type: "ready", info: READY });
+  await client.ready;
+  assert.ok(!workers[0].sent.some((m) => m.type === "review"), "the cancelled review is never posted");
+
+  const run = client.reviewGame("(;)");
+  const { requestId } = workers[0].sent.find((m) => m.type === "review");
+  run.cancel();
+  assert.deepEqual(workers[0].sent.at(-1), { type: "reviewCancel", requestId });
+  workers[0].emit({ type: "reviewError", requestId, message: "review cancelled", cancelled: true });
+  const e2 = await run.result.then(() => null, (e) => e);
+  assert.equal(e2?.name, "KataGoError");
+  assert.ok(e2.cancelled);
+
+  const bad = client.reviewGame("not sgf");
+  const id3 = workers[0].sent.at(-1).requestId;
+  workers[0].emit({ type: "reviewError", requestId: id3, message: "invalid SGF: ...", cancelled: false });
+  const e3 = await bad.result.then(() => null, (e) => e);
+  assert.ok(!e3.cancelled);
+  assert.match(e3.message, /invalid SGF/);
+
+  const ac = new AbortController();
+  const aborted = client.reviewGame("(;)", { signal: ac.signal });
+  const id4 = workers[0].sent.at(-1).requestId;
+  assert.ok(!("signal" in workers[0].sent.at(-1).options), "the signal stays on the main thread");
+  ac.abort();
+  assert.deepEqual(workers[0].sent.at(-1), { type: "reviewCancel", requestId: id4 });
+
+  const pending = client.reviewGame("(;)");
+  workers[0].emit({ type: "fatal", message: "device lost" });
+  await assert.rejects(pending.result, /device lost/);
+  void aborted.result.catch(() => {});
+});

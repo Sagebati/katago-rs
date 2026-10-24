@@ -1,0 +1,17 @@
+{
+  "options": {
+    "analysisPvLen": 15,
+    "defaultBoardSize": 19,
+    "defaultKomi": 7.5,
+    "humanModel": "",
+    "includeOwnership": true,
+    "includeOwnershipStdev": true,
+    "includePolicy": true,
+    "maxVisits": 100,
+    "model": "g170e-b10c128.bin.gz",
+    "refineScoreDelta": 1.0,
+    "refineWinrateDelta": 0.029999999329447746,
+    "screenVisits": 16,
+    "topK": 10
+  }
+}

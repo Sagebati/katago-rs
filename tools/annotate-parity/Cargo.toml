@@ -1,0 +1,19 @@
+[package]
+name = "ws-parity"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# katago-ws's engine modules compiled unchanged (#[path] to the read-only checkout) next to katago-annotate,
+# to record KataGo through katago-ws's own client and compare both annotators on the same responses.
+[dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "io-util", "sync", "time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sgf-parse = "=4.2.8"
+secrecy = { version = "0.10", features = ["serde"] }
+tracing = "0.1"
+katago-annotate = { path = "../../crates/katago-annotate" }
+futures = { version = "0.3", features = ["executor"] }
+
+[workspace]

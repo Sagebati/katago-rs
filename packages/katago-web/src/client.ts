@@ -3,6 +3,7 @@
 
 import type { AnalysisQuery, ErrorResponse, ModelsResponse, TurnResponse, VersionResponse, WarningResponse } from "./protocol.js";
 import type { BackendChoice, EngineInitOptions, EngineStats, FromWorker, ReadyInfo, ToWorker } from "./messages.js";
+import type { GameAnalysis, GameInput, ReviewOptions, ReviewProgress } from "./review.js";
 
 export interface KataGoClientOptions extends Omit<EngineInitOptions, "overrides"> {
   /** `-override-config`: "key=value, ..." string(s), or an object of key/values. */
@@ -21,6 +22,8 @@ export interface KataGoClientOptions extends Omit<EngineInitOptions, "overrides"
 /** An `{"error": ...}` response (or an engine failure). */
 export class KataGoError extends Error {
   readonly response?: ErrorResponse;
+  /** A review stopped by `ReviewRun.cancel()` (or its AbortSignal). */
+  cancelled = false;
   constructor(message: string, response?: ErrorResponse) {
     super(message);
     this.name = "KataGoError";
@@ -174,6 +177,45 @@ export class AnalysisRun implements AsyncIterable<TurnResponse> {
   }
 }
 
+/** A full-game review in flight (`KataGoClient.reviewGame`). */
+export class ReviewRun {
+  /** The payload v3 (katago-ws's `GameAnalysis`); rejects with a KataGoError (`cancelled` set on cancel). */
+  readonly result: Promise<GameAnalysis>;
+  /** The same payload as the JSON text the engine produced (what an upload should send, byte for byte). */
+  readonly json: Promise<string>;
+  /** @internal */
+  readonly requestId: number;
+  /** @internal */
+  readonly onProgress?: (p: ReviewProgress) => void;
+  private readonly client: KataGoClient;
+  private readonly jsonDeferred = deferred<string>();
+  private settled = false;
+
+  /** @internal */
+  constructor(client: KataGoClient, requestId: number, onProgress?: (p: ReviewProgress) => void) {
+    this.client = client;
+    this.requestId = requestId;
+    this.onProgress = onProgress;
+    this.json = this.jsonDeferred.promise;
+    this.result = this.json.then((text) => JSON.parse(text) as GameAnalysis);
+    this.result.catch(() => {});
+  }
+
+  /** Stops the review: the query in flight is terminated (within one NN batch), no further pass starts, and
+   * `result` rejects with a KataGoError whose `cancelled` is true. */
+  cancel(): void {
+    if (!this.settled) this.client._cancelReview(this);
+  }
+
+  /** @internal */
+  _settle(json: string | null, error?: Error): void {
+    if (this.settled) return;
+    this.settled = true;
+    if (error) this.jsonDeferred.reject(error);
+    else this.jsonDeferred.resolve(json!);
+  }
+}
+
 /** The engine in a Web Worker, speaking KataGo's analysis protocol. */
 export class KataGoClient {
   /** Resolves when the network is loaded (and warmed up): which backend runs, versions, timings. */
@@ -190,6 +232,9 @@ export class KataGoClient {
   private readonly runs = new Map<string, AnalysisRun>();
   private readonly actions = new Map<string, Deferred<Record<string, unknown>>>();
   private readonly statsWaiters = new Map<number, Deferred<EngineStats>>();
+  private readonly reviews = new Map<number, ReviewRun>();
+  /** Reviews asked for before `ready`: posted to the worker that becomes ready (a CPU restart included). */
+  private queuedReviews: Extract<ToWorker, { type: "review" }>[] = [];
   private readonly lineListeners = new Set<(line: string) => void>();
   private dead: Error | null = null;
   /** Set by dispose(): no worker is started (or restarted on the CPU) after it. */
@@ -257,11 +302,30 @@ export class KataGoClient {
           this.queued = [];
           this.post({ type: "lines", lines });
         }
+        for (const r of this.queuedReviews) this.post(r);
+        this.queuedReviews = [];
         break;
       case "stats": {
         const d = this.statsWaiters.get(m.requestId);
         this.statsWaiters.delete(m.requestId);
         d?.resolve(m.stats);
+        break;
+      }
+      case "reviewProgress":
+        this.reviews.get(m.requestId)?.onProgress?.(m.progress);
+        break;
+      case "reviewDone": {
+        const run = this.reviews.get(m.requestId);
+        this.reviews.delete(m.requestId);
+        run?._settle(m.payload);
+        break;
+      }
+      case "reviewError": {
+        const run = this.reviews.get(m.requestId);
+        this.reviews.delete(m.requestId);
+        const e = new KataGoError(m.message);
+        e.cancelled = m.cancelled;
+        run?._settle(null, e);
         break;
       }
       case "exit":
@@ -296,6 +360,8 @@ export class KataGoClient {
     this.actions.clear();
     for (const d of this.statsWaiters.values()) d.reject(this.dead);
     this.statsWaiters.clear();
+    for (const r of this.reviews.values()) r._settle(null, this.dead);
+    this.reviews.clear();
   }
 
   private handleLine(line: string): void {
@@ -369,6 +435,46 @@ export class KataGoClient {
   async cancel(run?: AnalysisRun): Promise<void> {
     if (run) await this.action({ action: "terminate", terminateId: run.wireId });
     else await this.action({ action: "terminate_all" });
+  }
+
+  /** Reviews a whole game as katago-ws does (crate katago-annotate, in the wasm): every turn analysed (one
+   * query, or a screening pass then a full-depth pass around the moves that swing, with `screenVisits`), then
+   * annotated into the payload v3 that baduk_review stores for a server analysis, with
+   * `engine = {name: "katago-rs-wasm", version, model}`. `game` is SGF text or a GameInput. `onProgress` runs
+   * after each analysed turn. Runs alongside `analyze` queries (the engine interleaves them). */
+  reviewGame(game: string | GameInput, options: ReviewOptions = {}, onProgress?: (p: ReviewProgress) => void): ReviewRun {
+    const requestId = ++this.seq;
+    const run = new ReviewRun(this, requestId, onProgress);
+    if (this.dead) {
+      run._settle(null, this.dead);
+      return run;
+    }
+    const { signal, ...rest } = options;
+    if (signal?.aborted) {
+      const e = new KataGoError("review cancelled");
+      e.cancelled = true;
+      run._settle(null, e);
+      return run;
+    }
+    signal?.addEventListener("abort", () => run.cancel(), { once: true });
+    this.reviews.set(requestId, run);
+    const m: ToWorker = { type: "review", requestId, game, options: rest };
+    if (this.isReady) this.post(m);
+    else this.queuedReviews.push(m);
+    return run;
+  }
+
+  /** @internal */
+  _cancelReview(run: ReviewRun): void {
+    if (this.reviews.get(run.requestId) !== run || this.dead) return;
+    const queued = this.queuedReviews.findIndex((m) => m.requestId === run.requestId);
+    if (queued >= 0) {
+      this.queuedReviews.splice(queued, 1);
+      this.reviews.delete(run.requestId);
+      const e = new KataGoError("review cancelled");
+      e.cancelled = true;
+      run._settle(null, e);
+    } else this.post({ type: "reviewCancel", requestId: run.requestId });
   }
 
   /** `query_version`: the KataGo version the port follows. */

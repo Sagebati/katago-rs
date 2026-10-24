@@ -55,11 +55,12 @@ check-features:
 # Oracle tests on wasm32-unknown-unknown under node: port::math (vs glibc), Rand, hash, printf,
 # rules, global, testrules, the BoardHistory fuzz oracle. On wasm the std float math is not
 # glibc's, so this is where libm drift shows up. Plus katago-nn-burn's wasm_yield: the CPU backend
-# yields to the JS event loop between batches (PORTING.md §11).
+# yields to the JS event loop between batches (PORTING.md §11). Plus katago-annotate's katago-ws parity replay (M6).
 # Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
 test-wasm:
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-annotate --target wasm32-unknown-unknown --test fixtures
 
 # The human-SL net (b18c384nbt-humanv0) inside wasm on burn flex vs the Eigen NNEvaluator records (M8; release, a few
 # minutes of build, ~1-2 s per evaluation under node). Opt-in: not part of test-wasm.
@@ -101,6 +102,17 @@ search-tests *flags="":
 # (fixtures/upstream-v1.16.5/search/oracle/search_tolerance_*.txt). Release, ~16 min.
 search-tolerance *flags="":
     cargo test --release -p katago-nn-burn --test search_tolerance {{flags}} -- --nocapture
+
+# katago-annotate (M6) vs katago-ws: replay the recorded games (fixtures/katago-annotate) natively and on wasm32;
+# payloads and query lines must be byte-identical to katago-ws's.
+annotate-parity:
+    cargo test -p katago-annotate
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-annotate --target wasm32-unknown-unknown --test fixtures
+
+# Re-record fixtures/katago-annotate through katago-ws's own client and annotator (needs ../katago-ws and
+# `just katago-eigen`; ~6 min), or `--check-only` to compare katago-ws's annotator with the checked-in fixtures.
+annotate-parity-regen *args="":
+    tools/annotate-parity/regen.sh {{args}}
 
 # npm package packages/katago-web (M4): the katago-wasm engine (cargo profile `web`: size-optimized except burn's CPU
 # kernels; wasm-bindgen --target web, wasm-opt when installed),

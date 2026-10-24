@@ -33,6 +33,7 @@ use katago_core::port::executor::Spawner;
 use katago_core::program::setup::NNEvaluatorHost;
 
 use crate::config::Backend;
+use crate::review;
 use crate::sha256_hex;
 
 unsafe extern "C" {
@@ -533,6 +534,10 @@ fn deferred() -> (Promise, Function, Function) {
 #[wasm_bindgen]
 pub struct Engine {
   input: RefCell<Option<mpsc::UnboundedSender<Vec<Vec<u8>>>>>,
+  /// Response lines of the review queries (taken out of the output before `on_line`).
+  router: review::Router,
+  /// Reviews in flight, by the caller's review id.
+  reviews: Rc<RefCell<std::collections::HashMap<String, Rc<review::ReviewState>>>>,
   backend: Backend,
   network: String,
   config_text: String,
@@ -599,6 +604,8 @@ impl Engine {
     let stats = Rc::new(NnStats::default());
     let (finished, resolve, reject) = deferred();
     let nn_host = WebNNHost { device, net, bpk: RefCell::new(Some(model)), stats: stats.clone(), batch_buckets };
+    let router = review::Router::default();
+    let output_router = router.clone();
     let args = AnalysisArgs {
       model_file,
       human_model_file: String::new(),
@@ -614,7 +621,9 @@ impl Engine {
         args,
         input: &mut input,
         write_stdout: Box::new(move |line: &str| {
-          let _ = on_line.call1(&JsValue::NULL, &JsValue::from_str(line));
+          if !output_router.route(line) {
+            let _ = on_line.call1(&JsValue::NULL, &JsValue::from_str(line));
+          }
         }),
         write_stderr: Box::new(move |text: &str| {
           // `cerr << s` with an empty s (no unused config keys...) writes nothing
@@ -635,7 +644,7 @@ impl Engine {
         }
       }
     });
-    Ok(Engine { input: RefCell::new(Some(tx)), backend, network, config_text, stats, finished })
+    Ok(Engine { input: RefCell::new(Some(tx)), router, reviews: Default::default(), backend, network, config_text, stats, finished })
   }
 
   /// "webgpu" | "cpu"
@@ -664,6 +673,66 @@ impl Engine {
     self.stats.batches_at_last_input.set(self.stats.batches.get());
     self.stats.rows_at_last_input.set(self.stats.rows.get());
     tx.unbounded_send(lines.into_iter().map(String::into_bytes).collect()).map_err(|_| JsError::new("the engine has exited"))
+  }
+
+  /// Reviews a whole game as katago-ws does (crate katago-annotate): one analysis query over every turn, or
+  /// with `screenVisits` a screening pass then a full-depth pass around the moves that swing, and resolves
+  /// with the payload v3 JSON text (`GameAnalysis`, engine `{name: "katago-rs-wasm", version, model}`).
+  /// - `review_id`: the caller's id for [`Engine::cancel_review`] (unique among the reviews in flight);
+  /// - `game`: SGF text, or `{moves, rules?, komi?, boardSize? | boardXSize + boardYSize, initialStones?, result?}`;
+  /// - `options`: katago-ws's analysis settings in camelCase (`maxVisits` 100, `screenVisits` 0 = one pass,
+  ///   `refineWinrateDelta` 0.03, `refineScoreDelta` 1, `topK` 10, `analysisPvLen` 15, `includeOwnership`,
+  ///   `includeOwnershipStdev`, `includePolicy` (all true), `defaultKomi` 7.5, `defaultBoardSize` 19) and
+  ///   `humanProfile` (dropped with a warning: no human SL model in the browser);
+  /// - `on_progress({pass, passes, turnNumber, done, total, analysed})` after each analysed turn.
+  ///
+  /// Rejects on a bad game or options, an engine error, or [`Engine::cancel_review`] ("review cancelled").
+  #[wasm_bindgen(js_name = reviewGame)]
+  pub fn review_game(&self, review_id: String, game: JsValue, options: JsValue, on_progress: Function) -> Result<Promise, JsError> {
+    let (game, opts, human_profile) = review::read_args(&game, &options, &self.network)?;
+    let input = self.input.borrow().clone().ok_or_else(|| JsError::new("input is closed"))?;
+    if self.reviews.borrow().contains_key(&review_id) {
+      return Err(JsError::new(&format!("review {review_id} is already running")));
+    }
+    let state = Rc::new(review::ReviewState::default());
+    self.reviews.borrow_mut().insert(review_id.clone(), state.clone());
+    let reviews = self.reviews.clone();
+    let cancel_state = state.clone();
+    let analyzer = review::WasmAnalyzer {
+      input,
+      router: self.router.clone(),
+      review_id: review_id.clone(),
+      state,
+      on_progress,
+      seq: Cell::new(0),
+      analysed: Cell::new(0),
+      two_pass: opts.two_pass(),
+    };
+    Ok(wasm_bindgen_futures::future_to_promise(async move {
+      let result = match game {
+        review::ReviewInput::Sgf(sgf) => katago_annotate::analyze(&analyzer, &opts, &sgf, human_profile.as_deref()).await,
+        review::ReviewInput::Moves(input) => match input.into_game(opts.default_board_size, opts.default_komi) {
+          Ok(game) => katago_annotate::analyze_game(&analyzer, &opts, &game, human_profile.as_deref()).await,
+          Err(e) => Err(e),
+        },
+      };
+      reviews.borrow_mut().remove(&review_id);
+      match result.and_then(|payload| serde_json::to_string(&payload).map_err(|e| katago_annotate::AnnotateError::Inference(e.to_string()))) {
+        Ok(json) => Ok(JsValue::from_str(&json)),
+        Err(_) if cancel_state.cancelled.get() => Err(js_sys::Error::new(review::CANCELLED).into()),
+        Err(e) => Err(js_sys::Error::new(&e.to_string()).into()),
+      }
+    }))
+  }
+
+  /// Cancels a review started by [`Engine::review_game`] (no-op when it is not running): its query in flight is
+  /// terminated, no further pass starts, and its promise rejects with "review cancelled".
+  #[wasm_bindgen(js_name = cancelReview)]
+  pub fn cancel_review(&self, review_id: &str) {
+    let state = self.reviews.borrow().get(review_id).cloned();
+    if let Some(state) = state {
+      review::cancel(&state, review_id, self.input.borrow().as_ref());
+    }
   }
 
   /// End of input (stdin closed): the engine finishes the queued queries (unless quitWithoutWaiting) and

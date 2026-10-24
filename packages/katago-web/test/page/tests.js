@@ -171,9 +171,51 @@ export async function kernelCacheParity({ network, cacheKernels = true }) {
   return { first: pick(a), second: pick(b), identical: a.text === b.text, length: a.text.length, texts: a.text === b.text ? undefined : [a.text, b.text] };
 }
 
+/** Full-game reviews (M6) in one engine: each `{game, options, cancelAfter?}` of `reviews` in turn, through
+ * KataGoClient.reviewGame. Returns per review the payload JSON text (or the error), the progress events with
+ * their times, and the wall clock; `config` / `overrides` / `analysisThreads` set up the engine (deterministic
+ * runs for the native comparison). With `cancelAfter`, the review is cancelled after that many progress events. */
+export async function review({ backend, network, config, configUrl, overrides, analysisThreads, warmupVisits, reviews, clearCache }) {
+  if (configUrl) config = await text(configUrl);
+  const { c, ready } = await client({ backend, network, config, overrides, analysisThreads, warmupVisits });
+  const out = [];
+  for (const { game, options, cancelAfter } of reviews) {
+    if (clearCache) await c.clearCache();
+    const s0 = await c.stats();
+    const progress = [];
+    const t0 = performance.now();
+    let tCancel = null;
+    const run = c.reviewGame(game, options, (p) => {
+      progress.push({ ...p, t: performance.now() - t0 });
+      if (cancelAfter && progress.length === cancelAfter) {
+        tCancel = performance.now() - t0;
+        run.cancel();
+      }
+    });
+    let json = null;
+    let error = null;
+    let cancelled = false;
+    try {
+      json = await run.json;
+    } catch (e) {
+      error = String(e.message);
+      cancelled = e.cancelled === true;
+    }
+    const ms = performance.now() - t0;
+    const s1 = await c.stats();
+    const nn = { rows: s1.rows - s0.rows, batches: s1.batches - s0.batches, busyMs: s1.busyMs - s0.busyMs, maxBatchMs: s1.maxBatchMs };
+    out.push({ json, error, cancelled, progress, ms, tCancel, nn });
+  }
+  // The engine still answers ordinary queries after the reviews (and nothing of theirs leaked into them).
+  const after = await c.analyze({ ...EMPTY_19, moves: GAME_MOVES.slice(0, 2), maxVisits: 8 }).done;
+  const stats = await c.stats();
+  c.dispose();
+  return { backend: ready.backend, ready, reviews: out, after: after.map((r) => ({ id: r.id, turnNumber: r.turnNumber, visits: r.rootInfo.visits })), stats };
+}
+
 export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, throughput, terminateLatency, apiSmoke, kernelCacheParity, takeLogs };
+window.kgwTests = { runGolden, loadModel, throughput, terminateLatency, apiSmoke, kernelCacheParity, review, takeLogs };
 window.kgwReady = true;

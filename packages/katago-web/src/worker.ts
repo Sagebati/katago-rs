@@ -5,6 +5,7 @@
 import init, { Engine, compiledNetworks, kernelCacheExport, kernelCacheImport, kernelCacheStats, sha256Hex } from "./wasm/katago_wasm.js";
 import { BUILD_ID } from "./wasm/build-id.js";
 import type { Backend, EngineInitOptions, EngineStats, FromWorker, ReadyInfo, ToWorker } from "./messages.js";
+import type { ReviewProgress } from "./review.js";
 
 interface WorkerScope {
   postMessage(message: FromWorker): void;
@@ -39,6 +40,9 @@ const INTERNAL = "__kgw_";
 let engine: Engine | null = null;
 let ready = false;
 let pendingLines: string[] = [];
+/** Reviews asked for before the engine was ready (KataGoClient holds its own until `ready`; this covers other callers). */
+let pendingReviews: Extract<ToWorker, { type: "review" }>[] = [];
+const REVIEW_CANCELLED = "review cancelled";
 /** Handler of the worker's own queries (ids starting with INTERNAL), set while one is in flight. */
 let internalHandler: ((response: Record<string, unknown>) => void) | null = null;
 
@@ -355,6 +359,30 @@ async function start(options: EngineInitOptions): Promise<void> {
     pendingLines = [];
     engine.sendLines(lines);
   }
+  const reviews = pendingReviews;
+  pendingReviews = [];
+  for (const r of reviews) startReview(r);
+}
+
+/** A full-game review (katago-ws's flow and payload, in the wasm: Engine.reviewGame). */
+function startReview(m: Extract<ToWorker, { type: "review" }>): void {
+  const id = String(m.requestId);
+  let promise: Promise<string>;
+  try {
+    promise = engine!.reviewGame(id, m.game, m.options, (progress: unknown) =>
+      post({ type: "reviewProgress", requestId: m.requestId, progress: progress as ReviewProgress }),
+    );
+  } catch (e) {
+    post({ type: "reviewError", requestId: m.requestId, message: String((e as Error)?.message ?? e), cancelled: false });
+    return;
+  }
+  promise.then(
+    (payload) => post({ type: "reviewDone", requestId: m.requestId, payload }),
+    (e: unknown) => {
+      const message = String((e as Error)?.message ?? e);
+      post({ type: "reviewError", requestId: m.requestId, message, cancelled: message === REVIEW_CANCELLED });
+    },
+  );
 }
 
 const zeroStats: EngineStats = { batches: 0, rows: 0, busyMs: 0, lastBatchMs: 0, maxBatchMs: 0, lastBatchRows: 0, maxBatchRows: 0, modelBuildMs: 0, warmupMs: 0, warmupBatches: 0, batchesSinceLastInput: 0, rowsSinceLastInput: 0 };
@@ -372,6 +400,18 @@ scope.addEventListener("message", (e: MessageEvent<ToWorker>) => {
     case "stats":
       post({ type: "stats", requestId: m.requestId, stats: engine ? (engine.stats() as EngineStats) : zeroStats });
       break;
+    case "review":
+      if (ready && engine) startReview(m);
+      else pendingReviews.push(m);
+      break;
+    case "reviewCancel": {
+      const queued = pendingReviews.findIndex((r) => r.requestId === m.requestId);
+      if (queued >= 0) {
+        pendingReviews.splice(queued, 1);
+        post({ type: "reviewError", requestId: m.requestId, message: REVIEW_CANCELLED, cancelled: true });
+      } else engine?.cancelReview(String(m.requestId));
+      break;
+    }
     case "close":
       engine?.closeInput();
       break;
