@@ -255,6 +255,32 @@ impl<C: WgpuCompiler> WgpuServer<C> {
         validate_cube_dim(&self.utilities.properties, &kernel_id)?;
         validate_units(&self.utilities.properties, &kernel_id)?;
 
+        // PATCH(katago-rs): a WGSL kernel compiled by an earlier process of this build (wgsl_cache).
+        if let Some(entry) = super::wgsl_cache::get(self.utilities.properties_hash, &kernel_id) {
+            crate::compiler::base::check_shared_memory(
+                Some(entry.shared_memory_size),
+                &self.utilities.properties,
+            )?;
+            let module = self.create_module(
+                &entry.entrypoint_name,
+                kernel_id.cube_dim.into(),
+                ModuleSource::Wgsl(&entry.source),
+                mode,
+            )?;
+            let bindings_info =
+                crate::backend::wgsl::bindings_from_buffers(&entry.buffers, bindings);
+            let pipeline = self.create_pipeline_with_bindings_info(
+                &entry.entrypoint_name,
+                Some(bindings_info),
+                module,
+            )?;
+            let io: Option<Arc<[BufferIOAttr]>> = Some(Arc::from(entry.io.clone()));
+            let pipeline_entry = (pipeline, CompilerInfo::WGSL, io);
+            self.pipelines.insert(kernel_id, pipeline_entry.clone());
+            recording.loaded();
+            return Ok(pipeline_entry);
+        }
+
         let definition = cubecl_core::define_kernel(&*kernel)?;
         recording.defined(&definition);
 
@@ -274,6 +300,23 @@ impl<C: WgpuCompiler> WgpuServer<C> {
         // consumed: what the write scope stages from.
         let io = compiled.io.take().map(Arc::from);
         let (compiler_info, auto_repr) = compiler.normalize_repr(compiled.repr);
+        // PATCH(katago-rs): remember the WGSL for later processes (wgsl_cache).
+        if super::wgsl_cache::is_enabled()
+            && let Some(crate::AutoRepresentation::Wgsl(shader)) = auto_repr.as_ref()
+        {
+            super::wgsl_cache::insert(
+                self.utilities.properties_hash,
+                &kernel_id,
+                super::wgsl_cache::Entry {
+                    stable_format: kernel_id.stable_format(),
+                    entrypoint_name: compiled.entrypoint_name.clone(),
+                    source: compiled.source.clone(),
+                    buffers: shader.buffers.clone(),
+                    io: shader.io.clone(),
+                    shared_memory_size: shader.shared_memory_size,
+                },
+            );
+        }
         let repr = auto_repr.as_ref().map(|r| r.as_ref());
 
         // /!\ Do not delete the following commented code.

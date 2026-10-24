@@ -9,6 +9,8 @@ pub(super) mod mem_manager;
 pub(super) mod poll;
 pub(super) mod schedule;
 mod server;
+/// PATCH(katago-rs): see the module docs.
+pub mod wgsl_cache;
 pub(super) mod stream;
 pub(super) mod timings;
 

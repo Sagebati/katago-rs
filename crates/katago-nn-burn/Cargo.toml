@@ -14,8 +14,12 @@ net-b10c128 = []
 net-b18c384nbt = []
 # CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
 flex = ["burn/flex", "dep:burn-flex"]
-# GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser.
-wgpu = ["burn/wgpu", "burn/autotune"]
+# GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser, with burn's autotune (each kernel family is
+# benchmarked once per process and shape).
+wgpu = ["wgpu-fixed-kernels", "burn/autotune"]
+# wgpu without autotune: burn's default kernel for each op, no tuning pass. katago-wasm uses this: in the browser
+# the tuning results cannot be kept across page loads and the pass cost ~8 s per load (docs/M4-report.md).
+wgpu-fixed-kernels = ["burn/wgpu"]
 # Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
 vulkan = ["wgpu", "burn/vulkan"]
 fusion = ["burn/fusion"]

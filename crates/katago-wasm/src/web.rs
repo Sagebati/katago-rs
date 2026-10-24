@@ -35,8 +35,25 @@ use katago_core::program::setup::NNEvaluatorHost;
 use crate::config::Backend;
 use crate::sha256_hex;
 
+unsafe extern "C" {
+  /// The static constructors, synthesized by wasm-ld (`inventory` registrations of pliron, pulled in by
+  /// cubecl-core).
+  fn __wasm_call_ctors();
+}
+
+/// Runs the static constructors once, at instantiation (wasm-bindgen calls this from `__wbindgen_start`).
+///
+/// Referencing `__wasm_call_ctors` from code is also what makes wasm-ld link the module as a reactor:
+/// without a reference it treats a module that has constructors as a command and wraps every export
+/// (`__wbindgen_malloc`, `__externref_table_alloc`, closure trampolines...) in a call to all of them, so
+/// every JS -> wasm call re-ran cubecl's `inventory` registrations (wgpu's WebGPU backend crosses into
+/// wasm for each bind group, promise and buffer mapping): measured 8-10% of each NN batch and ~5% of the
+/// warm-up; see docs/M4-report.md, "Start-up on WebGPU".
 #[wasm_bindgen(start)]
 fn start() {
+  // SAFETY: called once, first thing after instantiation (before any other export runs Rust code that
+  // reads the registries), as the reactor model expects; the constructors only register statics.
+  unsafe { __wasm_call_ctors() };
   console_error_panic_hook::set_once();
 }
 
@@ -217,6 +234,8 @@ async fn make_device(backend: Backend) -> Result<Device, JsError> {
       if let Some(d) = WEBGPU_DEVICE.with_borrow(|d| d.clone()) {
         return Ok(d);
       }
+      // Before the first kernel: compiled WGSL is recorded, and looked up in what kernelCacheImport loaded.
+      cubecl_wgpu::wgsl_cache::enable();
       let d = Device::wgpu_options().init_async().await.map_err(|e| JsError::new(&format!("WebGPU init failed: {e:?}")))?;
       WEBGPU_DEVICE.set(Some(d.clone()));
       Ok(d)
@@ -421,6 +440,37 @@ impl NNEvaluatorHost for WebNNHost {
   fn spawner(&self) -> Rc<dyn Spawner> {
     Rc::new(WasmSpawner)
   }
+}
+
+//------------------------------------------------------------------------------------------------
+// Compiled-kernel cache
+
+/// Loads compiled WebGPU kernels saved by [`kernel_cache_export`] in an earlier page load of the same build
+/// (the worker keys them by build and adapter). Returns how many kernels the blob held. Call before
+/// [`Engine::create`]: each kernel found there skips cubecl's expansion, optimization and WGSL printing, the
+/// bulk of the WebGPU warm-up (docs/M4-report.md, "Start-up on WebGPU").
+#[wasm_bindgen(js_name = kernelCacheImport)]
+pub fn kernel_cache_import(bytes: &[u8]) -> Result<u32, JsError> {
+  cubecl_wgpu::wgsl_cache::import(bytes).map(|n| n as u32).map_err(|e| JsError::new(&e))
+}
+
+/// Every compiled WebGPU kernel of this instance (imported or compiled here) as one blob for
+/// [`kernel_cache_import`]; resets `added` in [`kernel_cache_stats`].
+#[wasm_bindgen(js_name = kernelCacheExport)]
+pub fn kernel_cache_export() -> Vec<u8> {
+  cubecl_wgpu::wgsl_cache::export()
+}
+
+/// `{entries, added, hits, misses}`: kernels held, kernels compiled since the last export, and the lookups
+/// that found / did not find a kernel (a miss compiles it).
+#[wasm_bindgen(js_name = kernelCacheStats)]
+pub fn kernel_cache_stats() -> JsValue {
+  let (entries, added, hits, misses) = cubecl_wgpu::wgsl_cache::stats();
+  let o = js_sys::Object::new();
+  for (k, v) in [("entries", entries as f64), ("added", added as f64), ("hits", hits as f64), ("misses", misses as f64)] {
+    let _ = Reflect::set(&o, &JsValue::from_str(k), &JsValue::from_f64(v));
+  }
+  o.into()
 }
 
 //------------------------------------------------------------------------------------------------

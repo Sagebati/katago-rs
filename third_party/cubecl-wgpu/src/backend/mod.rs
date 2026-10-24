@@ -1,5 +1,6 @@
 mod base;
-mod wgsl;
+// PATCH(katago-rs): `pub(crate)` (was private) for `bindings_from_buffers`.
+pub(crate) mod wgsl;
 
 #[cfg(feature = "spirv")]
 pub mod vulkan;

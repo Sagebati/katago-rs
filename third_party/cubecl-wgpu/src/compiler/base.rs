@@ -393,7 +393,8 @@ impl WgpuCompiler for cubecl_spirv::SpirvCompiler {
     }
 }
 
-fn check_shared_memory(
+// PATCH(katago-rs): `pub(crate)` (was private) for kernels from `wgsl_cache`.
+pub(crate) fn check_shared_memory(
     shared_bytes: Option<usize>,
     props: &DeviceProperties,
 ) -> Result<(), LaunchError> {

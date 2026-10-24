@@ -269,7 +269,17 @@ impl<C: WgpuCompiler> WgpuServer<C> {
             Some(AutoRepresentationRef::SpirV(repr)) => Some(vulkan::bindings(repr, bindings)),
             _ => None,
         };
+        self.create_pipeline_with_bindings_info(entrypoint_name, bindings_info, module)
+    }
 
+    /// PATCH(katago-rs): [`Self::create_pipeline`] from the binding visibilities alone, which is what a
+    /// kernel loaded from the WGSL cache (`crate::wgsl_cache`) has left of its representation.
+    pub fn create_pipeline_with_bindings_info(
+        &self,
+        entrypoint_name: &str,
+        bindings_info: Option<(Vec<Visibility>, usize)>,
+        module: ShaderModule,
+    ) -> Result<Arc<ComputePipeline>, CompilationError> {
         let create = || {
             let layout = bindings_info.map(|(bindings, immediate_size)| {
                 if !bindings.is_empty() {

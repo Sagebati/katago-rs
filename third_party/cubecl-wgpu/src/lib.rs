@@ -1,3 +1,5 @@
+// PATCH(katago-rs): upstream warnings, capped for registry crates but not for path dependencies.
+#![allow(unused_variables, dead_code)]
 #[macro_use]
 extern crate derive_new;
 

@@ -32,6 +32,9 @@ export interface EngineInitOptions {
   warmupVisits?: number;
   /** Cache the weights with the Cache API (default true). */
   cacheModels?: boolean;
+  /** Cache the compiled WebGPU kernels with the Cache API, per build and adapter (default true): later page
+   * loads skip compiling them, most of the WebGPU warm-up. */
+  cacheKernels?: boolean;
   /** URL of `katago_wasm_bg.wasm` (default: next to the worker's wasm-bindgen glue). */
   wasmUrl?: string;
 }
@@ -50,6 +53,9 @@ export interface ReadyInfo {
   fallbackReason?: string;
   /** The effective config. */
   configText: string;
+  /** WebGPU: kernels imported from the kernel cache, and the kernel lookups up to `ready` that found one (hits) or
+   * had to compile it (compiled). */
+  kernelCache?: { loaded: number; hits: number; compiled: number };
   timings: {
     /** wasm fetch + compile + instantiate */
     wasmInitMs: number;
@@ -63,8 +69,12 @@ export interface ReadyInfo {
     modelBuildMs: number;
     /** the warm-up search */
     warmupMs: number;
-    /** WebGPU: one batch per batch-shape bucket (kernel compiles and autotune), inside warmupMs */
+    /** WebGPU: one batch per batch-shape bucket (kernel compiles, or loads from the kernel cache), inside warmupMs */
     bucketWarmupMs: number;
+    /** WebGPU: reading the cached kernels (in parallel with the weights) */
+    kernelCacheLoadMs: number;
+    /** WebGPU: saving the kernels compiled by this load (0 when all came from the cache) */
+    kernelCacheSaveMs?: number;
     totalMs: number;
   };
 }

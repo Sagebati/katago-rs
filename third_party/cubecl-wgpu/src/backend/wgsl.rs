@@ -12,8 +12,12 @@ pub fn bindings(
     repr: &<WgslCompiler as Compiler>::Representation,
     args: &KernelArguments,
 ) -> (Vec<Visibility>, usize) {
-    let mut bindings = repr
-        .buffers
+    bindings_from_buffers(&repr.buffers, args)
+}
+
+/// PATCH(katago-rs): [`bindings`] from the buffer visibilities alone (a kernel from `crate::wgsl_cache`).
+pub fn bindings_from_buffers(buffers: &[Visibility], args: &KernelArguments) -> (Vec<Visibility>, usize) {
+    let mut bindings = buffers
         .iter()
         .map(|vis| {
             // When slices are shared, it needs to be read-write if ANY of the slices is read-write,

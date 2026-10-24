@@ -1,7 +1,7 @@
 // Browser tests of katago-web (`just web-test`): a static server for the built package, the upstream query
 // files / config and the goldens, and Playwright driving headless system Chromium.
 //
-//   node packages/katago-web/test/run.mjs [--only goldens,cache,terminate,partials,throughput,fallback]
+//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback]
 //        [--backends webgpu,cpu] [--goldens basic,symmetry] [--json out.json] [--headed]
 //
 // Env: PLAYWRIGHT (path of the playwright package; default: sai-frontend's node_modules), CHROMIUM
@@ -27,7 +27,7 @@ const opt = (name, def) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : def;
 };
-const only = opt("only", "goldens,fallback,cache,partials,terminate,throughput").split(",");
+const only = opt("only", "goldens,fallback,cache,kernels,partials,terminate,throughput").split(",");
 const backends = opt("backends", "webgpu,cpu").split(",");
 const headed = args.includes("--headed");
 const jsonOut = opt("json", null);
@@ -168,6 +168,19 @@ try {
     check("first load fetches the weights once", cold.modelSource === "network" && afterCold - before === 1, `${afterCold - before} .bpk request(s), source ${cold.modelSource}`);
     check("second load does no model network request", warm.modelSource === "cache" && afterWarm === afterCold && browserBpk.length === 0, `server saw ${afterWarm - afterCold}, browser issued ${browserBpk.length}, source ${warm.modelSource}`);
     console.log(`  cold: ${JSON.stringify(cold.timings)}\n  warm: ${JSON.stringify(warm.timings)}`);
+    if (cold.backend === "webgpu") {
+      // The reload finds the kernels the first load compiled (docs/M4-report.md, "Start-up on WebGPU").
+      check("second load compiles no WebGPU kernel", cold.kernelCache?.compiled > 0 && warm.kernelCache?.compiled === 0 && warm.kernelCache?.hits > 0, `cold ${JSON.stringify(cold.kernelCache)}, warm ${JSON.stringify(warm.kernelCache)}; ready in ${cold.timings.totalMs.toFixed(0)} ms cold, ${warm.timings.totalMs.toFixed(0)} ms warm (warm-up ${cold.timings.warmupMs.toFixed(0)} / ${warm.timings.warmupMs.toFixed(0)} ms)`);
+    }
+    await context.close();
+  }
+
+  if (only.includes("kernels") && backends.includes("webgpu")) {
+    const { context, page } = await openPage(gpuBrowser);
+    const r = await call(page, "kernelCacheParity", { network: "g170e-b10c128" });
+    results.kernelCache = r;
+    check("kernel cache: compiled kernels saved, then loaded", r.first.kernelCache?.compiled > 0 && r.first.kernelCache?.loaded === 0 && r.second.kernelCache?.loaded > 0 && r.second.kernelCache?.compiled === 0, `first ${JSON.stringify(r.first.kernelCache)}, second ${JSON.stringify(r.second.kernelCache)}`);
+    check("kernel cache: bit-identical analysis with cached kernels", r.identical, `${r.length} chars of final responses ${r.identical ? "identical" : "DIFFER"}`);
     await context.close();
   }
 
