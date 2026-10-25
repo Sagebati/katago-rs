@@ -7,19 +7,29 @@ pub fn device(name: &str) -> Device {
         // `wgpu-fixed-kernels` alone is the browser build's setup (no autotune), `wgpu` adds autotune.
         #[cfg(any(feature = "wgpu", feature = "wgpu-fixed-kernels"))]
         "wgpu" => {
-            // Experiment switches for wino.rs (examples only: the library reads no environment).
-            if std::env::var_os("WINO_HALF").is_some() {
-                katago_nn_burn::wino::set_half(true);
-            }
-            if std::env::var_os("WINO_GEMM_OUT_F32").is_some() {
-                katago_nn_burn::wino::set_gemm_out_f32(true);
-            }
-            if std::env::var_os("WINO_SCALAR_GEMM").is_some() {
-                katago_nn_burn::wino::set_vector_gemm(false);
-            }
+            wino_switches();
             burn::backend::WgpuDevice::default().into()
         }
+        #[cfg(feature = "rocm")]
+        "rocm" => {
+            wino_switches();
+            burn::backend::RocmDevice::default().into()
+        }
         other => panic!("backend {other} not compiled in"),
+    }
+}
+
+/// Experiment switches for wino.rs (examples only: the library reads no environment).
+#[cfg(any(feature = "wgpu", feature = "wgpu-fixed-kernels"))]
+fn wino_switches() {
+    if std::env::var_os("WINO_HALF").is_some() {
+        katago_nn_burn::wino::set_half(true);
+    }
+    if std::env::var_os("WINO_GEMM_OUT_F32").is_some() {
+        katago_nn_burn::wino::set_gemm_out_f32(true);
+    }
+    if std::env::var_os("WINO_SCALAR_GEMM").is_some() {
+        katago_nn_burn::wino::set_vector_gemm(false);
     }
 }
 

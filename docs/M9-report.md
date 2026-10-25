@@ -114,9 +114,16 @@ all fixed:
 - `auto` precision: an f16 WebGPU engine that fails to build is retried in f32 before falling back to the CPU;
   `is_using_fp16` reports the f16 convs.
 
-## Burn's ROCm backend (for reference)
+## Native ROCm (HIP)
 
-Asked during the investigation: burn 0.22's ROCm (HIP) backend on the same card before this work gave b18
-89 / 99 / 101 / 99 evals/s at batch 8 / 16 / 32 / 64, and 133 / 174 / 232 / 347 with fusion: the same burn
-graph scaled with batch on HIP where wgpu stopped near 185. It is native-only (no browser), so not pursued; the
-cubecl kernels above would run on it unchanged.
+`-F rocm` (`bench rocm ...`, `nn_parity -F wgpu,rocm -- rocm`) runs the same cubecl kernels on burn's ROCm backend
+(ROCm 7.2.3), native only:
+
+| b18c384nbt evals/s | batch 1 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|
+| burn ROCm + fusion before this work | | 133 | 174 | 232 | 347 |
+| ROCm now, f32 | 155 | 630 | 726 | 910 | 1155 |
+| ROCm now, f16 | 159 | 758 | 899 | 1104 | **1376** |
+
+About WebGPU's numbers up to batch 32 and ahead at 64 (WebGPU f16 1125 there). Parity on ROCm: f32 policy 3.8e-6,
+ownership 9.8e-6; f16 winrate 1.7e-3, lead 0.13, ownership 1.3e-2 (inside upstream's FP16 error).

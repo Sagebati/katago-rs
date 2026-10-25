@@ -298,6 +298,8 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
     "flex" => burn::backend::FlexDevice::default().into(),
     #[cfg(feature = "wgpu")]
     "wgpu" => burn::backend::WgpuDevice::default().into(),
+    #[cfg(feature = "rocm")]
+    "rocm" => burn::backend::RocmDevice::default().into(),
     other => panic!("backend {other} not compiled in"),
   };
   let mut pool = LocalPool::new();
@@ -667,6 +669,24 @@ fn check_f16(diffs: &Diffs) {
     };
     assert!(diffs.max[i] <= tol, "wgpu f16 {}: max diff {:.3e} > tolerance {:.3e}", name, diffs.max[i], tol);
   }
+}
+
+/// ROCm (HIP): the same cubecl kernels as WebGPU, held to the same tiers.
+#[cfg(all(feature = "rocm", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_rocm() {
+  let _gpu = gpu_lock();
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  check_wgpu(&d);
+}
+
+#[cfg(all(feature = "rocm", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_rocm_f16() {
+  let _gpu = gpu_lock();
+  let _half = Half::on();
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  check_f16(&d);
 }
 
 /// The layouts the generated graph cannot take are rejected like eigenbackend rejects its own

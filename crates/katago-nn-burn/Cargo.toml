@@ -29,6 +29,8 @@ wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "dep:burn-cubecl", "dep:hal
 # Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
 vulkan = ["wgpu", "burn/vulkan"]
 fusion = ["burn/fusion"]
+# Native AMD GPUs through HIP (ROCm), with wino.rs's kernels (the same cubecl source as on WebGPU). Not a browser path.
+rocm = ["wgpu-fixed-kernels", "burn/rocm"]
 
 [dependencies]
 # The ported engine (nninterface.rs trait, NNEvaluator, SymmetryHelpers); backend.rs implements its NeuralNet trait.
