@@ -1,7 +1,6 @@
 # katago-rs task runner.
 
 venv := justfile_directory() / ".venv/bin/python"
-bench_models := "/home/sam/src/web/katago-ws/bench/models"
 
 # Convert a KataGo .bin.gz network to ONNX (models/onnx/<name>.onnx).
 convert model name:
@@ -17,21 +16,37 @@ katago-eigen:
     cmake -S upstream/KataGo/cpp -B build/eigen -G Ninja -DUSE_BACKEND=EIGEN -DEIGEN3_INCLUDE_DIRS={{justfile_directory()}}/build/deps/eigen -DCMAKE_BUILD_TYPE=Release -DNO_GIT_REVISION=1
     ninja -C build/eigen katago
 
-# Raw-output parity of the burn import against onnxruntime (backend: flex | wgpu; net: b10 | b18).
+# The examples below build per backend: wgpu with the cubecl kernels and no burn autotune (the browser's kernel set,
+# as katago-ws's images run), rocm with ROCm, flex with the defaults.
+
+# Raw-output parity of the burn import against onnxruntime (backend: flex | wgpu | rocm; net: b10 | b18 | human).
 parity backend="flex" net="b10":
-    cargo run --release -p katago-nn-burn --example parity -F wgpu,net-b18c384nbt -- {{backend}} {{net}}
+    cargo run --release -p katago-nn-burn --example parity {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed-kernels" } else { "" } }} -- {{backend}} {{net}}
 
-# Native forward-pass throughput (backend: flex | wgpu; net: b10 | b18).
-bench backend="wgpu" net="b10" *batches="1 8 16 32 64":
-    cargo run --release -p katago-nn-burn --example bench -F wgpu,net-b18c384nbt -- {{backend}} {{net}} {{batches}}
+# Native forward-pass throughput, evals/s with one readback per batch (backend: flex | wgpu | rocm; net: b6 | b10 |
+# b18 | human; precision: f32 | f16, GPU only). README "Benchmarks".
+bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
+    cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed-kernels" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
 
-# Build the browser spike into crates/katago-web-bench/www (serve that directory).
-web-bench:
-    cargo build --release -p katago-web-bench --target wasm32-unknown-unknown
-    wasm-bindgen --target web --out-dir crates/katago-web-bench/www/pkg --no-typescript target/wasm32-unknown-unknown/release/katago_web_bench.wasm
-    mkdir -p crates/katago-web-bench/www/assets
-    cp "$(ls -t target/wasm32-unknown-unknown/release/build/katago-nn-burn-*/out/model/g170e-b10c128.bpk | head -1)" crates/katago-web-bench/www/assets/
-    cp fixtures/m0/b10c128.*.f32 crates/katago-web-bench/www/assets/
+# Per-layer timing and check of the Winograd 3x3 and NCHW 1x1 convs against im2col on b18's trunk shapes (WebGPU).
+wino-bench precision="f32" *batches="8 16 32 64":
+    cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed-kernels -- {{precision}} {{batches}}
+
+# Upstream KataGo's own `benchmark` on the same net, for comparison (README "Benchmarks"): KATAGO is the binary
+# (default katago-ws's bench copy, an OpenCL v1.16.5 release), NETS the directory of `.bin.gz` nets (default
+# katago-ws's bench/models, `scripts/bench_setup.sh` there), threads the search threads to try.
+bench-upstream net="kata1-b18c384nbt" threads="8,16,32,64":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    katago="${KATAGO:-{{justfile_directory()}}/../katago-ws/bench/katago-dist/katago}"
+    nets="${NETS:-{{justfile_directory()}}/../katago-ws/bench/models}"
+    "$katago" benchmark -model "$nets/{{net}}.bin.gz" -config "$(dirname "$katago")/default_gtp.cfg" -t {{threads}} -v 800 -n 10
+
+# Browser throughput (Chromium, headless): b10c128 100-visit searches on WebGPU and the wasm CPU, then the b18c384nbt
+# set (f32 and f16, 100 and 400 visits). `just web-build` first. README "Benchmarks".
+bench-web:
+    node {{web_pkg}}/test/run.mjs --only throughput --backends webgpu,cpu
+    node {{web_pkg}}/test/run.mjs --only b18
 
 # Every upstream cpp/ file must be ported by one module or ignored with a reason.
 manifest-check:
@@ -59,7 +74,7 @@ check-features:
 # Needs node, wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock) and cargo-nextest (one node process
 # per test, in parallel: ~100 s instead of ~230 s with cargo test).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl --test localpattern_oracle --test reportedsearchvalues_oracle --test searchparams_oracle --test subtreevaluebiastable_oracle
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
     CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-annotate --target wasm32-unknown-unknown --test fixtures
 
@@ -97,10 +112,11 @@ analysis-goldens *flags="":
     cargo nextest run --release -p katago-cli --success-output final {{flags}}
 
 # Analysis-protocol corpora (fixtures/upstream-v1.16.5/analysis-protocol): regenerate the expected outputs with
-# the reference build (`just katago-eigen` first; ~10 min), or replay them through katago-rs (release, ~1.5 min).
+# the reference build (`just katago-eigen` first; ~10 min).
 analysis-protocol-regen *corpora="":
     cd fixtures/upstream-v1.16.5/analysis-protocol && python3 -I regen.py {{corpora}}
 
+# Replay the analysis-protocol corpora through the katago-rs binary vs the reference outputs (release, ~1.5 min).
 analysis-protocol *flags="":
     cargo nextest run --release -p katago-cli --test analysis_protocol_corpus --success-output final {{flags}}
 
@@ -129,7 +145,7 @@ annotate-parity-regen *args="":
 # kernels; wasm-bindgen --target web, wasm-opt when installed),
 # the TypeScript client and worker (tsc), and dist/models/ (the compiled-in nets' .bpk weights + models.json with
 # their sha256). Needs wasm-bindgen 0.2.129 and a TypeScript compiler (TSC, default: sai-frontend's).
-tsc := env_var_or_default("TSC", "/home/sam/src/web/baduk_review/sai-frontend/node_modules/.bin/tsc")
+tsc := env_var_or_default("TSC", justfile_directory() / "../baduk_review/sai-frontend/node_modules/.bin/tsc")
 web_pkg := "packages/katago-web"
 
 web-build *features="":

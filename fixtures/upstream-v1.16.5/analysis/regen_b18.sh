@@ -14,7 +14,7 @@ ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
 KATAGO=$ROOT/${KATAGO:-build/eigen/katago}
 OUT=$(realpath -m "${1:-$ROOT/fixtures/upstream-v1.16.5/analysis}")
 LOGDIR=${LOGDIR:-/tmp/katago-rs-analysis-regen-b18}
-B18_MODEL=${B18_MODEL:-/home/sam/src/web/katago-ws/bench/models/kata1-b18c384nbt.bin.gz}
+B18_MODEL=${B18_MODEL:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/../katago-ws/bench/models/kata1-b18c384nbt.bin.gz}
 mkdir -p "$OUT" "$LOGDIR"
 LOGDIR=$(realpath "$LOGDIR")
 WORK=$LOGDIR/cwd; rm -rf "$WORK"; mkdir -p "$WORK/models"

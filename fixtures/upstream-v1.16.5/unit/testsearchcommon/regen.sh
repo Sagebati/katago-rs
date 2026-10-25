@@ -76,8 +76,8 @@ run_all() {
 }
 run_all
 if [ "${EXTRA_MODELS:-0}" = 1 ]; then
-  B18=${B18:-/home/sam/src/web/katago-ws/bench/models/kata1-b18c384nbt.bin.gz}
-  B40=${B40:-/home/sam/src/web/katago-ws/bench/models/kata1-b40c256.bin.gz}
+  B18=${B18:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/../katago-ws/bench/models/kata1-b18c384nbt.bin.gz}
+  B40=${B40:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/../katago-ws/bench/models/kata1-b40c256.bin.gz}
   bg job testsearchv9 runsearchtestsv9-b18nbt "runSearchTestsV9 kata1-b18c384nbt (Eigen rerun)" runsearchtestsv9 "$B18" true true false
   bg job testsearchv9 runsearchtestsv9-b40 "runSearchTestsV9 kata1-b40c256 (Eigen rerun)" runsearchtestsv9 "$B40" true true false
   wait

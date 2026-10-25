@@ -11,7 +11,7 @@
 // `b18` (M7, kata1-b18c384nbt; not in the default set, `just web-test-b18`): the Eigen b18 goldens, the 105 MB
 // weights cache, the CPU guard, adapter limits, throughput, terminate.
 //
-// Env: PLAYWRIGHT (path of the playwright package; default: sai-frontend's node_modules), CHROMIUM
+// Env: PLAYWRIGHT (path of the playwright package; default: the sibling ../baduk_review checkout's sai-frontend), CHROMIUM
 // (default /usr/bin/chromium). WebGPU on Linux needs --enable-unsafe-webgpu --enable-features=Vulkan
 // --use-angle=vulkan (docs/M0-report.md, docs/M4-report.md). Exit code 1 if any check fails.
 
@@ -27,7 +27,7 @@ import { comparePayloads, keyShapes, validatePayload } from "./review.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = resolve(here, "..");
 const root = resolve(pkg, "../..");
-const PLAYWRIGHT = process.env.PLAYWRIGHT ?? "/home/sam/src/web/baduk_review/sai-frontend/node_modules/playwright";
+const PLAYWRIGHT = process.env.PLAYWRIGHT ?? fileURLToPath(new URL("../../../../baduk_review/sai-frontend/node_modules/playwright", import.meta.url));
 const CHROMIUM = process.env.CHROMIUM ?? "/usr/bin/chromium";
 const { chromium } = await import(pathToFileURL(join(PLAYWRIGHT, "index.mjs")).href);
 

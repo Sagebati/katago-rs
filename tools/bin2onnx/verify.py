@@ -47,7 +47,8 @@ import bin2onnx  # noqa: E402
 POS_LEN = 19
 GTP_COLS = "ABCDEFGHJKLMNOPQRST"
 
-BENCH = "/home/sam/src/web/katago-ws/bench"
+# katago-ws's bench workspace (scripts/bench_setup.sh there): a KataGo binary, its configs, an SGF corpus.
+BENCH = os.environ.get("KATAGO_WS_BENCH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "katago-ws", "bench"))
 DEFAULT_KATAGO_CANDIDATES = [
     os.path.join(REPO, "build", "eigen", "katago"),
     os.path.join(BENCH, "katago-dist", "katago"),
