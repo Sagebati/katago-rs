@@ -34,13 +34,16 @@ wino-bench precision="f32" *batches="8 16 32 64":
 
 # Upstream KataGo's own `benchmark` on the same net, for comparison (README "Benchmarks"): KATAGO is the binary
 # (default katago-ws's bench copy, an OpenCL v1.16.5 release), NETS the directory of `.bin.gz` nets (default
-# katago-ws's bench/models, `scripts/bench_setup.sh` there), threads the search threads to try.
+# katago-ws's bench/models, `scripts/bench_setup.sh` there), CONFIG its GTP config (default: the one beside KATAGO,
+# else upstream's gtp_example.cfg), threads the search threads to try.
 bench-upstream net="kata1-b18c384nbt" threads="8,16,32,64":
     #!/usr/bin/env bash
     set -euo pipefail
     katago="${KATAGO:-{{justfile_directory()}}/../katago-ws/bench/katago-dist/katago}"
     nets="${NETS:-{{justfile_directory()}}/../katago-ws/bench/models}"
-    "$katago" benchmark -model "$nets/{{net}}.bin.gz" -config "$(dirname "$katago")/default_gtp.cfg" -t {{threads}} -v 800 -n 10
+    config="${CONFIG:-$(dirname "$katago")/default_gtp.cfg}"
+    [ -f "$config" ] || config={{justfile_directory()}}/upstream/KataGo/cpp/configs/gtp_example.cfg
+    "$katago" benchmark -model "$nets/{{net}}.bin.gz" -config "$config" -t {{threads}} -v 800 -n 10
 
 # Browser throughput (Chromium, headless): b10c128 100-visit searches on WebGPU and the wasm CPU, then the b18c384nbt
 # set (f32 and f16, 100 and 400 visits). `just web-build` first. README "Benchmarks".
