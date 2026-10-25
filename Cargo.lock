@@ -3828,20 +3828,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "katago-web-bench"
-version = "0.0.0"
-dependencies = [
- "burn",
- "console_error_panic_hook",
- "getrandom 0.4.3",
- "js-sys",
- "katago-nn-burn",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "khronos-egl"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
