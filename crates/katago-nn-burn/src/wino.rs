@@ -130,7 +130,8 @@ fn wino_transform<F: Float, S: Float>(
                 let v = input[nic * xy_size as usize + xy];
                 if comptime![bn_act] {
                     let a = v * scale[ic as usize] + bias[ic as usize];
-                    let sp = if a < F::new(20.0f32) { F::log1p(F::exp(a)) } else { a };
+                    // burn's softplus: identity above 20 (exclusive).
+                    let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
                     value = a * F::tanh(sp) * mask[(n * xy_size) as usize + xy];
                 } else {
                     value = v;
@@ -448,7 +449,18 @@ fn wino_filter<F: Float, S: Float>(weights: &[F], out: &mut [S], oc_size: u32, i
 /// 1x1 convolution in NCHW as one GEMM per batch row: `out[b][n][m] = sum_k x[b][k][m] * wt[k][n]`, with
 /// `m` the board points and `n` the output channels bounds-checked, `k` the input channels a multiple of `GEMM_K`. Upstream's `doStridedBatchedXGemmDirect_KM_KN_NM` with the filter stride 0.
 #[cube(launch)]
-fn conv1x1_gemm<F: Float>(x: &[F], wt: &[F], out: &mut [F], m_size: u32, n_size: u32, k_size: u32) {
+fn conv1x1_gemm<F: Float>(
+    x: &[F],
+    wt: &[F],
+    scale: &[F],
+    bias: &[F],
+    mask: &[F],
+    out: &mut [F],
+    m_size: u32,
+    n_size: u32,
+    k_size: u32,
+    #[comptime] bn_act: bool,
+) {
     let bt = CUBE_POS_Z as usize;
     let m0 = CUBE_POS_X as usize * 64;
     let n0 = CUBE_POS_Y as usize * 64;
@@ -480,6 +492,11 @@ fn conv1x1_gemm<F: Float>(x: &[F], wt: &[F], out: &mut [F], m_size: u32, n_size:
             let mut v = F::new(0.0f32);
             if m0 + mm < m_size {
                 v = x[a_base + (k0 + kk) * m_size + m0 + mm];
+                if comptime![bn_act] {
+                    let a = v * scale[k0 + kk] + bias[k0 + kk];
+                    let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
+                    v = a * F::tanh(sp) * mask[bt * m_size + m0 + mm];
+                }
             }
             a_s[idx] = v;
             let mut w = F::new(0.0f32);
@@ -600,6 +617,28 @@ pub trait ConvOps: Backend {
     /// 1x1 convolution, no bias. `wt` is the `[ic, oc]` transposed weight; `ic % GEMM_K == 0`.
     #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
     fn conv1x1(x: FloatTensor<Self>, wt: FloatTensor<Self>, oc: usize) -> FloatTensor<Self>;
+
+    /// [`ConvOps::conv1x1`] of `mish(x * scale + bias) * mask`: `scale`, `bias` `[ic]`, `mask` `[N * H * W]`.
+    #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
+    fn conv1x1_bn_act(
+        x: FloatTensor<Self>,
+        wt: FloatTensor<Self>,
+        scale: FloatTensor<Self>,
+        bias: FloatTensor<Self>,
+        mask: FloatTensor<Self>,
+        oc: usize,
+    ) -> FloatTensor<Self>;
+
+    /// [`ConvOps::wino_conv3x3`] of `mish(x * scale + bias) * mask` (as [`ConvOps::conv1x1_bn_act`]).
+    #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
+    fn wino_conv3x3_bn_act(
+        x: FloatTensor<Self>,
+        filter: FloatTensor<Self>,
+        scale: FloatTensor<Self>,
+        bias: FloatTensor<Self>,
+        mask: FloatTensor<Self>,
+        oc: usize,
+    ) -> FloatTensor<Self>;
 }
 
 fn contiguous(t: CubeTensor) -> CubeTensor {
@@ -678,164 +717,226 @@ impl ConvOps for CubeBackend {
     }
 
     fn conv1x1(x: CubeTensor, wt: CubeTensor, oc: usize) -> CubeTensor {
-        let x = contiguous(x);
-        let wt = contiguous(wt);
-        let dims = x.meta.shape().to_vec();
-        let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
-        assert!(ic % GEMM_K == 0, "conv1x1: ic {ic} not a multiple of {GEMM_K}");
-        assert_eq!(wt.meta.shape().num_elements(), ic * oc, "conv1x1 weight size");
-        let dtype = x.dtype;
-        let output =
-            empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([n, oc, h, w]), dtype);
-        let m = h * w;
-        let (x_len, w_len, o_len) = (x.meta.shape().num_elements(), ic * oc, n * oc * m);
-        macro_rules! launch {
-            ($f:ty) => {
-                // SAFETY: contiguous buffers of the lengths given; the kernel bounds-checks m and needs ic, oc
-                // padded, as asserted above.
-                unsafe {
-                    conv1x1_gemm::launch::<$f>(
-                        &x.client,
-                        CubeCount::Static(m.div_ceil(64) as u32, oc.div_ceil(GEMM_N) as u32, n as u32),
-                        CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
-                        BufferArg::from_raw_parts(x.handle.clone(), x_len),
-                        BufferArg::from_raw_parts(wt.handle.clone(), w_len),
-                        BufferArg::from_raw_parts(output.handle.clone(), o_len),
-                        m as u32,
-                        oc as u32,
-                        ic as u32,
-                    )
-                }
-            };
-        }
-        match dtype {
-            DType::F32 => launch!(f32),
-            DType::F16 => launch!(half::f16),
-            other => panic!("conv1x1: unsupported dtype {other:?}"),
-        }
-        output
+        conv1x1_impl(x, wt, oc, None)
+    }
+
+    fn conv1x1_bn_act(
+        x: CubeTensor,
+        wt: CubeTensor,
+        scale: CubeTensor,
+        bias: CubeTensor,
+        mask: CubeTensor,
+        oc: usize,
+    ) -> CubeTensor {
+        conv1x1_impl(x, wt, oc, Some(Prologue::new(scale, bias, mask)))
     }
 
     fn wino_conv3x3(x: CubeTensor, filter: CubeTensor, oc: usize) -> CubeTensor {
-        let x = contiguous(x);
-        let filter = contiguous(filter);
-        let dims = x.meta.shape().to_vec();
-        let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
-        let dtype = x.dtype;
-        let client = x.client.clone();
-        let device = x.device.clone();
+        wino_conv3x3_impl(x, filter, oc, None)
+    }
 
-        let tiles_x = w.div_ceil(OUT_TILE);
-        let tiles_y = h.div_ceil(OUT_TILE);
-        let nt = n * tiles_x * tiles_y;
-        let nt_pad = round_up(nt, GEMM_M);
-        let ic_pad = round_up(ic, GEMM_K);
-        let oc_pad = round_up(oc, GEMM_N);
-        assert_eq!(filter.meta.shape().num_elements(), TILE_POINTS * ic_pad * oc_pad, "wino filter size");
+    fn wino_conv3x3_bn_act(
+        x: CubeTensor,
+        filter: CubeTensor,
+        scale: CubeTensor,
+        bias: CubeTensor,
+        mask: CubeTensor,
+        oc: usize,
+    ) -> CubeTensor {
+        wino_conv3x3_impl(x, filter, oc, Some(Prologue::new(scale, bias, mask)))
+    }
+}
 
-        // Transformed inputs, the GEMM and its output are in the filter's dtype (f16 when the filter is f16).
-        let store = filter.dtype;
-        let transformed = empty_device_contiguous_dtype(
-            client.clone(),
-            device.clone(),
-            Shape::new([TILE_POINTS * ic_pad * nt_pad]),
-            store,
-        );
-        let vector = store == DType::F16 && VECTOR_GEMM.load(Ordering::Relaxed);
-        let gemm_store = if vector && GEMM_OUT_F32.load(Ordering::Relaxed) { DType::F32 } else { store };
-        let gemm_out = empty_device_contiguous_dtype(
-            client.clone(),
-            device.clone(),
-            Shape::new([TILE_POINTS * oc_pad * nt_pad]),
-            gemm_store,
-        );
-        let output = empty_device_contiguous_dtype(client.clone(), device.clone(), Shape::new([n, oc, h, w]), dtype);
+/// The `mish(x * scale + bias) * mask` that KataGo applies before every conv (batch norm, activation, board mask),
+/// fused into the conv's input loads: `scale`, `bias` per input channel, `mask` per board point of each row.
+struct Prologue {
+    scale: CubeTensor,
+    bias: CubeTensor,
+    mask: CubeTensor,
+}
 
+impl Prologue {
+    fn new(scale: CubeTensor, bias: CubeTensor, mask: CubeTensor) -> Self {
+        Prologue { scale: contiguous(scale), bias: contiguous(bias), mask: contiguous(mask) }
+    }
+
+    /// (scale, bias, mask) buffer arguments, or 1-element placeholders on `x` without a prologue.
+    fn args(pro: &Option<Prologue>, x: &CubeTensor) -> [(cubecl::server::Handle, usize); 3] {
         let len = |t: &CubeTensor| t.meta.shape().num_elements();
-        macro_rules! launch_all {
-            ($f:ty, $s:ty, $o:ty) => {{
-                let x_len = len(&x);
-                let t_len = len(&transformed);
-                let g_len = len(&gemm_out);
-                let f_len = len(&filter);
-                let o_len = len(&output);
-                // SAFETY: every buffer is contiguous and as long as the length given; the kernels index within
-                // the padded sizes they are given.
-                unsafe {
-                    wino_transform::launch::<$f, $s>(
+        match pro {
+            Some(p) => [(p.scale.handle.clone(), len(&p.scale)), (p.bias.handle.clone(), len(&p.bias)), (p.mask.handle.clone(), len(&p.mask))],
+            None => [(x.handle.clone(), 1), (x.handle.clone(), 1), (x.handle.clone(), 1)],
+        }
+    }
+}
+
+/// [`ConvOps::conv1x1`], with the `mish(x * scale + bias) * mask` prologue of `pro` applied to its input.
+fn conv1x1_impl(x: CubeTensor, wt: CubeTensor, oc: usize, pro: Option<Prologue>) -> CubeTensor {
+    let x = contiguous(x);
+    let wt = contiguous(wt);
+    let dims = x.meta.shape().to_vec();
+    let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
+    assert!(ic % GEMM_K == 0, "conv1x1: ic {ic} not a multiple of {GEMM_K}");
+    assert_eq!(wt.meta.shape().num_elements(), ic * oc, "conv1x1 weight size");
+    let dtype = x.dtype;
+    let output =
+        empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([n, oc, h, w]), dtype);
+    let m = h * w;
+    let (x_len, w_len, o_len) = (x.meta.shape().num_elements(), ic * oc, n * oc * m);
+    let pargs = Prologue::args(&pro, &x);
+    macro_rules! launch {
+        ($f:ty) => {
+            // SAFETY: contiguous buffers of the lengths given; the kernel bounds-checks m and needs ic, oc
+            // padded, as asserted above.
+            unsafe {
+                conv1x1_gemm::launch::<$f>(
+                    &x.client,
+                    CubeCount::Static(m.div_ceil(64) as u32, oc.div_ceil(GEMM_N) as u32, n as u32),
+                    CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
+                    BufferArg::from_raw_parts(x.handle.clone(), x_len),
+                    BufferArg::from_raw_parts(wt.handle.clone(), w_len),
+                    BufferArg::from_raw_parts(pargs[0].0.clone(), pargs[0].1),
+                    BufferArg::from_raw_parts(pargs[1].0.clone(), pargs[1].1),
+                    BufferArg::from_raw_parts(pargs[2].0.clone(), pargs[2].1),
+                    BufferArg::from_raw_parts(output.handle.clone(), o_len),
+                    m as u32,
+                    oc as u32,
+                    ic as u32,
+                    pro.is_some(),
+                )
+            }
+        };
+    }
+    match dtype {
+        DType::F32 => launch!(f32),
+        DType::F16 => launch!(half::f16),
+        other => panic!("conv1x1: unsupported dtype {other:?}"),
+    }
+    output
+}
+
+/// [`ConvOps::wino_conv3x3`], with the prologue of `pro` applied to its input in the transform.
+fn wino_conv3x3_impl(x: CubeTensor, filter: CubeTensor, oc: usize, pro: Option<Prologue>) -> CubeTensor {
+    let x = contiguous(x);
+    let filter = contiguous(filter);
+    let dims = x.meta.shape().to_vec();
+    let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
+    let dtype = x.dtype;
+    let client = x.client.clone();
+    let device = x.device.clone();
+
+    let tiles_x = w.div_ceil(OUT_TILE);
+    let tiles_y = h.div_ceil(OUT_TILE);
+    let nt = n * tiles_x * tiles_y;
+    let nt_pad = round_up(nt, GEMM_M);
+    let ic_pad = round_up(ic, GEMM_K);
+    let oc_pad = round_up(oc, GEMM_N);
+    assert_eq!(filter.meta.shape().num_elements(), TILE_POINTS * ic_pad * oc_pad, "wino filter size");
+
+    // Transformed inputs, the GEMM and its output are in the filter's dtype (f16 when the filter is f16).
+    let store = filter.dtype;
+    let transformed = empty_device_contiguous_dtype(
+        client.clone(),
+        device.clone(),
+        Shape::new([TILE_POINTS * ic_pad * nt_pad]),
+        store,
+    );
+    let vector = store == DType::F16 && VECTOR_GEMM.load(Ordering::Relaxed);
+    let gemm_store = if vector && GEMM_OUT_F32.load(Ordering::Relaxed) { DType::F32 } else { store };
+    let gemm_out = empty_device_contiguous_dtype(
+        client.clone(),
+        device.clone(),
+        Shape::new([TILE_POINTS * oc_pad * nt_pad]),
+        gemm_store,
+    );
+    let output = empty_device_contiguous_dtype(client.clone(), device.clone(), Shape::new([n, oc, h, w]), dtype);
+
+    let len = |t: &CubeTensor| t.meta.shape().num_elements();
+
+    let pargs = Prologue::args(&pro, &x);
+    macro_rules! launch_all {
+        ($f:ty, $s:ty, $o:ty) => {{
+            let x_len = len(&x);
+            let t_len = len(&transformed);
+            let g_len = len(&gemm_out);
+            let f_len = len(&filter);
+            let o_len = len(&output);
+            // SAFETY: every buffer is contiguous and as long as the length given; the kernels index within
+            // the padded sizes they are given.
+            unsafe {
+                wino_transform::launch::<$f, $s>(
+                    &client,
+                    CubeCount::Static((nt_pad / 64) as u32, ic_pad as u32, 1),
+                    CubeDim::new_2d(64, 1),
+                    BufferArg::from_raw_parts(x.handle.clone(), x_len),
+                    BufferArg::from_raw_parts(pargs[0].0.clone(), pargs[0].1),
+                    BufferArg::from_raw_parts(pargs[1].0.clone(), pargs[1].1),
+                    BufferArg::from_raw_parts(pargs[2].0.clone(), pargs[2].1),
+                    BufferArg::from_raw_parts(transformed.handle.clone(), t_len),
+                    n as u32,
+                    w as u32,
+                    h as u32,
+                    tiles_x as u32,
+                    tiles_y as u32,
+                    ic as u32,
+                    ic_pad as u32,
+                    nt_pad as u32,
+                    pro.is_some(),
+                );
+                if vector {
+                    wino_gemm_v::launch::<$s, $o>(
                         &client,
-                        CubeCount::Static((nt_pad / 64) as u32, ic_pad as u32, 1),
-                        CubeDim::new_2d(64, 1),
-                        BufferArg::from_raw_parts(x.handle.clone(), x_len),
-                        BufferArg::from_raw_parts(x.handle.clone(), 1),
-                        BufferArg::from_raw_parts(x.handle.clone(), 1),
-                        BufferArg::from_raw_parts(x.handle.clone(), 1),
-                        BufferArg::from_raw_parts(transformed.handle.clone(), t_len),
-                        n as u32,
-                        w as u32,
-                        h as u32,
-                        tiles_x as u32,
-                        tiles_y as u32,
-                        ic as u32,
-                        ic_pad as u32,
+                        CubeCount::Static((nt_pad / GEMM_M) as u32, (oc_pad / GEMM_N) as u32, TILE_POINTS as u32),
+                        CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
+                        4,
+                        BufferArg::from_raw_parts(transformed.handle.clone(), t_len / 4),
+                        BufferArg::from_raw_parts(filter.handle.clone(), f_len / 4),
+                        BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len / 4),
                         nt_pad as u32,
-                        false,
-                    );
-                    if vector {
-                        wino_gemm_v::launch::<$s, $o>(
-                            &client,
-                            CubeCount::Static((nt_pad / GEMM_M) as u32, (oc_pad / GEMM_N) as u32, TILE_POINTS as u32),
-                            CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
-                            4,
-                            BufferArg::from_raw_parts(transformed.handle.clone(), t_len / 4),
-                            BufferArg::from_raw_parts(filter.handle.clone(), f_len / 4),
-                            BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len / 4),
-                            nt_pad as u32,
-                            oc_pad as u32,
-                            ic_pad as u32,
-                        );
-                    } else {
-                        wino_gemm::launch::<$s>(
-                            &client,
-                            CubeCount::Static((nt_pad / GEMM_M) as u32, (oc_pad / GEMM_N) as u32, TILE_POINTS as u32),
-                            CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
-                            BufferArg::from_raw_parts(transformed.handle.clone(), t_len),
-                            BufferArg::from_raw_parts(filter.handle.clone(), f_len),
-                            BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len),
-                            nt_pad as u32,
-                            oc_pad as u32,
-                            ic_pad as u32,
-                        );
-                    }
-                    let threads = n * oc * tiles_x * tiles_y;
-                    wino_untransform::launch::<$o, $f>(
-                        &client,
-                        CubeCount::Static(threads.div_ceil(64) as u32, 1, 1),
-                        CubeDim::new_1d(64),
-                        BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len),
-                        BufferArg::from_raw_parts(gemm_out.handle.clone(), 1),
-                        BufferArg::from_raw_parts(output.handle.clone(), o_len),
-                        n as u32,
-                        w as u32,
-                        h as u32,
-                        tiles_x as u32,
-                        tiles_y as u32,
-                        oc as u32,
                         oc_pad as u32,
+                        ic_pad as u32,
+                    );
+                } else {
+                    wino_gemm::launch::<$s>(
+                        &client,
+                        CubeCount::Static((nt_pad / GEMM_M) as u32, (oc_pad / GEMM_N) as u32, TILE_POINTS as u32),
+                        CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
+                        BufferArg::from_raw_parts(transformed.handle.clone(), t_len),
+                        BufferArg::from_raw_parts(filter.handle.clone(), f_len),
+                        BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len),
                         nt_pad as u32,
-                        false,
+                        oc_pad as u32,
+                        ic_pad as u32,
                     );
                 }
-            }};
-        }
-        match (dtype, store, gemm_store) {
-            (DType::F32, DType::F32, DType::F32) => launch_all!(f32, f32, f32),
-            (DType::F32, DType::F16, DType::F16) => launch_all!(f32, half::f16, half::f16),
-            (DType::F32, DType::F16, DType::F32) => launch_all!(f32, half::f16, f32),
-            other => panic!("wino_conv3x3: unsupported dtypes {other:?}"),
-        }
-        output
+                let threads = n * oc * tiles_x * tiles_y;
+                wino_untransform::launch::<$o, $f>(
+                    &client,
+                    CubeCount::Static(threads.div_ceil(64) as u32, 1, 1),
+                    CubeDim::new_1d(64),
+                    BufferArg::from_raw_parts(gemm_out.handle.clone(), g_len),
+                    BufferArg::from_raw_parts(gemm_out.handle.clone(), 1),
+                    BufferArg::from_raw_parts(output.handle.clone(), o_len),
+                    n as u32,
+                    w as u32,
+                    h as u32,
+                    tiles_x as u32,
+                    tiles_y as u32,
+                    oc as u32,
+                    oc_pad as u32,
+                    nt_pad as u32,
+                    false,
+                );
+            }
+        }};
     }
+    match (dtype, store, gemm_store) {
+        (DType::F32, DType::F32, DType::F32) => launch_all!(f32, f32, f32),
+        (DType::F32, DType::F16, DType::F16) => launch_all!(f32, half::f16, half::f16),
+        (DType::F32, DType::F16, DType::F32) => launch_all!(f32, half::f16, f32),
+        other => panic!("wino_conv3x3: unsupported dtypes {other:?}"),
+    }
+    output
 }
 
 /// Run the 3x3 convs' transforms and GEMM in f16 ([`set_half`]). Process-wide: fusion may run the kernels on
@@ -886,6 +987,43 @@ pub fn conv1x1(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     let [oc, ic, _, _] = conv.weight.dims();
     let wt = cached_filter(conv, |w| w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]));
     Tensor::<4>::from_dispatch(Dispatch::conv1x1(x.into_dispatch(), wt.into_dispatch(), oc))
+}
+
+/// `conv2d_bn_act` (conv.rs) for a 1x1 kernel with [`conv1x1_fits`] on a cubecl device.
+pub fn conv1x1_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+    let [oc, ic, _, _] = conv.weight.dims();
+    let wt = cached_filter(conv, |w| w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]));
+    let (scale, bias, mask) = prologue_args(scale, bias, mask);
+    Tensor::<4>::from_dispatch(Dispatch::conv1x1_bn_act(
+        x.into_dispatch(),
+        wt.into_dispatch(),
+        scale.into_dispatch(),
+        bias.into_dispatch(),
+        mask.into_dispatch(),
+        oc,
+    ))
+}
+
+/// `conv2d_bn_act` (conv.rs) for a 3x3 kernel on a cubecl device.
+pub fn conv3x3_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+    let [oc, _, _, _] = conv.weight.dims();
+    let filter = cached_filter(conv, |w| Tensor::<1>::from_dispatch(Dispatch::wino_filter_3x3(w.into_dispatch(), HALF.load(Ordering::Relaxed))));
+    let (scale, bias, mask) = prologue_args(scale, bias, mask);
+    Tensor::<4>::from_dispatch(Dispatch::wino_conv3x3_bn_act(
+        x.into_dispatch(),
+        filter.into_dispatch(),
+        scale.into_dispatch(),
+        bias.into_dispatch(),
+        mask.into_dispatch(),
+        oc,
+    ))
+}
+
+/// `[1, C, 1, 1]` scale and bias and the `[N, 1, H, W]` mask, flattened for the prologue kernels.
+fn prologue_args(scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> (Tensor<1>, Tensor<1>, Tensor<1>) {
+    let c = scale.dims()[1];
+    let points = mask.dims().iter().product::<usize>();
+    (scale.reshape([c]), bias.reshape([c]), mask.reshape([points]))
 }
 
 /// `conv2d_same` for a 3x3 kernel on a cubecl device.

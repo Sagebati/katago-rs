@@ -3823,6 +3823,7 @@ dependencies = [
  "js-sys",
  "katago-core",
  "log",
+ "regex",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",

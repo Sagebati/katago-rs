@@ -36,6 +36,7 @@ fn main() {
             .register_op_override(SpatialReduce(NodeType::ReduceSum, "spatial_sum"))
             .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
             .run_from_script();
+        fuse_bn_act(net);
         write_model_desc(&onnx, net);
     }
 }
@@ -266,4 +267,72 @@ impl OpOverride for SpatialReduce {
             let #output = crate::conv::#f(#input);
         })
     }
+}
+
+/// Rewrites, in the generated `$OUT_DIR/model/<net>.rs`, every batch norm + mish + mask chain that only feeds convs
+///
+/// ```text
+/// let c1 = self.S.val(); let m = X[.clone()].mul(c1); let c2 = self.B.val(); let a = m.add(c2);
+/// let sp = softplus(a.clone(), 1.0); let t = sp.tanh(); let m1 = a.mul(t); let m2 = m1.mul(MASK.clone());
+/// ... crate::conv::conv2d_same(&self.CONV, m2[.clone()]) ...
+/// ```
+///
+/// into `crate::conv::conv2d_bn_act(&self.CONV, X, self.S.val(), self.B.val(), MASK.clone())`, which on GPUs runs the
+/// chain inside the conv's input loads. A chain is rewritten only when none of its intermediates is used
+/// elsewhere and every use of its result is such a conv; anything else is left as generated.
+fn fuse_bn_act(net: &str) {
+    let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model").join(format!("{net}.rs"));
+    let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let chain = regex::Regex::new(concat!(
+        r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+        r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+        r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+        r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+        r"let (\w+) = burn::tensor::activation::softplus\(\s*(\w+)\.clone\(\),\s*1\.0,?\s*\);\s*",
+        r"let (\w+) = (\w+)\.tanh\(\);\s*",
+        r"let (\w+) = (\w+)\.mul\((\w+)\);\s*",
+        r"let (\w+) = (\w+)\.mul\((\w+)\.clone\(\)\);",
+    ))
+    .unwrap();
+    let count = |name: &str| regex::Regex::new(&format!(r"\b{name}\b")).unwrap().find_iter(&code).count();
+    let mut edits: Vec<(usize, usize, String)> = Vec::new();
+    let mut fused = 0;
+    for m in chain.captures_iter(&code) {
+        let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+        let (c1, scale, mul, x, x_clone, c2, bias, add, sp, th, m1, out, mask) =
+            (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16), g(19), g(21));
+        let linked = g(6) == c1 && g(10) == mul && g(11) == c2 && g(13) == add && g(15) == sp && g(17) == add && g(18) == th && g(20) == m1;
+        // Each intermediate appears exactly as often as the chain itself uses it.
+        let private = [(c1, 2), (mul, 2), (c2, 2), (add, 3), (sp, 2), (th, 2), (m1, 2)].iter().all(|(n, k)| count(n) == *k);
+        if !linked || !private {
+            continue;
+        }
+        let whole = m.get(0).unwrap();
+        let rest = &code[whole.end()..];
+        let uses = regex::Regex::new(&format!(r"\b{out}\b")).unwrap();
+        let conv_use = regex::Regex::new(&format!(r"crate::conv::conv2d_same\(&self\.(\w+), {out}(\.clone\(\))?\)")).unwrap();
+        let convs: Vec<_> = conv_use.captures_iter(rest).collect();
+        if convs.is_empty() || convs.len() != uses.find_iter(rest).count() {
+            continue;
+        }
+        edits.push((whole.start(), whole.end(), String::new()));
+        for (i, c) in convs.iter().enumerate() {
+            // X is cloned unless the chain consumed it and this is its last use.
+            let x_arg = if x_clone.is_empty() && i + 1 == convs.len() { x.to_string() } else { format!("{x}.clone()") };
+            let span = c.get(0).unwrap();
+            edits.push((
+                whole.end() + span.start(),
+                whole.end() + span.end(),
+                format!("crate::conv::conv2d_bn_act(&self.{}, {x_arg}, self.{scale}.val(), self.{bias}.val(), {mask}.clone())", &c[1]),
+            ));
+        }
+        fused += 1;
+    }
+    edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+    let mut out = code.clone();
+    for (start, end, text) in edits {
+        out.replace_range(start..end, &text);
+    }
+    out.insert_str(0, &format!("// build.rs fuse_bn_act: {fused} batch norm + mish + mask chains fused into their convs.\n"));
+    std::fs::write(&path, out).unwrap();
 }

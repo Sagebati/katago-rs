@@ -55,3 +55,5 @@ wasm-bindgen-test = "=0.3.79"
 
 [build-dependencies]
 burn-onnx.workspace = true
+# build.rs fuse_bn_act: rewriting the generated forward passes.
+regex = "1"

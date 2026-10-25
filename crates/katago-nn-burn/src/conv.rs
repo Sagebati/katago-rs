@@ -30,6 +30,27 @@ pub fn conv2d_same(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     conv2d_im2col(conv, x)
 }
 
+/// `conv2d_same(conv, mish(x * scale + bias) * mask)`: KataGo's batch norm + activation + board mask before a conv
+/// (build.rs `fuse_bn_act` rewrites the generated chains into this). On GPUs the prologue runs inside the conv's
+/// input loads (Winograd transform, 1x1 GEMM) instead of as a separate elementwise kernel; elsewhere it is the
+/// original op sequence.
+pub fn conv2d_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+    #[cfg(feature = "wgpu-fixed-kernels")]
+    if !is_cpu(&x.device()) {
+        let [oc, ic, kh, kw] = conv.weight.dims();
+        if (kh, kw) == (3, 3) {
+            return crate::wino::conv3x3_bn_act(conv, x, scale, bias, mask);
+        }
+        if (kh, kw) == (1, 1) && crate::wino::conv1x1_fits(oc, ic) {
+            return crate::wino::conv1x1_bn_act(conv, x, scale, bias, mask);
+        }
+    }
+    let a = x.mul(scale).add(bias);
+    let sp = burn::tensor::activation::softplus(a.clone(), 1.0);
+    let m = a.mul(sp.tanh()).mul(mask);
+    conv2d_same(conv, m)
+}
+
 /// [`conv2d_same`] as (im2col +) one matmul, for every kernel size on a GPU.
 pub fn conv2d_im2col(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     let weight = conv.weight.val();
