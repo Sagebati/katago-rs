@@ -3822,7 +3822,6 @@ dependencies = [
  "katago-nn-burn",
  "log",
  "serde_json",
- "sha2",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

@@ -28,7 +28,6 @@ katago-core = { path = "../katago-core" }
 # Full-game review (M6): katago-ws's annotation, IO-free (reviewGame).
 katago-annotate = { path = "../katago-annotate" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
-sha2 = "0.10"
 log = "0.4"
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 wasm-bindgen = "=0.2.129"
