@@ -323,24 +323,140 @@ fn wino_untransform<F: Float>(
     }
 }
 
-/// Output shape of [`WinogradOps::wino_conv3x3`]: `[N, oc, H, W]` for an input `[N, ic, H, W]`.
+/// 1x1 convolution in NCHW as one GEMM per batch row: `out[b][n][m] = sum_k x[b][k][m] * wt[k][n]`, with
+/// `m` the board points (not padded: bounds-checked), `k` input and `n` output channels (`k % GEMM_K == 0`,
+/// `n % GEMM_N == 0`). Upstream's `doStridedBatchedXGemmDirect_KM_KN_NM` with the filter stride 0.
+#[cube(launch)]
+fn conv1x1_gemm<F: Float>(x: &[F], wt: &[F], out: &mut [F], m_size: u32, n_size: u32, k_size: u32) {
+    let bt = CUBE_POS_Z as usize;
+    let m0 = CUBE_POS_X as usize * 64;
+    let n0 = CUBE_POS_Y as usize * 64;
+    let tx = UNIT_POS_X as usize;
+    let ty = UNIT_POS_Y as usize;
+    let tid = ty * 16 + tx;
+    let m_size = m_size as usize;
+    let n_size = n_size as usize;
+    let k_size = k_size as usize;
+
+    let mut a_s = Shared::<[F]>::new_slice(16usize * 64usize);
+    let mut b_s = Shared::<[F]>::new_slice(16usize * 64usize);
+    let mut acc = Array::<F>::new(16usize);
+    #[unroll]
+    for i in 0..16usize {
+        acc[i] = F::new(0.0f32);
+    }
+    let mut a_reg = Array::<F>::new(4usize);
+    let mut b_reg = Array::<F>::new(4usize);
+
+    let a_base = bt * k_size * m_size;
+
+    for k0 in range_stepped(0usize, k_size, 16usize) {
+        #[unroll]
+        for r in 0..4usize {
+            let idx = tid + 256 * r;
+            let kk = idx / 64;
+            let mm = idx % 64;
+            let mut v = F::new(0.0f32);
+            if m0 + mm < m_size {
+                v = x[a_base + (k0 + kk) * m_size + m0 + mm];
+            }
+            a_s[idx] = v;
+            b_s[idx] = wt[(k0 + kk) * n_size + n0 + mm];
+        }
+        sync_cube();
+        #[unroll]
+        for kk in 0..16usize {
+            #[unroll]
+            for i in 0..4usize {
+                a_reg[i] = a_s[kk * 64 + tx + 16 * i];
+                b_reg[i] = b_s[kk * 64 + ty + 16 * i];
+            }
+            #[unroll]
+            for j in 0..4usize {
+                #[unroll]
+                for i in 0..4usize {
+                    acc[j * 4 + i] += a_reg[i] * b_reg[j];
+                }
+            }
+        }
+        sync_cube();
+    }
+
+    let c_base = bt * n_size * m_size;
+    #[unroll]
+    for j in 0..4usize {
+        #[unroll]
+        for i in 0..4usize {
+            let m = m0 + tx + 16 * i;
+            if m < m_size {
+                out[c_base + (n0 + ty + 16 * j) * m_size + m] = acc[j * 4 + i];
+            }
+        }
+    }
+}
+
+/// Output shape of [`ConvOps::wino_conv3x3`] and [`ConvOps::conv1x1`]: `[N, oc, H, W]` for an input `[N, ic, H, W]`.
 pub fn wino_out_shape(x: &Shape, oc: &usize) -> Shape {
     Shape::new([x[0], *oc, x[2], x[3]])
 }
 
 #[backend_extension(Cube, Fusion)]
-pub trait WinogradOps: Backend {
+pub trait ConvOps: Backend {
     /// Stride-1 "same" 3x3 convolution, no bias. `filter` is [`transform_filter_3x3`]'s output for `oc` output
     /// channels.
     #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
     fn wino_conv3x3(x: FloatTensor<Self>, filter: FloatTensor<Self>, oc: usize) -> FloatTensor<Self>;
+
+    /// 1x1 convolution, no bias. `wt` is the `[ic, oc]` transposed weight; `ic % GEMM_K == 0`,
+    /// `oc % GEMM_N == 0`.
+    #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
+    fn conv1x1(x: FloatTensor<Self>, wt: FloatTensor<Self>, oc: usize) -> FloatTensor<Self>;
 }
 
 fn contiguous(t: CubeTensor) -> CubeTensor {
     if t.is_contiguous() { t } else { into_contiguous(t) }
 }
 
-impl WinogradOps for CubeBackend {
+impl ConvOps for CubeBackend {
+    fn conv1x1(x: CubeTensor, wt: CubeTensor, oc: usize) -> CubeTensor {
+        let x = contiguous(x);
+        let wt = contiguous(wt);
+        let dims = x.meta.shape().to_vec();
+        let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
+        assert!(ic % GEMM_K == 0 && oc % GEMM_N == 0, "conv1x1: ic {ic} / oc {oc} not padded");
+        assert_eq!(wt.meta.shape().num_elements(), ic * oc, "conv1x1 weight size");
+        let dtype = x.dtype;
+        let output =
+            empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([n, oc, h, w]), dtype);
+        let m = h * w;
+        let (x_len, w_len, o_len) = (x.meta.shape().num_elements(), ic * oc, n * oc * m);
+        macro_rules! launch {
+            ($f:ty) => {
+                // SAFETY: contiguous buffers of the lengths given; the kernel bounds-checks m and needs ic, oc
+                // padded, as asserted above.
+                unsafe {
+                    conv1x1_gemm::launch::<$f>(
+                        &x.client,
+                        CubeCount::Static(m.div_ceil(64) as u32, (oc / GEMM_N) as u32, n as u32),
+                        CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
+                        BufferArg::from_raw_parts(x.handle.clone(), x_len),
+                        BufferArg::from_raw_parts(wt.handle.clone(), w_len),
+                        BufferArg::from_raw_parts(output.handle.clone(), o_len),
+                        m as u32,
+                        oc as u32,
+                        ic as u32,
+                    )
+                }
+            };
+        }
+        match dtype {
+            DType::F32 => launch!(f32),
+            DType::F16 => launch!(half::f16),
+            other => panic!("conv1x1: unsupported dtype {other:?}"),
+        }
+        output
+    }
+
     fn wino_conv3x3(x: CubeTensor, filter: CubeTensor, oc: usize) -> CubeTensor {
         let x = contiguous(x);
         let filter = contiguous(filter);
@@ -448,19 +564,45 @@ thread_local! {
     static FILTERS: RefCell<HashMap<ParamId, Tensor<1>>> = RefCell::new(HashMap::new());
 }
 
-/// `conv2d_same` for a 3x3 kernel on a cubecl device.
-pub fn conv3x3(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
-    let [oc, ic, _, _] = conv.weight.dims();
-    let filter = FILTERS.with(|filters| {
+/// The cached GPU-side form of `conv`'s weight (`make` gets the weight as `[oc, ic, kh, kw]` f32).
+fn cached_filter(conv: &Conv2d, x: &Tensor<4>, len: usize, make: impl FnOnce(&[f32]) -> Vec<f32>) -> Tensor<1> {
+    FILTERS.with(|filters| {
         filters
             .borrow_mut()
             .entry(conv.weight.id)
             .or_insert_with(|| {
                 let weights: Vec<f32> = conv.weight.val().into_data().convert::<f32>().try_into_vec::<f32>().unwrap();
-                let host = transform_filter_3x3(&weights, oc, ic);
-                Tensor::<1>::from_data(TensorData::new(host, [TILE_POINTS * round_up(ic, GEMM_K) * round_up(oc, GEMM_N)]).convert_dtype(x.dtype()), &x.device())
+                let host = make(&weights);
+                Tensor::<1>::from_data(TensorData::new(host, [len]).convert_dtype(x.dtype()), &x.device())
             })
             .clone()
+    })
+}
+
+/// Whether [`conv1x1`] takes this 1x1 conv (the trunk's; the small head convs stay on the matmul).
+pub fn conv1x1_fits(oc: usize, ic: usize) -> bool {
+    ic % GEMM_K == 0 && oc % GEMM_N == 0
+}
+
+/// `conv2d_same` for a 1x1 kernel with [`conv1x1_fits`] on a cubecl device.
+pub fn conv1x1(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
+    let [oc, ic, _, _] = conv.weight.dims();
+    let wt = cached_filter(conv, &x, ic * oc, |w| {
+        let mut t = vec![0f32; ic * oc];
+        for o in 0..oc {
+            for i in 0..ic {
+                t[i * oc + o] = w[o * ic + i];
+            }
+        }
+        t
     });
+    Tensor::<4>::from_dispatch(Dispatch::conv1x1(x.into_dispatch(), wt.into_dispatch(), oc))
+}
+
+/// `conv2d_same` for a 3x3 kernel on a cubecl device.
+pub fn conv3x3(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
+    let [oc, ic, _, _] = conv.weight.dims();
+    let len = TILE_POINTS * round_up(ic, GEMM_K) * round_up(oc, GEMM_N);
+    let filter = cached_filter(conv, &x, len, |w| transform_filter_3x3(w, oc, ic));
     Tensor::<4>::from_dispatch(Dispatch::wino_conv3x3(x.into_dispatch(), filter.into_dispatch(), oc))
 }
