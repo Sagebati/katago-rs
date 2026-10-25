@@ -276,8 +276,18 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     // PORT NOTE: the generated graph is NCHW: Auto means NCHW here (Eigen: Auto means NHWC).
     let use_nhwc: bool = if use_nhwc_mode == enabled_t::True { true } else { false };
 
+    // PORT NOTE: useFP16 = true runs the 3x3 convs in f16 (wino.rs) on GPU devices; Auto stays f32 (the Eigen
+    // parity tier). On the CPU (flex) it is rejected as before.
     if use_fp16 {
-      return Err(KataError::StringError("Burn backend: useFP16 = true not supported".to_string()));
+      #[cfg(feature = "wgpu-fixed-kernels")]
+      let gpu = !matches_flex(&self.device);
+      #[cfg(not(feature = "wgpu-fixed-kernels"))]
+      let gpu = false;
+      if !gpu {
+        return Err(KataError::StringError("Burn backend: useFP16 = true not supported".to_string()));
+      }
+      #[cfg(feature = "wgpu-fixed-kernels")]
+      crate::wino::set_half(true);
     }
     if use_nhwc {
       return Err(KataError::StringError("Burn backend: useNHWC = true not supported".to_string()));
@@ -589,4 +599,15 @@ async fn get_output_impl<N: Network>(
     }
   }
   Ok(())
+}
+
+/// Whether `device` is burn flex (the CPU backend).
+#[cfg(feature = "wgpu-fixed-kernels")]
+fn matches_flex(device: &Device) -> bool {
+  #[cfg(feature = "flex")]
+  if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
+    return true;
+  }
+  let _ = device;
+  false
 }

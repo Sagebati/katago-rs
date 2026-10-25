@@ -62,7 +62,7 @@ pub struct CliArgs {
   /// `-analysis-threads` (isSet, value)
   pub num_analysis_threads: Option<i32>,
   pub quit_without_waiting: bool,
-  /// `flex` (default) or `wgpu` (needs the `wgpu` feature). katago-rs only.
+  /// `flex` (default), `wgpu` (needs the `wgpu` feature) or `rocm` (the `rocm` feature). katago-rs only.
   pub backend: String,
 }
 
@@ -753,7 +753,13 @@ impl BurnHost {
       "flex" => burn::backend::FlexDevice.into(),
       #[cfg(feature = "wgpu")]
       "wgpu" => burn::backend::WgpuDevice::default().into(),
-      other => return Err(KataError::StringError(format!("unknown or not compiled-in backend '{other}' (flex, or wgpu with the wgpu feature)"))),
+      #[cfg(feature = "rocm")]
+      "rocm" => burn::backend::RocmDevice::default().into(),
+      other => {
+        return Err(KataError::StringError(format!(
+          "unknown or not compiled-in backend '{other}' (flex, wgpu with the wgpu feature, rocm with the rocm feature)"
+        )))
+      }
     };
     Ok(BurnHost { device, spawner, loaded: RefCell::new(Vec::new()) })
   }

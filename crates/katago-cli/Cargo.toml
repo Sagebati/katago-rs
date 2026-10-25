@@ -15,6 +15,8 @@ path = "src/main.rs"
 default = ["flex", "net-b6c96", "net-b10c128", "net-b18c384nbt", "net-b18c384nbt-humanv0"]
 flex = ["katago-nn-burn/flex"]
 wgpu = ["katago-nn-burn/wgpu"]
+# Native AMD GPUs through ROCm (HIP): `-F rocm` then `-backend rocm`.
+rocm = ["katago-nn-burn/rocm"]
 net-b6c96 = ["katago-nn-burn/net-b6c96"]
 net-b10c128 = ["katago-nn-burn/net-b10c128"]
 net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
