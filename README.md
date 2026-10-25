@@ -21,6 +21,10 @@ Status:
 - **M7** kata1-b18c384nbt in the browser ([docs/M7-report.md](docs/M7-report.md)): same wasm (+0.2 MB), 105 MB
   weights fetched on demand, WebGPU only (~2 s per 100 visits on an RX 6800 XT; `cpuModel` falls back to b10c128
   without WebGPU). Checked against Eigen-generated goldens in Chromium (`just web-test-b18`).
+- **M9** WebGPU kernels at native KataGo speed ([docs/M9-report.md](docs/M9-report.md)): Winograd 3x3 convs, an NCHW
+  1x1 GEMM, f16 (default with `shader-f16`) and fused batch-norm/mish prologues in cubecl. b18c384nbt forward passes
+  at 2.5x native KataGo OpenCL FP16 on an RX 6800 XT (1137 vs 457 evals/s at batch 32); a 400-visit b18 search in
+  Chromium runs at 461-550 visits/s.
 - Deferred: eval cache, pattern bonus, anti-mirror (D7); human-SL nets (M8). Decisions:
   [docs/DECISIONS.md](docs/DECISIONS.md).
 

@@ -339,6 +339,11 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
   /// upstream: NeuralNet::isUsingFP16 (eigenbackend.cpp)
   fn is_using_fp16(&self, compute_handle: &dyn nninterface::ComputeHandle) -> bool {
     let _ = compute_handle;
+    // PORT NOTE: wino.rs's f16 3x3 convs (the rest of the network stays f32).
+    #[cfg(feature = "wgpu-fixed-kernels")]
+    if crate::wino::half() {
+      return true;
+    }
     false
   }
 

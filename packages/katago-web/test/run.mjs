@@ -292,10 +292,10 @@ try {
       check("b18: second load does no model network request", warm.modelSource === "cache" && afterWarm === afterCold && browserBpk.length === 0, `server saw ${afterWarm - afterCold}, browser issued ${browserBpk.length}, source ${warm.modelSource}`);
       check("b18: precision auto is f16 on an adapter with shader-f16, f32 without", cold.precision === (storage.features.includes("shader-f16") ? "f16" : "f32"), `precision ${cold.precision}, shader-f16 ${storage.features.includes("shader-f16")}`);
       check("b18: second load compiles no WebGPU kernel", cold.kernelCache?.compiled > 0 && warm.kernelCache?.compiled === 0 && warm.kernelCache?.hits > 0, `cold ${JSON.stringify(cold.kernelCache)}, warm ${JSON.stringify(warm.kernelCache)}`);
-      // The biggest buffer of a b18c384nbt forward pass is the im2col matrix of its 192-channel 3x3 convs (62 of them):
-      // batch * 361 * 1728 floats = 2.5 MB per row, 80 MB at 32 rows. WebGPU's default maxStorageBufferBindingSize is
-      // 128 MiB (53 rows; 64 rows fail on a default-limit device, see lowlimits-worker.js), so the engine relies on the
-      // adapter's own, larger limit being passed on to the device.
+      // Before M9 the biggest buffer of a b18c384nbt forward pass was the im2col matrix of its 192-channel 3x3 convs:
+      // batch * 361 * 1728 floats = 2.5 MB per row, 80 MB at 32 rows. The Winograd convs (M9) need less (the input
+      // conv's GEMM output, ~1.4 MB per row); the check keeps the old, larger bound. WebGPU's default
+      // maxStorageBufferBindingSize is 128 MiB, so the engine relies on the adapter's own, larger limit.
       const im2col = 32 * 361 * 192 * 9 * 4;
       check("b18: adapter limits cover the biggest buffer", cold.adapterLimits && cold.adapterLimits.maxStorageBufferBindingSize >= im2col && cold.adapterLimits.maxBufferSize >= im2col, `maxStorageBufferBindingSize ${cold.adapterLimits?.maxStorageBufferBindingSize}, maxBufferSize ${cold.adapterLimits?.maxBufferSize}; im2col at batch 32 ${im2col}`);
       console.log(`  cold: ${JSON.stringify(cold.timings)}\n  warm: ${JSON.stringify(warm.timings)}\n  wasm memory ${(cold.wasmMemoryBytes / 1048576).toFixed(0)} MiB after the load\n  storage ${JSON.stringify(storage)}; VRAM +${JSON.stringify(vramDelta(vram0, vram1))} MiB`);
@@ -321,14 +321,15 @@ try {
       {
         const a = await call(page, "nnOutputs", { backend: "webgpu", network: B18, precision: "f32", positions: 12 });
         const b = await call(page, "nnOutputs", { backend: "webgpu", network: B18, precision: "f16", positions: 12 });
-        const maxAbs = (xs, ys) => xs.reduce((m, x, i) => (x >= 0 && ys[i] >= 0 ? Math.max(m, Math.abs(x - ys[i])) : m), 0);
+        // Policy: skip illegal moves (-1 on both sides); ownership is in [-1, 1], every point counts.
+        const maxAbs = (xs, ys, legal) => xs.reduce((m, x, i) => (!legal || (x >= 0 && ys[i] >= 0) ? Math.max(m, Math.abs(x - ys[i])) : m), 0);
         let wr = 0, lead = 0, own = 0, pol = 0;
         for (const [i, x] of a.out.entries()) {
           const y = b.out[i];
           wr = Math.max(wr, Math.abs(x.winrate - y.winrate));
           lead = Math.max(lead, Math.abs(x.scoreLead - y.scoreLead));
-          own = Math.max(own, maxAbs(x.ownership, y.ownership));
-          pol = Math.max(pol, maxAbs(x.policy, y.policy));
+          own = Math.max(own, maxAbs(x.ownership, y.ownership, false));
+          pol = Math.max(pol, maxAbs(x.policy, y.policy, true));
         }
         results.b18.f16 = { wr, lead, own, pol };
         check("b18: f16 outputs within upstream's FP16 error of f32", a.precision === "f32" && b.precision === "f16" && wr <= 0.0445 && lead <= 2.27 && own <= 0.0923 && pol <= 0.0504, `precisions ${a.precision}/${b.precision}, 12 positions, max |f16 - f32|: winrate ${wr.toExponential(2)}, lead ${lead.toExponential(2)}, ownership ${own.toExponential(2)}, policy ${pol.toExponential(2)}`);

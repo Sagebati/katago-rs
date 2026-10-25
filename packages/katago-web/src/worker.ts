@@ -328,9 +328,17 @@ async function start(options: EngineInitOptions): Promise<void> {
   const [model] = await Promise.all([loading, probing]);
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
-  const half = (options.precision ?? "auto") !== "f32" && adapterF16;
+  let half = (options.precision ?? "auto") !== "f32" && adapterF16;
   try {
-    engine = await createEngine(backend, options, spec.network, model.bytes, half);
+    try {
+      engine = await createEngine(backend, options, spec.network, model.bytes, half);
+    } catch (e) {
+      // An adapter that advertises shader-f16 but fails with it (driver bugs): WebGPU in f32 before the CPU.
+      if (!half || backend !== "webgpu" || options.precision === "f16") throw e;
+      onEngineLog("warn", `WebGPU engine failed in f16, retrying in f32: ${String((e as Error)?.message ?? e)}`);
+      half = false;
+      engine = await createEngine(backend, options, spec.network, model.bytes, false);
+    }
   } catch (e) {
     if (choice !== "auto" || backend === "cpu") throw e;
     fallbackReason = `WebGPU engine failed: ${String((e as Error)?.message ?? e)}`;
