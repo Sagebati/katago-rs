@@ -17,8 +17,10 @@ fn read(fixture: &str, name: &str) -> Vec<f32> {
     let path = format!("{}/../../fixtures/m0/{fixture}.{name}.f32", env!("CARGO_MANIFEST_DIR"));
     std::fs::read(&path)
         .unwrap_or_else(|e| panic!("{path}: {e}"))
-        .chunks_exact(4)
-        .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|b| f32::from_le_bytes(*b))
         .collect()
 }
 

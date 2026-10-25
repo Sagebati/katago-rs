@@ -200,7 +200,7 @@ impl OpOverride for SameConv {
         let (oc, ic) = (shape[0], shape[1]);
         let name = Ident::new(node.name(), Span::call_site());
         Ok(Some(Field::new(
-            node.name().to_string(),
+            node.name(),
             quote! { Conv2d },
             quote! {
                 let #name = Conv2dConfig::new([#ic, #oc], [#kh, #kw])

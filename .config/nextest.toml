@@ -25,7 +25,7 @@ gpu = { max-threads = 1 }
 # process per test bypasses, and their burst-order cases diverge under load; the shared-timer test checks elapsed
 # times and the process's thread count.
 [[profile.default.overrides]]
-filter = "binary(analysis_protocol_corpus) | test(=tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
+filter = "binary(analysis_protocol_corpus) | test(=timer::tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
 threads-required = "num-test-threads"
 
 [[profile.default.overrides]]
@@ -37,7 +37,7 @@ test-group = "gpu"
 # process per test bypasses, and their burst-order cases diverge under load; the shared-timer test checks elapsed
 # times and the process's thread count.
 [[profile.quick.overrides]]
-filter = "binary(analysis_protocol_corpus) | test(=tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
+filter = "binary(analysis_protocol_corpus) | test(=timer::tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
 threads-required = "num-test-threads"
 
 [[profile.quick.overrides]]
