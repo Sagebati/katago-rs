@@ -701,26 +701,8 @@ pub fn init_logger(settings: &LoggerSettings) -> Result<(), KataError> {
 //------------------------------------------------------------------------------------------------
 // The burn backend as Setup's NNEvaluatorHost
 
-/// The networks compiled into katago-nn-burn.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Net {
-  B6c96,
-  B10c128,
-  B18c384nbt,
-  /// The human-SL net (SGF metadata input): `-human-model`, or `-model` with humanSLProfile.
-  B18c384nbtHumanv0,
-}
-
-impl Net {
-  pub fn name(self) -> &'static str {
-    match self {
-      Net::B6c96 => "g170-b6c96",
-      Net::B10c128 => "g170e-b10c128",
-      Net::B18c384nbt => "kata1-b18c384nbt",
-      Net::B18c384nbtHumanv0 => "b18c384nbt-humanv0",
-    }
-  }
-}
+/// The networks of katago-nn-burn (compiled in or not: see the crate features).
+pub use katago_nn_burn::NetId as Net;
 
 fn resolve_net_by_name(model_file: &str) -> Option<Net> {
   let base = std::path::Path::new(model_file).file_name().and_then(|s| s.to_str()).unwrap_or(model_file);
@@ -768,19 +750,11 @@ pub struct BurnHost {
 
 impl BurnHost {
   pub fn new(backend: &str, spawner: Rc<dyn Spawner>) -> Result<BurnHost, KataError> {
-    let device: Device = match backend {
-      #[cfg(feature = "flex")]
-      "flex" => burn::backend::FlexDevice.into(),
-      #[cfg(feature = "wgpu")]
-      "wgpu" => burn::backend::WgpuDevice::default().into(),
-      #[cfg(feature = "rocm")]
-      "rocm" => burn::backend::RocmDevice::default().into(),
-      other => {
-        return Err(KataError::StringError(format!(
-          "unknown or not compiled-in backend '{other}' (flex, wgpu with the wgpu feature, rocm with the rocm feature)"
-        )))
-      }
-    };
+    let device = compiled_backends().contains(&backend).then(|| katago_nn_burn::device(backend)).flatten().ok_or_else(|| {
+      KataError::StringError(format!(
+        "unknown or not compiled-in backend '{backend}' (flex, wgpu with the wgpu feature, rocm with the rocm feature)"
+      ))
+    })?;
     Ok(BurnHost { device, spawner, loaded: RefCell::new(Vec::new()) })
   }
 }
@@ -800,29 +774,9 @@ impl NNEvaluatorHost for BurnHost {
     self.loaded.borrow_mut().push(nn_model_file.to_string());
     let net = if nn_model_file == "/dev/null" { Net::B6c96 } else { resolve_net(nn_model_file)? };
     let empty = nn_model_file == "/dev/null";
-    match net {
-      #[cfg(feature = "net-b6c96")]
-      Net::B6c96 => Ok((
-        Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(self.device.clone())),
-        if empty { Vec::new() } else { read_bpk(nn_model_file, katago_nn_burn::b6c96::BPK_PATH)? },
-      )),
-      #[cfg(feature = "net-b10c128")]
-      Net::B10c128 => Ok((
-        Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b10c128::Model>::new(self.device.clone())),
-        read_bpk(nn_model_file, katago_nn_burn::b10c128::BPK_PATH)?,
-      )),
-      #[cfg(feature = "net-b18c384nbt")]
-      Net::B18c384nbt => Ok((
-        Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b18c384nbt::Model>::new(self.device.clone())),
-        read_bpk(nn_model_file, katago_nn_burn::b18c384nbt::BPK_PATH)?,
-      )),
-      #[cfg(feature = "net-b18c384nbt-humanv0")]
-      Net::B18c384nbtHumanv0 => Ok((
-        Rc::new(katago_nn_burn::backend::BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(self.device.clone())),
-        read_bpk(nn_model_file, katago_nn_burn::b18c384nbt_humanv0::BPK_PATH)?,
-      )),
-      #[allow(unreachable_patterns)]
-      other => Err(KataError::StringError(format!("network {} is not compiled in (enable the katago-cli feature for it)", other.name()))),
+    match (net.neural_net(self.device.clone(), Vec::new()), net.bpk_path()) {
+      (Some(neural_net), Some(compiled)) => Ok((neural_net, if empty { Vec::new() } else { read_bpk(nn_model_file, compiled)? })),
+      _ => Err(KataError::StringError(format!("network {} is not compiled in (enable the katago-cli feature for it)", net.name()))),
     }
   }
   fn spawner(&self) -> Rc<dyn Spawner> {

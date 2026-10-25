@@ -28,6 +28,7 @@ use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninterface;
 use katago_core::neuralnet::nninterface::NeuralNet;
+use katago_nn_burn::NetId;
 use katago_core::port::executor::LocalBoxFuture;
 use katago_core::port::executor::Spawner;
 use katago_core::program::setup::NNEvaluatorHost;
@@ -186,51 +187,6 @@ fn install_globals() {
 
 //------------------------------------------------------------------------------------------------
 // NN backend
-
-/// The networks compiled into katago-nn-burn (crate features).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Net {
-  #[cfg(feature = "net-b6c96")]
-  B6c96,
-  #[cfg(feature = "net-b10c128")]
-  B10c128,
-  #[cfg(feature = "net-b18c384nbt")]
-  B18c384nbt,
-  #[cfg(feature = "net-b18c384nbt-humanv0")]
-  B18c384nbtHumanv0,
-}
-
-impl Net {
-  fn parse(name: &str) -> Option<Net> {
-    match name {
-      #[cfg(feature = "net-b6c96")]
-      "g170-b6c96" => Some(Net::B6c96),
-      #[cfg(feature = "net-b10c128")]
-      "g170e-b10c128" => Some(Net::B10c128),
-      #[cfg(feature = "net-b18c384nbt")]
-      "kata1-b18c384nbt" => Some(Net::B18c384nbt),
-      #[cfg(feature = "net-b18c384nbt-humanv0")]
-      "b18c384nbt-humanv0" => Some(Net::B18c384nbtHumanv0),
-      _ => None,
-    }
-  }
-
-  fn backend(self, device: Device, batch_buckets: Vec<i32>) -> Rc<dyn NeuralNet> {
-    use katago_nn_burn::backend::BurnNeuralNet;
-    match self {
-      #[cfg(feature = "net-b6c96")]
-      Net::B6c96 => Rc::new(BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b10c128")]
-      Net::B10c128 => Rc::new(BurnNeuralNet::<katago_nn_burn::b10c128::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b18c384nbt")]
-      Net::B18c384nbt => Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b18c384nbt-humanv0")]
-      Net::B18c384nbtHumanv0 => {
-        Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(device).with_batch_buckets(batch_buckets))
-      }
-    }
-  }
-}
 
 thread_local! {
   /// cubecl registers one runtime per device: initialise WebGPU once per worker.
@@ -406,7 +362,7 @@ impl NeuralNet for StatsNeuralNet {
 /// Setup's NNEvaluatorHost: one network with its weights handed over by the worker.
 struct WebNNHost {
   device: Device,
-  net: Net,
+  net: NetId,
   bpk: RefCell<Option<Vec<u8>>>,
   stats: Rc<NnStats>,
   /// Batch-shape buckets (WebGPU), also warmed up before the first batch; empty on the CPU.
@@ -434,7 +390,7 @@ impl NNEvaluatorHost for WebNNHost {
         "Error loading or parsing model file {nn_model_file}: katago-wasm loads one network per engine (no human-SL model, no second evaluator)"
       ))
     })?;
-    let inner = self.net.backend(self.device.clone(), self.batch_buckets.clone());
+    let inner = self.net.neural_net(self.device.clone(), self.batch_buckets.clone()).expect("a compiled-in network (Engine::create checks)");
     Ok((
       Rc::new(StatsNeuralNet {
         inner,
@@ -575,7 +531,8 @@ impl Engine {
     let backend_name = get_string(&options, "backend")?.ok_or_else(|| JsError::new("option backend is required (webgpu | cpu)"))?;
     let backend = Backend::parse(&backend_name).ok_or_else(|| JsError::new(&format!("unknown backend {backend_name} (webgpu | cpu)")))?;
     let network = get_string(&options, "network")?.ok_or_else(|| JsError::new("option network is required"))?;
-    let net = Net::parse(&network)
+    let net = NetId::from_name(&network)
+      .filter(|net| net.is_compiled())
       .ok_or_else(|| JsError::new(&format!("network {network} is not compiled in (this build has: {})", crate::compiled_networks().join(", "))))?;
     if let Some(expected) = get_string(&options, "expectedSha256")? {
       let got = sha256_hex(&model);

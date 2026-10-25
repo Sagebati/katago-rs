@@ -55,7 +55,7 @@ macro_rules! network {
             include!(concat!(env!("OUT_DIR"), "/model/", $name, ".desc.rs"));
 
             /// Path of this network's generated `.bpk` weights in katago-nn-burn's build directory (native
-            /// hosts read it at runtime; usable from other crates, unlike `bpk_path!`).
+            /// hosts and tests read it at runtime).
             pub const BPK_PATH: &str = concat!(env!("OUT_DIR"), "/model/", $name, ".bpk");
 
             impl super::Network for Model {
@@ -86,10 +86,113 @@ network!("net-b10c128", b10c128, "g170e-b10c128");
 network!("net-b18c384nbt", b18c384nbt, "kata1-b18c384nbt");
 network!("net-b18c384nbt-humanv0", b18c384nbt_humanv0, "b18c384nbt-humanv0", meta);
 
-/// Path of a network's generated `.bpk` weights (native builds and tests).
-#[macro_export]
-macro_rules! bpk_path {
-    ($name:literal) => {
-        concat!(env!("OUT_DIR"), "/model/", $name, ".bpk")
-    };
+/// The networks katago-nn-burn knows, compiled in or not (one `net-*` feature each).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum NetId {
+    B6c96,
+    B10c128,
+    B18c384nbt,
+    /// The human-SL net (SGF metadata input): `-human-model`, or `-model` with a humanSLProfile.
+    B18c384nbtHumanv0,
+}
+
+impl NetId {
+    /// Every network, smallest first.
+    pub const ALL: [NetId; 4] = [NetId::B6c96, NetId::B10c128, NetId::B18c384nbt, NetId::B18c384nbtHumanv0];
+
+    /// The network's name, also the stem of its ONNX and `.bpk` files.
+    pub fn name(self) -> &'static str {
+        match self {
+            NetId::B6c96 => "g170-b6c96",
+            NetId::B10c128 => "g170e-b10c128",
+            NetId::B18c384nbt => "kata1-b18c384nbt",
+            NetId::B18c384nbtHumanv0 => "b18c384nbt-humanv0",
+        }
+    }
+
+    /// The network named `name` ([`NetId::name`]), compiled in or not.
+    pub fn from_name(name: &str) -> Option<NetId> {
+        NetId::ALL.into_iter().find(|net| net.name() == name)
+    }
+
+    /// Whether this build has the network (its `net-*` feature).
+    pub fn is_compiled(self) -> bool {
+        self.bpk_path().is_some()
+    }
+
+    /// The networks compiled into this build, smallest first.
+    pub fn compiled() -> impl Iterator<Item = NetId> {
+        NetId::ALL.into_iter().filter(|net| net.is_compiled())
+    }
+
+    /// Path of the network's generated `.bpk` weights in katago-nn-burn's build directory, when compiled in.
+    pub fn bpk_path(self) -> Option<&'static str> {
+        match self {
+            #[cfg(feature = "net-b6c96")]
+            NetId::B6c96 => Some(b6c96::BPK_PATH),
+            #[cfg(feature = "net-b10c128")]
+            NetId::B10c128 => Some(b10c128::BPK_PATH),
+            #[cfg(feature = "net-b18c384nbt")]
+            NetId::B18c384nbt => Some(b18c384nbt::BPK_PATH),
+            #[cfg(feature = "net-b18c384nbt-humanv0")]
+            NetId::B18c384nbtHumanv0 => Some(b18c384nbt_humanv0::BPK_PATH),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+
+    /// The burn backend of katago-core's `NeuralNet` trait for this network on `device`, with
+    /// [`backend::BurnNeuralNet::with_batch_buckets`]; `None` when the network is not compiled in.
+    pub fn neural_net(
+        self,
+        device: Device,
+        batch_buckets: Vec<i32>,
+    ) -> Option<std::rc::Rc<dyn katago_core::neuralnet::nninterface::NeuralNet>> {
+        #[allow(unused_imports)]
+        use backend::BurnNeuralNet;
+        let _ = (&device, &batch_buckets);
+        match self {
+            #[cfg(feature = "net-b6c96")]
+            NetId::B6c96 => Some(std::rc::Rc::new(BurnNeuralNet::<b6c96::Model>::new(device).with_batch_buckets(batch_buckets))),
+            #[cfg(feature = "net-b10c128")]
+            NetId::B10c128 => {
+                Some(std::rc::Rc::new(BurnNeuralNet::<b10c128::Model>::new(device).with_batch_buckets(batch_buckets)))
+            }
+            #[cfg(feature = "net-b18c384nbt")]
+            NetId::B18c384nbt => {
+                Some(std::rc::Rc::new(BurnNeuralNet::<b18c384nbt::Model>::new(device).with_batch_buckets(batch_buckets)))
+            }
+            #[cfg(feature = "net-b18c384nbt-humanv0")]
+            NetId::B18c384nbtHumanv0 => Some(std::rc::Rc::new(
+                BurnNeuralNet::<b18c384nbt_humanv0::Model>::new(device).with_batch_buckets(batch_buckets),
+            )),
+            #[allow(unreachable_patterns)]
+            _ => None,
+        }
+    }
+}
+
+/// Whether `device` is burn flex, the CPU backend (the GPU kernels of wino.rs never run there).
+pub fn is_cpu(device: &Device) -> bool {
+    #[cfg(feature = "flex")]
+    if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
+        return true;
+    }
+    let _ = device;
+    false
+}
+
+/// The device of a native backend by name (`flex`, `wgpu`, `rocm`), or `None` when it is not compiled in. The
+/// browser creates its WebGPU device asynchronously itself (katago-wasm).
+#[cfg(not(target_arch = "wasm32"))]
+pub fn device(backend: &str) -> Option<Device> {
+    match backend {
+        #[cfg(feature = "flex")]
+        "flex" => Some(burn::backend::FlexDevice.into()),
+        #[cfg(feature = "wgpu-fixed-kernels")]
+        "wgpu" => Some(burn::backend::WgpuDevice::default().into()),
+        #[cfg(feature = "rocm")]
+        "rocm" => Some(burn::backend::RocmDevice::default().into()),
+        _ => None,
+    }
 }

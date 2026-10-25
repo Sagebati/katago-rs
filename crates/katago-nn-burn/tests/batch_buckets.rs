@@ -38,7 +38,7 @@ fn eval_positions(buckets: Vec<i32>) -> Vec<NNOutput> {
   ScoreValue::init_tables();
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
-  let bytes = std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap();
+  let bytes = std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap();
   let device: burn::prelude::Device = burn::backend::FlexDevice.into();
   let backend = Rc::new(BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(device).with_batch_buckets(buckets));
   let nn_eval = Rc::new(

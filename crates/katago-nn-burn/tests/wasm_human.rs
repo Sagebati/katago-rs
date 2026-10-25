@@ -104,7 +104,7 @@ async fn human_net_on_wasm_flex() {
   let words: Vec<u32> = fixture("b18c384nbt-humanv0.out.bin").chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
   assert_eq!(words.len(), evals.len() * WORDS_PER_RECORD);
 
-  let bytes = read(katago_nn_burn::bpk_path!("b18c384nbt-humanv0"));
+  let bytes = read(katago_nn_burn::b18c384nbt_humanv0::BPK_PATH);
   let device: Device = burn::backend::FlexDevice::default().into();
   let backend = Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(device));
   let nn_eval = Rc::new(

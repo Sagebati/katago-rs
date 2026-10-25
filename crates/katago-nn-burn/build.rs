@@ -167,10 +167,9 @@ fn proto_fields(mut b: &[u8]) -> Vec<(u64, &[u8])> {
     out
 }
 
-/// Routes every Conv through `crate::conv::conv2d_same`, which lowers spatial
-/// kernels to im2col + matmul: burn's direct conv kernel is ~7x slower than
-/// matmul on GPUs without matrix cores. Weights keep the built-in `Conv2d`
-/// field and `<name>.weight` path, so the generated `.bpk` is unchanged.
+/// Routes every Conv through `crate::conv::conv2d_same`, which on GPUs runs 3x3 kernels as Winograd convolutions
+/// and 1x1 kernels as an NCHW GEMM (wino/), and any other size as im2col + matmul; burn's own conv on the CPU.
+/// Weights keep the built-in `Conv2d` field and `<name>.weight` path, so the generated `.bpk` is unchanged.
 struct SameConv;
 
 /// The (kernel, padding) of a stride-1, undilated, ungrouped, bias-free conv
@@ -245,6 +244,8 @@ impl OpOverride for SpatialReduce {
     }
 
     fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
+        // The axes as their Debug form: onnx-ir's ReduceAxes is not re-exported by burn-onnx. Any other form is
+        // rejected below, loudly.
         let (axes, keepdims) = match node {
             Node::ReduceSum(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
             Node::ReduceMax(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
@@ -294,7 +295,11 @@ fn fuse_bn_act(net: &str) {
         r"let (\w+) = (\w+)\.mul\((\w+)\.clone\(\)\);",
     ))
     .unwrap();
-    let count = |name: &str| regex::Regex::new(&format!(r"\b{name}\b")).unwrap().find_iter(&code).count();
+    let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(&code) {
+        *words.entry(w.as_str()).or_default() += 1;
+    }
+    let count = |name: &str| words.get(name).copied().unwrap_or(0);
     let mut edits: Vec<(usize, usize, String)> = Vec::new();
     let mut fused = 0;
     for m in chain.captures_iter(&code) {
@@ -327,6 +332,14 @@ fn fuse_bn_act(net: &str) {
             ));
         }
         fused += 1;
+    }
+    // A mish net (softplus in its activations) with nothing fused means the generated code no longer has the shape
+    // the chain regex expects (a burn-onnx update): fail rather than silently lose the fused GPU path.
+    if fused == 0 && code.contains("burn::tensor::activation::softplus(") {
+        panic!(
+            "build.rs fuse_bn_act: {net} has mish activations but no batch norm + mish + mask chain matched; \
+             burn-onnx's generated code changed shape, update the regex in fuse_bn_act"
+        );
     }
     edits.sort_by_key(|e| std::cmp::Reverse(e.0));
     let mut out = code.clone();

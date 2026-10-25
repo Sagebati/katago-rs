@@ -277,10 +277,12 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     let use_nhwc: bool = if use_nhwc_mode == enabled_t::True { true } else { false };
 
     // PORT NOTE: useFP16 = true runs the 3x3 convs in f16 (wino.rs) on GPU devices; Auto stays f32 (the Eigen
-    // parity tier). On the CPU (flex) it is rejected as before.
+    // parity tier). On the CPU (flex) it is rejected as before. The switch is process-wide (`wino::set_half`):
+    // once one context asks for f16, every network of the process runs its 3x3 convs in f16 (the CLI's
+    // `-human-model` shares the main model's config, so both ask the same).
     if use_fp16 {
       #[cfg(feature = "wgpu-fixed-kernels")]
-      let gpu = !is_flex(&self.device);
+      let gpu = !crate::is_cpu(&self.device);
       #[cfg(not(feature = "wgpu-fixed-kernels"))]
       let gpu = false;
       if !gpu {
@@ -494,7 +496,7 @@ async fn get_output_impl<N: Network>(
   // The data a GPU readback returns is backed lazily: the wait for the device happens where its bytes
   // are first touched, so the helper thread converts it to a Vec itself.
   #[cfg(not(target_arch = "wasm32"))]
-  let data: Vec<f32> = if is_flex(device) { read_here(flat).await } else { read_on_helper_thread(flat).await }
+  let data: Vec<f32> = if crate::is_cpu(device) { read_here(flat).await } else { read_on_helper_thread(flat).await }
     .map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
   #[cfg(target_arch = "wasm32")]
   let data: Vec<f32> = read_here(flat).await.map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
@@ -627,14 +629,4 @@ async fn read_on_helper_thread(tensor: Tensor<2>) -> Result<Vec<f32>, String> {
     })
     .map_err(|e| format!("could not start the readback thread: {e}"))?;
   rx.await.map_err(|_| "the readback thread died".to_string())?
-}
-
-/// Whether `device` is burn flex (the CPU backend).
-fn is_flex(device: &Device) -> bool {
-  #[cfg(feature = "flex")]
-  if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
-    return true;
-  }
-  let _ = device;
-  false
 }

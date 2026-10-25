@@ -55,7 +55,7 @@ impl Spawner for WasmSpawner {
 async fn evaluate_yields_to_the_event_loop() {
   Board::init_hash();
   ScoreValue::init_tables();
-  let bytes = read_file_sync(katago_nn_burn::bpk_path!("g170-b6c96")).expect("b6c96 .bpk (build with net-b6c96)").to_vec();
+  let bytes = read_file_sync(katago_nn_burn::b6c96::BPK_PATH).expect("b6c96 .bpk (build with net-b6c96)").to_vec();
   let device: Device = burn::backend::FlexDevice::default().into();
   let backend = Rc::new(BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(device));
   let nn_eval = Rc::new(

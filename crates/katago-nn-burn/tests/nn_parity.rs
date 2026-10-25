@@ -294,14 +294,7 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
   evals.truncate(limit);
   assert!(!evals.is_empty());
 
-  let device: Device = match backend_name {
-    "flex" => burn::backend::FlexDevice::default().into(),
-    #[cfg(feature = "wgpu")]
-    "wgpu" => burn::backend::WgpuDevice::default().into(),
-    #[cfg(feature = "rocm")]
-    "rocm" => burn::backend::RocmDevice::default().into(),
-    other => panic!("backend {other} not compiled in"),
-  };
+  let device: Device = katago_nn_burn::device(backend_name).unwrap_or_else(|| panic!("backend {backend_name} not compiled in"));
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let backend = Rc::new(BurnNeuralNet::<N>::new(device));
@@ -440,7 +433,7 @@ fn nn_parity_b6c96_rand() {
       cfg[3].parse().unwrap(),
       backend,
       spawner,
-      std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap(),
+      std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(),
     )
     .unwrap(),
   );
@@ -513,21 +506,21 @@ fn nn_parity_b6c96_rand() {
 #[cfg(feature = "net-b6c96")]
 #[test]
 fn nn_parity_b6c96() {
-  let d = run_net::<katago_nn_burn::b6c96::Model>("flex", katago_nn_burn::bpk_path!("g170-b6c96"), "evals.txt", "g170-b6c96.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b6c96::Model>("flex", katago_nn_burn::b6c96::BPK_PATH, "evals.txt", "g170-b6c96.out.bin", usize::MAX);
   check(&d);
 }
 
 #[cfg(feature = "net-b10c128")]
 #[test]
 fn nn_parity_b10c128() {
-  let d = run_net::<katago_nn_burn::b10c128::Model>("flex", katago_nn_burn::bpk_path!("g170e-b10c128"), "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b10c128::Model>("flex", katago_nn_burn::b10c128::BPK_PATH, "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
   check(&d);
 }
 
 #[cfg(feature = "net-b18c384nbt")]
 #[test]
 fn nn_parity_b18c384nbt() {
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("flex", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("flex", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check(&d);
 }
 
@@ -536,7 +529,7 @@ fn nn_parity_b18c384nbt() {
 fn nn_parity_b18c384nbt_humanv0() {
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "flex",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -547,14 +540,14 @@ fn nn_parity_b18c384nbt_humanv0() {
 /// wgpu (native Vulkan/Metal): PORTING.md §13 / CLAUDE.md: 2e-4 on logits, 1e-4 on win rate and
 /// ownership. After post-processing that is 1e-4 absolute on probabilities, policy and
 /// ownership, and 1e-4 relative (floor 1e-4) on the score-like outputs.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 fn check_wgpu(diffs: &Diffs) {
   check_wgpu_with(diffs, 1e-4, 1e-4);
 }
 
 /// `abs` on probabilities, policy and ownership; `rel` of the largest magnitude (floor `abs`) on the score-like
 /// outputs.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
@@ -566,19 +559,19 @@ fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
 }
 
 /// The wgpu tests share the process-wide precision switch of wino.rs: one at a time.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 static GPU: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 fn gpu_lock() -> std::sync::MutexGuard<'static, ()> {
   GPU.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 /// wino.rs in f16 for the guard's lifetime.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 struct Half;
 
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 impl Half {
   fn on() -> Self {
     katago_nn_burn::wino::set_half(true);
@@ -586,7 +579,7 @@ impl Half {
   }
 }
 
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 impl Drop for Half {
   fn drop(&mut self) {
     katago_nn_burn::wino::set_half(false);
@@ -597,7 +590,7 @@ impl Drop for Half {
 #[test]
 fn nn_parity_b10c128_wgpu() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b10c128::Model>("wgpu", katago_nn_burn::bpk_path!("g170e-b10c128"), "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b10c128::Model>("wgpu", katago_nn_burn::b10c128::BPK_PATH, "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
   check_wgpu(&d);
 }
 
@@ -605,7 +598,7 @@ fn nn_parity_b10c128_wgpu() {
 #[test]
 fn nn_parity_b18c384nbt_wgpu() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_wgpu(&d);
 }
 
@@ -615,7 +608,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
   let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -629,7 +622,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
 fn nn_parity_b18c384nbt_wgpu_f16() {
   let _gpu = gpu_lock();
   let _half = Half::on();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_f16(&d);
 }
 
@@ -640,7 +633,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
   let _half = Half::on();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -654,7 +647,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
 /// (policy per move by the top-policy delta); scoreMeanSq and varTimeLeft, which testgpuerror does not report, get
 /// 5% of their largest magnitude. Measured here (b18, 72 evals): winrate 2.5e-3, lead 0.21, stScoreError 0.16,
 /// policy 9.6e-3, ownership 1.3e-2.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "wgpu-fixed-kernels")]
 fn check_f16(diffs: &Diffs) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
@@ -676,7 +669,7 @@ fn check_f16(diffs: &Diffs) {
 #[test]
 fn nn_parity_b18c384nbt_rocm() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_wgpu(&d);
 }
 
@@ -685,7 +678,7 @@ fn nn_parity_b18c384nbt_rocm() {
 fn nn_parity_b18c384nbt_rocm_f16() {
   let _gpu = gpu_lock();
   let _half = Half::on();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_f16(&d);
 }
 
@@ -698,7 +691,7 @@ fn backend_rejects_unsupported_layouts() {
   type N = katago_nn_burn::b6c96::Model;
   let device: Device = burn::backend::FlexDevice::default().into();
   let backend = BurnNeuralNet::<N>::new(device);
-  let model = backend.load_model_file("b6", std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap(), "").unwrap();
+  let model = backend.load_model_file("b6", std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(), "").unwrap();
   let desc = backend.get_model_desc(&*model);
   assert_eq!((desc.model_version, desc.num_policy_channels, desc.num_score_value_channels), (8, 1, 4));
   assert!(backend.load_model_file("b6", Vec::new(), "abc").is_err());

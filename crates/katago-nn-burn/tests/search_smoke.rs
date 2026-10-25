@@ -511,7 +511,7 @@ fn run() -> Vec<Outcome> {
       0,
       backend,
       spawner,
-      std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap(),
+      std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(),
     )
     .unwrap(),
   );

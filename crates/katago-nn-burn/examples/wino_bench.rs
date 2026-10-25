@@ -1,7 +1,8 @@
-//! Per-layer check and timing of wino.rs's convs (Winograd 3x3, NCHW 1x1) against `conv2d_im2col` on
-//! b18c384nbt's trunk shapes.
+//! Per-layer check and timing of wino/'s convs (Winograd 3x3, NCHW 1x1) against `conv2d_im2col` on
+//! b18c384nbt's trunk shapes, and of the device filter transform against the host one.
 //!
-//! cargo run --release -p katago-nn-burn --example wino_bench -F wgpu,fusion -- [batches...]
+//! cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed-kernels -- [f16|f32] [batches...]
+//! (`just wino-bench`)
 
 mod common;
 
@@ -48,8 +49,10 @@ fn time(f: impl Fn() -> Tensor<4>) -> f64 {
 }
 
 fn main() {
+    let mut args: Vec<String> = std::env::args().skip(1).collect();
+    common::take_precision(&mut args);
     let batches: Vec<usize> = {
-        let b: Vec<usize> = std::env::args().skip(1).map(|a| a.parse().unwrap()).collect();
+        let b: Vec<usize> = args.iter().map(|a| a.parse().unwrap()).collect();
         if b.is_empty() { vec![8, 16, 32, 64] } else { b }
     };
     let device = common::device("wgpu");

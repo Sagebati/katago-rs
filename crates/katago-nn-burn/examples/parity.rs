@@ -4,7 +4,9 @@
 //! global inputs are b18c384nbt's files) with `meta_input` = the rows of humanSLProfile rank_1k_15k
 //! (`verify.py --human-sl-profiles rank_1k_15k --dump-features`, the npz arrays written as raw f32).
 //!
-//! cargo run --release -p katago-nn-burn --example parity [-F wgpu,net-b18c384nbt] -- <flex|wgpu> [b10|b18|human]
+//! cargo run --release -p katago-nn-burn --example parity [-F wgpu-fixed-kernels|rocm] -- <flex|wgpu|rocm> [b10|b18|human]
+//!
+//! In f32: f16 is checked against the Eigen reference by `just nn-parity` (tests/nn_parity.rs).
 
 mod common;
 
@@ -62,8 +64,8 @@ fn main() {
         _ => ("b10c128", "b10c128"),
     };
     let worst = with_net!(net.as_str(), Net => |bpk| parity::<Net>(&backend, bpk, fixture, input_fixture));
-    // Raw logits; KataGo's own fp16/fp32 backends disagree by more than this.
-    let tol = if backend == "wgpu" { 2e-3 } else { 1e-4 };
+    // Raw logits; KataGo's own fp16/fp32 backends disagree by more than this. GPUs reorder sums (Winograd, GEMMs).
+    let tol = if backend == "flex" { 1e-4 } else { 2e-3 };
     println!("{}", if worst <= tol { "PASS" } else { "FAIL" });
     if worst > tol {
         std::process::exit(1);

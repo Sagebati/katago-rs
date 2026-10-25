@@ -1190,26 +1190,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "c2rust-bitfields"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46dc7d2bffa0d0b3d47eb2dc69973466858281446c2ac9f6d8a10e92ab1017df"
-dependencies = [
- "c2rust-bitfields-derive",
-]
-
-[[package]]
-name = "c2rust-bitfields-derive"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebe1117afa5937ce280034e31fa1e84ed1824a252f75380327eed438535333f8"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2057,7 +2037,6 @@ dependencies = [
 name = "cubecl-wgpu"
 version = "0.11.2"
 dependencies = [
- "ash",
  "bytemuck",
  "cfg-if",
  "cfg_aliases",
@@ -2080,7 +2059,6 @@ dependencies = [
  "pliron",
  "sanitize-filename",
  "thiserror 2.0.21",
- "tracel-ash",
  "wasm-bindgen-futures",
  "wgpu",
 ]
@@ -6044,7 +6022,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
- "quote",
  "unicode-ident",
 ]
 
@@ -6374,16 +6351,6 @@ dependencies = [
  "serde_json",
  "ureq 2.12.1",
  "zip 0.6.6",
-]
-
-[[package]]
-name = "tracel-ash"
-version = "0.39.5+sdk1.4.357"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9802d90b2e66f00a395a3acf337ddd49dd1e90cb3287fc31a4148f875d7be7c5"
-dependencies = [
- "ash",
- "c2rust-bitfields",
 ]
 
 [[package]]

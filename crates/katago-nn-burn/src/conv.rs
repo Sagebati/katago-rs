@@ -4,6 +4,8 @@ use burn::nn::conv::Conv2d;
 use burn::prelude::*;
 use burn::tensor::ops::PadMode;
 
+use crate::is_cpu;
+
 /// Stride-1 "same" convolution without bias.
 ///
 /// On GPUs 3x3 kernels go through the Winograd convolution of wino.rs (7-12x faster than im2col + matmul per
@@ -75,15 +77,6 @@ pub fn conv2d_im2col(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     cols.matmul(weight)
         .reshape([n, h, w, oc])
         .permute([0, 3, 1, 2])
-}
-
-fn is_cpu(device: &Device) -> bool {
-    #[cfg(feature = "flex")]
-    if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
-        return true;
-    }
-    let _ = device;
-    false
 }
 
 /// ReduceSum over the last axis of `[N, C, L]` (build.rs `SpatialReduce`): one workgroup per row on GPUs.
