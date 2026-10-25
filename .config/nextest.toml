@@ -1,0 +1,45 @@
+# cargo-nextest configuration (`cargo nextest run`, the justfile's native test recipes).
+#
+# nextest runs every test in its own process, so process-wide state (wino.rs's f16 switch, its filter cache, the
+# cubecl device runtimes) never leaks between tests.
+
+[profile.default]
+# One process per test: cap them below the machine's 12 threads, some suites load real nets in release (RAM).
+test-threads = 8
+# Searches over real nets take minutes in debug and tens of seconds in release: report them as slow, never kill.
+slow-timeout = { period = "120s" }
+
+# `just test` / `cargo nextest run --profile quick`: everything but the real-net search suites, which take minutes
+# (release) to tens of minutes (debug) and have their own recipes (search-smoke, search-tests, search-tolerance).
+# Narrow further with a filterset, e.g. `-E 'package(katago-core)'`, `-E 'binary(testrules)'`, `-E 'test(/ko/)'`.
+[profile.quick]
+default-filter = "not (binary(search_smoke) | binary(search_tolerance) | binary(testsearchv8) | binary(testsearchv9))"
+
+[test-groups]
+# One GPU test at a time: several processes loading b18c384nbt on the one device at once would contend for VRAM
+# and skew each other's timings.
+gpu = { max-threads = 1 }
+
+# Tests that run their own pool of katago-rs processes or measure timing get the machine to themselves: the
+# analysis-protocol corpora serialized themselves with a process-wide mutex (ONE_CORPUS_AT_A_TIME), which nextest's
+# process per test bypasses, and their burst-order cases diverge under load; the shared-timer test checks elapsed
+# times and the process's thread count.
+[[profile.default.overrides]]
+filter = "binary(analysis_protocol_corpus) | test(=tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
+threads-required = "num-test-threads"
+
+[[profile.default.overrides]]
+filter = "test(/wgpu|rocm/)"
+test-group = "gpu"
+
+# Tests that run their own pool of katago-rs processes or measure timing get the machine to themselves: the
+# analysis-protocol corpora serialized themselves with a process-wide mutex (ONE_CORPUS_AT_A_TIME), which nextest's
+# process per test bypasses, and their burst-order cases diverge under load; the shared-timer test checks elapsed
+# times and the process's thread count.
+[[profile.quick.overrides]]
+filter = "binary(analysis_protocol_corpus) | test(=tests::sleep_is_one_shared_timer_and_cancels_on_drop)"
+threads-required = "num-test-threads"
+
+[[profile.quick.overrides]]
+filter = "test(/wgpu|rocm/)"
+test-group = "gpu"

@@ -56,34 +56,45 @@ check-features:
 # rules, global, testrules, the BoardHistory fuzz oracle. On wasm the std float math is not
 # glibc's, so this is where libm drift shows up. Plus katago-nn-burn's wasm_yield: the CPU backend
 # yields to the JS event loop between batches (PORTING.md §11). Plus katago-annotate's katago-ws parity replay (M6).
-# Needs node and wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock).
+# Needs node, wasm-bindgen-test-runner 0.2.129 (= the wasm-bindgen in Cargo.lock) and cargo-nextest (one node process
+# per test, in parallel: ~100 s instead of ~230 s with cargo test).
 test-wasm:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-annotate --target wasm32-unknown-unknown --test fixtures
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-core --target wasm32-unknown-unknown --test rand --test math --test hash --test port_fmt --test rules --test global --test testrules --test boardhistory_fuzz_oracle --test math_tanhf --test nninputs_oracle --test nneval_skipnn --test testsymmetries --test testnninputs --test testscore --test modelversion_desc --test nnoutput_oracle --test math_lgamma --test math_atan --test math_tanh --test testsearchnonn --test math_log10 --test fancymath --test timecontrols --test distributiontable --test config_parser --test testconfig --test search_oracle --test searchtimehelpers_oracle --test search_select_diff --test search_evalcache_diff --test setup_oracle --test setup_host --test asyncbot --test executor --test nlohmann_bytes --test math_sincos --test sgfmetadata_oracle --test datetime --test search_humansl
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b6c96 --test wasm_yield
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-annotate --target wasm32-unknown-unknown --test fixtures
 
 # The human-SL net (b18c384nbt-humanv0) inside wasm on burn flex vs the Eigen NNEvaluator records (M8; release, a few
 # minutes of build, ~1-2 s per evaluation under node). Opt-in: not part of test-wasm.
 test-wasm-human:
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test --release -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b18c384nbt-humanv0 --test wasm_human -- --nocapture
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run --release -p katago-nn-burn --target wasm32-unknown-unknown --no-default-features -F flex,net-b18c384nbt-humanv0 --test wasm_human --success-output final
+
+# The native tests of every crate (debug, default features: burn flex and every compiled-in net), without the
+# real-net search suites (`quick` profile, .config/nextest.toml). Filter by area with a nextest filterset:
+# `just test -E 'package(katago-core)'`, `just test -E 'binary(testrules)'`, `just test -E 'test(/ko_hash/)'`.
+test *flags="":
+    cargo nextest run --workspace --profile quick {{flags}}
+
+# The GPU tests (nn_parity on wgpu, f32 and f16; add `-F rocm` for ROCm), one at a time (test group `gpu`). Release.
+test-gpu *flags="":
+    cargo nextest run --release -p katago-nn-burn --test nn_parity -F wgpu --success-output final -E 'test(/wgpu|rocm/)' {{flags}}
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
 # Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
 # b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
 nn-parity *flags="":
-    cargo test --release -p katago-nn-burn --test nn_parity {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-nn-burn --test nn_parity --success-output final {{flags}}
 
 # Search smoke (real net): ported Search + NNEvaluator over burn flex (g170-b6c96) vs upstream Search over the Eigen
 # NNEvaluator (fixtures/upstream-v1.16.5/search/oracle/search_eigen_b6c96.txt, ~40 searches). Tolerance comparison:
 # prints visit-vector / top-move / value-diff statistics by maxVisits. Release only (debug burn is very slow).
 search-smoke *flags="":
-    cargo test --release -p katago-nn-burn --test search_smoke {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-nn-burn --test search_smoke --success-output final {{flags}}
 
 # Analysis goldens (M3, D9): cpp/tests/analysis/*.txt through the ported analysis engine (katago-cli, burn flex,
 # g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.16.5/analysis/*.stdout (structure exact, floats within
 # the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
 analysis-goldens *flags="":
-    cargo test --release -p katago-cli {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-cli --success-output final {{flags}}
 
 # Analysis-protocol corpora (fixtures/upstream-v1.16.5/analysis-protocol): regenerate the expected outputs with
 # the reference build (`just katago-eigen` first; ~10 min), or replay them through katago-rs (release, ~1.5 min).
@@ -91,23 +102,23 @@ analysis-protocol-regen *corpora="":
     cd fixtures/upstream-v1.16.5/analysis-protocol && python3 -I regen.py {{corpora}}
 
 analysis-protocol *flags="":
-    cargo test --release -p katago-cli --test analysis_protocol_corpus {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-cli --test analysis_protocol_corpus --success-output final {{flags}}
 
 # Real-net search tests (testsearchv9 / testsearchv8 transcriptions, b6c96 via burn flex vs the Eigen expected
 # outputs). Release: the two heaviest v8 groups are ignored in debug (~15 min release in parallel).
 search-tests *flags="":
-    cargo test --release -p katago-nn-burn --test testsearchv9 --test testsearchv8 {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-nn-burn --test testsearchv9 --test testsearchv8 --success-output final {{flags}}
 
 # Tolerance study: 160 b6c96 + 32 b10c128 searches at 400-1000 visits, burn flex vs Eigen
 # (fixtures/upstream-v1.16.5/search/oracle/search_tolerance_*.txt). Release, ~16 min.
 search-tolerance *flags="":
-    cargo test --release -p katago-nn-burn --test search_tolerance {{flags}} -- --nocapture
+    cargo nextest run --release -p katago-nn-burn --test search_tolerance --success-output final {{flags}}
 
 # katago-annotate (M6) vs katago-ws: replay the recorded games (fixtures/katago-annotate) natively and on wasm32;
 # payloads and query lines must be byte-identical to katago-ws's.
 annotate-parity:
-    cargo test -p katago-annotate
-    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test -p katago-annotate --target wasm32-unknown-unknown --test fixtures
+    cargo nextest run -p katago-annotate
+    CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo nextest run -p katago-annotate --target wasm32-unknown-unknown --test fixtures
 
 # Re-record fixtures/katago-annotate through katago-ws's own client and annotator (needs ../katago-ws and
 # `just katago-eigen`; ~6 min), or `--check-only` to compare katago-ws's annotator with the checked-in fixtures.

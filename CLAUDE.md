@@ -90,8 +90,10 @@ All tasks go through `just` (see `justfile`):
 | `just check-features` | serde_json: `float_roundtrip` on, `preserve_order` off |
 
 Python tools run with the repo venv and `-I`: `.venv/bin/python -I tools/...`. Rust:
-`cargo check -p <crate>`, `cargo test -p <crate>`, and for wasm
-`cargo check -p <crate> --target wasm32-unknown-unknown` (SIMD128 is on via `.cargo/config.toml`).
+`cargo check -p <crate>`, `cargo nextest run -p <crate>` (cargo-nextest: one process per test, GPU tests one
+at a time, see `.config/nextest.toml`; there are no doctests), and for wasm
+`cargo check -p <crate> --target wasm32-unknown-unknown` (SIMD128 is on via `.cargo/config.toml`). The wasm
+suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runner` as the target runner.
 
 ## Agent hygiene (from Bun's Zig→Rust port)
 

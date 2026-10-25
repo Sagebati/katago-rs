@@ -463,7 +463,7 @@ Known divergences are listed with reasons in the test, which fails when one disa
 **Audit that tests actually ran:**
 - Every fixture-driven test asserts it loaded at least 1 case and prints how many it ran
   (`eprintln!("board_tests: 37 cases")`). An empty glob fails.
-- Reports quote the `cargo test` summary line (passed / failed / ignored / filtered). "Tests
+- Reports quote the `cargo nextest run` summary line (tests run / passed / failed / skipped). "Tests
   pass" without counts doesn't count. A drop in case count is a regression.
 - Tests run in the debug profile (debug assertions on, as in upstream's default build).
   Parity runs also run once with `--release`, to catch overflow-wrap differences.
