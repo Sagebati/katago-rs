@@ -23,7 +23,9 @@ flex = ["burn/flex", "dep:burn-flex"]
 wgpu = ["wgpu-fixed-kernels", "burn/autotune"]
 # wgpu without autotune: burn's default kernel for each op, no tuning pass. katago-wasm uses this: in the browser
 # the tuning results cannot be kept across page loads and the pass cost ~8 s per load (docs/M4-report.md).
-wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "dep:burn-cubecl", "dep:half"]
+# Implies fusion: wino.rs's kernels are a burn backend extension whose Fusion routing must exist whenever burn's
+# fusion is on (katago-wasm turns it on), else the call panics at runtime.
+wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "dep:burn-cubecl", "dep:half", "fusion"]
 # Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
 vulkan = ["wgpu", "burn/vulkan"]
 fusion = ["burn/fusion"]

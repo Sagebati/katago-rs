@@ -2,7 +2,7 @@
 // picks the backend, runs the analysis engine and relays its JSON lines. Speaks messages.ts with
 // KataGoClient; the analysis protocol itself passes through verbatim ("lines" in, "line" out).
 
-import init, { Engine, compiledNetworks, kernelCacheExport, kernelCacheImport, kernelCacheStats, sha256Hex } from "./wasm/katago_wasm.js";
+import init, { Engine, compiledNetworks, kernelCacheExport, kernelCacheImport, kernelCacheStats, setHalfPrecision, sha256Hex } from "./wasm/katago_wasm.js";
 import { BUILD_ID } from "./wasm/build-id.js";
 import type { Backend, EngineInitOptions, EngineStats, FromWorker, ModelSpec, ReadyInfo, ToWorker } from "./messages.js";
 import type { ReviewProgress } from "./review.js";
@@ -104,7 +104,7 @@ function internalQuery(query: Record<string, unknown>, isDone: (r: Record<string
 }
 
 /** The WebGPU adapter ("vendor/architecture/description"), or why there is none. */
-async function webgpuAdapter(): Promise<{ adapter?: string; limits?: ReadyInfo["adapterLimits"]; unavailable?: string }> {
+async function webgpuAdapter(): Promise<{ adapter?: string; limits?: ReadyInfo["adapterLimits"]; f16?: boolean; unavailable?: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gpu = (navigator as any).gpu;
   if (!gpu) return { unavailable: "navigator.gpu is missing (no WebGPU in this browser or context)" };
@@ -115,6 +115,7 @@ async function webgpuAdapter(): Promise<{ adapter?: string; limits?: ReadyInfo["
     return {
       adapter: [info.vendor, info.architecture, info.description].filter((x: string) => x).join("/") || "unknown",
       limits: { maxStorageBufferBindingSize: Number(adapter.limits?.maxStorageBufferBindingSize), maxBufferSize: Number(adapter.limits?.maxBufferSize) },
+      f16: Boolean(adapter.features?.has("shader-f16")),
     };
   } catch (e) {
     return { unavailable: `navigator.gpu.requestAdapter() failed: ${String(e)}` };
@@ -257,7 +258,8 @@ async function saveKernels(options: EngineInitOptions, adapter: string): Promise
   }
 }
 
-async function createEngine(backend: Backend, options: EngineInitOptions, network: string, bytes: Uint8Array): Promise<Engine> {
+async function createEngine(backend: Backend, options: EngineInitOptions, network: string, bytes: Uint8Array, half: boolean): Promise<Engine> {
+  setHalfPrecision(backend === "webgpu" && half);
   return Engine.create(
     {
       backend,
@@ -289,6 +291,7 @@ async function start(options: EngineInitOptions): Promise<void> {
   let fallbackReason: string | undefined;
   let adapter: string | undefined;
   let adapterLimits: ReadyInfo["adapterLimits"];
+  let adapterF16 = false;
   let kernelsLoaded = 0;
   let kernelCacheLoadMs = 0;
   const probing = (async () => {
@@ -296,6 +299,7 @@ async function start(options: EngineInitOptions): Promise<void> {
     const probe = await webgpuAdapter();
     adapter = probe.adapter;
     adapterLimits = probe.limits;
+    adapterF16 = probe.f16 ?? false;
     if (probe.unavailable && choice === "auto") {
       backend = "cpu";
       fallbackReason = probe.unavailable;
@@ -324,8 +328,9 @@ async function start(options: EngineInitOptions): Promise<void> {
   const [model] = await Promise.all([loading, probing]);
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
+  const half = (options.precision ?? "auto") !== "f32" && adapterF16;
   try {
-    engine = await createEngine(backend, options, spec.network, model.bytes);
+    engine = await createEngine(backend, options, spec.network, model.bytes, half);
   } catch (e) {
     if (choice !== "auto" || backend === "cpu") throw e;
     fallbackReason = `WebGPU engine failed: ${String((e as Error)?.message ?? e)}`;
@@ -340,7 +345,7 @@ async function start(options: EngineInitOptions): Promise<void> {
     spec = cpu;
     model.bytes = cpuModel.bytes;
     model.source = cpuModel.source;
-    engine = await createEngine(backend, options, spec.network, model.bytes);
+    engine = await createEngine(backend, options, spec.network, model.bytes, false);
   }
   const configText = engine.configText;
   engine.finished().then(
@@ -370,6 +375,7 @@ async function start(options: EngineInitOptions): Promise<void> {
     backend,
     adapter: backend === "webgpu" ? adapter : undefined,
     adapterLimits: backend === "webgpu" ? adapterLimits : undefined,
+    precision: backend === "webgpu" ? (half ? "f16" : "f32") : undefined,
     network: spec.network,
     requestedNetwork: spec.network !== options.model.network ? options.model.network : undefined,
     version: String(version.version),

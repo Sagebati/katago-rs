@@ -277,19 +277,20 @@ try {
       const bpkRequests = () => requestLog.filter((p) => p.endsWith(".bpk")).length;
       const vram0 = vramUsed();
       const before = bpkRequests();
-      const cold = await call(page, "loadModel", { backend: "webgpu", network: B18 });
+      const cold = await call(page, "loadModel", { backend: "webgpu", network: B18, precision: "auto" });
       const afterCold = bpkRequests();
       const vram1 = vramUsed();
       const storage = await call(page, "storageAndLimits", null);
       browserRequests.length = 0;
       await page.reload();
       await page.waitForFunction(() => window.kgwReady === true);
-      const warm = await call(page, "loadModel", { backend: "webgpu", network: B18 });
+      const warm = await call(page, "loadModel", { backend: "webgpu", network: B18, precision: "auto" });
       const afterWarm = bpkRequests();
       const browserBpk = browserRequests.filter((u) => u.endsWith(".bpk"));
       results.b18.load = { cold, warm, storage, vramDeltaMiB: vramDelta(vram0, vram1) };
       check("b18: first load fetches the weights once", cold.backend === "webgpu" && cold.modelSource === "network" && afterCold - before === 1, `${afterCold - before} .bpk request(s), source ${cold.modelSource}, adapter ${cold.adapter}`);
       check("b18: second load does no model network request", warm.modelSource === "cache" && afterWarm === afterCold && browserBpk.length === 0, `server saw ${afterWarm - afterCold}, browser issued ${browserBpk.length}, source ${warm.modelSource}`);
+      check("b18: precision auto is f16 on an adapter with shader-f16, f32 without", cold.precision === (storage.features.includes("shader-f16") ? "f16" : "f32"), `precision ${cold.precision}, shader-f16 ${storage.features.includes("shader-f16")}`);
       check("b18: second load compiles no WebGPU kernel", cold.kernelCache?.compiled > 0 && warm.kernelCache?.compiled === 0 && warm.kernelCache?.hits > 0, `cold ${JSON.stringify(cold.kernelCache)}, warm ${JSON.stringify(warm.kernelCache)}`);
       // The biggest buffer of a b18c384nbt forward pass is the im2col matrix of its 192-channel 3x3 convs (62 of them):
       // batch * 361 * 1728 floats = 2.5 MB per row, 80 MB at 32 rows. WebGPU's default maxStorageBufferBindingSize is
@@ -307,11 +308,30 @@ try {
       const r = await call(page, "apiSmoke", { backend: "webgpu", network: B18 });
       const partials = r.responses.filter((x) => x.isDuringSearch);
       check("b18: reportDuringSearchEvery partials arrive", partials.length >= 2 && r.responses.every((x) => x.id === "mine" && x.ownership === 361), `${partials.length} partials (visits ${partials.map((p) => p.visits).join(",")})`);
-      for (const visits of [100, 400]) {
-        const t = await call(page, "throughput", { backend: "webgpu", network: B18, visits, positions: 4 });
-        (results.b18.throughput ??= []).push({ visits, ...t });
-        for (const x of t.results) console.log(`  b18 ${visits}: ${x.moves} moves: ${x.visits} visits ${x.ms.toFixed(0)} ms = ${x.visitsPerS.toFixed(0)} visits/s, ${x.rows} evals in ${x.batches} batches (avg ${x.avgBatch.toFixed(1)}) = ${x.evalsPerS.toFixed(0)} evals/s (NN busy ${x.nnBusyEvalsPerS.toFixed(0)}/s)`);
-        check(`b18: ${visits}-visit searches complete`, t.results.every((x) => x.visits >= visits), t.results.map((x) => x.visits).join(","));
+      for (const precision of ["f32", "f16"]) {
+        for (const visits of [100, 400]) {
+          const t = await call(page, "throughput", { backend: "webgpu", network: B18, visits, positions: 4, precision });
+          (results.b18.throughput ??= []).push({ visits, precision: t.ready.precision, ...t });
+          for (const x of t.results) console.log(`  b18 ${t.ready.precision} ${visits}: ${x.moves} moves: ${x.visits} visits ${x.ms.toFixed(0)} ms = ${x.visitsPerS.toFixed(0)} visits/s, ${x.rows} evals in ${x.batches} batches (avg ${x.avgBatch.toFixed(1)}) = ${x.evalsPerS.toFixed(0)} evals/s (NN busy ${x.nnBusyEvalsPerS.toFixed(0)}/s)`);
+          check(`b18: ${t.ready.precision} ${visits}-visit searches complete`, t.results.every((x) => x.visits >= visits), t.results.map((x) => x.visits).join(","));
+        }
+      }
+      // f16 vs f32 raw outputs, bounded by upstream's own FP16 error (katago testgpuerror, OpenCL FP16 vs FP32 on an
+      // RX 6800 XT, b18c384nbt, max over 2247 positions: winrate 4.45%, lead 2.27, ownership 9.23c, top policy 5.04%).
+      {
+        const a = await call(page, "nnOutputs", { backend: "webgpu", network: B18, precision: "f32", positions: 12 });
+        const b = await call(page, "nnOutputs", { backend: "webgpu", network: B18, precision: "f16", positions: 12 });
+        const maxAbs = (xs, ys) => xs.reduce((m, x, i) => (x >= 0 && ys[i] >= 0 ? Math.max(m, Math.abs(x - ys[i])) : m), 0);
+        let wr = 0, lead = 0, own = 0, pol = 0;
+        for (const [i, x] of a.out.entries()) {
+          const y = b.out[i];
+          wr = Math.max(wr, Math.abs(x.winrate - y.winrate));
+          lead = Math.max(lead, Math.abs(x.scoreLead - y.scoreLead));
+          own = Math.max(own, maxAbs(x.ownership, y.ownership));
+          pol = Math.max(pol, maxAbs(x.policy, y.policy));
+        }
+        results.b18.f16 = { wr, lead, own, pol };
+        check("b18: f16 outputs within upstream's FP16 error of f32", a.precision === "f32" && b.precision === "f16" && wr <= 0.0445 && lead <= 2.27 && own <= 0.0923 && pol <= 0.0504, `precisions ${a.precision}/${b.precision}, 12 positions, max |f16 - f32|: winrate ${wr.toExponential(2)}, lead ${lead.toExponential(2)}, ownership ${own.toExponential(2)}, policy ${pol.toExponential(2)}`);
       }
       const t = await call(page, "terminateLatency", { backend: "webgpu", network: B18, partialsBeforeCancel: 3, every: 0.5, trials: 5 });
       results.b18.terminate = t;

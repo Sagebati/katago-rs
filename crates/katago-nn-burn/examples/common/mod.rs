@@ -6,7 +6,19 @@ pub fn device(name: &str) -> Device {
         "flex" => burn::backend::FlexDevice::default().into(),
         // `wgpu-fixed-kernels` alone is the browser build's setup (no autotune), `wgpu` adds autotune.
         #[cfg(any(feature = "wgpu", feature = "wgpu-fixed-kernels"))]
-        "wgpu" => burn::backend::WgpuDevice::default().into(),
+        "wgpu" => {
+            // Experiment switches for wino.rs (examples only: the library reads no environment).
+            if std::env::var_os("WINO_HALF").is_some() {
+                katago_nn_burn::wino::set_half(true);
+            }
+            if std::env::var_os("WINO_GEMM_OUT_F32").is_some() {
+                katago_nn_burn::wino::set_gemm_out_f32(true);
+            }
+            if std::env::var_os("WINO_SCALAR_GEMM").is_some() {
+                katago_nn_burn::wino::set_vector_gemm(false);
+            }
+            burn::backend::WgpuDevice::default().into()
+        }
         other => panic!("backend {other} not compiled in"),
     }
 }

@@ -64,3 +64,21 @@ fn is_cpu(device: &Device) -> bool {
     let _ = device;
     false
 }
+
+/// ReduceSum over the last axis of `[N, C, L]` (build.rs `SpatialReduce`): one workgroup per row on GPUs.
+pub fn spatial_sum(x: Tensor<3>) -> Tensor<2> {
+    #[cfg(feature = "wgpu-fixed-kernels")]
+    if !is_cpu(&x.device()) {
+        return crate::wino::reduce_last(x, false);
+    }
+    x.sum_dim(2usize).squeeze_dims::<2usize>(&[2])
+}
+
+/// ReduceMax over the last axis of `[N, C, L]` (build.rs `SpatialReduce`).
+pub fn spatial_max(x: Tensor<3>) -> Tensor<2> {
+    #[cfg(feature = "wgpu-fixed-kernels")]
+    if !is_cpu(&x.device()) {
+        return crate::wino::reduce_last(x, true);
+    }
+    x.max_dim(2usize).squeeze_dims::<2usize>(&[2])
+}

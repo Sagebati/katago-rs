@@ -12,7 +12,12 @@ use burn::nn::PaddingConfig2d;
 use burn::nn::conv::Conv2dConfig;
 use burn::prelude::*;
 use katago_nn_burn::conv::conv2d_im2col;
-use katago_nn_burn::wino;
+use katago_nn_burn::wino::{self, ConvOps};
+use burn::backend::Dispatch;
+
+fn device_of(conv: &burn::nn::conv::Conv2d) -> Device {
+    conv.weight.val().device()
+}
 
 /// (kernel, ic, oc, count in b18c384nbt)
 const SHAPES: [(usize, usize, usize, usize); 6] =
@@ -57,8 +62,19 @@ fn main() {
             .with_padding(PaddingConfig2d::Same)
             .with_bias(false)
             .init(&device);
-        conv.weight = Param::from_tensor(weight);
+        conv.weight = Param::from_tensor(weight.clone());
         let kind = usize::from(k == 1);
+        if k == 3 {
+            // The device filter transform against the host reference.
+            let host = wino::transform_filter_3x3(&weight.clone().into_data().try_into_vec::<f32>().unwrap(), oc, ic);
+            let device = Tensor::<1>::from_dispatch(Dispatch::wino_filter_3x3(weight.into_dispatch(), false));
+            let diff = (device - Tensor::<1>::from_floats(host.as_slice(), &device_of(&conv)))
+                .abs()
+                .max()
+                .into_scalar::<f32>();
+            println!("{:>12} filter transform: max |device - host| {diff:.2e}", format!("{k}x{k} {ic}->{oc}"));
+            assert!(diff < 1e-6, "device filter transform differs from the host one");
+        }
 
         for (bi, &n) in batches.iter().enumerate() {
             let x = Tensor::<4>::random([n, ic, 19, 19], burn::tensor::Distribution::Normal(0.0, 1.0), &device);

@@ -14,11 +14,13 @@ const onLog = (kind, t) => {
   if (kind !== "info" || t.startsWith("katago-wasm:")) logs.push(`${kind}: ${t}`);
 };
 
+// The scenarios compare against the Eigen reference, so they run the WebGPU convolutions in f32 unless a
+// scenario asks for `precision` (the client's own default is `auto`: f16 where the adapter has shader-f16).
 async function client(opts) {
-  const { network = "g170e-b10c128", cpuNetwork, ...rest } = opts;
+  const { network = "g170e-b10c128", cpuNetwork, precision = "f32", ...rest } = opts;
   const model = await fetchModelSpec("/pkg/models/models.json", network);
   const cpuModel = cpuNetwork ? await fetchModelSpec("/pkg/models/models.json", cpuNetwork) : undefined;
-  const c = new KataGoClient({ model, cpuModel, onLog, ...rest });
+  const c = new KataGoClient({ model, cpuModel, onLog, precision, ...rest });
   const ready = await c.ready;
   return { c, ready };
 }
@@ -39,8 +41,8 @@ export async function runGolden({ backend, queryFile, overrides, modelFile, netw
 }
 
 /** Model load: returns the ready info (backend, model source, timings). */
-export async function loadModel({ backend, network, workerUrl, cpuNetwork, allowSlowCpu }) {
-  const { c, ready } = await client({ backend, network, workerUrl, cpuNetwork, allowSlowCpu });
+export async function loadModel({ backend, network, workerUrl, cpuNetwork, allowSlowCpu, precision }) {
+  const { c, ready } = await client({ backend, network, workerUrl, cpuNetwork, allowSlowCpu, precision });
   c.dispose();
   return ready;
 }
@@ -87,9 +89,23 @@ const GAME_MOVES = [
   ["B", "C13"], ["W", "C16"], ["B", "D13"], ["W", "F15"], ["B", "R10"], ["W", "Q11"], ["B", "Q10"], ["W", "P11"],
 ];
 
+/** Raw network outputs (1-visit searches, symmetry 0) on the first moves of GAME_MOVES: root winrate and score
+ * lead, the policy and the ownership, for comparing precisions. */
+export async function nnOutputs({ backend, network, precision, positions }) {
+  const { c, ready } = await client({ backend, network, precision, overrides: "nnRandomize=false" });
+  const out = [];
+  for (let p = 0; p < positions; p++) {
+    const moves = GAME_MOVES.slice(0, 2 * p);
+    const [r] = await c.analyze({ ...EMPTY_19, moves, maxVisits: 1, includePolicy: true, includeOwnership: true }).done;
+    out.push({ winrate: r.rootInfo.winrate, scoreLead: r.rootInfo.scoreLead, policy: r.policy, ownership: r.ownership });
+  }
+  c.dispose();
+  return { backend: ready.backend, precision: ready.precision ?? null, out };
+}
+
 /** visits/s and evals/s of maxVisits searches on fresh positions (NN cache cleared before each). */
-export async function throughput({ backend, network, visits, positions, overrides, workerUrl }) {
-  const { c, ready } = await client({ backend, network, overrides, workerUrl });
+export async function throughput({ backend, network, visits, positions, overrides, workerUrl, precision }) {
+  const { c, ready } = await client({ backend, network, overrides, workerUrl, precision });
   const results = [];
   for (let p = 0; p < positions; p++) {
     await c.clearCache();
@@ -252,5 +268,5 @@ export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, terminateLatency, apiSmoke, kernelCacheParity, review, takeLogs };
+window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, nnOutputs, terminateLatency, apiSmoke, kernelCacheParity, review, takeLogs };
 window.kgwReady = true;

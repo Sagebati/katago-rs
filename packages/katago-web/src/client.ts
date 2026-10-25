@@ -273,6 +273,7 @@ export class KataGoClient {
       cacheModels: this.options.cacheModels,
       cacheKernels: this.options.cacheKernels,
       wasmUrl: this.options.wasmUrl ? String(this.options.wasmUrl) : undefined,
+      precision: this.options.precision,
     };
     this.post({ type: "init", options: init });
   }

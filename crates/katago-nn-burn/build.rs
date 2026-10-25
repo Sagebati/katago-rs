@@ -33,6 +33,8 @@ fn main() {
             // Weights are fetched at runtime (browser) or read from disk, never embedded.
             .load_strategy(LoadStrategy::Bytes)
             .register_op_override(SameConv)
+            .register_op_override(SpatialReduce(NodeType::ReduceSum, "spatial_sum"))
+            .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
             .run_from_script();
         write_model_desc(&onnx, net);
     }
@@ -228,5 +230,40 @@ impl OpOverride for SameConv {
         imports.register("burn::nn::PaddingConfig2d");
         imports.register("burn::nn::conv::Conv2d");
         imports.register("burn::nn::conv::Conv2dConfig");
+    }
+}
+
+/// Routes ReduceSum / ReduceMax through `crate::conv::spatial_sum` / `spatial_max`: KataGo nets only reduce the
+/// last axis of a rank-3 `[N, C, H*W]` tensor without keepdims (global pooling and the mask's area), which on GPUs
+/// is one workgroup per row instead of burn's generic reduce (~90 us per call at batch 1 without autotune).
+struct SpatialReduce(NodeType, &'static str);
+
+impl OpOverride for SpatialReduce {
+    fn target(&self) -> NodeType {
+        self.0.clone()
+    }
+
+    fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
+        let (axes, keepdims) = match node {
+            Node::ReduceSum(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
+            Node::ReduceMax(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
+            _ => return Err(ProcessError::Custom("expected a ReduceSum or ReduceMax node".into())),
+        };
+        let rank = match &node.inputs()[0].ty {
+            burn_onnx::ext::ArgType::Tensor(t) => t.rank,
+            other => return Err(ProcessError::Custom(format!("{}: reduce of {other:?}", node.name()))),
+        };
+        if axes != "Static([2])" || keepdims || rank != 3 {
+            return Err(ProcessError::Custom(format!(
+                "{}: unsupported reduce (axes {axes}, keepdims {keepdims}, rank {rank})",
+                node.name()
+            )));
+        }
+        let input = ctx.arg(&node.inputs()[0]);
+        let output = arg_to_ident(&node.outputs()[0]);
+        let f = Ident::new(self.1, Span::call_site());
+        Ok(quote! {
+            let #output = crate::conv::#f(#input);
+        })
     }
 }

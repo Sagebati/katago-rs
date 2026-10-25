@@ -459,7 +459,7 @@ paths = [
   "cpp/neuralnet/openclincludes.h", "cpp/neuralnet/openclkernels.cpp", "cpp/neuralnet/openclkernels.h",
   "cpp/neuralnet/opencltuner.cpp", "cpp/neuralnet/opencltuner.h", "cpp/neuralnet/hgemm_wmma*.opencl",
 ]
-reason = "OpenCL backend and its kernels/tuner; GPU inference is burn + wgpu."
+reason = "OpenCL backend and its kernels/tuner; GPU inference is burn + wgpu. crates/katago-nn-burn/src/wino.rs follows openclkernels.cpp's Winograd transforms (F(4x4,3x3)) and openclbackend.cpp's ConvLayer (filter transform, 1x1 strided GEMM) as cubecl kernels: re-check it when these files change."
 
 [[ignored]]
 kind = "backend"

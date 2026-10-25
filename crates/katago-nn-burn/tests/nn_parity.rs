@@ -547,18 +547,54 @@ fn nn_parity_b18c384nbt_humanv0() {
 /// ownership, and 1e-4 relative (floor 1e-4) on the score-like outputs.
 #[cfg(feature = "wgpu")]
 fn check_wgpu(diffs: &Diffs) {
+  check_wgpu_with(diffs, 1e-4, 1e-4);
+}
+
+/// `abs` on probabilities, policy and ownership; `rel` of the largest magnitude (floor `abs`) on the score-like
+/// outputs.
+#[cfg(feature = "wgpu")]
+fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
-      0..=2 | 9 | 10 => 1e-4,
-      _ => (1e-4 * diffs.scale[i]).max(1e-4),
+      0..=2 | 9 | 10 => abs,
+      _ => (rel * diffs.scale[i]).max(abs),
     };
     assert!(diffs.max[i] <= tol, "wgpu {}: max diff {:.3e} > tolerance {:.3e}", name, diffs.max[i], tol);
+  }
+}
+
+/// The wgpu tests share the process-wide precision switch of wino.rs: one at a time.
+#[cfg(feature = "wgpu")]
+static GPU: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(feature = "wgpu")]
+fn gpu_lock() -> std::sync::MutexGuard<'static, ()> {
+  GPU.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// wino.rs in f16 for the guard's lifetime.
+#[cfg(feature = "wgpu")]
+struct Half;
+
+#[cfg(feature = "wgpu")]
+impl Half {
+  fn on() -> Self {
+    katago_nn_burn::wino::set_half(true);
+    Half
+  }
+}
+
+#[cfg(feature = "wgpu")]
+impl Drop for Half {
+  fn drop(&mut self) {
+    katago_nn_burn::wino::set_half(false);
   }
 }
 
 #[cfg(all(feature = "wgpu", feature = "net-b10c128"))]
 #[test]
 fn nn_parity_b10c128_wgpu() {
+  let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b10c128::Model>("wgpu", katago_nn_burn::bpk_path!("g170e-b10c128"), "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
   check_wgpu(&d);
 }
@@ -566,6 +602,7 @@ fn nn_parity_b10c128_wgpu() {
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt"))]
 #[test]
 fn nn_parity_b18c384nbt_wgpu() {
+  let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_wgpu(&d);
 }
@@ -573,6 +610,7 @@ fn nn_parity_b18c384nbt_wgpu() {
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt-humanv0"))]
 #[test]
 fn nn_parity_b18c384nbt_humanv0_wgpu() {
+  let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
     katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
@@ -581,6 +619,54 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
     usize::MAX,
   );
   check_wgpu(&d);
+}
+
+/// The 3x3 convs in f16 (wino.rs `set_half`, as the browser runs them on adapters with shader-f16).
+#[cfg(all(feature = "wgpu", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_wgpu_f16() {
+  let _gpu = gpu_lock();
+  let _half = Half::on();
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  check_f16(&d);
+}
+
+#[cfg(all(feature = "wgpu", feature = "net-b18c384nbt-humanv0"))]
+#[test]
+fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
+  let _gpu = gpu_lock();
+  let _half = Half::on();
+  let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
+    "wgpu",
+    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    "evals_human.txt",
+    "b18c384nbt-humanv0.out.bin",
+    usize::MAX,
+  );
+  check_f16(&d);
+}
+
+/// f16: no worse than upstream's own FP16. `katago testgpuerror` (v1.16.5 OpenCL, FP16 storage + compute, RX 6800
+/// XT, kata1-b18c384nbt, 2247 positions) gives these max errors vs its FP32: winrate 4.45%, lead 2.27, scoreMean
+/// 2.28, stWLError 4.32c, stScoreError 0.612, ownership 9.23c, top policy 5.04%. They bound the matching fields
+/// (policy per move by the top-policy delta); scoreMeanSq and varTimeLeft, which testgpuerror does not report, get
+/// 5% of their largest magnitude. Measured here (b18, 72 evals): winrate 2.5e-3, lead 0.21, stScoreError 0.16,
+/// policy 9.6e-3, ownership 1.3e-2.
+#[cfg(feature = "wgpu")]
+fn check_f16(diffs: &Diffs) {
+  for (i, name) in FIELDS.iter().enumerate() {
+    let tol = match i {
+      0..=2 => 0.0445,
+      3 => 2.28,
+      5 => 2.27,
+      7 => 0.0432,
+      8 => 0.612,
+      9 => 0.0504,
+      10 => 0.0923,
+      _ => 0.05 * diffs.scale[i],
+    };
+    assert!(diffs.max[i] <= tol, "wgpu f16 {}: max diff {:.3e} > tolerance {:.3e}", name, diffs.max[i], tol);
+  }
 }
 
 /// The layouts the generated graph cannot take are rejected like eigenbackend rejects its own
