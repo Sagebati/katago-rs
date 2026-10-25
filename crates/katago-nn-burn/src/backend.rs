@@ -280,7 +280,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     // parity tier). On the CPU (flex) it is rejected as before.
     if use_fp16 {
       #[cfg(feature = "wgpu-fixed-kernels")]
-      let gpu = !matches_flex(&self.device);
+      let gpu = !is_flex(&self.device);
       #[cfg(not(feature = "wgpu-fixed-kernels"))]
       let gpu = false;
       if !gpu {
@@ -487,11 +487,17 @@ async fn get_output_impl<N: Network>(
     ],
     1,
   );
-  let data = flat
-    .into_data_async()
-    .await
-    .map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e:?}")))?;
-  let data: Vec<f32> = data.try_into_vec::<f32>().map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e:?}")))?;
+  // PORT NOTE: natively the GPU readback blocks the calling thread until the batch is done (and HIP
+  // spins while it waits), which would stall every virtual thread of the search: it runs on a helper
+  // OS thread instead, so the search keeps playing out and filling the next batches meanwhile. The CPU
+  // backend computes in place and wasm32 has no threads: both read on this one.
+  // The data a GPU readback returns is backed lazily: the wait for the device happens where its bytes
+  // are first touched, so the helper thread converts it to a Vec itself.
+  #[cfg(not(target_arch = "wasm32"))]
+  let data: Vec<f32> = if is_flex(device) { read_here(flat).await } else { read_on_helper_thread(flat).await }
+    .map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
+  #[cfg(target_arch = "wasm32")]
+  let data: Vec<f32> = read_here(flat).await.map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
   // PORT NOTE: the CPU backend computes synchronously; yield so the other virtual threads run
   // before the results are delivered (PORTING.md §11). On wasm32 the yield is a macrotask (a
   // resolved-by-setTimeout Promise), so the host's event loop (timers, worker messages, UI) runs
@@ -601,9 +607,30 @@ async fn get_output_impl<N: Network>(
   Ok(())
 }
 
+
+/// The tensor's values, read on this thread.
+async fn read_here(tensor: Tensor<2>) -> Result<Vec<f32>, String> {
+  let data = tensor.into_data_async().await.map_err(|e| format!("{e:?}"))?;
+  data.try_into_vec::<f32>().map_err(|e| format!("{e:?}"))
+}
+
+/// The tensor's values, read (and waited for) on a fresh OS thread, awaited without blocking this one
+/// (see get_output_impl).
+#[cfg(not(target_arch = "wasm32"))]
+async fn read_on_helper_thread(tensor: Tensor<2>) -> Result<Vec<f32>, String> {
+  let (tx, rx) = futures::channel::oneshot::channel();
+  std::thread::Builder::new()
+    .name("burn-readback".to_string())
+    .spawn(move || {
+      let read = tensor.try_into_data().map_err(|e| format!("{e:?}")).and_then(|d| d.try_into_vec::<f32>().map_err(|e| format!("{e:?}")));
+      let _ = tx.send(read);
+    })
+    .map_err(|e| format!("could not start the readback thread: {e}"))?;
+  rx.await.map_err(|_| "the readback thread died".to_string())?
+}
+
 /// Whether `device` is burn flex (the CPU backend).
-#[cfg(feature = "wgpu-fixed-kernels")]
-fn matches_flex(device: &Device) -> bool {
+fn is_flex(device: &Device) -> bool {
   #[cfg(feature = "flex")]
   if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
     return true;

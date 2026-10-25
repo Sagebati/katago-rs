@@ -98,6 +98,34 @@ fusion took out ~95 of those kernels. Left on the table:
 - `just web-test-b18`: 25/25 (goldens, cache, kernels, limits, throughput f32 and f16, f16 vs f32 bound,
   terminate, CPU guard). `just web-test`: 60/60.
 
+## katago-rs as katago-ws's engine (native ROCm)
+
+`katago-rs analysis -backend rocm` with `burnUseFP16 = true` behind katago-ws (a wrapper puts `-backend rocm`
+after the subcommand), katago-ws's quick bench: 6 games, every turn, 100 visits, 4 games in flight, b18c384nbt.
+
+| engine | positions/s | vs KataGo | GPU busy | best move vs KataGo |
+|---|---|---|---|---|
+| stock KataGo 1.16.5 OpenCL FP16 (two runs: the noise floor) | 7.1 | 1.00x | 85% | 84.5% (run to run) |
+| katago-rs, first try | 7.6 | 1.06x | 53% | 83.4% |
+| + fast tanhf | 11.4 | 1.60x | 82% | 82.7% |
+| + readback off the search thread | 12.3 | 1.72x | 97% | 83.8% |
+| + 8 NN server threads, 256 analysis threads | **13.4** | **1.87x** | 97% | 84.2% |
+
+Analysis quality is at the noise floor (win rate drift 0.002, score lead 0.19 vs KataGo's own 0.18 run to
+run). What it took, from perf profiles of the engine thread (everything in katago-rs's analysis engine runs on
+one OS thread, the wasm design):
+
+- `port::math::tanhf` (glibc-bit-exact double-double) was 35% of the thread: ownership post-processing, 361
+  calls per net output at 1.8 us each. Now an f64 fast path with an exact rounding check (25 ns), bit-identical
+  over all 2^32 inputs.
+- 37% was HIP spin-waiting for each batch (cubecl-hip `EventFence::wait_sync`), which stalled every search. The
+  readback (and the wait, which happens where the lazily-backed bytes are first touched) now runs on a helper
+  thread natively; the search keeps filling the next batches and the GPU stays busy.
+- With the GPU saturated, more batches in flight (8 servers) closed the gap to two engine processes (13.5).
+
+Compared against stock KataGo; katago-ws's `patches/` build (per-thread OpenCL queues) is faster than stock and
+was not benchmarked here.
+
 ## Review
 
 An independent review of the branch found no result-corrupting defect in the shipped shapes, and four issues,
