@@ -156,13 +156,27 @@ pub const HELP_TEXT: &str = concat!(
 );
 
 /// `Version::getKataGoVersionFullInfo()` as TCLAP's StdOutput::version prints it.
-/// PORT NOTE: no compile time is recorded; the backend line names burn.
+/// PORT NOTE: no compile time is recorded; the backend line names burn and the `-backend` values this build
+/// accepts (katago-ws reports them).
 pub fn version_text() -> String {
   format!(
-    "\nanalysis  version: {}\nGit revision: {}\nUsing burn backend (katago-rs)\n\n\n",
+    "\nanalysis  version: {}\nGit revision: {}\nUsing burn backend (katago-rs: {})\n\n\n",
     katago_core::command::analysis::KATAGO_VERSION_FOR_HELP,
-    katago_core::command::analysis::GIT_REVISION
+    katago_core::command::analysis::GIT_REVISION,
+    compiled_backends().join(", ")
   )
+}
+
+/// The `-backend` values compiled into this build.
+pub fn compiled_backends() -> Vec<&'static str> {
+  let mut out = Vec::new();
+  #[cfg(feature = "flex")]
+  out.push("flex");
+  #[cfg(feature = "wgpu")]
+  out.push("wgpu");
+  #[cfg(feature = "rocm")]
+  out.push("rocm");
+  out
 }
 
 /// `istringstream is(s); while(is.good()) { if(is.peek() != EOF) is >> int; else break; n++; }` (TCLAP
@@ -605,6 +619,12 @@ impl CliLogger {
 
 impl log::Log for CliLogger {
   fn enabled(&self, metadata: &log::Metadata) -> bool {
+    // The GPU stack (burn, cubecl and its pliron IR, wgpu, naga) logs kernel IR at Info: one analysis run wrote a
+    // 2.6M-line log file. Only its warnings and errors reach the engine's log.
+    const GPU_STACK: [&str; 6] = ["burn", "cubecl", "cubek", "wgpu", "naga", "pliron"];
+    if GPU_STACK.iter().any(|p| metadata.target().starts_with(p)) {
+      return metadata.level() <= log::Level::Warn;
+    }
     metadata.level() <= log::Level::Info
   }
   fn log(&self, record: &log::Record) {
