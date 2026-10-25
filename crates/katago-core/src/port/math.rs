@@ -798,7 +798,36 @@ fn dd_to_f32(v: Dd) -> f32 {
 
 /// C `tanhf(float)`, bit-identical to glibc 2.44 (CORE-MATH, correctly rounded) on every
 /// target. Use instead of `f32::tanh`.
+///
+/// PERF(port): [`tanhf_reference`] (double-double, ~1.8 us a call) was 35% of the engine thread in a
+/// native GPU analysis run (NNEvaluator's ownership, 361 calls per net output). glibc's tanhf is
+/// correctly rounded, so any correctly rounded result has its bits: the f64 `tanh` of the platform
+/// (glibc, or Rust's libm on wasm32: a few 2^-52 relative error) is rounded to f32 when it lies more
+/// than 2^-45 relative from every f32 rounding boundary, which no error that small can cross; the
+/// rest (about one input in 2^20) takes the reference. Bit-identical to it over all 2^32 inputs
+/// (tests/math_tanhf.rs `tanhf_fast_path_exhaustive`, `--run-ignored only`).
 pub fn tanhf(x: f32) -> f32 {
+  let ax: f32 = x.abs();
+  // The reference's own early returns (NaN, below 2^-13, 10 and above) are exact and cheap.
+  if !(ax >= f32::from_bits(0x39000000) && ax < 10.0f32) {
+    return tanhf_reference(x);
+  }
+  let r: f64 = (ax as f64).tanh();
+  // r is in [2^-13, 1): its nearest f32 and the two rounding boundaries around it (exact in f64).
+  let f: f32 = r as f32;
+  let fd: f64 = f as f64;
+  let below: f64 = (fd + f32::from_bits(f.to_bits() - 1) as f64) * 0.5;
+  let above: f64 = (fd + f32::from_bits(f.to_bits() + 1) as f64) * 0.5;
+  let margin: f64 = r * f64::from_bits(0x3d20000000000000); // 0x1p-45
+  if r - below > margin && above - r > margin {
+    return if x > 0.0 { f } else { -f };
+  }
+  tanhf_reference(x)
+}
+
+/// [`tanhf`]'s correctly rounded double-double evaluation: the port of glibc 2.44's tanhf, and the
+/// fallback of its fast path.
+pub fn tanhf_reference(x: f32) -> f32 {
   if x.is_nan() {
     return x + x;
   }

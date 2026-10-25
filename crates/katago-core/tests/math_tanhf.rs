@@ -114,3 +114,37 @@ fn tanhf_vs_host_glibc() {
   assert_eq!(bad, 0, "port::math::tanhf differs from host glibc");
   eprintln!("tanhf_vs_host_glibc: {} inputs", n);
 }
+
+/// Every f32 input: tanhf (fast f64 path + rounding check) is bit-identical to tanhf_reference (the
+/// double-double port of glibc's correctly rounded tanhf). ~4 min natively on 12 threads (release); not on wasm32.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+#[ignore = "exhaustive (2^32 inputs): cargo nextest run -p katago-core --test math_tanhf --run-ignored only"]
+fn tanhf_fast_path_exhaustive() {
+  let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4) as u64;
+  let chunk = (1u64 << 32).div_ceil(threads);
+  let mismatches: u64 = std::thread::scope(|s| {
+    let handles: Vec<_> = (0..threads)
+      .map(|t| {
+        s.spawn(move || {
+          let (lo, hi) = (t * chunk, ((t + 1) * chunk).min(1u64 << 32));
+          let mut bad = 0u64;
+          for bits in lo..hi {
+            let x = f32::from_bits(bits as u32);
+            let (a, b) = (math::tanhf(x), math::tanhf_reference(x));
+            if a.to_bits() != b.to_bits() && !(a.is_nan() && b.is_nan()) {
+              if bad < 10 {
+                eprintln!("tanhf mismatch at {bits:#010x}: fast {:#010x} reference {:#010x}", a.to_bits(), b.to_bits());
+              }
+              bad += 1;
+            }
+          }
+          bad
+        })
+      })
+      .collect();
+    handles.into_iter().map(|h| h.join().unwrap()).sum()
+  });
+  eprintln!("tanhf_fast_path_exhaustive: 4294967296 inputs, {mismatches} mismatches");
+  assert_eq!(mismatches, 0);
+}
