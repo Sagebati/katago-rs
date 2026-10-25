@@ -79,17 +79,13 @@ impl log::Log for SearchLogger {
 
 static LOGGER: SearchLogger = SearchLogger;
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn install_logger_and_clock() {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
     log::set_logger(&LOGGER).expect("no other logger in this test binary");
     log::set_max_level(log::LevelFilter::Trace);
   });
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
 }
 
 /// debugSkipNeuralNet: the backend is never reached.

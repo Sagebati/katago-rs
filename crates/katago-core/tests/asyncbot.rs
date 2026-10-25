@@ -51,10 +51,6 @@ impl NeuralNet for NoBackend {
   fn get_output<'a>(&'a self, _: &'a mut dyn ComputeHandle, _: &'a mut dyn InputBuffers, _: i32, _: &'a [Rc<NNResultBuf>], _: &'a mut [NNOutput]) -> LocalBoxFuture<'a, Result<(), KataError>> { panic!() }
 }
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 /// Deterministic "sleep": yields 1 + floor(seconds*100) times.
 fn yield_sleep(seconds: f64) -> LocalBoxFuture<'static, ()> {
   let n = 1 + if seconds.is_finite() && seconds > 0.0 { (seconds * 100.0) as usize } else { 0 };
@@ -70,7 +66,7 @@ thread_local! { static SLEEP_CALLS: Cell<usize> = const { Cell::new(0) }; }
 fn init() {
   Board::init_hash();
   katago_core::neuralnet::nninputs::ScoreValue::init_tables();
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
   set_sleep(yield_sleep);
 }
 

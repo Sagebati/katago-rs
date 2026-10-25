@@ -7,6 +7,9 @@
 //! On a hash mismatch, set BHFUZZ_DUMP=<path> to write the Rust trace of the first differing game,
 //! and diff it against `boardhistory_fuzz games <g+1> 1 | sed -n '/^G <g> /,$p'`.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_range_loop)]
+
 mod common;
 
 use common::Cases;

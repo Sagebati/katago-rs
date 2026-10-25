@@ -7,18 +7,11 @@ use sha2::Digest;
 use sha2::Sha256;
 use sha2::Sha512;
 
-/// The bytes a `const char*` would see: up to the first NUL.
-fn c_str_bytes(msg: &str) -> &[u8] {
-  let b = msg.as_bytes();
-  match b.iter().position(|&c| c == 0) {
-    Some(p) => &b[..p],
-    None => b,
-  }
-}
+use crate::port::cpp;
 
 /// `SHA2::get256(const char* msg, uint64_t hash[4])`: big-endian u64 words.
 pub fn sha2_get256_u64(msg: &str) -> [u64; 4] {
-  let d = Sha256::digest(c_str_bytes(msg));
+  let d = Sha256::digest(cpp::c_str(msg).as_bytes());
   let mut hash = [0u64; 4];
   for (i, h) in hash.iter_mut().enumerate() {
     *h = u64::from_be_bytes(d[8 * i..8 * i + 8].try_into().expect("8 bytes"));
@@ -28,7 +21,12 @@ pub fn sha2_get256_u64(msg: &str) -> [u64; 4] {
 
 /// `SHA2::get256(const char* msg, char hash[65])`: lowercase hex.
 pub fn sha2_get256_hex(msg: &str) -> String {
-  let d = Sha256::digest(c_str_bytes(msg));
+  sha2_get256_hex_bytes(cpp::c_str(msg).as_bytes())
+}
+
+/// [`sha2_get256_hex`] of raw bytes (no NUL truncation): lowercase hex of the SHA-256 of `data`.
+pub fn sha2_get256_hex_bytes(data: &[u8]) -> String {
+  let d = Sha256::digest(data);
   let mut s = String::with_capacity(64);
   for b in d.iter() {
     s.push_str(&format!("{:02x}", b));
@@ -38,7 +36,7 @@ pub fn sha2_get256_hex(msg: &str) -> String {
 
 /// `SHA2::get512(const char* msg, char hash[129])`: lowercase hex.
 pub fn sha2_get512_hex(msg: &str) -> String {
-  let d = Sha512::digest(c_str_bytes(msg));
+  let d = Sha512::digest(cpp::c_str(msg).as_bytes());
   let mut s = String::with_capacity(128);
   for b in d.iter() {
     s.push_str(&format!("{:02x}", b));

@@ -289,16 +289,12 @@ fn run_q(q: &Search, line: &str) -> String {
   format!("{} = {}\n", inputs, sup as i32)
 }
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn search_select_diff() {
   common::init();
   ScoreValue::init_tables();
-  katago_core::core::timer::set_clock(fake_clock);
+  katago_core::core::timer::set_clock(common::fixed_clock);
   let expected: String = fixture("oracle", "search_select_diff.txt");
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());

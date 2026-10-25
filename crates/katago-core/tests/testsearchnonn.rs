@@ -138,18 +138,13 @@ impl log::Log for CoutLogger {
 
 static LOGGER: CoutLogger = CoutLogger;
 
-/// Deterministic clock for `ClockTimer` (the search needs one installed; no time limit is set anywhere here).
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn install_logger_and_clock() {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
     log::set_logger(&LOGGER).expect("no other logger in this test binary");
     log::set_max_level(log::LevelFilter::Trace);
   });
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
 }
 
 //------------------------------------------------------------------------------------------------

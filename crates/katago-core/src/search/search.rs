@@ -292,7 +292,7 @@ impl Search {
   pub(crate) const POLICY_ILLEGAL_SELECTION_VALUE: f64 = -1e50;
   pub(crate) const FUTILE_VISITS_PRUNE_VALUE: f64 = -1e40;
   // Only referenced by a commented-out line in searchexplorehelpers.cpp upstream.
-  #[allow(dead_code)]
+  #[expect(dead_code, reason = "mirrors upstream's Search::EVALUATING_SELECTION_VALUE_PENALTY, unused there too")]
   pub(crate) const EVALUATING_SELECTION_VALUE_PENALTY: f64 = 1e20;
 
   /// upstream: Search::Search(const SearchParams&, NNEvaluator*, Logger*, const std::string&) (search.cpp)

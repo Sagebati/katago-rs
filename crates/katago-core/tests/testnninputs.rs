@@ -12,6 +12,9 @@
 //! other unit tier). The upstream `expect(name, actualNHWC, actualNCHW)` consistency checks run too.
 #![allow(clippy::needless_range_loop, clippy::too_many_arguments)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::field_reassign_with_default, clippy::type_complexity)]
+
 mod common;
 
 use std::collections::BTreeMap;

@@ -11,6 +11,9 @@
 //! atan/tan-based ones within 1e-12 relative, DECISIONS.md D13). Runs natively and on wasm32.
 #![allow(clippy::needless_range_loop)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::field_reassign_with_default)]
+
 mod common;
 
 use std::collections::HashMap;

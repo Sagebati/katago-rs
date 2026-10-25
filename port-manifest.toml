@@ -2,9 +2,10 @@
 #
 # Upstream is KataGo, vendored as the git submodule `upstream/KataGo` (never edited).
 # This file says, for every file under `upstream/KataGo/cpp/`, either which Rust (or
-# tool) module ports it or why it is not ported. `cargo xtask upstream-diff --to <tag>`
-# uses it to turn an upstream release into a list of modules (and, via the
-# `/// upstream: Class::method (file.cpp)` tags, functions) to re-port.
+# tool) module ports it or why it is not ported. The planned (not yet written) `xtask
+# upstream-diff --to <tag>` will use it to turn an upstream release into a list of modules
+# (and, via the `/// upstream: Class::method (file.cpp)` tags, functions) to re-port. No xtask
+# crate exists yet; the Python stand-ins are tools/manifest_check.py and tools/extract_*.py.
 #
 # Paths in `upstream`, `secondary` and `paths` are relative to `upstream/KataGo` and start
 # with `cpp/`. Rust paths are relative to the repo root.
@@ -30,7 +31,7 @@
 #              behind their params) | "fixture" (consumed as test data, never ported)
 #   reason     one line
 #
-# INVARIANT (checked by `python3 -I tools/manifest_check.py`, run in CI):
+# INVARIANT (checked by `python3 -I tools/manifest_check.py`, run by `just manifest-check`; there is no CI):
 #   every file under upstream/KataGo/cpp/ (recursively, every extension, nothing
 #   excluded) is OWNED exactly once: either it is listed in exactly one [[module]]
 #   `upstream` list, or it matches exactly one [[ignored]] entry, never both.
@@ -344,7 +345,7 @@ notes = "PrintTreeOptions (all of searchprint.h; searchprint.cpp only includes i
 rust = "crates/katago-core/src/search/subtreevaluebiastable.rs"
 upstream = ["cpp/search/subtreevaluebiastable.cpp", "cpp/search/subtreevaluebiastable.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "compiles"
+status = "done"
 phase = "M3"
 notes = "mutex pool and spin lock removed (PORT NOTE), get takes &self (RefCell), file statics in OnceLock, RNG order unchanged. Oracle tests/subtreevaluebiastable_oracle.rs."
 
@@ -352,7 +353,7 @@ notes = "mutex pool and spin lock removed (PORT NOTE), get takes &self (RefCell)
 rust = "crates/katago-core/src/search/localpattern.rs"
 upstream = ["cpp/search/localpattern.cpp", "cpp/search/localpattern.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "compiles"
+status = "done"
 phase = "M3"
 notes = "all of LocalPatternHasher. Oracle tests/localpattern_oracle.rs."
 
@@ -679,7 +680,7 @@ paths = [
 ]
 reason = "Configs for gtp/match/contribute/book/training."
 
-# --- tests: the oracle. Consumed as fixtures (xtask extract-tests, search parity), never ported.
+# --- tests: the oracle. Consumed as fixtures (planned xtask extract-tests, today tools/extract_*.py; search parity), never ported.
 
 [[ignored]]
 kind = "fixture"
@@ -689,7 +690,7 @@ paths = [
   "cpp/tests/testsymmetries.cpp", "cpp/tests/testcommon.cpp", "cpp/tests/tests.h",
   "cpp/tests/testconfig.cpp", "cpp/tests/testtime.cpp",
 ]
-reason = "Unit tests whose R\"%%(...)%%\" expected blocks / asserted values become M1-M3 fixtures (xtask extract-tests); testconfig and testtime cover config_parser.rs and timecontrols.rs."
+reason = "Unit tests whose R\"%%(...)%%\" expected blocks / asserted values become M1-M3 fixtures (tools/extract_raw_blocks.py; planned xtask extract-tests); testconfig and testtime cover config_parser.rs and timecontrols.rs."
 
 [[ignored]]
 kind = "fixture"

@@ -1,6 +1,10 @@
 //! core/hash bit-exactness against the real C++ (fixtures/upstream-v1.16.5/unit/oracle/hash.txt).
 //! Mirrors `hashMode()` in oracle.cpp.
 
+// Upstream's oracle compares a hash with itself (`h2 <= h2`) to cover operator<=; clippy flags that
+// only when linting for wasm32-unknown-unknown.
+#![allow(clippy::eq_op)]
+
 mod common;
 
 use common::Cases;

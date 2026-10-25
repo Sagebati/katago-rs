@@ -652,7 +652,7 @@ fn parse_rules_helper(s_orig: &str, allow_komi: bool) -> Result<Rules, KataError
     // PORT NOTE: the try body becomes a closure returning Result (PORTING.md §7).
     let try_result: Result<(), KataError> = (|| {
       let input: Value = nlohmann::parse(s_orig)?;
-      #[allow(unused_variables)]
+      #[expect(unused_variables, reason = "mirrors the unused `string s;` in the JSON branch of upstream parseRulesHelper (rules.cpp)")]
       let s: String = String::new();
       // PORT NOTE: nlohmann's object is a std::map: iteration is in sorted key order, same as
       // serde_json's Map without preserve_order. A non-object top level cannot start with '{'.

@@ -7,6 +7,9 @@
 //! ScoreValue uses atan/tan (port::math::{atan, tan}: platform libm, <= 1 ulp from glibc on wasm,
 //! DECISIONS.md D13); the printed precision (6 significant digits, "%.3f") hides that.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_range_loop)]
+
 mod common;
 
 use common::Cases;

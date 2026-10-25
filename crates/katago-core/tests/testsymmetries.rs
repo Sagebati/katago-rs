@@ -7,6 +7,9 @@
 //! tools/extract_runoutputtests.py).
 #![allow(clippy::needless_range_loop, clippy::bool_comparison)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::type_complexity)]
+
 mod common;
 
 use std::fmt::Write;

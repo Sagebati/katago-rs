@@ -4,6 +4,9 @@
 //! 2. Strings and JSON against the real C++ (fixtures/upstream-v1.16.5/unit/oracle/rules.txt).
 //!    Mirrors `rulesMode()` in oracle.cpp.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_range_loop, clippy::too_many_arguments)]
+
 mod common;
 
 use common::Cases;

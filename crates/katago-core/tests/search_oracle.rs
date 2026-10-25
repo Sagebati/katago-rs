@@ -124,10 +124,6 @@ impl log::Log for SearchLogger {
 
 static LOGGER: SearchLogger = SearchLogger;
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn install_logger_clock_and_hook() {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
@@ -153,7 +149,7 @@ fn install_logger_clock_and_hook() {
       }));
     }
   });
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
 }
 
 /// Runs `f`, returning the panic message instead of unwinding (only the capturing threads' panics are swallowed).
@@ -1360,10 +1356,7 @@ const NUM_MT_CASES: usize = 36;
 /// The fixture text. For exploration only, the environment variable SEARCH_ORACLE_FILE names another output of
 /// search_nonn.cpp (e.g. `ORACLE_SEED=x ORACLE_STRESS_ONLY=2000 search_nonn`); then the case count is not checked.
 fn fixture_text() -> (String, bool) {
-  if let Ok(p) = std::env::var("SEARCH_ORACLE_FILE") {
-    return (std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("{}: {}", p, e)), true);
-  }
-  (fixture("oracle", "search_nonn.txt"), false)
+  common::fixture_or_env("SEARCH_ORACLE_FILE", "oracle", "search_nonn.txt")
 }
 
 struct Mismatch {

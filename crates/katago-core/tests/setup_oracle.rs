@@ -11,8 +11,6 @@
 //! Differences the test accounts for (all port-side, none changes a result):
 //! - `Setup::getBackendPrefixes` ends with "burn" (katago-nn-burn's backend; PORT NOTE in setup.rs). The oracle
 //!   generator leaves "burn*" keys out of the cases, so the only place it shows is the PREFIXES line.
-//! - Pending: none. (Until M8 the loadParams ops (P) of cases that set `humanSLProfile` were left out, because
-//!   SGFMetadata::get_profile only knew the empty profile; the PENDING_* lists stay for future gaps.)
 //!
 //! Not a port of upstream code.
 
@@ -40,14 +38,6 @@ use katago_core::program::setup::NNEvaluatorHost;
 use katago_core::program::setup::Setup;
 use katago_core::program::setup::setup_for_t;
 use katago_core::search::searchparams::SearchParams;
-
-/// Cases whose loadParams ops (P) are not compared yet, with the reason (none since M8 ported
-/// SGFMetadata::get_profile: the configs/gtp_human* cases are compared).
-/// A name is a prefix of the case name in setup_oracle_cases.txt ("#mutN" variants follow their config).
-/// `pending_entries_match_cases` fails when an entry matches nothing.
-const PENDING_M8_NAME_PREFIXES: &[&str] = &[];
-/// Fuzzed cases (by number in setup_oracle_cases.txt) with the same reason.
-const PENDING_M8_CASES: &[i32] = &[];
 
 thread_local! {
   static LOGS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
@@ -292,31 +282,6 @@ fn parse_cases(text: &str) -> Vec<Case> {
   cases
 }
 
-fn is_pending(c: &Case) -> bool {
-  PENDING_M8_CASES.contains(&c.n) || PENDING_M8_NAME_PREFIXES.iter().any(|p| c.name.starts_with(p))
-}
-
-/// Removes the P ops of the pending cases from an oracle output (the P ops are the last of a case: the records
-/// from the first "P ..." line up to the next case).
-fn drop_pending(expected: &str, cases: &[Case]) -> String {
-  let mut o = String::new();
-  let mut pending_case = false;
-  let mut in_p = false;
-  for l in expected.split_inclusive('\n') {
-    if let Some(rest) = l.strip_prefix("C ") {
-      let n: i32 = rest.split(' ').next().unwrap().parse().unwrap();
-      pending_case = cases.iter().any(|c| c.n == n && is_pending(c));
-      in_p = false;
-    } else if pending_case && l.starts_with("P ") {
-      in_p = true;
-    }
-    if !in_p {
-      o.push_str(l);
-    }
-  }
-  o
-}
-
 /// The ops of setup_oracle.cpp, through the port. `nn_only` is the oracle's "nn" mode.
 fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
   common::init();
@@ -525,7 +490,7 @@ fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
         }
       }
     }
-    if !nn_only && c.nn != 2 && !is_pending(c) {
+    if !nn_only && c.nn != 2 {
       for sf in 0..6 {
         for hh in 0..2 {
           for single in 0..2 {
@@ -561,14 +526,12 @@ fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
 fn check(prefix: &str, expected_file: &str, nn_only: bool, label: &'static str) {
   let cases = parse_cases(&fixture("oracle", "setup_oracle_cases.txt"));
   let expected = fixture("oracle", expected_file);
-  let npending = cases.iter().filter(|c| is_pending(c)).count();
   let actual = run_oracle(&cases, prefix, nn_only);
-  compare_lines(label, &actual, &drop_pending(&expected, &cases));
+  compare_lines(label, &actual, &expected);
   let mut count = Cases::new(label);
   for _ in &cases {
     count.ran();
   }
-  crate::report!("{label}: P ops of {} pending (M8) cases left out", npending);
 }
 
 /// setup.cpp as the "dummybackend" backend (NHWC inputs), all ops.
@@ -583,17 +546,4 @@ fn setup_oracle_dummybackend() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn setup_oracle_opencl() {
   check("opencl", "setup_oracle_opencl.txt", true, "setup_oracle::opencl");
-}
-
-/// Every pending entry names a case that exists (a stale entry would silently skip nothing).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-fn pending_entries_match_cases() {
-  let cases = parse_cases(&fixture("oracle", "setup_oracle_cases.txt"));
-  for p in PENDING_M8_NAME_PREFIXES {
-    assert!(cases.iter().any(|c| c.name.starts_with(p)), "pending prefix {p} matches no case");
-  }
-  for n in PENDING_M8_CASES {
-    assert!(cases.iter().any(|c| c.n == *n), "pending case {n} does not exist");
-  }
 }

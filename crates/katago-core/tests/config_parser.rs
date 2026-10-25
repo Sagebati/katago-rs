@@ -11,6 +11,7 @@
 
 #![allow(clippy::needless_range_loop, clippy::manual_range_contains)]
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -25,15 +26,6 @@ use common::fixture;
 use katago_core::core::config_parser::ConfigFileReader;
 use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
-
-macro_rules! wasm_test {
-  ($(#[$m:meta])* fn $name:ident() $body:block) => {
-    $(#[$m])*
-    #[cfg_attr(not(target_arch = "wasm32"), test)]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-    fn $name() $body
-  };
-}
 
 // ===================================================================== log capture (the oracle passes a NULL logger)
 

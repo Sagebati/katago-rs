@@ -38,7 +38,7 @@ pub fn search_is_ladder_captured(&mut self, loc: Loc, defender_first: bool, buf:
 
 Tag format: `/// upstream: <Qualified::name> (<file>)`, one per fn, method, struct, const group
 or static. Overloads get the same qualified name. For file-scope statics use
-`(file.cpp) static`. `xtask upstream-diff` greps these tags, so a missing tag is a bug.
+`(file.cpp) static`. The planned `xtask upstream-diff` (not written yet) greps these tags, so a missing tag is a bug.
 
 **Overloads.** (1) A `const char*`/`const std::string&` pair collapses into one `&str` fn.
 (2) A const/non-const pair (`getNNOutput()`, `getNNOutput() const`) becomes one `&self` fn.
@@ -429,7 +429,7 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 
 | Tier | Oracle | Comparison |
 |---|---|---|
-| Unit (M1) | `R"%%(…)%%"` expected blocks in `cpp/tests/test*.cpp`, extracted by `xtask extract-tests`. The Rust `#[test]` replays the same calls in the same order and prints with the ported printers (`Board::printBoard`, `BoardHistory::printDebugInfo`, `NNOutput::debugPrint`). That's why printers are ported exactly. | string-equal after `TestCommon::expect`-style trimming |
+| Unit (M1) | `R"%%(…)%%"` expected blocks in `cpp/tests/test*.cpp`, extracted by `tools/extract_raw_blocks.py` (stand-in for the planned `xtask extract-tests`). The Rust `#[test]` replays the same calls in the same order and prints with the ported printers (`Board::printBoard`, `BoardHistory::printDebugInfo`, `NNOutput::debugPrint`). That's why printers are ported exactly. | string-equal after `TestCommon::expect`-style trimming |
 | Features (M2) | `build/eigen/katago` + the dump patch: `rowSpatial`/`rowGlobal`/hashes for ~2k positions | bit-exact |
 | NN (M2) | the upstream NNEvaluator on the Eigen build (`nn/oracle/nneval_eigen.cpp`, agrees with `kata-raw-nn`) | after post-processing: flex ≤1e-5 policy/winrate, ≤2e-5 ownership (tanh of final-conv accumulation-order noise, measured: no bias, mean 2e-7), ≤5e-4 score lead/mean; wgpu ≤2e-4 logits / ≤1e-4 winrate, ownership |
 | Search (M3) | `cpp/tests/analysis/*.txt` queries through the ported analysis path. Primary oracle: our **Eigen** rerun under `runcmdtests.sh` overrides. Secondary: upstream `tests/results/analysis/*.stdout`, which were produced on CUDA with b6c96 (see `.stderr`), so allow float tolerance. | identical moves, order and visits; values ±1e-4; JSON key order and format exact |
@@ -482,14 +482,18 @@ Known divergences are listed with reasons in the test, which fails when one disa
 
 1. Bump the submodule to the new tag in a branch. Run `python3 -I tools/manifest_check.py`:
    it fails on new, removed or unmapped upstream files. Map them in `port-manifest.toml`.
-2. Run `cargo xtask upstream-diff --to <tag>`. It produces a per-module `git diff --stat <synced>..<tag>`
+2. Run `cargo xtask upstream-diff --to <tag>` (planned: no xtask crate exists yet, so until
+   it does, diff by hand with `git diff --stat <synced>..<tag>` per module). It produces a per-module `git diff --stat <synced>..<tag>`
    and the changed C++ functions (tree-sitter), resolved to Rust fns through the `/// upstream:` tags.
 3. Re-port **only the listed functions**, with the same agent loop (§2), following this
    guide. New functions get tags. Deleted functions are deleted. A renamed upstream fn is
    renamed in Rust.
-4. Regenerate params and fixtures: `xtask gen-params` (fails on new `SearchParams` keys),
-   `xtask fixtures --upstream <tag>`, `xtask extract-tests`. Commit the fixtures in their own commit.
-5. Run Phase C. For each module that is green again, `xtask bump-synced <module>`: set
+4. Regenerate params and fixtures: planned `xtask gen-params` (fails on new `SearchParams` keys),
+   `xtask fixtures --upstream <tag>`, `xtask extract-tests` (today: `tools/extract_raw_blocks.py`,
+   `tools/extract_runoutputtests.py` and the oracle programs under `fixtures/<tag>/unit/oracle/`).
+   Commit the fixtures in their own commit.
+5. Run Phase C. For each module that is green again, planned `xtask bump-synced <module>` (today
+   by hand): set
    `synced` to the new commit, and update `status`/`notes` (new divergences, skipped fns).
 6. If a rule in this guide changed (a new upstream idiom), update PORTING.md and
    OWNERSHIP.tsv **first**, then re-port.

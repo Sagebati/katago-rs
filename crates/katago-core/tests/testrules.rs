@@ -11,6 +11,7 @@
 // loops), as in lib.rs (PORTING.md §11b); test crates do not inherit the lib's list.
 #![allow(clippy::bool_comparison, clippy::needless_range_loop, clippy::needless_late_init, clippy::manual_memcpy)]
 
+#[macro_use]
 mod common;
 
 use std::fmt::Write as _;
@@ -26,15 +27,6 @@ use katago_core::game::boardhistory::*;
 use katago_core::game::rules::Rules;
 use katago_core::port::fmt::cpp_ostream_f64;
 use katago_core::testAssert;
-
-macro_rules! wasm_test {
-  ($(#[$m:meta])* fn $name:ident() $body:block) => {
-    $(#[$m])*
-    #[cfg_attr(not(target_arch = "wasm32"), test)]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-    fn $name() $body
-  };
-}
 
 // ===================================================================== helpers (testrules.cpp statics and runRulesTests lambdas)
 
