@@ -21,6 +21,13 @@ Graph I/O (NCHW, batch dimension "N" is dynamic):
     ownership     float32 [N, numOwnershipChannels, pos_len, pos_len]  (pre-tanh)
 
 Channel 0 of bin_input is the on-board mask; all global pooling is mask-aware.
+
+Model version 17 (KataGo v1.17+) and transformer blocks (which can also appear in v15 files):
+transformer attention / SwiGLU FFN blocks (also nested inside nested-bottleneck blocks) run on
+tokens [N, S=H*W, C]; attention ignores off-board keys through an additive softmax bias; RoPE
+tables are constants for the fixed pos_len x pos_len grid (positions are grid coordinates, as in
+eigenbackend with gtpForceMaxNNSize); GQA by viewing query heads grouped per kv head. RMSNorm
+trunk tips (TRUNK_NORM_KIND_RMSNORM, spatial or per-position) and ACTIVATION_SILU are supported.
 """
 
 import argparse
@@ -39,9 +46,17 @@ OPSET = 17
 ACTIVATION_IDENTITY = "ACTIVATION_IDENTITY"
 ACTIVATION_RELU = "ACTIVATION_RELU"
 ACTIVATION_MISH = "ACTIVATION_MISH"
+ACTIVATION_SILU = "ACTIVATION_SILU"  # model version 17
 
-LATEST_MODEL_VERSION_IMPLEMENTED = 16
+LATEST_MODEL_VERSION_IMPLEMENTED = 17
 OLDEST_MODEL_VERSION_IMPLEMENTED = 3
+
+TRUNK_NORM_KIND_STANDARD = 0  # BatchNorm trunk tip
+TRUNK_NORM_KIND_RMSNORM = 1   # RMSNormLayerDesc trunk tip (spatial or per-position)
+
+# Attention softmax bias for off-board keys: 0 on board, -ATTN_MASK_BIG off board (eigenbackend skips
+# off-board keys; exp(score - BIG - rowmax) underflows to exactly 0 in float32). Representable in fp16.
+ATTN_MASK_BIG = 3.0e4
 
 
 # ---------------------------------------------------------------------------
@@ -176,8 +191,8 @@ def parse_bn(r: ModelReader) -> BatchNormLayerDesc:
     has_bias = r.bool()
     if c < 1:
         raise ValueError(f"{name}: numChannels < 1")
-    if eps <= 0:
-        raise ValueError(f"{name}: epsilon <= 0")
+    if not (eps > 0) or not np.isfinite(eps):
+        raise ValueError(f"{name}: epsilon is not positive and finite")
     mean = r.floats(c, name)
     var = r.floats(c, name)
     scale = r.floats(c, name) if has_scale else np.ones(c, np.float32)
@@ -195,7 +210,7 @@ def parse_activation(r: ModelReader, model_version: int) -> ActivationLayerDesc:
     name = r.token()
     if model_version >= 11:
         kind = r.token()
-        if kind not in (ACTIVATION_IDENTITY, ACTIVATION_RELU, ACTIVATION_MISH):
+        if kind not in (ACTIVATION_IDENTITY, ACTIVATION_RELU, ACTIVATION_MISH, ACTIVATION_SILU):
             raise ValueError(f"{name}: unknown activation {kind}")
         return ActivationLayerDesc(name, kind)
     return ActivationLayerDesc(name, ACTIVATION_RELU)
@@ -362,7 +377,202 @@ def parse_nested_bottleneck_block(r: ModelReader, model_version: int) -> NestedB
         name, num_blocks, pre_bn, pre_act, pre_conv, blocks, post_bn, post_act, post_conv)
 
 
-BlockDesc = Union[ResidualBlockDesc, GlobalPoolingResidualBlockDesc, NestedBottleneckResidualBlockDesc]
+@dataclass
+class RMSNormLayerDesc:
+    """Trunk-tip RMSNorm (model version 17, TRUNK_NORM_KIND_RMSNORM): gamma/beta, spatial or per-position."""
+    name: str
+    num_channels: int
+    epsilon: float
+    spatial: bool
+    cgroup_size: int
+    gamma: np.ndarray
+    beta: np.ndarray
+
+
+def parse_rmsnorm(r: ModelReader) -> RMSNormLayerDesc:
+    name = r.token()
+    c = r.int()
+    eps = r.float()
+    spatial = r.int() != 0
+    cgroup_size = r.int()
+    _check(eps > 0 and eps <= 1.0, f"{name}: rmsnorm epsilon ({eps}) is not positive or is too large")
+    _check(c >= 1, f"{name}: rmsnorm numChannels ({c}) < 1")
+    _check(cgroup_size == 0, f"{name}: rmsnorm cgroupSize ({cgroup_size}) != 0, grouped spatial RMSNorm is not supported")
+    gamma = r.floats(c, name)
+    beta = r.floats(c, name)
+    return RMSNormLayerDesc(name, c, eps, spatial, cgroup_size, gamma, beta)
+
+
+@dataclass
+class TransformerRMSNormDesc:
+    """Weight-only RMSNorm over channels per position, used inside transformer blocks."""
+    name: str
+    num_channels: int
+    epsilon: float
+    weight: np.ndarray
+
+
+def parse_transformer_rmsnorm(r: ModelReader) -> TransformerRMSNormDesc:
+    name = r.token()
+    c = r.int()
+    eps = r.float()
+    _check(c >= 1, f"{name}: transformer rmsnorm numChannels ({c}) < 1")
+    _check(eps > 0 and eps <= 1.0, f"{name}: transformer rmsnorm epsilon ({eps}) is not positive or is too large")
+    return TransformerRMSNormDesc(name, c, eps, r.floats(c, name))
+
+
+@dataclass
+class TransformerAttentionDesc:
+    name: str
+    num_heads: int
+    num_kv_heads: int
+    q_head_dim: int
+    v_head_dim: int
+    use_rope: bool
+    learnable_rope: bool
+    pre_ln: TransformerRMSNormDesc
+    q_proj: MatMulLayerDesc
+    k_proj: MatMulLayerDesc
+    v_proj: MatMulLayerDesc
+    out_proj: MatMulLayerDesc
+    rope_freqs: Optional[np.ndarray]  # learnable RoPE: [numKVHeads, numPairs, 2] (freqX, freqY)
+    rope_theta: float                 # fixed RoPE
+
+    @property
+    def in_channels(self):
+        return self.q_proj.in_channels
+
+    @property
+    def out_channels(self):
+        return self.out_proj.out_channels
+
+    def rope_cos_sin(self, nn_x_len: int, nn_y_len: int) -> Tuple[np.ndarray, np.ndarray]:
+        """TransformerAttentionDesc::computeRopeCosSin (desc.cpp), float32 like the C++ code.
+
+        Returns (cos, sin) tables shaped [numKVHeads, numPairs, nnY*nnX] for learnable RoPE,
+        [numPairs, nnY*nnX] for fixed RoPE; position index xy = y*nnXLen + x.
+        cosf/sinf/powf are evaluated in float64 and rounded to float32 (= correctly rounded float results).
+        """
+        f32 = np.float32
+        num_pairs = self.q_head_dim // 2
+        ys, xs = np.meshgrid(np.arange(nn_y_len), np.arange(nn_x_len), indexing="ij")
+        xf = xs.reshape(-1).astype(np.float32)
+        yf = ys.reshape(-1).astype(np.float32)
+
+        def cos_sin(angle):  # angle float32
+            a = angle.astype(np.float64)
+            return np.cos(a).astype(np.float32), np.sin(a).astype(np.float32)
+
+        if self.learnable_rope:
+            freqs = self.rope_freqs.reshape(self.num_kv_heads, num_pairs, 2)
+            fx = freqs[:, :, 0:1].astype(np.float32)
+            fy = freqs[:, :, 1:2].astype(np.float32)
+            # angle = (float)x * freqX + (float)y * freqY, all in float32
+            angle = (xf[None, None, :] * fx).astype(np.float32) + (yf[None, None, :] * fy).astype(np.float32)
+            return cos_sin(angle.astype(np.float32))
+        pairs_per_dim = num_pairs // 2
+        dim_half = self.q_head_dim // 2
+        cos = np.zeros((num_pairs, nn_x_len * nn_y_len), np.float32)
+        sin = np.zeros_like(cos)
+        for p in range(num_pairs):
+            p_adj = p if p < pairs_per_dim else p - pairs_per_dim
+            expo = f32(f32(2 * p_adj) / f32(dim_half))
+            powv = f32(np.power(np.float64(f32(self.rope_theta)), np.float64(expo)))
+            freq = f32(f32(1.0) / powv)
+            pos = yf if p < pairs_per_dim else xf  # first numPairs/2 pairs: height (y), the rest: width (x)
+            cos[p], sin[p] = cos_sin((pos * freq).astype(np.float32))
+        return cos, sin
+
+
+def parse_transformer_attention(r: ModelReader) -> TransformerAttentionDesc:
+    name = r.token()
+    num_heads, num_kv_heads, q_head_dim, v_head_dim = (r.int() for _ in range(4))
+    use_rope = r.int() != 0
+    learnable_rope = r.int() != 0
+    _check(num_heads >= 1 and num_kv_heads >= 1, f"{name}: transformer attention numHeads and numKVHeads must be positive")
+    _check(num_heads % num_kv_heads == 0, f"{name}: numHeads must be divisible by numKVHeads")
+    _check(q_head_dim >= 1 and v_head_dim >= 1, f"{name}: head dims must be positive")
+    _check(not use_rope or q_head_dim % 2 == 0, f"{name}: qHeadDim ({q_head_dim}) must be even when RoPE is used")
+    pre_ln = parse_transformer_rmsnorm(r)
+    q_proj = parse_matmul(r)
+    k_proj = parse_matmul(r)
+    v_proj = parse_matmul(r)
+    out_proj = parse_matmul(r)
+    _check(q_proj.out_channels == num_heads * q_head_dim, f"{name}: qProj.outChannels != numHeads*qHeadDim")
+    _check(k_proj.out_channels == num_kv_heads * q_head_dim, f"{name}: kProj.outChannels != numKVHeads*qHeadDim")
+    _check(v_proj.out_channels == num_kv_heads * v_head_dim, f"{name}: vProj.outChannels != numKVHeads*vHeadDim")
+    _check(out_proj.in_channels == num_heads * v_head_dim, f"{name}: outProj.inChannels != numHeads*vHeadDim")
+    rope_freqs = None
+    rope_theta = 0.0
+    if use_rope:
+        if learnable_rope:
+            _freqs_name = r.token()
+            rope_num_kv_heads, rope_num_pairs, rope_dim2 = r.int(), r.int(), r.int()
+            _check(rope_num_kv_heads == num_kv_heads, f"{name}: ropeNumKVHeads ({rope_num_kv_heads}) != numKVHeads ({num_kv_heads})")
+            _check(rope_num_pairs == q_head_dim // 2, f"{name}: ropeNumPairs ({rope_num_pairs}) != qHeadDim/2")
+            _check(rope_dim2 == 2, f"{name}: rope freq dim2 must be 2")
+            rope_freqs = r.floats(rope_num_kv_heads * rope_num_pairs * 2, name).reshape(rope_num_kv_heads, rope_num_pairs, 2)
+        else:
+            _theta_name = r.token()
+            rope_theta = r.float()
+            _check(rope_theta > 0 and np.isfinite(rope_theta), f"{name}: rope theta must be positive and finite")
+    return TransformerAttentionDesc(name, num_heads, num_kv_heads, q_head_dim, v_head_dim, use_rope, learnable_rope,
+                                    pre_ln, q_proj, k_proj, v_proj, out_proj, rope_freqs, rope_theta)
+
+
+@dataclass
+class TransformerFFNDesc:
+    name: str
+    num_channels: int
+    ffn_channels: int
+    use_swiglu: bool
+    pre_ln: TransformerRMSNormDesc
+    linear1: MatMulLayerDesc
+    linear_gate: Optional[MatMulLayerDesc]
+    linear2: MatMulLayerDesc
+
+    @property
+    def in_channels(self):
+        return self.num_channels
+
+    @property
+    def out_channels(self):
+        return self.linear2.out_channels
+
+
+def parse_transformer_ffn(r: ModelReader) -> TransformerFFNDesc:
+    name = r.token()
+    c = r.int()
+    ffn_c = r.int()
+    use_swiglu = r.int() != 0
+    _check(c >= 1 and ffn_c >= 1, f"{name}: transformer ffn channels must be positive")
+    pre_ln = parse_transformer_rmsnorm(r)
+    linear1 = parse_matmul(r)
+    linear_gate = parse_matmul(r) if use_swiglu else None
+    linear2 = parse_matmul(r)
+    _check(linear1.in_channels == c, f"{name}: linear1.inChannels != numChannels")
+    _check(linear1.out_channels == ffn_c, f"{name}: linear1.outChannels != ffnChannels")
+    if use_swiglu:
+        _check(linear_gate.in_channels == c, f"{name}: linearGate.inChannels != numChannels")
+        _check(linear_gate.out_channels == ffn_c, f"{name}: linearGate.outChannels != ffnChannels")
+    _check(linear2.in_channels == ffn_c, f"{name}: linear2.inChannels != ffnChannels")
+    _check(linear2.out_channels == c, f"{name}: linear2.outChannels != numChannels")
+    return TransformerFFNDesc(name, c, ffn_c, use_swiglu, pre_ln, linear1, linear_gate, linear2)
+
+
+BlockDesc = Union[ResidualBlockDesc, GlobalPoolingResidualBlockDesc, NestedBottleneckResidualBlockDesc,
+                  TransformerAttentionDesc, TransformerFFNDesc]
+TRANSFORMER_BLOCKS = (TransformerAttentionDesc, TransformerFFNDesc)
+
+
+def blocks_contain_transformer(blocks: List[BlockDesc]) -> bool:
+    """blocksContainTransformerRecursive (desc.cpp)."""
+    for b in blocks:
+        if isinstance(b, TRANSFORMER_BLOCKS):
+            return True
+        if isinstance(b, NestedBottleneckResidualBlockDesc) and blocks_contain_transformer(b.blocks):
+            return True
+    return False
 
 
 def parse_residual_block_stack(r: ModelReader, model_version: int, name: str,
@@ -376,6 +586,10 @@ def parse_residual_block_stack(r: ModelReader, model_version: int, name: str,
             b = parse_gpool_block(r, model_version)
         elif kind == "nested_bottleneck_block":
             b = parse_nested_bottleneck_block(r, model_version)
+        elif kind == "transformer_attention_block":
+            b = parse_transformer_attention(r)
+        elif kind == "transformer_ffn_block":
+            b = parse_transformer_ffn(r)
         else:
             raise ValueError(f"{name}: found unknown block kind {kind}")
         _check(b.in_channels == trunk_num_channels,
@@ -449,8 +663,10 @@ class TrunkDesc:
     initial_matmul: MatMulLayerDesc
     sgf_metadata_encoder: Optional[SGFMetadataEncoderDesc]
     blocks: List[BlockDesc]
-    trunk_tip_bn: BatchNormLayerDesc
+    trunk_tip_bn: Optional[BatchNormLayerDesc]          # TRUNK_NORM_KIND_STANDARD
     trunk_tip_activation: ActivationLayerDesc
+    trunk_norm_kind: int = 0                            # TRUNK_NORM_KIND_* (model version >= 15 header)
+    trunk_tip_rmsnorm: Optional[RMSNormLayerDesc] = None  # TRUNK_NORM_KIND_RMSNORM
 
 
 def parse_trunk(r: ModelReader, model_version: int, meta_encoder_version: int) -> TrunkDesc:
@@ -461,9 +677,14 @@ def parse_trunk(r: ModelReader, model_version: int, meta_encoder_version: int) -
     regular_c = r.int()
     _dilated_c = r.int()  # unused
     gpool_c = r.int()
+    trunk_norm_kind = TRUNK_NORM_KIND_STANDARD
     if model_version >= 15:
-        for _ in range(6):
-            r.int()  # unused
+        trunk_norm_kind = r.int()
+        for opt in "BCDEF":
+            v = r.int()
+            _check(v == 0, f"{name}: unknown/unsupported trunk option {opt}: {v}")
+        _check(trunk_norm_kind in (TRUNK_NORM_KIND_STANDARD, TRUNK_NORM_KIND_RMSNORM),
+               f"{name}: unknown or unsupported trunk norm kind: {trunk_norm_kind}")
     _check(num_blocks >= 1, f"{name}: trunk num blocks must be positive")
     _check(min(trunk_c, mid_c, regular_c, gpool_c) > 0, f"{name}: channel counts must be positive")
 
@@ -484,11 +705,17 @@ def parse_trunk(r: ModelReader, model_version: int, meta_encoder_version: int) -
                f"({sgf_metadata_encoder.mul3.out_channels}) != trunkNumChannels ({trunk_c})")
 
     blocks = parse_residual_block_stack(r, model_version, name, num_blocks, trunk_c)
-    tip_bn = parse_bn(r)
+    tip_bn = tip_rms = None
+    if trunk_norm_kind == TRUNK_NORM_KIND_STANDARD:
+        tip_bn = parse_bn(r)
+        _check(tip_bn.num_channels == trunk_c, f"{name}: trunkTipBN.numChannels != trunkNumChannels")
+    else:
+        tip_rms = parse_rmsnorm(r)
+        _check(tip_rms.num_channels == trunk_c, f"{name}: trunkTipRMSNorm.numChannels != trunkNumChannels")
     tip_act = parse_activation(r, model_version)
-    _check(tip_bn.num_channels == trunk_c, f"{name}: trunkTipBN.numChannels != trunkNumChannels")
     return TrunkDesc(name, model_version, num_blocks, trunk_c, mid_c, regular_c, gpool_c,
-                     meta_encoder_version, initial_conv, initial_matmul, sgf_metadata_encoder, blocks, tip_bn, tip_act)
+                     meta_encoder_version, initial_conv, initial_matmul, sgf_metadata_encoder, blocks, tip_bn, tip_act,
+                     trunk_norm_kind, tip_rms)
 
 
 @dataclass
@@ -512,7 +739,14 @@ class PolicyHeadDesc:
 
 def parse_policy_head(r: ModelReader, model_version: int) -> PolicyHeadDesc:
     name = r.token()
-    if model_version >= 16:
+    if model_version >= 17:
+        # v17: 2 (optimistic policy) or 4 (+ q winloss / q score) channels, stored in the file
+        policy_out_channels = r.int()
+        _check(policy_out_channels in (2, 4), f"{name}: policy head got invalid policyOutChannels {policy_out_channels}")
+        for opt in "ABC":
+            v = r.int()
+            _check(v == 0, f"{name}: unknown/unsupported policy option {opt}: {v}")
+    elif model_version == 16:
         policy_out_channels = 4
     elif model_version >= 12:
         policy_out_channels = 2
@@ -573,6 +807,10 @@ class ValueHeadDesc:
 
 def parse_value_head(r: ModelReader, model_version: int) -> ValueHeadDesc:
     name = r.token()
+    if model_version >= 17:
+        for opt in "ABC":
+            v = r.int()
+            _check(v == 0, f"{name}: unknown/unsupported value option {opt}: {v}")
     v = ValueHeadDesc(
         name, model_version,
         parse_conv(r), parse_bn(r), parse_activation(r, model_version),
@@ -628,6 +866,13 @@ class ModelDesc:
     trunk: TrunkDesc
     policy_head: PolicyHeadDesc
     value_head: ValueHeadDesc
+    # Model header options (desc.cpp ModelDesc, read for modelVersion >= 15; always 0 before v17 in practice)
+    prefer_pass_alive_under_suicide_rules: bool = False
+    prefer_exclude_territory_adjacent_to_atari: bool = False
+
+    @property
+    def has_any_transformer_blocks(self):
+        return blocks_contain_transformer(self.trunk.blocks)
 
     @property
     def num_policy_channels(self):
@@ -646,9 +891,17 @@ class ModelDesc:
         return self.value_head.v_ownership_conv.out_channels
 
 
+def check_name_valid(name: str):
+    """ModelDesc::checkNameValid (desc.cpp)."""
+    _check(0 < len(name) <= 96, f"Model name must be 1..96 chars: {name!r}")
+    _check(all(c.isascii() and (c.isalnum() or c in "_-") for c in name),
+           f"Model name must contain only alphanumeric characters, underscores, and hyphens: {name}")
+
+
 def parse_model(r: ModelReader) -> ModelDesc:
     name = r.token()
     model_version = r.int()
+    check_name_valid(name)
     _check(model_version >= OLDEST_MODEL_VERSION_IMPLEMENTED,
            f"{name}: model version {model_version} is too old")
     _check(model_version <= LATEST_MODEL_VERSION_IMPLEMENTED,
@@ -674,12 +927,20 @@ def parse_model(r: ModelReader) -> ModelDesc:
 
     meta_encoder_version = 0
     num_input_meta_channels = 0
+    prefer_pass_alive = prefer_exclude_atari = False
     if model_version >= 15:
         meta_encoder_version = r.int()
         _check(0 <= meta_encoder_version <= 1, f"{name}: unsupported metaEncoderVersion {meta_encoder_version}")
         num_input_meta_channels = num_input_meta_channels_for(meta_encoder_version)
-        for _ in range(7):
-            r.int()  # unused
+        flags = []
+        for flag in ("preferPassAliveUnderSuicideRules", "preferExcludeTerritoryAdjacentToAtari"):
+            v = r.int()
+            _check(v in (0, 1), f"{name}: model {flag} unexpected value: {v}")
+            flags.append(bool(v))
+        prefer_pass_alive, prefer_exclude_atari = flags
+        for opt in "DEFGH":
+            v = r.int()
+            _check(v == 0, f"{name}: unknown/unsupported model option {opt}: {v}")
 
     trunk = parse_trunk(r, model_version, meta_encoder_version)
     policy_head = parse_policy_head(r, model_version)
@@ -696,7 +957,8 @@ def parse_model(r: ModelReader) -> ModelDesc:
     _check(r.pos == len(r.data), f"{name}: {len(r.data) - r.pos} unparsed trailing bytes in model file")
 
     return ModelDesc(name, model_version, num_input_channels, num_input_global_channels,
-                     num_input_meta_channels, meta_encoder_version, pp, trunk, policy_head, value_head)
+                     num_input_meta_channels, meta_encoder_version, pp, trunk, policy_head, value_head,
+                     prefer_pass_alive, prefer_exclude_atari)
 
 
 def load_model_desc(path: str) -> ModelDesc:
@@ -786,7 +1048,16 @@ class GraphBuilder:
             sp = self.node("Softplus", [x], d.name + ".softplus")
             th = self.node("Tanh", [sp], d.name + ".tanh")
             return self.node("Mul", [x, th], d.name)
+        if d.activation == ACTIVATION_SILU:
+            return self.silu(x, d.name)
         raise ValueError(f"Unsupported activation {d.activation}")
+
+    def silu(self, x: str, base: str) -> str:
+        """eigenbackend's SiLU, written as it is there: x / (exp(-x) + 1) (not x * sigmoid(x))."""
+        neg = self.node("Mul", [x, self.const(-1.0)], base + ".neg")
+        e = self.node("Exp", [neg], base + ".exp")
+        den = self.node("Add", [e, self.const(1.0)], base + ".den")
+        return self.node("Div", [x, den], base)
 
     def bn_act_mask(self, x: str, bn: BatchNormLayerDesc, act: ActivationLayerDesc, mask: str) -> str:
         """BatchNormLayer::apply in eigenbackend: act(x*mergedScale + mergedBias), zeroed off-board."""
@@ -890,16 +1161,198 @@ class GraphBuilder:
         return self.node("Add", [trunk, t], d.name + ".residual")
 
     def block_stack(self, x: str, blocks: List[BlockDesc]) -> str:
+        # Conv blocks run on NCHW [N,C,H,W]; a run of consecutive transformer blocks runs on tokens
+        # [N,S,C] (S = H*W, s = y*W + x, i.e. eigenbackend's NHWC memory layout), with one
+        # NCHW <-> tokens conversion at each end of the run.
+        tokens = False
+        c = None
         for b in blocks:
+            is_tf = isinstance(b, TRANSFORMER_BLOCKS)
+            if is_tf and not tokens:
+                c = b.in_channels
+                x = self.nchw_to_tokens(x, c, b.name)
+                tokens = True
+            elif not is_tf and tokens:
+                x = self.tokens_to_nchw(x, c, b.name)
+                tokens = False
             if isinstance(b, ResidualBlockDesc):
                 x = self.residual_block(x, b)
             elif isinstance(b, GlobalPoolingResidualBlockDesc):
                 x = self.gpool_block(x, b)
             elif isinstance(b, NestedBottleneckResidualBlockDesc):
                 x = self.nested_bottleneck_block(x, b)
+            elif isinstance(b, TransformerAttentionDesc):
+                x = self.transformer_attention_block(x, b)
+            elif isinstance(b, TransformerFFNDesc):
+                x = self.transformer_ffn_block(x, b)
             else:
                 raise AssertionError(type(b))
+        if tokens:
+            x = self.tokens_to_nchw(x, c, blocks[-1].name + ".end")
         return x
+
+    # --- transformer blocks (token layout [N,S,C]) ---
+
+    def nchw_to_tokens(self, x: str, c: int, base: str) -> str:
+        x = self.flatten_hw(x, c, base + ".to_tokens.flat")                         # [N,C,S]
+        return self.node("Transpose", [x], base + ".to_tokens", perm=[0, 2, 1])     # [N,S,C]
+
+    def tokens_to_nchw(self, x: str, c: int, base: str) -> str:
+        x = self.node("Transpose", [x], base + ".to_nchw.t", perm=[0, 2, 1])        # [N,C,S]
+        shape = self.const([-1, c, self.pos_len, self.pos_len], np.int64)
+        return self.node("Reshape", [x, shape], base + ".to_nchw")                   # [N,C,H,W]
+
+    def setup_token_masks(self):
+        """Created on first use (transformer nets only): the mask in token layout [N,S,1] and the
+        additive attention bias [N,1,1,S], 0 on board and -ATTN_MASK_BIG off board."""
+        if getattr(self, "mask_tok", None) is not None:
+            return
+        s = self.pos_len * self.pos_len
+        self.mask_tok = self.node("Reshape", [self.mask, self.const([-1, s, 1], np.int64)], "mask_tokens")
+        m = self.node("Reshape", [self.mask, self.const([-1, 1, 1, s], np.int64)], "mask_keys")
+        big = self.const(ATTN_MASK_BIG)
+        scaled = self.node("Mul", [m, big], "mask_keys_scaled")
+        self.attn_bias = self.node("Sub", [scaled, big], "attn_mask_bias")  # mask*BIG - BIG
+
+    def matmul_tokens(self, x: str, d: MatMulLayerDesc, weights: Optional[np.ndarray] = None) -> str:
+        """[N,S,in] @ [in,out] -> [N,S,out] (eigenbackend MatMulLayer applied to every position)."""
+        w = self.init(d.name + ".w", d.weights if weights is None else weights)
+        return self.node("MatMul", [x, w], d.name)
+
+    def transformer_rmsnorm(self, x: str, d: TransformerRMSNormDesc) -> str:
+        """TransformerRMSNormLayer: x * (1/sqrt(sum(x^2)/C + eps)) * weight per position, 0 off board."""
+        sq = self.node("Mul", [x, x], d.name + ".sq")
+        ss = self.node("ReduceSum", [sq, self.const([2], np.int64)], d.name + ".sumsq", keepdims=1)  # [N,S,1]
+        ms = self.node("Div", [ss, self.const(float(d.num_channels))], d.name + ".meansq")
+        den = self.node("Add", [ms, self.const(d.epsilon)], d.name + ".add_eps")
+        den = self.node("Sqrt", [den], d.name + ".sqrt")
+        rms = self.node("Div", [self.const(1.0), den], d.name + ".rms")
+        y = self.node("Mul", [x, rms], d.name + ".normed")
+        y = self.node("Mul", [y, self.init(d.name + ".weight", d.weight)], d.name + ".scaled")
+        return self.node("Mul", [y, self.mask_tok], d.name + ".masked")
+
+    def rope(self, x: str, cos: str, sin: str, half: int, head_dim: int, base: str) -> str:
+        """Rotate pairs (x0, x1) -> (x0*cos - x1*sin, x0*sin + x1*cos), eigenbackend's applyRoPE.
+
+        The projection weights are permuted so that each head's channels are [x0 of every pair...,
+        x1 of every pair...] instead of interleaved (2p, 2p+1): the halves are two Slices on the last
+        axis. Q.K dot products are invariant to that (same permutation for Q and K)."""
+        axes = self.const([3], np.int64)
+        x0 = self.node("Slice", [x, self.const([0], np.int64), self.const([half], np.int64), axes], base + ".x0")
+        x1 = self.node("Slice", [x, self.const([half], np.int64), self.const([head_dim], np.int64), axes], base + ".x1")
+        a = self.node("Mul", [x0, cos], base + ".x0cos")
+        b = self.node("Mul", [x1, sin], base + ".x1sin")
+        r0 = self.node("Sub", [a, b], base + ".r0")
+        c = self.node("Mul", [x0, sin], base + ".x0sin")
+        d = self.node("Mul", [x1, cos], base + ".x1cos")
+        r1 = self.node("Add", [c, d], base + ".r1")
+        return self.node("Concat", [r0, r1], base, axis=3)
+
+    def transformer_attention_block(self, x: str, d: TransformerAttentionDesc) -> str:
+        """TransformerAttentionBlock::apply. x: tokens [N,S,C]."""
+        self.setup_token_masks()
+        n = d.name
+        s = self.pos_len * self.pos_len
+        nh, nkv, hd, vhd = d.num_heads, d.num_kv_heads, d.q_head_dim, d.v_head_dim
+        g = nh // nkv
+        xn = self.transformer_rmsnorm(x, d.pre_ln)
+
+        wq, wk = d.q_proj.weights, d.k_proj.weights
+        if d.use_rope:
+            # per head: interleaved pair channels (2p, 2p+1) -> [2p for all p] + [2p+1 for all p]
+            half = hd // 2
+            perm_head = np.concatenate([np.arange(0, hd, 2), np.arange(1, hd, 2)])
+            wq = wq[:, (np.arange(nh)[:, None] * hd + perm_head[None, :]).reshape(-1)]
+            wk = wk[:, (np.arange(nkv)[:, None] * hd + perm_head[None, :]).reshape(-1)]
+        q = self.matmul_tokens(xn, d.q_proj, wq)  # [N,S,nh*hd]
+        k = self.matmul_tokens(xn, d.k_proj, wk)  # [N,S,nkv*hd]
+        v = self.matmul_tokens(xn, d.v_proj)      # [N,S,nkv*vhd]
+
+        def heads(t, nheads, dim, base):  # [N,S,heads*dim] -> [N,heads,S,dim]
+            t = self.node("Reshape", [t, self.const([-1, s, nheads, dim], np.int64)], base + ".split")
+            return self.node("Transpose", [t], base + ".heads", perm=[0, 2, 1, 3])
+
+        qh = heads(q, nh, hd, n + ".q")
+        kh = heads(k, nkv, hd, n + ".k")
+        vh = heads(v, nkv, vhd, n + ".v")
+
+        if d.use_rope:
+            cos, sin = d.rope_cos_sin(self.pos_len, self.pos_len)  # [nkv,P,S] (learnable) or [P,S] (fixed)
+            if d.learnable_rope:
+                cos_k = cos.transpose(0, 2, 1)[None]                 # [1,nkv,S,P]
+                sin_k = sin.transpose(0, 2, 1)[None]
+                kv_of_head = np.arange(nh) * nkv // nh               # eigenbackend: kvh = h*numKVHeads/numHeads
+                cos_q, sin_q = cos_k[:, kv_of_head], sin_k[:, kv_of_head]  # [1,nh,S,P]
+            else:
+                cos_k = cos_q = cos.T[None, None]                    # [1,1,S,P]
+                sin_k = sin_q = sin.T[None, None]
+            cq = self.init(n + ".rope_cos_q", np.ascontiguousarray(cos_q))
+            sq = self.init(n + ".rope_sin_q", np.ascontiguousarray(sin_q))
+            if d.learnable_rope and nkv != nh:
+                ck = self.init(n + ".rope_cos_k", np.ascontiguousarray(cos_k))
+                sk = self.init(n + ".rope_sin_k", np.ascontiguousarray(sin_k))
+            else:
+                ck, sk = cq, sq
+            qh = self.rope(qh, cq, sq, half, hd, n + ".q_rope")
+            kh = self.rope(kh, ck, sk, half, hd, n + ".k_rope")
+
+        if g > 1:
+            # GQA: query heads h = kvh*g + j share kv head kvh -> view Q as [N,nkv,g*S,hd]
+            qh = self.node("Reshape", [qh, self.const([-1, nkv, g * s, hd], np.int64)], n + ".q_gqa")
+        kt = self.node("Transpose", [kh], n + ".k_t", perm=[0, 1, 3, 2])           # [N,nkv,hd,S]
+        scores = self.node("MatMul", [qh, kt], n + ".scores")                      # [N,nkv,g*S,S]
+        scale = np.float32(1.0) / np.sqrt(np.float32(hd))  # 1.0f / sqrtf((float)qHeadDim)
+        scores = self.node("Mul", [scores, self.const(scale)], n + ".scores_scaled")
+        scores = self.node("Add", [scores, self.attn_bias], n + ".scores_masked")  # off-board keys -> -BIG
+        probs = self.node("Softmax", [scores], n + ".probs", axis=3)
+        o = self.node("MatMul", [probs, vh], n + ".attn")                          # [N,nkv,g*S,vhd]
+        if g > 1:
+            o = self.node("Reshape", [o, self.const([-1, nh, s, vhd], np.int64)], n + ".attn_heads")
+        o = self.node("Transpose", [o], n + ".attn_t", perm=[0, 2, 1, 3])         # [N,S,nh,vhd]
+        o = self.node("Reshape", [o, self.const([-1, s, nh * vhd], np.int64)], n + ".attn_merged")
+        o = self.matmul_tokens(o, d.out_proj)                                      # [N,S,C]
+        o = self.node("Mul", [o, self.mask_tok], n + ".out_masked")
+        return self.node("Add", [x, o], n + ".residual")
+
+    def transformer_ffn_block(self, x: str, d: TransformerFFNDesc) -> str:
+        """TransformerFFNBlock::apply (SwiGLU). x: tokens [N,S,C]."""
+        if not d.use_swiglu:
+            # Like eigenbackend (and upstream's ONNX exporter): the plain FFN has no defined activation.
+            raise ValueError(f"{d.name}: non-SwiGLU transformer FFN is not supported (not supported by the Eigen backend either)")
+        self.setup_token_masks()
+        n = d.name
+        xn = self.transformer_rmsnorm(x, d.pre_ln)
+        a = self.matmul_tokens(xn, d.linear1)
+        gate = self.matmul_tokens(xn, d.linear_gate)
+        h = self.node("Mul", [self.silu(a, n + ".silu"), gate], n + ".swiglu")  # SiLU(linear1) * gate
+        o = self.matmul_tokens(h, d.linear2)
+        o = self.node("Mul", [o, self.mask_tok], n + ".out_masked")
+        return self.node("Add", [x, o], n + ".residual")
+
+    def trunk_tip_rmsnorm(self, x: str, d: RMSNormLayerDesc, act: ActivationLayerDesc) -> str:
+        """RMSNormLayer::apply (trunk tip, NCHW): act(x * rms * gamma + beta), 0 off board.
+        Per-position (spatial=0): rms over channels. Spatial: one rms over channels x on-board positions."""
+        c = d.num_channels
+        n = d.name
+        sq = self.node("Mul", [x, x], n + ".sq")
+        if not d.spatial:
+            ss = self.node("ReduceSum", [sq, self.const([1], np.int64)], n + ".sumsq", keepdims=1)  # [N,1,H,W]
+            ms = self.node("Div", [ss, self.const(float(c))], n + ".meansq")
+        else:
+            sq = self.node("Mul", [sq, self.mask], n + ".sq_onboard")
+            flat = self.node("Reshape", [sq, self.const([-1, c * self.pos_len * self.pos_len], np.int64)], n + ".flat")
+            ss = self.node("ReduceSum", [flat, self.const([1], np.int64)], n + ".sumsq", keepdims=1)  # [N,1]
+            count = self.node("Mul", [self.mask_sum, self.const(float(c))], n + ".count")         # onboard * C
+            ms = self.node("Div", [ss, count], n + ".meansq")
+            ms = self.nc_to_nc11(ms, 1, n + ".meansq_nc11")                                       # [N,1,1,1]
+        den = self.node("Add", [ms, self.const(d.epsilon)], n + ".add_eps")
+        den = self.node("Sqrt", [den], n + ".sqrt")
+        rms = self.node("Div", [self.const(1.0), den], n + ".rms")
+        y = self.node("Mul", [x, rms], n + ".normed")
+        y = self.node("Mul", [y, self.init(n + ".gamma", d.gamma.reshape(1, c, 1, 1))], n + ".scaled")
+        y = self.node("Add", [y, self.init(n + ".beta", d.beta.reshape(1, c, 1, 1))], n + ".shifted")
+        y = self.activation(y, act)
+        return self.node("Mul", [y, self.mask], n + ".masked")
 
     # --- trunk and heads ---
 
@@ -927,6 +1380,8 @@ class GraphBuilder:
         else:
             assert meta_input is None
         x = self.block_stack(x, d.blocks)
+        if d.trunk_norm_kind == TRUNK_NORM_KIND_RMSNORM:
+            return self.trunk_tip_rmsnorm(x, d.trunk_tip_rmsnorm, d.trunk_tip_activation)
         return self.bn_act_mask(x, d.trunk_tip_bn, d.trunk_tip_activation, self.mask)
 
     def policy_head(self, trunk: str, d: PolicyHeadDesc) -> str:
@@ -1028,6 +1483,17 @@ def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -
         "outputs": "policy=raw logits [N,P,HW+1] (last=pass); value=raw win/loss/noresult logits; "
                    "scorevalue=raw misc value outputs; ownership=pre-tanh, player-to-move perspective",
     }
+    # Keys added with model version 17 support. Written only for nets that use v17-era features, so
+    # that older nets' exports stay byte-identical; absent means 0.
+    t_has_tf = desc.has_any_transformer_blocks
+    if (desc.model_version >= 17 or t_has_tf or t.trunk_norm_kind != TRUNK_NORM_KIND_STANDARD
+            or desc.prefer_pass_alive_under_suicide_rules or desc.prefer_exclude_territory_adjacent_to_atari):
+        meta.update({
+            "preferPassAliveUnderSuicideRules": int(desc.prefer_pass_alive_under_suicide_rules),
+            "preferExcludeTerritoryAdjacentToAtari": int(desc.prefer_exclude_territory_adjacent_to_atari),
+            "trunkNormKind": t.trunk_norm_kind,
+            "hasAnyTransformerBlocks": int(t_has_tf),
+        })
     for k, v in meta.items():
         entry = model.metadata_props.add()
         entry.key = k
