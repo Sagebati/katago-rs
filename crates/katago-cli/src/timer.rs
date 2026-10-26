@@ -10,7 +10,6 @@ use std::time::Instant;
 
 use katago_core::port::executor::LocalBoxFuture;
 
-
 static START: OnceLock<Instant> = OnceLock::new();
 
 fn clock() -> f64 {
@@ -36,7 +35,13 @@ static TIMER_THREADS_STARTED: std::sync::atomic::AtomicUsize = std::sync::atomic
 
 fn timer() -> &'static Timer {
   TIMER.get_or_init(|| {
-    let t: &'static Timer = Box::leak(Box::new(Timer { state: Mutex::new(TimerState { entries: BTreeMap::new(), next_id: 0 }), changed: std::sync::Condvar::new() }));
+    let t: &'static Timer = Box::leak(Box::new(Timer {
+      state: Mutex::new(TimerState {
+        entries: BTreeMap::new(),
+        next_id: 0,
+      }),
+      changed: std::sync::Condvar::new(),
+    }));
     TIMER_THREADS_STARTED.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     std::thread::Builder::new()
       .name("katago-rs-timer".to_string())

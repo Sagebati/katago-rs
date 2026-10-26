@@ -103,7 +103,9 @@ impl AnnotateOptions {
     /// # Errors
     ///
     /// Not an object, a `humanProfile` that is not a string, or a field [`AnnotateOptions`] rejects.
-    pub fn from_json_with_profile(mut value: serde_json::Value) -> Result<(Self, Option<String>), String> {
+    pub fn from_json_with_profile(
+        mut value: serde_json::Value,
+    ) -> Result<(Self, Option<String>), String> {
         let obj = value.as_object_mut().ok_or("options must be an object")?;
         let human_profile = match obj.remove("humanProfile") {
             None | Some(serde_json::Value::Null) => None,

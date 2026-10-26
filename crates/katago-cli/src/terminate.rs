@@ -4,7 +4,6 @@ use std::io::Write as _;
 
 use katago_core::core::global::KataError;
 
-
 /// The C++ type name libstdc++'s verbose terminate handler prints for the exception behind `e`.
 pub fn exception_type_name(e: &KataError) -> String {
   match e {
@@ -26,7 +25,11 @@ pub fn exception_type_name(e: &KataError) -> String {
 /// shell exit status 134).
 pub fn terminate_uncaught(e: &KataError) -> ! {
   let _ = std::io::stdout().flush();
-  let msg = format!("terminate called after throwing an instance of '{}'\n  what():  {}\n", exception_type_name(e), e.what());
+  let msg = format!(
+    "terminate called after throwing an instance of '{}'\n  what():  {}\n",
+    exception_type_name(e),
+    e.what()
+  );
   let _ = std::io::stderr().write_all(msg.as_bytes());
   std::process::abort()
 }

@@ -96,7 +96,12 @@ fn golden_basic() {
 
 #[test]
 fn golden_basic_sidetomove() {
-  let c = check_golden("basic_sidetomove.stdout", "tests/analysis/basic.txt", M6, &format!("{LOOP_OVERRIDES}, reportAnalysisWinratesAs=SIDETOMOVE"));
+  let c = check_golden(
+    "basic_sidetomove.stdout",
+    "tests/analysis/basic.txt",
+    M6,
+    &format!("{LOOP_OVERRIDES}, reportAnalysisWinratesAs=SIDETOMOVE"),
+  );
   assert_ok("basic_sidetomove", &c);
 }
 
@@ -108,7 +113,12 @@ fn golden_symmetry() {
 
 #[test]
 fn golden_symmetry_with_pruning() {
-  let c = check_golden("symmetry_with_pruning.stdout", "tests/analysis/symmetry.txt", M6, "maxVisits=100, maxPlayouts=10000, rootSymmetryPruning=true");
+  let c = check_golden(
+    "symmetry_with_pruning.stdout",
+    "tests/analysis/symmetry.txt",
+    M6,
+    "maxVisits=100, maxPlayouts=10000, rootSymmetryPruning=true",
+  );
   assert_ok("symmetry_with_pruning", &c);
 }
 
@@ -145,9 +155,18 @@ fn golden_eval_cache() {
   let gold = read_golden(name);
   assert!(!gold.is_empty(), "{name}: empty golden");
   let t0 = std::time::Instant::now();
-  let got = run_analysis_handshake("tests/analysis/evalcache.txt", M10, "rootSymmetryPruning=false, useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10");
+  let got = run_analysis_handshake(
+    "tests/analysis/evalcache.txt",
+    M10,
+    "rootSymmetryPruning=false, useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10",
+  );
   let c = compare(&gold, &got);
-  eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
+  eprintln!(
+    "analysis golden {name}: {} lines, {} ({:.1} s)",
+    c.num_lines,
+    c.status(),
+    t0.elapsed().as_secs_f64()
+  );
   assert_ok("eval_cache", &c);
   // The cache must matter: without it, C equals A (golden_evalcache_loop).
   assert_eq!(c.num_lines, 3);
@@ -165,6 +184,11 @@ fn golden_pvvisits() {
 /// 1000 visits, no maxVisits override, useGraphSearch=false.
 #[test]
 fn golden_pvvisits_nograph() {
-  let c = check_golden("pvvisits_nograph.stdout", "tests/analysis/pvvisits.txt", M6, "rootSymmetryPruning=false, useGraphSearch=false");
+  let c = check_golden(
+    "pvvisits_nograph.stdout",
+    "tests/analysis/pvvisits.txt",
+    M6,
+    "rootSymmetryPruning=false, useGraphSearch=false",
+  );
   assert_ok("pvvisits_nograph", &c);
 }

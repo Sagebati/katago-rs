@@ -24,6 +24,8 @@
 //! Heavy: run in release, `cargo test --release -p katago-nn-burn --test testsearchv8 -- --nocapture` (~15 min, group 3
 //! dominates). Groups 3 and 6 are ignored in debug builds (TODO(port) at the tests); the other groups run in debug.
 //! KATAGO_SEARCH_TEST_DUMP=<dir> writes each group's captured stdout there.
+// A transcription of upstream: keeps upstream's line breaks (rustfmt.toml).
+#![cfg_attr(rustfmt, rustfmt::skip)]
 #![cfg(all(feature = "flex", feature = "net-b6c96"))]
 #![allow(clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::too_many_arguments, clippy::type_complexity, clippy::bool_comparison)]
 

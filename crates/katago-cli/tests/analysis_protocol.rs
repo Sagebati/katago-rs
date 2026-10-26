@@ -36,7 +36,9 @@ fn protocol_actions_and_errors() {
     q(r#"{"id":"b9","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"overrideSettings":{"numBots":3}}"#),
     q(r#"{"id":"b10","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"maxVisits":0}"#),
     q(r#"{"id":"b11","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"analyzeTurns":[0],"priority":1,"priorities":[1]}"#),
-    q(r#"{"id":"b12","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"allowMoves":[{"player":"B","moves":["C3"],"untilDepth":1}],"avoidMoves":[]}"#),
+    q(
+      r#"{"id":"b12","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"allowMoves":[{"player":"B","moves":["C3"],"untilDepth":1}],"avoidMoves":[]}"#,
+    ),
   ];
   let got = run_analysis_lines(lines, M6, "maxVisits=10");
   // Rust choices (not upstream-verified values): git_hash is [upstream].commit (GIT_REVISION; the reference
@@ -115,21 +117,43 @@ fn order_shape(lines: &[String]) -> String {
 #[test]
 fn burst_order_matches_upstream_majority() {
   let qq = |id: &str, extra: &str| format!(r#"{{"id":"{id}","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9{extra}}}"#);
-  let qa = r#"{"id":"a","moves":[["B","C3"],["W","G7"]],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"analyzeTurns":[0,1,2],"maxVisits":5}"#.to_string();
+  let qa =
+    r#"{"id":"a","moves":[["B","C3"],["W","G7"]],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9,"analyzeTurns":[0,1,2],"maxVisits":5}"#.to_string();
   let cases: Vec<(Vec<String>, &str)> = vec![
     (
-      vec![qq("a", r#","maxVisits":30"#), qq("b", r#","maxVisits":5,"priority":10"#), qq("c", r#","maxVisits":5,"priority":5"#), qq("d", r#","maxVisits":5"#)],
+      vec![
+        qq("a", r#","maxVisits":30"#),
+        qq("b", r#","maxVisits":5,"priority":10"#),
+        qq("c", r#","maxVisits":5,"priority":5"#),
+        qq("d", r#","maxVisits":5"#),
+      ],
       "R(a,t0) R(b,t0) R(c,t0) R(d,t0)",
     ),
-    (vec![qq("a", r#","maxVisits":5,"priority":-5"#), qq("b", r#","maxVisits":5,"priority":0"#)], "R(a,t0) R(b,t0)"),
     (
-      vec![qq("z", r#","maxVisits":60"#), qa.replace(r#""maxVisits":5"#, r#""priorities":[1,3,2],"maxVisits":5"#)],
+      vec![qq("a", r#","maxVisits":5,"priority":-5"#), qq("b", r#","maxVisits":5,"priority":0"#)],
+      "R(a,t0) R(b,t0)",
+    ),
+    (
+      vec![
+        qq("z", r#","maxVisits":60"#),
+        qa.replace(r#""maxVisits":5"#, r#""priorities":[1,3,2],"maxVisits":5"#),
+      ],
       "R(z,t0) R(a,t1) R(a,t2) R(a,t0)",
     ),
-    (vec![qa.clone(), q(r#"{"id":"t","action":"terminate","terminateId":"a"}"#)], "N(a,t1) N(a,t2) A(terminate) N(a,t0)"),
-    (vec![qa.clone(), q(r#"{"id":"t","action":"terminate_all","turnNumbers":[0,2]}"#)], "N(a,t2) A(terminate_all) N(a,t0) R(a,t1)"),
     (
-      vec![qa.clone(), qq("b", r#","maxVisits":5"#), q(r#"{"id":"t","action":"terminate_all","turnNumbers":[1,0]}"#)],
+      vec![qa.clone(), q(r#"{"id":"t","action":"terminate","terminateId":"a"}"#)],
+      "N(a,t1) N(a,t2) A(terminate) N(a,t0)",
+    ),
+    (
+      vec![qa.clone(), q(r#"{"id":"t","action":"terminate_all","turnNumbers":[0,2]}"#)],
+      "N(a,t2) A(terminate_all) N(a,t0) R(a,t1)",
+    ),
+    (
+      vec![
+        qa.clone(),
+        qq("b", r#","maxVisits":5"#),
+        q(r#"{"id":"t","action":"terminate_all","turnNumbers":[1,0]}"#),
+      ],
       "N(a,t1) N(b,t0) A(terminate_all) N(a,t0) R(a,t2)",
     ),
   ];
@@ -158,7 +182,10 @@ fn invalid_utf8_error_text_terminates_like_upstream() {
   let cases: Vec<(&[u8], &str)> = vec![
     (b"{\"id\":\"a\xffb\",\"action\":\"query_version\"}", "invalid UTF-8 byte at index 154: 0xFF"),
     (b"{\"id\":\"a\xe2\x82\",\"action\":\"query_version\"}", "invalid UTF-8 byte at index 157: 0x22"),
-    (b"{\"id\":\"\xed\xa0\x80\",\"action\":\"query_version\"}", "invalid UTF-8 byte at index 154: 0xA0"),
+    (
+      b"{\"id\":\"\xed\xa0\x80\",\"action\":\"query_version\"}",
+      "invalid UTF-8 byte at index 154: 0xA0",
+    ),
     (b"\xc2\xa0{\"id\":\"a\",\"action\":\"query_version\"}", "invalid UTF-8 byte at index 131: 0x27"),
     (b"{\"id\":\"a\"} \xc3", "invalid UTF-8 byte at index 137: 0x27"),
     (b"{\"id\":\xc3\xa9}", "invalid UTF-8 byte at index 136: 0x27"),
@@ -173,7 +200,10 @@ fn invalid_utf8_error_text_terminates_like_upstream() {
   }
   // Valid UTF-8 everywhere: an ordinary error line, and the session goes on.
   let got = run_analysis_lines(vec![q("{\"é\"}"), q(r#"{"id":"v","action":"query_version"}"#)], M6, "maxVisits=8");
-  assert_eq!(got[0], "{\"error\":\"[json.exception.parse_error.101] parse error at line 1, column 6: syntax error while parsing object separator - unexpected '}'; expected ':' - could not parse input line as json request: {\\\"é\\\"}\"}");
+  assert_eq!(
+    got[0],
+    "{\"error\":\"[json.exception.parse_error.101] parse error at line 1, column 6: syntax error while parsing object separator - unexpected '}'; expected ':' - could not parse input line as json request: {\\\"é\\\"}\"}"
+  );
   assert_eq!(got.len(), 2);
 }
 

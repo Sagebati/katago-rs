@@ -51,6 +51,11 @@ bench-web:
     node {{web_pkg}}/test/run.mjs --only throughput --backends webgpu,cpu
     node {{web_pkg}}/test/run.mjs --only b18
 
+# Format the workspace: katago-core and the files ported from upstream are skipped (they keep upstream's line
+# breaks, CLAUDE.md); each crate's rustfmt.toml has its style. `just fmt --check` only checks.
+fmt *flags="":
+    cargo fmt --all {{flags}}
+
 # Every upstream cpp/ file must be ported by one module or ignored with a reason.
 manifest-check:
     python3 -I tools/manifest_check.py

@@ -23,6 +23,8 @@
 //!
 //! Each section is reported as `exact` (byte-identical after the log filter), `within tolerance` (max deviation in
 //! last-digit units and absolute), or `DIVERGED` (first diverging line, both texts).
+// Copies of upstream (testsearchcommon.cpp): keeps upstream's line breaks (rustfmt.toml).
+#![cfg_attr(rustfmt, rustfmt::skip)]
 
 #![allow(dead_code, clippy::needless_late_init, clippy::default_constructed_unit_structs)]
 

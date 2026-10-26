@@ -11,7 +11,10 @@ use std::cell::RefCell;
 use std::io::{BufRead as _, BufReader, Write as _};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
-use katago_annotate::{AnalysisQuery, AnnotateError, AnnotateOptions, AnnotateResult, Analyzer, Fed, Pass, TurnCollector, TurnResponse};
+use katago_annotate::{
+    AnalysisQuery, Analyzer, AnnotateError, AnnotateOptions, AnnotateResult, Fed, Pass,
+    TurnCollector, TurnResponse,
+};
 
 #[path = "../tests/support/mod.rs"]
 mod support;
@@ -24,7 +27,11 @@ struct Subprocess {
 }
 
 impl Analyzer for Subprocess {
-    async fn analyze(&self, pass: Pass, mut query: AnalysisQuery) -> AnnotateResult<Vec<TurnResponse>> {
+    async fn analyze(
+        &self,
+        pass: Pass,
+        mut query: AnalysisQuery,
+    ) -> AnnotateResult<Vec<TurnResponse>> {
         let id = {
             let mut n = self.next_id.borrow_mut();
             *n += 1;
@@ -33,7 +40,12 @@ impl Analyzer for Subprocess {
         query.id = id.clone();
         let expected = query.analyze_turns.len();
         let io = |e: std::io::Error| AnnotateError::Inference(e.to_string());
-        writeln!(self.stdin.borrow_mut(), "{}", serde_json::to_string(&query).unwrap()).map_err(io)?;
+        writeln!(
+            self.stdin.borrow_mut(),
+            "{}",
+            serde_json::to_string(&query).unwrap()
+        )
+        .map_err(io)?;
         self.stdin.borrow_mut().flush().map_err(io)?;
         let mut collector = TurnCollector::new(id, expected);
         let mut line = String::new();
@@ -45,7 +57,12 @@ impl Analyzer for Subprocess {
             match collector.feed(line.trim_end())? {
                 Fed::Turn => {
                     let turns = collector.turns();
-                    eprintln!("{} {}/{expected} (turn {})", pass.as_str(), turns.len(), turns.last().unwrap().turn_number);
+                    eprintln!(
+                        "{} {}/{expected} (turn {})",
+                        pass.as_str(),
+                        turns.len(),
+                        turns.last().unwrap().turn_number
+                    );
                 }
                 other => eprintln!("ignored: {other:?}"),
             }
@@ -56,14 +73,19 @@ impl Analyzer for Subprocess {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let sep = args.iter().position(|a| a == "--").expect("usage: review <game.sgf> <options> -- <engine> <args...>");
+    let sep = args
+        .iter()
+        .position(|a| a == "--")
+        .expect("usage: review <game.sgf> <options> -- <engine> <args...>");
     let sgf = std::fs::read_to_string(&args[0]).unwrap();
     let options_text = match args[1].as_str() {
         "-" => "{}".to_owned(),
         s if s.trim_start().starts_with('{') => s.to_owned(),
         path => std::fs::read_to_string(path).unwrap(),
     };
-    let (options, human_profile) = AnnotateOptions::from_json_with_profile(serde_json::from_str(&options_text).unwrap()).unwrap();
+    let (options, human_profile) =
+        AnnotateOptions::from_json_with_profile(serde_json::from_str(&options_text).unwrap())
+            .unwrap();
 
     let mut child: Child = Command::new(&args[sep + 1])
         .args(&args[sep + 2..])
@@ -76,7 +98,13 @@ fn main() {
         stdout: RefCell::new(BufReader::new(child.stdout.take().unwrap())),
         next_id: RefCell::new(0),
     };
-    let payload = block_on(katago_annotate::analyze(&engine, &options, &sgf, human_profile.as_deref())).unwrap();
+    let payload = block_on(katago_annotate::analyze(
+        &engine,
+        &options,
+        &sgf,
+        human_profile.as_deref(),
+    ))
+    .unwrap();
     println!("{}", serde_json::to_string(&payload).unwrap());
     drop(engine);
     let _ = child.wait();

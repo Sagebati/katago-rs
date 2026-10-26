@@ -60,8 +60,16 @@ fn set_param(p: &mut SearchParams, k: &str, v: &str) {
 
 fn summary(label: &str, outcomes: &[Outcome], total_seconds: f64) -> String {
   let mut s = String::new();
-  let _ = writeln!(s, "search_tolerance: {label}, burn flex vs Eigen fp32, {} searches in {:.1} s", outcomes.len(), total_seconds);
-  let _ = writeln!(s, "per search (diffs are max |burn - eigen| over the children both trees have + the root values; dvis = max child edge-visit difference):");
+  let _ = writeln!(
+    s,
+    "search_tolerance: {label}, burn flex vs Eigen fp32, {} searches in {:.1} s",
+    outcomes.len(),
+    total_seconds
+  );
+  let _ = writeln!(
+    s,
+    "per search (diffs are max |burn - eigen| over the children both trees have + the root values; dvis = max child edge-visit difference):"
+  );
   let _ = writeln!(
     s,
     "  {:>3} {:<18} {:>4} {:>6} {:>4} {:>4} {:>5} {:>9} {:>9} {:>9} {:>9} {:>9} {:>6}  params",
@@ -91,11 +99,24 @@ fn summary(label: &str, outcomes: &[Outcome], total_seconds: f64) -> String {
   for o in outcomes {
     by_visits.entry(o.max_visits).or_default().push(o);
   }
-  let _ = writeln!(s, "{label} by maxVisits (value columns: max / median over the searches of the per-search max diff):");
+  let _ = writeln!(
+    s,
+    "{label} by maxVisits (value columns: max / median over the searches of the per-search max diff):"
+  );
   let _ = writeln!(
     s,
     "  {:>6} {:>3} {:>8} {:>8} {:>8} {:>19} {:>19} {:>19} {:>19} {:>19} {:>12}",
-    "visits", "N", "same-vec", "same-top", "same-rv", "winLoss max/med", "utility max/med", "scoreMean max/med", "lead max/med", "prior max/med", "dvis(div) max/med"
+    "visits",
+    "N",
+    "same-vec",
+    "same-top",
+    "same-rv",
+    "winLoss max/med",
+    "utility max/med",
+    "scoreMean max/med",
+    "lead max/med",
+    "prior max/med",
+    "dvis(div) max/med"
   );
   let mut row = |name: String, group: &[&Outcome]| {
     let n = group.len();
@@ -109,7 +130,11 @@ fn summary(label: &str, outcomes: &[Outcome], total_seconds: f64) -> String {
     };
     let mut dv: Vec<f64> = group.iter().filter(|o| !o.same_visits).map(|o| o.max_visit_diff as f64).collect();
     let dvmax = dv.iter().cloned().fold(0.0, f64::max);
-    let dvs = if dv.is_empty() { "-".to_string() } else { format!("{:.0}/{:.0}", dvmax, median(&mut dv)) };
+    let dvs = if dv.is_empty() {
+      "-".to_string()
+    } else {
+      format!("{:.0}/{:.0}", dvmax, median(&mut dv))
+    };
     let _ = writeln!(
       s,
       "  {:>6} {:>3} {:>8} {:>8} {:>8} {:>19} {:>19} {:>19} {:>19} {:>19} {:>12}",
@@ -147,15 +172,31 @@ fn summary(label: &str, outcomes: &[Outcome], total_seconds: f64) -> String {
     outcomes.len()
   );
   if n_div > 0 {
-    let _ = writeln!(s, "{label}: searches whose root visit vector differs (first differing child, children order; first 12):");
+    let _ = writeln!(
+      s,
+      "{label}: searches whose root visit vector differs (first differing child, children order; first 12):"
+    );
     for o in outcomes.iter().filter(|o| !o.same_visits).take(12) {
-      let _ = writeln!(s, "  case {} ({}, base {}, {} visits, {}): {}", o.idx, o.name, o.base, o.max_visits, o.params, o.first_div.as_deref().unwrap_or(""));
+      let _ = writeln!(
+        s,
+        "  case {} ({}, base {}, {} visits, {}): {}",
+        o.idx,
+        o.name,
+        o.base,
+        o.max_visits,
+        o.params,
+        o.first_div.as_deref().unwrap_or("")
+      );
     }
   }
   if n_top > 0 {
     let _ = writeln!(s, "{label}: searches whose chosen move differs:");
     for o in outcomes.iter().filter(|o| !o.same_top) {
-      let _ = writeln!(s, "  case {} ({}, base {}, {} visits, {}): {}", o.idx, o.name, o.base, o.max_visits, o.params, o.top_note);
+      let _ = writeln!(
+        s,
+        "  case {} ({}, base {}, {} visits, {}): {}",
+        o.idx, o.name, o.base, o.max_visits, o.params, o.top_note
+      );
     }
   }
   s
@@ -199,24 +240,72 @@ fn check(label: &str, outcomes: Vec<Outcome>) {
   let n = outcomes.len();
   for o in &outcomes {
     assert!(o.root_visits_equal, "{label} case {} ({}): root visit count differs", o.idx, o.name);
-    assert!(o.diff.wl <= TOL_WINRATE_UTILITY, "{label} case {} ({}): winLossValue diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.wl, TOL_WINRATE_UTILITY);
-    assert!(o.diff.util <= TOL_WINRATE_UTILITY, "{label} case {} ({}): utility diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.util, TOL_WINRATE_UTILITY);
-    assert!(o.diff.sm <= TOL_SCORE, "{label} case {} ({}): scoreMean diff {:.3e} > {}", o.idx, o.name, o.diff.sm, TOL_SCORE);
-    assert!(o.diff.lead <= TOL_SCORE, "{label} case {} ({}): lead diff {:.3e} > {}", o.idx, o.name, o.diff.lead, TOL_SCORE);
-    assert!(o.diff.prior <= TOL_PRIOR, "{label} case {} ({}): prior diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.prior, TOL_PRIOR);
+    assert!(
+      o.diff.wl <= TOL_WINRATE_UTILITY,
+      "{label} case {} ({}): winLossValue diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.wl,
+      TOL_WINRATE_UTILITY
+    );
+    assert!(
+      o.diff.util <= TOL_WINRATE_UTILITY,
+      "{label} case {} ({}): utility diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.util,
+      TOL_WINRATE_UTILITY
+    );
+    assert!(
+      o.diff.sm <= TOL_SCORE,
+      "{label} case {} ({}): scoreMean diff {:.3e} > {}",
+      o.idx,
+      o.name,
+      o.diff.sm,
+      TOL_SCORE
+    );
+    assert!(
+      o.diff.lead <= TOL_SCORE,
+      "{label} case {} ({}): lead diff {:.3e} > {}",
+      o.idx,
+      o.name,
+      o.diff.lead,
+      TOL_SCORE
+    );
+    assert!(
+      o.diff.prior <= TOL_PRIOR,
+      "{label} case {} ({}): prior diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.prior,
+      TOL_PRIOR
+    );
   }
   let same_top = outcomes.iter().filter(|o| o.same_top).count();
-  assert!(same_top as f64 >= MIN_SAME_TOP * n as f64, "{label}: chosen move equal in only {same_top}/{n} searches (need {:.0}%)", MIN_SAME_TOP * 100.0);
+  assert!(
+    same_top as f64 >= MIN_SAME_TOP * n as f64,
+    "{label}: chosen move equal in only {same_top}/{n} searches (need {:.0}%)",
+    MIN_SAME_TOP * 100.0
+  );
 }
 
 /// Big stack: Search (~40 KB), BoardHistory (~34 KB) and the recursive playout futures.
 fn on_big_stack(label: &'static str, f: impl FnOnce() -> Vec<Outcome> + Send + 'static) -> Vec<Outcome> {
-  std::thread::Builder::new().name(label.to_string()).stack_size(256 << 20).spawn(f).unwrap().join().unwrap_or_else(|_| panic!("{label} run panicked"))
+  std::thread::Builder::new()
+    .name(label.to_string())
+    .stack_size(256 << 20)
+    .spawn(f)
+    .unwrap()
+    .join()
+    .unwrap_or_else(|_| panic!("{label} run panicked"))
 }
 
 #[cfg(feature = "net-b6c96")]
 #[test]
-#[cfg_attr(debug_assertions, ignore = "debug burn is very slow: run `cargo test --release -p katago-nn-burn --test search_tolerance -- --nocapture`")]
+#[cfg_attr(
+  debug_assertions,
+  ignore = "debug burn is very slow: run `cargo test --release -p katago-nn-burn --test search_tolerance -- --nocapture`"
+)]
 fn search_tolerance_b6c96() {
   let outcomes = on_big_stack("b6c96", || {
     run::<katago_nn_burn::b6c96::Model>("g170-b6c96", "search_tolerance_b6c96.txt", katago_nn_burn::b6c96::BPK_PATH)
@@ -226,7 +315,10 @@ fn search_tolerance_b6c96() {
 
 #[cfg(feature = "net-b10c128")]
 #[test]
-#[cfg_attr(debug_assertions, ignore = "debug burn is very slow: run `cargo test --release -p katago-nn-burn --test search_tolerance -- --nocapture`")]
+#[cfg_attr(
+  debug_assertions,
+  ignore = "debug burn is very slow: run `cargo test --release -p katago-nn-burn --test search_tolerance -- --nocapture`"
+)]
 fn search_tolerance_b10c128() {
   let outcomes = on_big_stack("b10c128", || {
     run::<katago_nn_burn::b10c128::Model>("g170e-b10c128", "search_tolerance_b10c128.txt", katago_nn_burn::b10c128::BPK_PATH)

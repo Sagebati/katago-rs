@@ -101,16 +101,28 @@ pub fn parse_cases(file: &str) -> Vec<Case> {
     let moves: Vec<(Loc, i8)> = if kv["moves"] == "-" {
       Vec::new()
     } else {
-      kv["moves"].split(',').map(|m| m.split_once('/').map(|(l, p)| (l.parse().unwrap(), p.parse().unwrap())).unwrap()).collect()
+      kv["moves"]
+        .split(',')
+        .map(|m| m.split_once('/').map(|(l, p)| (l.parse().unwrap(), p.parse().unwrap())).unwrap())
+        .collect()
     };
     let params: Vec<(String, String)> = if kv["params"] == "-" {
       Vec::new()
     } else {
-      kv["params"].split(',').map(|p| p.split_once('=').map(|(k, v)| (k.to_string(), v.to_string())).unwrap()).collect()
+      kv["params"]
+        .split(',')
+        .map(|p| p.split_once('=').map(|(k, v)| (k.to_string(), v.to_string())).unwrap())
+        .collect()
     };
 
     // The result block.
-    let mut res = SearchResult { root_visits: -1, children: Vec::new(), rv: [f64::NAN; 6], chosen: Board::NULL_LOC, chosen_str: String::new() };
+    let mut res = SearchResult {
+      root_visits: -1,
+      children: Vec::new(),
+      rv: [f64::NAN; 6],
+      chosen: Board::NULL_LOC,
+      chosen_str: String::new(),
+    };
     loop {
       let l = lines.next().expect("END line");
       if let Some(n) = l.strip_prefix("END ") {
@@ -134,7 +146,16 @@ pub fn parse_cases(file: &str) -> Vec<Case> {
           prior: num(&t, "prior="),
         }),
         _ if t[0].starts_with("children=") => assert_eq!(t[0]["children=".len()..].parse::<usize>().unwrap(), res.children.len()),
-        "RV" => res.rv = [num(&t, "win="), num(&t, "loss="), num(&t, "es="), num(&t, "lead="), num(&t, "wl="), num(&t, "util=")],
+        "RV" => {
+          res.rv = [
+            num(&t, "win="),
+            num(&t, "loss="),
+            num(&t, "es="),
+            num(&t, "lead="),
+            num(&t, "wl="),
+            num(&t, "util="),
+          ]
+        }
         "chosen" => {
           res.chosen = field(&t, "loc=").parse().unwrap();
           res.chosen_str = t[2].to_string();
@@ -231,7 +252,7 @@ pub fn run_search(pool: &mut LocalPool, nn_eval: &Rc<NNEvaluator>, c: &Case, set
   let mut v = ReportedSearchValues::new();
   assert!(search.get_root_values(&mut v));
   let chosen = search.get_chosen_move_loc();
-  
+
   SearchResult {
     root_visits: search.get_root_visits(),
     children: out,
@@ -317,13 +338,25 @@ pub fn compare(c: &Case, got: &SearchResult, seconds: f64) -> Outcome {
     }
   }
   // rv: win, loss, es, lead, wl, util
-  d.wl = d.wl.max((got.rv[0] - want.rv[0]).abs()).max((got.rv[1] - want.rv[1]).abs()).max((got.rv[4] - want.rv[4]).abs());
+  d.wl = d
+    .wl
+    .max((got.rv[0] - want.rv[0]).abs())
+    .max((got.rv[1] - want.rv[1]).abs())
+    .max((got.rv[4] - want.rv[4]).abs());
   d.sm = d.sm.max((got.rv[2] - want.rv[2]).abs());
   d.lead = d.lead.max((got.rv[3] - want.rv[3]).abs());
   d.util = d.util.max((got.rv[5] - want.rv[5]).abs());
   let same_top = got.chosen == want.chosen;
-  let top_note = if same_top { String::new() } else { format!("eigen {} vs burn {}", want.chosen_str, got.chosen_str) };
-  let params = if c.params.is_empty() { "-".to_string() } else { c.params.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join(",") };
+  let top_note = if same_top {
+    String::new()
+  } else {
+    format!("eigen {} vs burn {}", want.chosen_str, got.chosen_str)
+  };
+  let params = if c.params.is_empty() {
+    "-".to_string()
+  } else {
+    c.params.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join(",")
+  };
   Outcome {
     idx: c.idx,
     name: c.name.clone(),

@@ -16,6 +16,8 @@
 //! Heavy (11680 NN rows with b6c96 plus the searches): ~4 min in release (`cargo test --release -p katago-nn-burn
 //! --test testsearchv9 -- --nocapture`), ~8 min in debug (burn's kernels are optimized in the dev profile).
 //! Set KATAGO_SEARCH_TEST_DUMP=<dir> to write the captured stdout there.
+// A transcription of upstream: keeps upstream's line breaks (rustfmt.toml).
+#![cfg_attr(rustfmt, rustfmt::skip)]
 #![cfg(all(feature = "flex", feature = "net-b6c96"))]
 #![allow(clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::too_many_arguments, clippy::needless_bool)]
 

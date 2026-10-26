@@ -102,8 +102,11 @@ All tasks go through `just` (see `justfile`):
 | `just check-features` | serde_json: `float_roundtrip` on, `preserve_order` off |
 | `just manifest-check` | every upstream cpp/ file owned once in `port-manifest.toml` |
 
-Formatting: katago-core and the ported files elsewhere (`katago-nn-burn/src/backend.rs`, `host.rs`) keep
-upstream's line breaks and a 2-space indent by hand; never run `cargo fmt` on them. Python tools run with the repo venv and `-I`: `.venv/bin/python -I tools/...`. Rust:
+Formatting: `just fmt` (`cargo fmt --all`). katago-core (`disable_all_formatting` in its rustfmt.toml) and the
+files ported or transcribed from upstream elsewhere (`#[rustfmt::skip]` / `#![cfg_attr(rustfmt, rustfmt::skip)]`:
+nn-burn's backend.rs, host.rs, the testsearch* tests and common_search) keep upstream's line breaks by hand;
+katago-cli, katago-wasm and katago-nn-burn use 2-space indents (their rustfmt.toml), katago-annotate rustfmt's
+defaults (as katago-ws, whose code it carries). Python tools run with the repo venv and `-I`: `.venv/bin/python -I tools/...`. Rust:
 `cargo check -p <crate>`, `cargo nextest run -p <crate>` (cargo-nextest: one process per test, GPU tests one
 at a time, see `.config/nextest.toml`; there are no doctests), and for wasm
 `cargo check -p <crate> --target wasm32-unknown-unknown` (SIMD128 is on via `.cargo/config.toml`). The wasm

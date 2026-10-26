@@ -37,7 +37,11 @@ pub const HUMAN: &str = "models/b18c384nbt-humanv0.bin.gz";
 /// with the lines of `query_file` (relative to cpp/) on stdin, through `katago_core::command::analysis::analysis`
 /// with the burn flex backend; returns the stdout lines. Runs on a 256 MB-stack thread.
 pub fn run_analysis(query_file: &str, model: &str, extra: &str) -> Vec<String> {
-  let lines: Vec<String> = std::fs::read_to_string(format!("{}/{query_file}", cpp_dir())).expect("query file").lines().map(str::to_string).collect();
+  let lines: Vec<String> = std::fs::read_to_string(format!("{}/{query_file}", cpp_dir()))
+    .expect("query file")
+    .lines()
+    .map(str::to_string)
+    .collect();
   assert!(!lines.is_empty(), "{query_file}: no query lines");
   run_analysis_lines(lines, model, extra)
 }
@@ -80,8 +84,11 @@ pub fn run_analysis_bytes_human(
 /// handshake of runcmdtests.sh's eval-cache test (regen.sh `eval_cache`), so each request finds the
 /// previous one's search done.
 pub fn run_analysis_handshake(query_file: &str, model: &str, extra: &str) -> Vec<String> {
-  let lines: Vec<Vec<u8>> =
-    std::fs::read_to_string(format!("{}/{query_file}", cpp_dir())).expect("query file").lines().map(|l| l.as_bytes().to_vec()).collect();
+  let lines: Vec<Vec<u8>> = std::fs::read_to_string(format!("{}/{query_file}", cpp_dir()))
+    .expect("query file")
+    .lines()
+    .map(|l| l.as_bytes().to_vec())
+    .collect();
   assert!(!lines.is_empty(), "{query_file}: no query lines");
   let model = model.to_string();
   let extra = extra.to_string();
@@ -363,7 +370,11 @@ pub fn compare_line(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>) -> Re
 
 /// Compares `got` with `gold` line by line under the policy above.
 pub fn compare(gold: &[String], got: &[String]) -> Comparison {
-  let mut c = Comparison { num_lines: gold.len(), byte_identical: gold == got, ..Default::default() };
+  let mut c = Comparison {
+    num_lines: gold.len(),
+    byte_identical: gold == got,
+    ..Default::default()
+  };
   if gold.len() != got.len() {
     c.divergence = Some(format!("{} lines vs {} expected", got.len(), gold.len()));
     return c;
@@ -388,8 +399,11 @@ pub fn check_golden_human(name: &str, query_file: &str, model: &str, human_model
   let gold = read_golden(name);
   assert!(!gold.is_empty(), "{name}: empty golden");
   let t0 = std::time::Instant::now();
-  let lines: Vec<Vec<u8>> =
-    std::fs::read_to_string(format!("{}/{query_file}", cpp_dir())).expect("query file").lines().map(|l| l.as_bytes().to_vec()).collect();
+  let lines: Vec<Vec<u8>> = std::fs::read_to_string(format!("{}/{query_file}", cpp_dir()))
+    .expect("query file")
+    .lines()
+    .map(|l| l.as_bytes().to_vec())
+    .collect();
   assert!(!lines.is_empty(), "{query_file}: no query lines");
   let (got, code) = run_analysis_bytes_human(lines, model, human_model, extra);
   match code {
@@ -401,7 +415,12 @@ pub fn check_golden_human(name: &str, query_file: &str, model: &str, human_model
   let gold: Vec<String> = gold.iter().map(|l| normalize_max_batch_size(l)).collect();
   let got: Vec<String> = got.iter().map(|l| normalize_max_batch_size(l)).collect();
   let c = compare(&gold, &got);
-  eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
+  eprintln!(
+    "analysis golden {name}: {} lines, {} ({:.1} s)",
+    c.num_lines,
+    c.status(),
+    t0.elapsed().as_secs_f64()
+  );
   c
 }
 
@@ -425,6 +444,11 @@ pub fn check_golden(name: &str, query_file: &str, model: &str, extra: &str) -> C
   let t0 = std::time::Instant::now();
   let got = run_analysis(query_file, model, extra);
   let c = compare(&gold, &got);
-  eprintln!("analysis golden {name}: {} lines, {} ({:.1} s)", c.num_lines, c.status(), t0.elapsed().as_secs_f64());
+  eprintln!(
+    "analysis golden {name}: {} lines, {} ({:.1} s)",
+    c.num_lines,
+    c.status(),
+    t0.elapsed().as_secs_f64()
+  );
   c
 }

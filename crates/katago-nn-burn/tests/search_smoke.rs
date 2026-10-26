@@ -45,8 +45,16 @@ const MIN_SAME_TOP: f64 = 0.9;
 
 fn summary(outcomes: &[Outcome], total_seconds: f64) -> String {
   let mut s = String::new();
-  let _ = writeln!(s, "search_smoke: g170-b6c96, burn flex vs Eigen fp32, {} searches in {:.1} s", outcomes.len(), total_seconds);
-  let _ = writeln!(s, "per search (diffs are max |burn - eigen| over the children both trees have + the root values):");
+  let _ = writeln!(
+    s,
+    "search_smoke: g170-b6c96, burn flex vs Eigen fp32, {} searches in {:.1} s",
+    outcomes.len(),
+    total_seconds
+  );
+  let _ = writeln!(
+    s,
+    "per search (diffs are max |burn - eigen| over the children both trees have + the root values):"
+  );
   let _ = writeln!(
     s,
     "  {:>3} {:<12} {:>4} {:>6} {:>4} {:>4} {:>9} {:>9} {:>9} {:>9} {:>6}",
@@ -122,7 +130,15 @@ fn summary(outcomes: &[Outcome], total_seconds: f64) -> String {
   if n_div > 0 {
     let _ = writeln!(s, "searches whose root visit vector differs (first differing child, children order):");
     for o in outcomes.iter().filter(|o| !o.same_visits).take(8) {
-      let _ = writeln!(s, "  case {} ({}, base {}, {} visits): {}", o.idx, o.name, o.base, o.max_visits, o.first_div.as_deref().unwrap_or(""));
+      let _ = writeln!(
+        s,
+        "  case {} ({}, base {}, {} visits): {}",
+        o.idx,
+        o.name,
+        o.base,
+        o.max_visits,
+        o.first_div.as_deref().unwrap_or("")
+      );
     }
   }
   if n_top > 0 {
@@ -170,15 +186,53 @@ fn run() -> Vec<Outcome> {
 #[test]
 fn search_smoke_b6c96() {
   //Big stack: Search (~40 KB), BoardHistory (~34 KB) and the recursive playout futures.
-  let outcomes = std::thread::Builder::new().name("search_smoke".to_string()).stack_size(256 << 20).spawn(run).unwrap().join().expect("search_smoke run panicked");
+  let outcomes = std::thread::Builder::new()
+    .name("search_smoke".to_string())
+    .stack_size(256 << 20)
+    .spawn(run)
+    .unwrap()
+    .join()
+    .expect("search_smoke run panicked");
   let n = outcomes.len();
   for o in &outcomes {
     assert!(o.root_visits_equal, "case {} ({}): root visit count differs", o.idx, o.name);
-    assert!(o.diff.wl <= TOL_WINRATE_UTILITY, "case {} ({}): winLossValue diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.wl, TOL_WINRATE_UTILITY);
-    assert!(o.diff.util <= TOL_WINRATE_UTILITY, "case {} ({}): utility diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.util, TOL_WINRATE_UTILITY);
-    assert!(o.diff.sm.max(o.diff.lead) <= TOL_SCORE, "case {} ({}): score diff {:.3e} > {}", o.idx, o.name, o.diff.sm.max(o.diff.lead), TOL_SCORE);
-    assert!(o.diff.prior <= TOL_PRIOR, "case {} ({}): prior diff {:.3e} > {:.0e}", o.idx, o.name, o.diff.prior, TOL_PRIOR);
+    assert!(
+      o.diff.wl <= TOL_WINRATE_UTILITY,
+      "case {} ({}): winLossValue diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.wl,
+      TOL_WINRATE_UTILITY
+    );
+    assert!(
+      o.diff.util <= TOL_WINRATE_UTILITY,
+      "case {} ({}): utility diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.util,
+      TOL_WINRATE_UTILITY
+    );
+    assert!(
+      o.diff.sm.max(o.diff.lead) <= TOL_SCORE,
+      "case {} ({}): score diff {:.3e} > {}",
+      o.idx,
+      o.name,
+      o.diff.sm.max(o.diff.lead),
+      TOL_SCORE
+    );
+    assert!(
+      o.diff.prior <= TOL_PRIOR,
+      "case {} ({}): prior diff {:.3e} > {:.0e}",
+      o.idx,
+      o.name,
+      o.diff.prior,
+      TOL_PRIOR
+    );
   }
   let same_top = outcomes.iter().filter(|o| o.same_top).count();
-  assert!(same_top as f64 >= MIN_SAME_TOP * n as f64, "chosen move equal in only {same_top}/{n} searches (need {:.0}%)", MIN_SAME_TOP * 100.0);
+  assert!(
+    same_top as f64 >= MIN_SAME_TOP * n as f64,
+    "chosen move equal in only {same_top}/{n} searches (need {:.0}%)",
+    MIN_SAME_TOP * 100.0
+  );
 }

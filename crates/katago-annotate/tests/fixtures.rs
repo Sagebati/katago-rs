@@ -8,7 +8,10 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::io::Read as _;
 
-use katago_annotate::{AnalysisQuery, AnnotateOptions, AnnotateResult, Analyzer, Fed, Pass, TurnCollector, TurnResponse};
+use katago_annotate::{
+    AnalysisQuery, Analyzer, AnnotateOptions, AnnotateResult, Fed, Pass, TurnCollector,
+    TurnResponse,
+};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -26,11 +29,31 @@ macro_rules! case {
     ($name:literal) => {
         Case {
             name: $name,
-            sgf: include_str!(concat!("../../../fixtures/katago-annotate/", $name, "/game.sgf")),
-            case: include_str!(concat!("../../../fixtures/katago-annotate/", $name, "/case.json")),
-            queries: include_str!(concat!("../../../fixtures/katago-annotate/", $name, "/queries.jsonl")),
-            responses_gz: include_bytes!(concat!("../../../fixtures/katago-annotate/", $name, "/responses.jsonl.gz")),
-            expected_gz: include_bytes!(concat!("../../../fixtures/katago-annotate/", $name, "/expected.json.gz")),
+            sgf: include_str!(concat!(
+                "../../../fixtures/katago-annotate/",
+                $name,
+                "/game.sgf"
+            )),
+            case: include_str!(concat!(
+                "../../../fixtures/katago-annotate/",
+                $name,
+                "/case.json"
+            )),
+            queries: include_str!(concat!(
+                "../../../fixtures/katago-annotate/",
+                $name,
+                "/queries.jsonl"
+            )),
+            responses_gz: include_bytes!(concat!(
+                "../../../fixtures/katago-annotate/",
+                $name,
+                "/responses.jsonl.gz"
+            )),
+            expected_gz: include_bytes!(concat!(
+                "../../../fixtures/katago-annotate/",
+                $name,
+                "/expected.json.gz"
+            )),
         }
     };
 }
@@ -47,7 +70,9 @@ fn cases() -> Vec<Case> {
 
 fn gunzip(bytes: &[u8]) -> String {
     let mut out = String::new();
-    flate2::read::GzDecoder::new(bytes).read_to_string(&mut out).unwrap();
+    flate2::read::GzDecoder::new(bytes)
+        .read_to_string(&mut out)
+        .unwrap();
     out
 }
 
@@ -64,17 +89,29 @@ struct Replay {
 }
 
 impl Analyzer for Replay {
-    async fn analyze(&self, pass: Pass, mut query: AnalysisQuery) -> AnnotateResult<Vec<TurnResponse>> {
+    async fn analyze(
+        &self,
+        pass: Pass,
+        mut query: AnalysisQuery,
+    ) -> AnnotateResult<Vec<TurnResponse>> {
         let k = self.next.get();
         self.next.set(k + 1);
         self.passes.borrow_mut().push(pass);
         query.id = format!("q{k}");
-        assert_eq!(serde_json::to_string(&query).unwrap(), self.queries[k], "query line {k}");
+        assert_eq!(
+            serde_json::to_string(&query).unwrap(),
+            self.queries[k],
+            "query line {k}"
+        );
         let lines = &self.responses[&query.id];
         let mut collector = TurnCollector::new(query.id.clone(), lines.len());
         for line in lines {
             let fed = collector.feed(line)?;
-            assert!(matches!(fed, Fed::Turn), "not a turn of {}: {fed:?}", query.id);
+            assert!(
+                matches!(fed, Fed::Turn),
+                "not a turn of {}: {fed:?}",
+                query.id
+            );
         }
         Ok(collector.into_turns())
     }
@@ -83,7 +120,10 @@ impl Analyzer for Replay {
 fn replay(case: &Case) -> Replay {
     let mut responses: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for line in gunzip(case.responses_gz).lines() {
-        let id = serde_json::from_str::<serde_json::Value>(line).unwrap()["id"].as_str().unwrap().to_owned();
+        let id = serde_json::from_str::<serde_json::Value>(line).unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
         responses.entry(id).or_default().push(line.to_owned());
     }
     Replay {
@@ -96,14 +136,31 @@ fn replay(case: &Case) -> Replay {
 
 /// Where two texts first differ, with some context.
 fn first_difference(got: &str, expected: &str) -> String {
-    let at = got.bytes().zip(expected.bytes()).take_while(|(a, b)| a == b).count();
-    let window = |s: &str| s.get(at.saturating_sub(80)..(at + 40).min(s.len())).unwrap_or("").to_owned();
-    format!("byte {at} of {}/{}: got ...{}... expected ...{}...", got.len(), expected.len(), window(got), window(expected))
+    let at = got
+        .bytes()
+        .zip(expected.bytes())
+        .take_while(|(a, b)| a == b)
+        .count();
+    let window = |s: &str| {
+        s.get(at.saturating_sub(80)..(at + 40).min(s.len()))
+            .unwrap_or("")
+            .to_owned()
+    };
+    format!(
+        "byte {at} of {}/{}: got ...{}... expected ...{}...",
+        got.len(),
+        expected.len(),
+        window(got),
+        window(expected)
+    )
 }
 
 fn options(case: &Case) -> (AnnotateOptions, Option<String>) {
     let json: serde_json::Value = serde_json::from_str(case.case).unwrap();
-    (serde_json::from_value(json["options"].clone()).unwrap(), json["humanProfile"].as_str().map(str::to_owned))
+    (
+        serde_json::from_value(json["options"].clone()).unwrap(),
+        json["humanProfile"].as_str().map(str::to_owned),
+    )
 }
 
 #[test]
@@ -111,13 +168,38 @@ fn payloads_are_byte_identical_to_katago_ws() {
     for case in cases() {
         let (opts, human_profile) = options(&case);
         let engine = replay(&case);
-        let payload = block_on(katago_annotate::analyze(&engine, &opts, case.sgf, human_profile.as_deref())).unwrap();
+        let payload = block_on(katago_annotate::analyze(
+            &engine,
+            &opts,
+            case.sgf,
+            human_profile.as_deref(),
+        ))
+        .unwrap();
         let json = serde_json::to_string(&payload).unwrap();
-        assert_eq!(engine.next.get(), engine.queries.len(), "{}: every recorded query was made", case.name);
+        assert_eq!(
+            engine.next.get(),
+            engine.queries.len(),
+            "{}: every recorded query was made",
+            case.name
+        );
         let expected = gunzip(case.expected_gz);
-        assert!(json == expected, "{}: payload differs from katago-ws's: {}", case.name, first_difference(&json, &expected));
+        assert!(
+            json == expected,
+            "{}: payload differs from katago-ws's: {}",
+            case.name,
+            first_difference(&json, &expected)
+        );
         let passes = engine.passes.borrow();
-        assert_eq!(*passes, if opts.two_pass() { vec![Pass::Screen, Pass::Refine] } else { vec![Pass::Full] }, "{}", case.name);
+        assert_eq!(
+            *passes,
+            if opts.two_pass() {
+                vec![Pass::Screen, Pass::Refine]
+            } else {
+                vec![Pass::Full]
+            },
+            "{}",
+            case.name
+        );
     }
 }
 
@@ -128,9 +210,16 @@ fn the_engine_name_and_version_change_only_the_engine_object() {
     let (mut opts, human_profile) = options(case);
     opts.engine_name = "katago-rs-wasm".to_owned();
     opts.engine_version = Some("1.16.5".to_owned());
-    let payload = block_on(katago_annotate::analyze(&replay(case), &opts, case.sgf, human_profile.as_deref())).unwrap();
+    let payload = block_on(katago_annotate::analyze(
+        &replay(case),
+        &opts,
+        case.sgf,
+        human_profile.as_deref(),
+    ))
+    .unwrap();
     // Through the text (to_value would widen the f32s differently from parsing them).
-    let mut got: serde_json::Value = serde_json::from_str(&serde_json::to_string(&payload).unwrap()).unwrap();
+    let mut got: serde_json::Value =
+        serde_json::from_str(&serde_json::to_string(&payload).unwrap()).unwrap();
     let mut expected: serde_json::Value = serde_json::from_str(&gunzip(case.expected_gz)).unwrap();
     let engine = got.as_object_mut().unwrap().remove("engine").unwrap();
     let mut expected_engine = expected.as_object_mut().unwrap().remove("engine").unwrap();
@@ -147,7 +236,8 @@ fn the_engine_name_and_version_change_only_the_engine_object() {
 fn a_game_given_as_moves_gives_the_sgf_payload() {
     let case = &cases()[1];
     let (opts, human_profile) = options(case);
-    let game = katago_annotate::sgf::parse(case.sgf, opts.default_board_size, opts.default_komi).unwrap();
+    let game =
+        katago_annotate::sgf::parse(case.sgf, opts.default_board_size, opts.default_komi).unwrap();
     let input: katago_annotate::GameInput = serde_json::from_value(serde_json::json!({
         "boardSize": game.board_size, "komi": game.komi, "rules": game.rules, "result": game.result,
         "initialStones": game.initial_stones, "moves": game.moves,
@@ -155,6 +245,12 @@ fn a_game_given_as_moves_gives_the_sgf_payload() {
     .unwrap();
     let from_moves = input.into_game(19, 7.5).unwrap();
     assert_eq!(from_moves, game);
-    let payload = block_on(katago_annotate::analyze_game(&replay(case), &opts, &from_moves, human_profile.as_deref())).unwrap();
+    let payload = block_on(katago_annotate::analyze_game(
+        &replay(case),
+        &opts,
+        &from_moves,
+        human_profile.as_deref(),
+    ))
+    .unwrap();
     assert!(serde_json::to_string(&payload).unwrap() == gunzip(case.expected_gz));
 }

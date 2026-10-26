@@ -8,7 +8,6 @@ use katago_core::core::global::Global;
 use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
 
-
 struct LoggerState {
   to_stdout: bool,
   to_stderr: bool,
@@ -44,7 +43,11 @@ const TIME_FORMAT: &str = "%F %T%z: ";
 impl CliLogger {
   /// `Logger::write(str, true)` with the state locked.
   fn write_locked(state: &mut LoggerState, msg: &str) {
-    let line = if state.log_time { local_time_string(TIME_FORMAT) + msg + "\n" } else { ": ".to_string() + msg + "\n" };
+    let line = if state.log_time {
+      local_time_string(TIME_FORMAT) + msg + "\n"
+    } else {
+      ": ".to_string() + msg + "\n"
+    };
     if state.to_stdout {
       let stdout = std::io::stdout();
       let mut lock = stdout.lock();
@@ -122,7 +125,12 @@ fn add_file(state: &mut LoggerState, file: &str) {
 /// then addFile of `<dir>/[<date>/]<compact date>-<random hex>.log`). Installs the backend if needed.
 pub fn init_logger(settings: &LoggerSettings) -> Result<(), KataError> {
   install_logger();
-  let mut state = LoggerState { to_stdout: settings.log_to_stdout, to_stderr: settings.log_to_stderr, log_time: settings.log_time, files: Vec::new() };
+  let mut state = LoggerState {
+    to_stdout: settings.log_to_stdout,
+    to_stderr: settings.log_to_stderr,
+    log_time: settings.log_time,
+    files: Vec::new(),
+  };
   let compact = || local_time_string("%Y%m%d-%H%M%S");
   if let Some(f) = &settings.log_file {
     add_file(&mut state, f);

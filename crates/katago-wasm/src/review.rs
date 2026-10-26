@@ -15,13 +15,13 @@ use js_sys::Reflect;
 use wasm_bindgen::prelude::*;
 
 use katago_annotate::AnalysisQuery;
+use katago_annotate::Analyzer;
 use katago_annotate::AnnotateError;
 use katago_annotate::AnnotateOptions;
 use katago_annotate::AnnotateResult;
-use katago_annotate::Analyzer;
+use katago_annotate::Fed;
 use katago_annotate::GameInput;
 use katago_annotate::Pass;
-use katago_annotate::Fed;
 use katago_annotate::TurnCollector;
 use katago_annotate::TurnResponse;
 
@@ -40,7 +40,9 @@ impl Router {
     if self.routes.borrow().is_empty() || !line.contains(REVIEW_ID_PREFIX) {
       return false;
     }
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else { return false };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+      return false;
+    };
     let Some(id) = value.get("id").and_then(|v| v.as_str()) else { return false };
     match self.routes.borrow().get(id) {
       Some(tx) => {
@@ -54,7 +56,11 @@ impl Router {
   fn add(&self, id: &str) -> Route {
     let (tx, rx) = mpsc::unbounded();
     self.routes.borrow_mut().insert(id.to_owned(), tx);
-    Route { router: self.clone(), id: id.to_owned(), rx }
+    Route {
+      router: self.clone(),
+      id: id.to_owned(),
+      rx,
+    }
   }
 }
 
@@ -130,14 +136,19 @@ impl Analyzer for WasmAnalyzer {
     let expected = query.analyze_turns.len();
     let line = serde_json::to_string(&query).map_err(|e| AnnotateError::Inference(format!("serialize query: {e}")))?;
     let mut route = self.router.add(&id);
-    self.input.unbounded_send(vec![line.into_bytes()]).map_err(|_| AnnotateError::Inference("the engine has exited".to_owned()))?;
+    self
+      .input
+      .unbounded_send(vec![line.into_bytes()])
+      .map_err(|_| AnnotateError::Inference("the engine has exited".to_owned()))?;
     *self.state.active.borrow_mut() = Some(id.clone());
     let mut collector = TurnCollector::new(id.clone(), expected);
     let result = loop {
       if collector.is_done() {
         break Ok(());
       }
-      let Some(line) = route.rx.next().await else { break Err(AnnotateError::Inference("the engine has exited".to_owned())) };
+      let Some(line) = route.rx.next().await else {
+        break Err(AnnotateError::Inference("the engine has exited".to_owned()));
+      };
       match collector.feed(&line) {
         Ok(Fed::Turn) => {
           self.analysed.set(self.analysed.get() + 1);
@@ -193,7 +204,9 @@ pub(crate) fn read_args(
   let input = if let Some(sgf) = input.as_string() {
     ReviewInput::Sgf(sgf)
   } else if input.is_object() {
-    let text: String = js_sys::JSON::stringify(input).map_err(|_| JsError::new("reviewGame: the game is not JSON-serializable"))?.into();
+    let text: String = js_sys::JSON::stringify(input)
+      .map_err(|_| JsError::new("reviewGame: the game is not JSON-serializable"))?
+      .into();
     ReviewInput::Moves(serde_json::from_str(&text).map_err(|e| JsError::new(&format!("reviewGame: bad game: {e}")))?)
   } else {
     return Err(JsError::new("reviewGame: the game must be SGF text or {moves, rules, komi, ...}"));
@@ -201,7 +214,9 @@ pub(crate) fn read_args(
   let opts_json = if options.is_undefined() || options.is_null() {
     serde_json::Value::Object(Default::default())
   } else {
-    let text: String = js_sys::JSON::stringify(options).map_err(|_| JsError::new("reviewGame: options are not JSON-serializable"))?.into();
+    let text: String = js_sys::JSON::stringify(options)
+      .map_err(|_| JsError::new("reviewGame: options are not JSON-serializable"))?
+      .into();
     serde_json::from_str(&text).map_err(|e| JsError::new(&format!("reviewGame: bad options: {e}")))?
   };
   if let Some(obj) = opts_json.as_object() {

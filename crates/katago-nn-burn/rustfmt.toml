@@ -1,0 +1,4 @@
+# The style of this crate (and of the port): 2-space indent, long lines. katago-core is not formatted
+# (crates/katago-core/rustfmt.toml), nor are the files here that are ported from upstream (#[rustfmt::skip]).
+tab_spaces = 2
+max_width = 160

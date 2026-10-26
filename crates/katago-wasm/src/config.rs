@@ -64,7 +64,9 @@ pub fn browser_defaults(backend: Backend) -> &'static str {
 pub fn build_config(base: Option<&str>, backend: Backend, overrides: &[String]) -> Result<(ConfigParser, Vec<String>), KataError> {
   let mut cfg = ConfigParser::new(false, true);
   cfg.set_include_reader(Rc::new(|path: &str| -> Result<String, KataError> {
-    Err(KataError::IOError(format!("Could not open file {path} - does not exist or invalid permissions? (no config files in the browser)")))
+    Err(KataError::IOError(format!(
+      "Could not open file {path} - does not exist or invalid permissions? (no config files in the browser)"
+    )))
   }));
   cfg.initialize_in(base.unwrap_or(ANALYSIS_EXAMPLE_CFG))?;
   let mut applied: Vec<String> = Vec::new();

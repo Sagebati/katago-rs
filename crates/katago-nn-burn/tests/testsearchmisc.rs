@@ -13,6 +13,8 @@
 //! digit; the backend's own log lines are dropped). `inputsNHWC=true useNHWC=true` of the Eigen run are `false`
 //! here (burn is NCHW only; outputs do not depend on them). `runNNSymmetries` (the other block of this file)
 //! needs a model-version-5 net (g103, fillRowV4): not covered (tests/fixture_coverage.rs allowlist).
+// A transcription of upstream: keeps upstream's line breaks (rustfmt.toml).
+#![cfg_attr(rustfmt, rustfmt::skip)]
 #![cfg(all(feature = "flex", feature = "net-b6c96"))]
 #![allow(clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::too_many_arguments, clippy::needless_bool)]
 

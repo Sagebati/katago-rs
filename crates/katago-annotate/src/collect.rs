@@ -32,7 +32,11 @@ impl TurnCollector {
     /// A collector for query `id`, which asked for `expected` turns.
     #[must_use]
     pub fn new(id: impl Into<String>, expected: usize) -> Self {
-        Self { id: id.into(), expected, turns: Vec::with_capacity(expected) }
+        Self {
+            id: id.into(),
+            expected,
+            turns: Vec::with_capacity(expected),
+        }
     }
 
     /// Whether every requested turn has arrived.
@@ -65,10 +69,14 @@ impl TurnCollector {
                 Fed::Turn
             }
             ResponseLine::Turn { id, .. } => Fed::OtherQuery(id),
-            ResponseLine::Error { error, .. } => return Err(AnnotateError::Inference(format!("katago: {error}"))),
+            ResponseLine::Error { error, .. } => {
+                return Err(AnnotateError::Inference(format!("katago: {error}")));
+            }
             ResponseLine::Warning { warning, .. } => Fed::Warning(warning),
             ResponseLine::Unparsable(e) => Fed::Unparsable(format!("unparsable line: {e}")),
-            ResponseLine::UnparsableResponse { error, .. } => Fed::Unparsable(format!("unparsable response: {error}")),
+            ResponseLine::UnparsableResponse { error, .. } => {
+                Fed::Unparsable(format!("unparsable response: {error}"))
+            }
             ResponseLine::NoId => Fed::NoId,
         })
     }

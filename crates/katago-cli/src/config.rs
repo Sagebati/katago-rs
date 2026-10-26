@@ -6,7 +6,6 @@ use katago_core::core::config_parser::ConfigFileReader;
 use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
 
-
 /// The file reader for `ConfigParser` (`FileUtils::open` + read), with upstream's error text.
 pub fn file_reader() -> ConfigFileReader {
   Rc::new(|path: &str| -> Result<String, KataError> {

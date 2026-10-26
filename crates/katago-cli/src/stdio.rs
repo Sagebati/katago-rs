@@ -2,8 +2,6 @@
 
 use std::io::Write as _;
 
-
-
 /// `getline(cin, line)` as a Stream of byte lines (without '\n'). A reader thread sends every complete
 /// line of one read() as one batch, so a burst that the client wrote at once reaches the request loop
 /// at once (it is "immediately available", as upstream's buffered getline sees it). A final line without

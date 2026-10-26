@@ -1,9 +1,7 @@
 //! The command line: a TCLAP 1.2.5 emulation of the analysis subcommand (KataGoCommandLine), and the default
 //! model lookup.
 
-
 use katago_core::core::global::KataError;
-
 
 /// The parsed command line of `katago-rs analysis`.
 #[derive(Clone, Debug, Default)]
@@ -40,11 +38,18 @@ pub struct ArgError {
 
 impl ArgError {
   fn new(error: &str, arg_id: &str) -> ArgError {
-    ArgError { arg_id: arg_id.to_string(), error: error.to_string() }
+    ArgError {
+      arg_id: arg_id.to_string(),
+      error: error.to_string(),
+    }
   }
   /// `ArgException::argId()`
   pub fn arg_id_text(&self) -> String {
-    if self.arg_id == "undefined" { " ".to_string() } else { "Argument: ".to_string() + &self.arg_id }
+    if self.arg_id == "undefined" {
+      " ".to_string()
+    } else {
+      "Argument: ".to_string() + &self.arg_id
+    }
   }
   /// `StdOutput::failure` (stderr, then `exit(1)`).
   pub fn failure_text(&self) -> String {
@@ -123,10 +128,14 @@ pub fn version_text() -> String {
 
 /// The `-backend` values compiled into this build.
 pub fn compiled_backends() -> Vec<&'static str> {
-  [("flex", cfg!(feature = "flex")), ("wgpu", cfg!(feature = "wgpu")), ("rocm", cfg!(feature = "rocm"))]
-    .into_iter()
-    .filter_map(|(name, on)| on.then_some(name))
-    .collect()
+  [
+    ("flex", cfg!(feature = "flex")),
+    ("wgpu", cfg!(feature = "wgpu")),
+    ("rocm", cfg!(feature = "rocm")),
+  ]
+  .into_iter()
+  .filter_map(|(name, on)| on.then_some(name))
+  .collect()
 }
 
 /// `istringstream is(s); while(is.good()) { if(is.peek() != EOF) is >> int; else break; n++; }` (TCLAP
@@ -185,7 +194,10 @@ fn extract_int(s: &str) -> Result<i32, String> {
 /// `-override-config` repeatable, `--` ignores the rest, a lone `-` is accepted, anything else is
 /// "Couldn't find match for argument". `-backend` is katago-rs's own (a value argument).
 pub fn parse_args(args: &[String]) -> Result<ParsedArgs, ArgError> {
-  let mut out = CliArgs { backend: "flex".to_string(), ..CliArgs::default() };
+  let mut out = CliArgs {
+    backend: "flex".to_string(),
+    ..CliArgs::default()
+  };
   let mut model_set = false;
   let mut human_set = false;
   let mut threads_set = false;
@@ -294,7 +306,12 @@ pub fn parse_args(args: &[String]) -> Result<ParsedArgs, ArgError> {
 /// `HomeData::getDefaultFilesDirs()` (homedata.cpp, Unix): the executable's directory, then `$HOME/.katago`.
 fn default_files_dirs() -> Vec<String> {
   let mut ret = Vec::new();
-  if let Some(dir) = std::fs::read_link("/proc/self/exe").or_else(|_| std::env::current_exe()).ok().as_deref().and_then(std::path::Path::parent) {
+  if let Some(dir) = std::fs::read_link("/proc/self/exe")
+    .or_else(|_| std::env::current_exe())
+    .ok()
+    .as_deref()
+    .and_then(std::path::Path::parent)
+  {
     ret.push(dir.to_string_lossy().into_owned());
   }
   // PORT NOTE: without HOME upstream asks getpwuid_r; here the fallback is upstream's last resort "./.katago".
@@ -316,7 +333,10 @@ pub fn get_model_file(cli: &CliArgs) -> Result<String, KataError> {
     paths.push(d.clone() + "/default_model.bin.gz");
     paths.push(d + "/default_model.txt.gz");
   }
-  let path_for_err_msg = paths.first().cloned().unwrap_or_else(|| "(dir containing katago.exe, or else ~/.katago)/default_model.bin.gz".to_string());
+  let path_for_err_msg = paths
+    .first()
+    .cloned()
+    .unwrap_or_else(|| "(dir containing katago.exe, or else ~/.katago)/default_model.bin.gz".to_string());
   for path in &paths {
     if std::path::Path::new(path).exists() {
       return Ok(path.clone());

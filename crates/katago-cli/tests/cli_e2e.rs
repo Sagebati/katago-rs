@@ -25,7 +25,11 @@ fn run_binary(query_file: &str, extra: &str) -> (Vec<String>, String, i32) {
   child.stdin.take().unwrap().write_all(&input).unwrap();
   let out = child.wait_with_output().unwrap();
   let stdout = String::from_utf8(out.stdout).unwrap();
-  (stdout.lines().map(str::to_string).collect(), String::from_utf8_lossy(&out.stderr).into_owned(), out.status.code().unwrap_or(-1))
+  (
+    stdout.lines().map(str::to_string).collect(),
+    String::from_utf8_lossy(&out.stderr).into_owned(),
+    out.status.code().unwrap_or(-1),
+  )
 }
 
 #[test]
@@ -76,7 +80,15 @@ fn cli_uncaught_exception_aborts() {
   use std::os::unix::process::ExitStatusExt;
   let out = Command::new(env!("CARGO_BIN_EXE_katago-rs"))
     .current_dir(cpp_dir())
-    .args(["analysis", "-config", CFG, "-model", "tests/models/some-other-net.bin.gz", "-override-config", "logDir="])
+    .args([
+      "analysis",
+      "-config",
+      CFG,
+      "-model",
+      "tests/models/some-other-net.bin.gz",
+      "-override-config",
+      "logDir=",
+    ])
     .stdin(Stdio::null())
     .output()
     .unwrap();
@@ -112,10 +124,16 @@ fn cli_default_model_lookup() {
   };
   let out = run();
   assert_eq!(out.status.signal(), Some(6));
-  let exe_dir = std::path::Path::new(env!("CARGO_BIN_EXE_katago-rs")).parent().unwrap().to_string_lossy().into_owned();
+  let exe_dir = std::path::Path::new(env!("CARGO_BIN_EXE_katago-rs"))
+    .parent()
+    .unwrap()
+    .to_string_lossy()
+    .into_owned();
   assert_eq!(
     String::from_utf8_lossy(&out.stderr),
-    format!("terminate called after throwing an instance of 'StringError'\n  what():  -model MODELFILENAME.bin.gz was not specified to tell KataGo where to find the neural net model, and default was not found at {exe_dir}/default_model.bin.gz\n")
+    format!(
+      "terminate called after throwing an instance of 'StringError'\n  what():  -model MODELFILENAME.bin.gz was not specified to tell KataGo where to find the neural net model, and default was not found at {exe_dir}/default_model.bin.gz\n"
+    )
   );
   std::fs::create_dir_all(home.join(".katago")).unwrap();
   std::os::unix::fs::symlink(format!("{}/{M6}", cpp_dir()), home.join(".katago/default_model.bin.gz")).unwrap();
@@ -150,18 +168,30 @@ fn cli_logger_outputs() {
   let out = run("logDir=, logTimeStamp=false, logToStdout=true, logToStderr=false", "UTC");
   let stdout = String::from_utf8_lossy(&out.stdout);
   assert!(stdout.contains("\n: Analysis Engine starting...\n") || stdout.starts_with(": "), "{stdout}");
-  assert!(stdout.contains("{\"action\":\"query_version\"") && stdout.ends_with(": All cleaned up, quitting\n"), "{stdout}");
+  assert!(
+    stdout.contains("{\"action\":\"query_version\"") && stdout.ends_with(": All cleaned up, quitting\n"),
+    "{stdout}"
+  );
   // logDir, local time stamps (TZ=JST-9: +0900)
   let out = run(&format!("logDir={}", dir.display()), "JST-9");
   assert_eq!(out.status.code(), Some(0), "{:?} {}", out.status, String::from_utf8_lossy(&out.stderr));
-  let files: Vec<_> = std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+  let files: Vec<_> = std::fs::read_dir(&dir)
+    .unwrap()
+    .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+    .collect();
   assert_eq!(files.len(), 1, "{files:?}");
   let f = &files[0];
-  assert!(f.len() == "20261023-071500-0123ABCD.log".len() && f.ends_with(".log") && f.as_bytes()[8] == b'-' && f.as_bytes()[15] == b'-', "{f}");
+  assert!(
+    f.len() == "20261023-071500-0123ABCD.log".len() && f.ends_with(".log") && f.as_bytes()[8] == b'-' && f.as_bytes()[15] == b'-',
+    "{f}"
+  );
   let log = std::fs::read_to_string(dir.join(f)).unwrap();
   let first = log.lines().next().unwrap();
   // "2026-10-23 16:15:00+0900: Running with following config:"
-  assert!(first.len() > 26 && &first[19..26] == "+0900: " && first.ends_with("Running with following config:"), "{first}");
+  assert!(
+    first.len() > 26 && &first[19..26] == "+0900: " && first.ends_with("Running with following config:"),
+    "{first}"
+  );
   let stderr = String::from_utf8_lossy(&out.stderr);
   assert!(stderr.lines().next().unwrap().ends_with("+0900: Running with following config:"), "{stderr}");
   let _ = std::fs::remove_dir_all(&dir);
@@ -176,5 +206,8 @@ fn cli_logger_outputs() {
   // logDir that cannot be created
   let out = run("logDir=/proc/nope", "UTC");
   assert_eq!(out.status.signal(), Some(6));
-  assert_eq!(String::from_utf8_lossy(&out.stderr), "terminate called after throwing an instance of 'StringError'\n  what():  Error creating directory: /proc/nope\n");
+  assert_eq!(
+    String::from_utf8_lossy(&out.stderr),
+    "terminate called after throwing an instance of 'StringError'\n  what():  Error creating directory: /proc/nope\n"
+  );
 }
