@@ -1,6 +1,6 @@
 //! Differential oracle for the human-SL paths of the ported Search (M8): a main and a human-SL NNEvaluator
 //! (both debugSkipNeuralNet, so `requiresSGFMetadata()` is false and every human-SL path is live) against the
-//! unmodified upstream Search: fixtures/upstream-v1.16.5/unit/oracle/search_humansl.cpp (its header documents the
+//! unmodified upstream Search: fixtures/upstream-v1.18.2/unit/oracle/search_humansl.cpp (its header documents the
 //! CASE line and the fixed op sequence: search, printTree, getPlaySelectionValues, getChosenMoveLoc, getAnalysisJson
 //! with humanPrior / humanPolicy / rootInfo human*, then makeMove and a second search on the reused tree). Each case is
 //! rebuilt from its CASE line and must print the same bytes (floats as bits or through upstream's printers).

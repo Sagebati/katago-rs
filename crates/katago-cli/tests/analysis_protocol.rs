@@ -73,7 +73,7 @@ fn protocol_actions_and_errors() {
   eprintln!("protocol_actions_and_errors: {} responses", got.len());
 }
 
-/// Upstream's dominant outcome (fixtures/upstream-v1.16.5/analysis-protocol order.jsonl term_queued_test, 6/10
+/// Upstream's dominant outcome (fixtures/upstream-v1.18.2/analysis-protocol order.jsonl term_queued_test, 6/10
 /// runs of the Eigen build): the idle analysis thread pops "a" as soon as it is queued, the terminate finds it
 /// popped but not yet searching (the AsyncBot's search thread is still waking up), so the action echo comes
 /// first and the analysis loop then writes noResults for "a"; "c" is analyzed.
@@ -166,7 +166,7 @@ fn burst_order_matches_upstream_majority() {
 /// A line whose parse error text is not valid UTF-8 (invalid input bytes, or a "last read" excerpt cut
 /// inside a multi-byte character) makes reportError's dump() throw type_error.316 out of the request loop:
 /// upstream logs it, keeps the other threads running for logThreadUncaught's 5 s (the queued query is
-/// answered), then terminates. Texts from fixtures/upstream-v1.16.5/analysis-protocol (bytes_*).
+/// answered), then terminates. Texts from fixtures/upstream-v1.18.2/analysis-protocol (bytes_*).
 #[test]
 fn invalid_utf8_error_text_terminates_like_upstream() {
   let query = q(r#"{"id":"q","moves":[],"rules":"tromp-taylor","boardXSize":9,"boardYSize":9}"#).into_bytes();

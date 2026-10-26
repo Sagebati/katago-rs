@@ -1,5 +1,5 @@
 //! Crafted-input oracle for the ported eval cache update and adjust paths (search/evalcache.rs, searchupdatehelpers.rs,
-//! searchexplorehelpers.rs) against fixtures/upstream-v1.16.5/unit/oracle/search_evalcache_diff.cpp (the unmodified upstream
+//! searchexplorehelpers.rs) against fixtures/upstream-v1.18.2/unit/oracle/search_evalcache_diff.cpp (the unmodified upstream
 //! functions called directly on hand-set statistics in which lead differs from score mean; format in its header):
 //! adjustEvalsFromCacheHelper, EvalCacheTable::update (incl. the root pass rule), addCurrentNNOutputAsLeafValue and
 //! recomputeNodeStats with an eval cache entry, and the firstExploreEvals loop of selectBestChildToDescend. Each line holds

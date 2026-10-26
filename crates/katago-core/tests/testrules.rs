@@ -1,5 +1,5 @@
 //! Replays upstream cpp/tests/testrules.cpp @ v1.16.5 (Tests::runRulesTests) against
-//! fixtures/upstream-v1.16.5/unit/testrules/. Each upstream `{ const char* name = ...; }` block is
+//! fixtures/upstream-v1.18.2/unit/testrules/. Each upstream `{ const char* name = ...; }` block is
 //! one #[test] (the blocks share nothing but `out`, which every `expect` clears), in upstream order.
 //! Board inputs are copied verbatim from the C++ (`R"%%(...)%%"` → `r"..."`); expected blocks are
 //! read from the fixtures.

@@ -1,6 +1,6 @@
 //! port::math::{tanh, atanh} (CORE-MATH's correctly rounded cr_tanh / cr_atanh, math/tanh.rs and
 //! math/atanh.rs) against glibc 2.44, which implements both with the same code: replays
-//! fixtures/upstream-v1.16.5/unit/oracle/math_tanh.txt, made by math_tanh.cpp next to it, line by
+//! fixtures/upstream-v1.18.2/unit/oracle/math_tanh.txt, made by math_tanh.cpp next to it, line by
 //! line and bit-exact. Runs natively and on wasm32 (`just test-wasm`), where the std
 //! `f64::tanh` / `f64::atanh` are not glibc's. Natively it also compares directly with the host
 //! libm on freshly generated inputs.

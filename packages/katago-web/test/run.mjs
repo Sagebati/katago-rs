@@ -46,7 +46,7 @@ const headed = args.includes("--headed");
 const jsonOut = opt("json", null);
 const profileDir = resolve(opt("profile", join(root, "target/web-test-profile")));
 
-// The goldens of crates/katago-cli/tests/analysis_goldens.rs (fixtures/upstream-v1.16.5/analysis/regen.sh),
+// The goldens of crates/katago-cli/tests/analysis_goldens.rs (fixtures/upstream-v1.18.2/analysis/regen.sh),
 // minus eval_cache (deferred, D7) and humansl (M8).
 const COMMON =
   "logDir=, logTimeStamp=false, logAllRequests=true, logAllResponses=true, logSearchInfo=true, numAnalysisThreads=1, numSearchThreadsPerAnalysisThread=1, nnRandomize=false, nnRandSeed=analysisTest, forDeterministicTesting=true, cudaUseFP16 = false, trtUseFP16 = false, openclUseFP16 = false, cudaUseNHWC = false";
@@ -63,7 +63,7 @@ const GOLDENS = [
   ["pvvisits", "pvvisits.txt.stdout", "pvvisits.txt", LOOP],
   ["pvvisits_nograph", "pvvisits_nograph.stdout", "pvvisits.txt", "rootSymmetryPruning=false, useGraphSearch=false"],
 ];
-// kata1-b18c384nbt goldens: fixtures/upstream-v1.16.5/analysis/regen_b18.sh (Eigen reference; upstream has none for this net).
+// kata1-b18c384nbt goldens: fixtures/upstream-v1.18.2/analysis/regen_b18.sh (Eigen reference; upstream has none for this net).
 const B18 = "kata1-b18c384nbt";
 const B18_FILE = "models/kata1-b18c384nbt.bin.gz";
 const B18_GOLDENS = [
@@ -165,7 +165,7 @@ function check(name, ok, detail) {
 }
 
 const readGolden = (f) =>
-  readFileSync(join(root, "fixtures/upstream-v1.16.5/analysis", f), "utf8")
+  readFileSync(join(root, "fixtures/upstream-v1.18.2/analysis", f), "utf8")
     .split("\n")
     .filter((l) => l.length > 0);
 

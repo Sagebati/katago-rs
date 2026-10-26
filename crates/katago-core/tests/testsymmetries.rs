@@ -1,9 +1,9 @@
 //! Replays upstream cpp/tests/testsymmetries.cpp @ v1.16.5 (Tests::runBasicSymmetryTests,
 //! Tests::runBoardSymmetryTests, Tests::runSymmetryDifferenceTests) against
-//! fixtures/upstream-v1.16.5/unit/testsymmetries/ (all 7 expected blocks), and
+//! fixtures/upstream-v1.18.2/unit/testsymmetries/ (all 7 expected blocks), and
 //! Tests::runNNSymmetryTests (cpp/tests/testnn.cpp), which prints to cout during
 //! `katago runoutputtests`, against its part of upstream cpp/tests/results/runOutputTests.txt
-//! (fixtures/upstream-v1.16.5/unit/runoutputtests/nn-symmetry-tests.expected0.txt, extracted by
+//! (fixtures/upstream-v1.18.2/unit/runoutputtests/nn-symmetry-tests.expected0.txt, extracted by
 //! tools/extract_runoutputtests.py).
 #![allow(clippy::needless_range_loop, clippy::bool_comparison)]
 

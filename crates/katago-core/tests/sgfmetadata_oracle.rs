@@ -1,5 +1,5 @@
 //! SGFMetadata (neuralnet/sgfmetadata.rs) against the upstream C++: replays
-//! fixtures/upstream-v1.16.5/unit/oracle/sgfmetadata.txt (made by sgfmetadata.cpp next to it) line
+//! fixtures/upstream-v1.18.2/unit/oracle/sgfmetadata.txt (made by sgfmetadata.cpp next to it) line
 //! by line: getProfile on every human-SL profile name and malformed ones (result or error text),
 //! getHash for both players, fillMetadataRow (64-bit FNV-1a digests of the float bits, and full rows
 //! for a subset) and operator== / operator!=. Bit-exact; runs natively and on wasm32 (`just

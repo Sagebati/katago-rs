@@ -4,9 +4,9 @@
 //! It replays the same calls (a 5x5 position on a 6x6 evaluator, symmetry 0, skipCache, owner map) through the
 //! ported NNEvaluator with the REAL network g170-b6c96 on the burn flex backend (6x6 through common_search's
 //! `PaddedNet`: the burn graph is fixed at 19x19) and compares the captured stdout with our Eigen rerun of
-//! upstream (fixtures/upstream-v1.16.5/unit/testsearchmisc/runnnontinyboardtest-g170-bin-sym0.expected0.txt =
+//! upstream (fixtures/upstream-v1.18.2/unit/testsearchmisc/runnnontinyboardtest-g170-bin-sym0.expected0.txt =
 //! stdout of `katago runnnontinyboardtest g170-b6c96.bin.gz true true 0 false`, see
-//! fixtures/upstream-v1.16.5/unit/testsearchcommon/regen.sh). The board diagram is the extracted
+//! fixtures/upstream-v1.18.2/unit/testsearchcommon/regen.sh). The board diagram is the extracted
 //! `runnnontinyboard.input0.txt`.
 //!
 //! Comparison: common_search's section comparator (integers exact, decimals within one unit of the last printed

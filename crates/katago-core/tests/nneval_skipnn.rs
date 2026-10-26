@@ -1,5 +1,5 @@
 //! NNEvaluator (neuralnet/nneval.rs) against the unmodified upstream NNEvaluator with
-//! debugSkipNeuralNet = true: fixtures/upstream-v1.16.5/unit/oracle/nneval_skipnn.cpp prints an op
+//! debugSkipNeuralNet = true: fixtures/upstream-v1.18.2/unit/oracle/nneval_skipnn.cpp prints an op
 //! stream (E/P/V/A) and the results (R/D/S lines); this test replays every op through the port on a
 //! futures LocalPool and must print the same bytes. This checks evaluate()'s post-processing
 //! (expf/exp/ln/tanhf, temperature, passing hacks, dagger ban, masking), the NN cache incl. the

@@ -1,4 +1,4 @@
-//! port::math against glibc (fixtures/upstream-v1.16.5/unit/oracle/math.txt, made by math.cpp next
+//! port::math against glibc (fixtures/upstream-v1.18.2/unit/oracle/math.txt, made by math.cpp next
 //! to it). Regenerates the oracle's 2^20 pseudo-random inputs per function, folds the result bits
 //! per 65536-input chunk and compares the hashes, then checks the special-value table line by
 //! line. Runs natively and on wasm32 (`just test-wasm`), which is the point: on wasm the std

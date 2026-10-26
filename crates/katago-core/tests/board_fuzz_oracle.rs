@@ -1,5 +1,5 @@
 //! Differential fuzz regression oracle for game/board against the real C++
-//! (fixtures/upstream-v1.16.5/unit/oracle/board_fuzz.cpp, adopted from the pilot board review).
+//! (fixtures/upstream-v1.18.2/unit/oracle/board_fuzz.cpp, adopted from the pilot board review).
 //! Mirrors board_fuzz.cpp line for line: same splitmix stream, same queries, same output text.
 //!   board_fuzz_hashes.txt  one FNV-1a 64 of each game's full trace (seed0 = 1)
 //!   board_fuzz_trace.txt   full traces of a few games (seed0 = 7), compared line by line

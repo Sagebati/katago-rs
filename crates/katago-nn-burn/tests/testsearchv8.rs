@@ -5,9 +5,9 @@
 //!
 //! It replays the same calls in the same order (same params, seeds and printing) through the ported AsyncBot /
 //! Search / NNEvaluator with the REAL network g170-b6c96 on the burn flex backend, and compares the captured stdout
-//! with our Eigen rerun of upstream (fixtures/upstream-v1.16.5/unit/testsearchv8/runsearchtestsv8-g170-bin.expected0.txt
+//! with our Eigen rerun of upstream (fixtures/upstream-v1.18.2/unit/testsearchv8/runsearchtestsv8-g170-bin.expected0.txt
 //! = stdout of `katago runsearchtestsv8 g170-b6c96.bin.gz true true false`, see
-//! fixtures/upstream-v1.16.5/unit/testsearchcommon/regen.sh). Board diagrams: the extracted `R"%%(...)%%"` blocks
+//! fixtures/upstream-v1.18.2/unit/testsearchcommon/regen.sh). Board diagrams: the extracted `R"%%(...)%%"` blocks
 //! `<function>.input<k>.txt`.
 //!
 //! runSearchTestsV8 creates its evaluators in seven groups (one per sub-function); each group is one #[test] here

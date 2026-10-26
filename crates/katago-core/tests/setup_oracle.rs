@@ -1,4 +1,4 @@
-//! Setup (program/setup.rs) against the unmodified upstream program/setup.cpp: fixtures/upstream-v1.16.5/unit/oracle/
+//! Setup (program/setup.rs) against the unmodified upstream program/setup.cpp: fixtures/upstream-v1.18.2/unit/oracle/
 //! setup_oracle.cpp drives upstream's Setup on the config cases of setup_oracle_cases.txt (every upstream config,
 //! mutated variants, fuzzed configs; made by setup_oracle_gen.py) and dumps what it produces. This test replays
 //! every op through the port and must print the same bytes (see the oracle's header for the record format):

@@ -437,7 +437,7 @@ Oracles, from strictest to loosest. Fixtures live in `fixtures/<tag>/` and are n
 
 **Comparisons.** Unit blocks use `TestCommon::expect` (upstream's per-line trim). Oracle-program outputs are compared **byte-exact** by `tests/common::compare_lines` (line endings and trailing newline included). `tests/fixture_coverage.rs` fails if an extracted expected block is consumed by no test and isn't on its allowlist with a reason.
 
-**Analysis protocol.** `fixtures/upstream-v1.16.5/analysis-protocol` holds request corpora and the reference
+**Analysis protocol.** `fixtures/upstream-v1.18.2/analysis-protocol` holds request corpora and the reference
 binary's stdout / exit status / filtered stderr for each (`regen.py` records the exact command; racy
 multi-line cases keep every distinct outcome of several runs); `katago-cli tests/analysis_protocol_corpus.rs`
 replays them through the `katago-rs` binary with the analysis comparator of `katago-cli tests/common`:

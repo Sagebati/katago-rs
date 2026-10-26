@@ -16,7 +16,7 @@ is unusable on the wasm CPU.
 | Question | Result |
 |---|---|
 | Ship it in the same wasm? | Yes. It adds 0.2 MB to the 17.1 MB wasm (+1.2% raw, +34 KB gzip, +17 KB brotli). The net is chosen at run time by `network`; its weights are fetched only when asked for. `net-b18c384nbt` is now a default feature of `katago-wasm`; `just web-build` writes `kata1-b18c384nbt.<sha12>.bpk` and its `models.json` entry |
-| Parity | New goldens from the Eigen reference (`fixtures/upstream-v1.16.5/analysis/b18_*.stdout`, upstream has none for this net) match on WebGPU: structure exact, floats within the native comparator's tolerances, max deviation 3.6e-5 (also on a device with WebGPU's default buffer limits). Native `nn_parity` b18 on flex and wgpu vs Eigen: policy 2-3e-6, ownership 1e-5, score 1e-4 |
+| Parity | New goldens from the Eigen reference (`fixtures/upstream-v1.18.2/analysis/b18_*.stdout`, upstream has none for this net) match on WebGPU: structure exact, floats within the native comparator's tolerances, max deviation 3.6e-5 (also on a device with WebGPU's default buffer limits). Native `nn_parity` b18 on flex and wgpu vs Eigen: policy 2-3e-6, ownership 1e-5, score 1e-4 |
 | Speed (WebGPU) | After a fix found here (below): 93 evals/s at batch 16 and 100 at 32 natively without autotune; in the browser 48-71 visits/s for 100-visit searches (1.6-2.3 s) and 57-100 visits/s for 400 visits (4-7 s). Before the fix: 11-14 and 13-21 visits/s |
 | Start-up | Persistent profile: 1.76-1.78 s warm, 3.0 s cold (b10c128: 0.94-0.96 s / 1.83 s). Fresh incognito-like context: 2.2-2.3 s warm, 2.9-3.4 s cold. Weights from the Cache API: 145 ms read + 235 ms sha256 (WebCrypto) |
 | Limits | The adapter's limits (4 GiB-4 for storage binding and buffer) are passed on to the device. Biggest buffer: 2.5 MB per batch row (80 MB at 32). Works with WebGPU's default limits (128 MiB / 256 MiB) up to 53 rows; 64 rows fail there |
@@ -42,7 +42,7 @@ is unusable on the wasm CPU.
   - `fetchModelSpec(manifest, network)` works for the new entry unchanged.
 - Tests: `just web-test-b18` (21 checks, ~2 min), 3 more unit tests in `just web-test-client`
   (`cpuModel`/`allowSlowCpu` reach the worker, a refusal does not restart, a CPU-restart failure names the WebGPU one).
-  `fixtures/upstream-v1.16.5/analysis/regen_b18.sh` regenerates the goldens.
+  `fixtures/upstream-v1.18.2/analysis/regen_b18.sh` regenerates the goldens.
 - `examples/bench` and `examples/parity` accept the browser's feature set (`-F wgpu-fixed-kernels`, no autotune);
   `examples/convbench` takes a channel count (`convbench wgpu 16 384`) and times the im2col stages and the
   global-pooling reduction.
@@ -167,7 +167,7 @@ batch 1). On WebGPU in the browser:
 
 They pass the comparator's `webgpu` tier (1e-4 on values); `b18_basic` is slightly outside the stricter `flex` tier
 (1e-5 absolute) on one key (`rawVarTimeLeft`, 2.1e-5 on a value of 9.5), the other two pass both tiers. Native: `just nn-parity -F wgpu` on the 72 b18 evals of
-`fixtures/upstream-v1.16.5/nn/evals_b18.txt` (flex and wgpu vs Eigen), both under the usual bounds.
+`fixtures/upstream-v1.18.2/nn/evals_b18.txt` (flex and wgpu vs Eigen), both under the usual bounds.
 
 ## GPU limits
 

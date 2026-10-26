@@ -1,4 +1,4 @@
-//! NN input features vs the real C++ (fixtures/upstream-v1.16.5/unit/oracle/nninputs.cpp, which also
+//! NN input features vs the real C++ (fixtures/upstream-v1.18.2/unit/oracle/nninputs.cpp, which also
 //! documents the file formats). Replays every position of nninputs_positions.txt through the ported
 //! Board/BoardHistory and checks, bit-exactly, against nninputs_expected.txt:
 //!   res    NNInputs::getHash, fillRowV7 (NCHW and NHWC), rowGlobal, copyInputsWithSymmetry (both

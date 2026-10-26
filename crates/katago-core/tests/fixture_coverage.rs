@@ -1,5 +1,5 @@
 //! Not a port of upstream code: checks that every extracted upstream expected block is consumed.
-//! For each fixtures/upstream-v1.16.5/unit/<stem>/INDEX.tsv, every row with role "expected" must be
+//! For each fixtures/upstream-v1.18.2/unit/<stem>/INDEX.tsv, every row with role "expected" must be
 //! referenced by some test source in tests/ (other than this file), or be listed in ALLOWLIST with
 //! a reason. A new block from `tools/extract_raw_blocks.py` that no test reads therefore fails CI,
 //! and so does an allowlisted block once a test starts reading it (drop it from the list then).

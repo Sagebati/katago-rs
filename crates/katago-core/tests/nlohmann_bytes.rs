@@ -1,7 +1,7 @@
 //! port::nlohmann over raw bytes (a std::string holds any bytes): `parse_bytes` keeps the C++ bytes of
 //! `e.what()`, and `dump_string_bytes` throws dump()'s type_error.316 for a string that is not UTF-8. The
 //! indices and bytes are the ones the reference KataGo reports when analysis.cpp's reportError dumps such a
-//! text (fixtures/upstream-v1.16.5/analysis-protocol/expected/bytes_cfg_args.jsonl: bytes_*, multibyte_*).
+//! text (fixtures/upstream-v1.18.2/analysis-protocol/expected/bytes_cfg_args.jsonl: bytes_*, multibyte_*).
 //! Not a port of upstream code.
 
 #[macro_use]

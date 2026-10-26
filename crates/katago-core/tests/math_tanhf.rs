@@ -1,4 +1,4 @@
-//! port::math::tanhf against glibc (fixtures/upstream-v1.16.5/unit/oracle/math_tanhf.txt, made by
+//! port::math::tanhf against glibc (fixtures/upstream-v1.18.2/unit/oracle/math_tanhf.txt, made by
 //! math_tanhf.cpp next to it). Regenerates the oracle's 2^20 pseudo-random inputs, folds the result
 //! bits per 65536-input chunk and compares the hashes, then checks the special-value lines. Runs
 //! natively and on wasm32 (`just test-wasm`), where the std `f32::tanh` is not glibc's.

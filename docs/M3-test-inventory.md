@@ -3,8 +3,8 @@
 Scope: every upstream search test (`cpp/tests/testsearch*.cpp`) and every analysis golden
 (`cpp/tests/analysis/*.txt`), with what each one needs and which oracle to use. Generated while
 preparing the oracles; the fixtures named here are checked in and never hand-edited.
-Regenerate with `fixtures/upstream-v1.16.5/analysis/regen.sh` and
-`fixtures/upstream-v1.16.5/unit/testsearchcommon/regen.sh` (both run the Eigen build,
+Regenerate with `fixtures/upstream-v1.18.2/analysis/regen.sh` and
+`fixtures/upstream-v1.18.2/unit/testsearchcommon/regen.sh` (both run the Eigen build,
 `just katago-eigen`; the second takes about 20 minutes, V8 dominates).
 
 ## 1. Findings that change the plan
@@ -44,7 +44,7 @@ Regenerate with `fixtures/upstream-v1.16.5/analysis/regen.sh` and
    (`program/play.cpp` is `[[ignored]]`), `Setup::loadSingleParams` for GTP/MATCH/BENCHMARK/OTHER/DISTRIBUTED
    (only the analysis branch is ported), the human-SL net (`bin2onnx` rejected `metaEncoderVersion > 0` until M8; resolved, section 7).
 
-## 2. Analysis goldens (`fixtures/upstream-v1.16.5/analysis/`)
+## 2. Analysis goldens (`fixtures/upstream-v1.18.2/analysis/`)
 
 Invocation (all from `runcmdtests.sh`, rerun literally by `regen.sh` from a cwd that mirrors `cpp/`):
 `katago analysis -config configs/analysis_example.cfg -model <model> -override-config "<COMMON>, <row overrides>"`
@@ -82,7 +82,7 @@ Per-golden notes for the test writer:
 - At <= 100 visits all six search goldens that exist upstream (#2-#6, #11) agree with ours on moves, order, visits and pv. Expect Rust-vs-Eigen to agree there too, and to diverge at 500-1000 visits (#7, #8): compare those on root visits, the top move, and the first few pv moves, or use a tolerance for visit counts.
 - `query_models` (#11, line 5) echoes the `-model` path as given: tests must pass the same relative names (`tests/models/...`) or mask `name`, `maxBatchSize`, `usingFP16`.
 
-## 3. Search-test fixtures (`fixtures/upstream-v1.16.5/unit/testsearch*/`)
+## 3. Search-test fixtures (`fixtures/upstream-v1.18.2/unit/testsearch*/`)
 
 Each stem has `INDEX.tsv` (same four columns as `extract_raw_blocks.py`): `role=input` rows are the 72 board
 blocks (appendix A), `role=expected` rows are the files below. For Eigen reruns the INDEX `line` is 1 (no source
@@ -164,7 +164,7 @@ Blocks are listed in appendix A; counts below are input boards.
 
 - Analysis goldens: two concurrent complete runs byte-identical.
 - Search fixtures: the complete `testsearchcommon/regen.sh` was run twice into separate scratch directories (first run 21 min, second 19 min, 6 jobs in parallel); all 12 expected fixtures are byte-identical between the runs, including the V8 sections with 30/40 search threads and the randomized-symmetry evaluators (with 1 NN server thread the Eigen outputs are reproducible even where upstream calls them nondeterministic). The NN-less slice is also a verbatim substring of upstream's file.
-- Sizes: `fixtures/upstream-v1.16.5/analysis/` 176 KB (11 `.stdout` + `regen.sh`); `unit/testsearch*/` 2.3 MB (72 input blocks, 12 expected files totalling 1.9 MB incl. V8 500 KB and V9 559 KB, INDEX files, `testsearchcommon/regen.sh`). Total 2.4 MB.
+- Sizes: `fixtures/upstream-v1.18.2/analysis/` 176 KB (11 `.stdout` + `regen.sh`); `unit/testsearch*/` 2.3 MB (72 input blocks, 12 expected files totalling 1.9 MB incl. V8 500 KB and V9 559 KB, INDEX files, `testsearchcommon/regen.sh`). Total 2.4 MB.
 - `tools/extract_raw_blocks.py`: one backward-compatible fix. The function-name regex did not accept digits, so
   every `runV8Tests*`, `runV9Positions` block was filed under `toplevel`. With the fix the already extracted stems
   (testrules, testscore, testboardarea, testboardbasic, testsymmetries, testnninputs, rand) regenerate

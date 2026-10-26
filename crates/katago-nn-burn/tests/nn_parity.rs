@@ -1,6 +1,6 @@
 //! NN tier (M2): the ported `NNEvaluator` (katago-core) over the burn backend (`BurnNeuralNet`)
 //! vs upstream's NNEvaluator over the Eigen fp32 backend, on the positions of
-//! fixtures/upstream-v1.16.5/nn (oracle: fixtures/upstream-v1.16.5/nn/oracle/nneval_eigen.cpp,
+//! fixtures/upstream-v1.18.2/nn (oracle: fixtures/upstream-v1.18.2/nn/oracle/nneval_eigen.cpp,
 //! cross-checked against `katago gtp` + `kata-raw-nn`). Not a port of upstream code.
 //!
 //! Every eval of a net is issued from 8 virtual threads at once, so the server batches them
@@ -57,7 +57,7 @@ fn grace_for(backend_name: &str) -> Duration {
 }
 
 fn fixture_path(name: &str) -> String {
-  format!("{}/../../fixtures/upstream-v1.16.5/nn/{}", env!("CARGO_MANIFEST_DIR"), name)
+  format!("{}/../../fixtures/upstream-v1.18.2/nn/{}", env!("CARGO_MANIFEST_DIR"), name)
 }
 
 fn parse_positions() -> Vec<Pos> {

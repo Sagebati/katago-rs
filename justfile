@@ -101,28 +101,28 @@ test *flags="":
 test-gpu *flags="":
     cargo nextest run --release -p katago-nn-burn --test nn_parity -F wgpu --success-output final -E 'test(/wgpu|rocm/)' {{flags}}
 
-# NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.16.5/nn).
+# NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.18.2/nn).
 # Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
 # b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
 nn-parity *flags="":
     cargo nextest run --release -p katago-nn-burn --test nn_parity --success-output final {{flags}}
 
 # Search smoke (real net): ported Search + NNEvaluator over burn flex (g170-b6c96) vs upstream Search over the Eigen
-# NNEvaluator (fixtures/upstream-v1.16.5/search/oracle/search_eigen_b6c96.txt, ~40 searches). Tolerance comparison:
+# NNEvaluator (fixtures/upstream-v1.18.2/search/oracle/search_eigen_b6c96.txt, ~40 searches). Tolerance comparison:
 # prints visit-vector / top-move / value-diff statistics by maxVisits. Release only (debug burn is very slow).
 search-smoke *flags="":
     cargo nextest run --release -p katago-nn-burn --test search_smoke --success-output final {{flags}}
 
 # Analysis goldens (M3, D9): cpp/tests/analysis/*.txt through the ported analysis engine (katago-cli, burn flex,
-# g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.16.5/analysis/*.stdout (structure exact, floats within
+# g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.18.2/analysis/*.stdout (structure exact, floats within
 # the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
 analysis-goldens *flags="":
     cargo nextest run --release -p katago-cli --success-output final {{flags}}
 
-# Analysis-protocol corpora (fixtures/upstream-v1.16.5/analysis-protocol): regenerate the expected outputs with
+# Analysis-protocol corpora (fixtures/upstream-v1.18.2/analysis-protocol): regenerate the expected outputs with
 # the reference build (`just katago-eigen` first; ~10 min).
 analysis-protocol-regen *corpora="":
-    cd fixtures/upstream-v1.16.5/analysis-protocol && python3 -I regen.py {{corpora}}
+    cd fixtures/upstream-v1.18.2/analysis-protocol && python3 -I regen.py {{corpora}}
 
 # Replay the analysis-protocol corpora through the katago-rs binary vs the reference outputs (release, ~1.5 min).
 analysis-protocol *flags="":
@@ -134,7 +134,7 @@ search-tests *flags="":
     cargo nextest run --release -p katago-nn-burn --test testsearchv9 --test testsearchv8 --success-output final {{flags}}
 
 # Tolerance study: 160 b6c96 + 32 b10c128 searches at 400-1000 visits, burn flex vs Eigen
-# (fixtures/upstream-v1.16.5/search/oracle/search_tolerance_*.txt). Release, ~16 min.
+# (fixtures/upstream-v1.18.2/search/oracle/search_tolerance_*.txt). Release, ~16 min.
 search-tolerance *flags="":
     cargo nextest run --release -p katago-nn-burn --test search_tolerance --success-output final {{flags}}
 

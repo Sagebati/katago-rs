@@ -1,7 +1,7 @@
 //! game/rules.
 //! 1. Rules cases from upstream cpp/tests/testrules.cpp that need no BoardHistory:
 //!    "Test some roundtripping of rules strings" and "Rules parsing bug".
-//! 2. Strings and JSON against the real C++ (fixtures/upstream-v1.16.5/unit/oracle/rules.txt).
+//! 2. Strings and JSON against the real C++ (fixtures/upstream-v1.18.2/unit/oracle/rules.txt).
 //!    Mirrors `rulesMode()` in oracle.cpp.
 
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).

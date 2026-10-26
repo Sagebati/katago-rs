@@ -1,4 +1,4 @@
-//! port::math::{lgamma_r, lgamma, expm1} against glibc (fixtures/upstream-v1.16.5/unit/oracle/
+//! port::math::{lgamma_r, lgamma, expm1} against glibc (fixtures/upstream-v1.18.2/unit/oracle/
 //! math_lgamma.txt, made by math_lgamma.cpp next to it). Regenerates the oracle's 2^20
 //! pseudo-random inputs per function, folds the result bits (and lgamma's signgam) per
 //! 65536-input chunk and compares the hashes, then checks the special-value lines. Runs natively

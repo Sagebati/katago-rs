@@ -1,7 +1,7 @@
 //! Shared helpers for the real-net search test transcriptions (testsearchv9.rs, testsearchv8.rs): test-local
 //! copies of upstream cpp/tests/testsearchcommon.cpp (TestSearchCommon), a test-local CompactSgf subset, the
 //! cout/Logger capture, the burn `startNNEval`, and the section comparator used against the Eigen reruns
-//! (fixtures/upstream-v1.16.5/unit/testsearchv{8,9}/*.expected0.txt). Not a port of upstream code.
+//! (fixtures/upstream-v1.18.2/unit/testsearchv{8,9}/*.expected0.txt). Not a port of upstream code.
 //!
 //! Output capture. Upstream's Logger (logToStdout, logTime false) writes `": " + message + endl` to cout; the
 //! expected texts contain those lines. The port logs through the `log` crate, so `CoutLogger` appends the same
@@ -767,9 +767,9 @@ pub fn parse_board_input(stem: &str, slug: &str, k: usize, x_size: i32, y_size: 
   Board::parse_board(x_size, y_size, &s, '\n').unwrap()
 }
 
-/// `fixtures/upstream-v1.16.5/unit/<stem>/<file>`
+/// `fixtures/upstream-v1.18.2/unit/<stem>/<file>`
 pub fn fixture(stem: &str, file: &str) -> String {
-  let p = format!("{}/../../fixtures/upstream-v1.16.5/unit/{}/{}", env!("CARGO_MANIFEST_DIR"), stem, file);
+  let p = format!("{}/../../fixtures/upstream-v1.18.2/unit/{}/{}", env!("CARGO_MANIFEST_DIR"), stem, file);
   std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("missing fixture {}: {}", p, e))
 }
 

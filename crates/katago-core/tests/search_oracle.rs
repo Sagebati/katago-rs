@@ -1,6 +1,6 @@
 //! Differential search oracle: the ported Search (search/*.rs) against the unmodified upstream Search.
 //!
-//! fixtures/upstream-v1.16.5/unit/oracle/search_nonn.cpp runs many deterministic searches
+//! fixtures/upstream-v1.18.2/unit/oracle/search_nonn.cpp runs many deterministic searches
 //! (numSearchThreads = 1) on an NNEvaluator with debugSkipNeuralNet = true and prints, per case, one
 //! "CASE" line holding every input (board size, rules, komi, initial player, the move list as raw
 //! locs, SearchParams overrides, search rand seed, maxVisits, nnXLen/nnYLen, and the op stream) followed

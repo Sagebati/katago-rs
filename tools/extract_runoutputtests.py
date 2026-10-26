@@ -23,7 +23,7 @@ test for input versions 3..7. The port only has fillRowV7, so only these chunks 
 The test name is the section name (the line between two 65-dash lines). Never edit the outputs
 by hand.
 
-Usage: extract_runoutputtests.py <runOutputTests.txt> <outdir (fixtures/upstream-v1.16.5/unit)>"""
+Usage: extract_runoutputtests.py <runOutputTests.txt> <outdir (fixtures/upstream-v1.18.2/unit)>"""
 import os, re, sys
 
 DASHES = '-' * 65

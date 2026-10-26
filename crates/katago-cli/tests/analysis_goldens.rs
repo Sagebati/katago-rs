@@ -1,7 +1,7 @@
 //! Analysis goldens (M3 search tier, DECISIONS.md D9): the query files of upstream cpp/tests/analysis/ run
 //! through the ported `MainCmds::analysis` (katago_core::command::analysis) with the burn flex backend and
-//! the same config and overrides as fixtures/upstream-v1.16.5/analysis/regen.sh (= runcmdtests.sh), compared
-//! with our Eigen reruns fixtures/upstream-v1.16.5/analysis/*.stdout by the explicit comparator in
+//! the same config and overrides as fixtures/upstream-v1.18.2/analysis/regen.sh (= runcmdtests.sh), compared
+//! with our Eigen reruns fixtures/upstream-v1.18.2/analysis/*.stdout by the explicit comparator in
 //! tests/common (structure byte-exact, floats within VALUE_TOL / SCORE_TOL / WEIGHT_REL_TOL).
 //! Each test prints "exact" / "within tolerance (max deviations)" / "DIVERGED (first difference)".
 //!

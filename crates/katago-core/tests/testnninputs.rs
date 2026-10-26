@@ -2,9 +2,9 @@
 //! (Tests::runNNInputsV3V4Tests). That test prints to cout during `katago runoutputtests`, so the
 //! oracle is upstream cpp/tests/results/runOutputTests.txt, cut into one fixture per "VERSION 7"
 //! chunk (plus the fillRowV7-only "Passing hack condition" block) by
-//! tools/extract_runoutputtests.py into fixtures/upstream-v1.16.5/unit/runoutputtests/
+//! tools/extract_runoutputtests.py into fixtures/upstream-v1.18.2/unit/runoutputtests/
 //! (nn-inputs-*.expected<k>.txt, passing-hack-*.expected0.txt). Boards from the raw blocks are in
-//! fixtures/upstream-v1.16.5/unit/testnninputs/ (inputs only).
+//! fixtures/upstream-v1.18.2/unit/testnninputs/ (inputs only).
 //!
 //! Versions 3..6 are not replayed: fillRowV3..V6 are not ported (port-manifest.toml).
 //! Each Rust test builds the exact text upstream wrote to cout from the "VERSION 7" line to the

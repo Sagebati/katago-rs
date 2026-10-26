@@ -1,4 +1,4 @@
-//! search/timecontrols (TimeControls) against the real C++: fixtures/upstream-v1.16.5/unit/oracle/
+//! search/timecontrols (TimeControls) against the real C++: fixtures/upstream-v1.18.2/unit/oracle/
 //! timecontrols{,_cases,_testtime}.txt from oracle/timecontrols.cpp (same order; the oracle's header
 //! has the build command).
 //!

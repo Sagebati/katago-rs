@@ -3,7 +3,7 @@
 //!
 //! The test replays the same calls in the same order (same params, same seeds, same printing) through the
 //! ported search with a `debugSkipNeuralNet` NNEvaluator, builds the whole stdout text, and compares it
-//! byte-exact with fixtures/upstream-v1.16.5/unit/testsearchnonn/runnnlesssearchtests.expected0.txt (the
+//! byte-exact with fixtures/upstream-v1.18.2/unit/testsearchnonn/runnnlesssearchtests.expected0.txt (the
 //! exact stdout slice from "Running neuralnetless search tests" to "Done"; backend independent). Both
 //! texts are split into sections on the header trio (a line of 67 '=', a title line, another 67-'=' line)
 //! and each section is compared with `common::compare_lines` and reported separately, so one failing

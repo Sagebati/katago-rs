@@ -21,10 +21,10 @@ pub fn cpp_dir() -> String {
 }
 
 pub fn golden_path(name: &str) -> String {
-  format!("{ROOT}/fixtures/upstream-v1.16.5/analysis/{name}")
+  format!("{ROOT}/fixtures/upstream-v1.18.2/analysis/{name}")
 }
 
-/// `COMMON` of fixtures/upstream-v1.16.5/analysis/regen.sh (= runcmdtests.sh), minus `logFile=...` (no log
+/// `COMMON` of fixtures/upstream-v1.18.2/analysis/regen.sh (= runcmdtests.sh), minus `logFile=...` (no log
 /// files in tests).
 pub const COMMON: &str = "logDir=, logTimeStamp=false, logAllRequests=true, logAllResponses=true, logSearchInfo=true, numAnalysisThreads=1, numSearchThreadsPerAnalysisThread=1, nnRandomize=false, nnRandSeed=analysisTest, forDeterministicTesting=true, cudaUseFP16 = false, trtUseFP16 = false, openclUseFP16 = false, cudaUseNHWC = false";
 pub const CFG: &str = "configs/analysis_example.cfg";

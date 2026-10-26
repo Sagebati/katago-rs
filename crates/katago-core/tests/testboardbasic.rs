@@ -1,5 +1,5 @@
 //! Replays upstream cpp/tests/testboardbasic.cpp @ v1.16.5 against the extracted
-//! expected blocks in fixtures/upstream-v1.16.5/unit/testboardbasic/.
+//! expected blocks in fixtures/upstream-v1.18.2/unit/testboardbasic/.
 //!
 //! Tests::runBoardReplayTest uses a test-local copy of PlayUtils::chooseRandomLegalMove
 //! (program/playutils.rs is M3 and only ports getHackedLCBForWinrate), and also checks its Rand

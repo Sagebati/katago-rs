@@ -1,4 +1,4 @@
-//! Shared by search_smoke.rs and search_tolerance.rs: the oracle fixture format (fixtures/upstream-v1.16.5/search/
+//! Shared by search_smoke.rs and search_tolerance.rs: the oracle fixture format (fixtures/upstream-v1.18.2/search/
 //! oracle/search_*.txt: each CASE line holds everything needed to rebuild a search, the lines after it are the
 //! upstream Eigen result), running a case through the port's Search over the burn `flex` NNEvaluator, and comparing
 //! the two results. Net-agnostic; each test binary keeps its own tolerances, assertions and report. Not a port of
@@ -74,7 +74,7 @@ pub struct Case {
 }
 
 fn fixture_path(file: &str) -> String {
-  format!("{}/../../fixtures/upstream-v1.16.5/search/oracle/{file}", env!("CARGO_MANIFEST_DIR"))
+  format!("{}/../../fixtures/upstream-v1.18.2/search/oracle/{file}", env!("CARGO_MANIFEST_DIR"))
 }
 
 pub fn parse_cases(file: &str) -> Vec<Case> {

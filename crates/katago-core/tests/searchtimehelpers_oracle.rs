@@ -4,7 +4,7 @@
 //! Upstream's ClockTimer reads std::chrono::steady_clock, so a time-limited C++ search cannot be made
 //! deterministic. The three functions only read the Search (root board / history, SearchParams,
 //! effectiveSearchTimeCarriedOver, the root node's policy and play selection values) and their arguments,
-//! so fixtures/upstream-v1.16.5/unit/oracle/searchtimehelpers.cpp builds 150 searches (5..19 wide boards,
+//! so fixtures/upstream-v1.18.2/unit/oracle/searchtimehelpers.cpp builds 150 searches (5..19 wide boards,
 //! varied rules, move counts and initial turn numbers; 0..200 NN-less visits on an NNEvaluator with
 //! debugSkipNeuralNet so the root node exists) and calls the three functions directly on a grid of inputs
 //! (TimeControls of every kind and state, timeUsed, searchFactor, rootVisits, carried-over time, the time

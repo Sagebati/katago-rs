@@ -1,5 +1,5 @@
 //! Crafted-input oracle for the ported selection / weighting / utility helpers of search/*.rs and
-//! Global::roundDynamic, against fixtures/upstream-v1.16.5/unit/oracle/search_select_diff.cpp (the unmodified
+//! Global::roundDynamic, against fixtures/upstream-v1.18.2/unit/oracle/search_select_diff.cpp (the unmodified
 //! upstream functions called directly; format in its header): computeWeightFromNNOutput,
 //! getApproxScoreUtilityDerivative, getScoreUtility(Diff), chooseIndexWithTemperature,
 //! downweightBadChildrenAndNormalizeWeight, pruneNoiseWeight (binding noisePruningCap),
