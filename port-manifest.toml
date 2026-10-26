@@ -406,6 +406,14 @@ phase = "M3"
 notes = "Ported: getHackedLCBForWinrate (searchresults.cpp), printGenmoveLog (analysis.cpp; Result: alsoBranch throws), getNoiselessParams (static), computeOwnership, computeAnticipatedStatusesSimple, computeAnticipatedStatusesWithOwnership, maybeCleanupBeforePass (&AsyncBot), maybeFriendlyPass (&mut Search), getFullSymmetryNNOutput; those that run a search or an NN eval are async and return Result. Parity: katago-nn-burn tests/testsearchv8.rs ('Friendly pass', 'Fill dame before pass', 'Conservative pass') and testsearchv9.rs ('Single symmetry and full symmetry raw nets'); printGenmoveLog only feeds the log (logSearchInfo). Everything else (game init, komi helpers, benchmark, getWhiteScoreValues, ...) is not ported; chooseExtraBlackAndKomi, setKomiWithNoise (+ its roundKomiWithLinearProb) and roundAndClipKomi have faithful test-local copies in katago-core tests/testsearchnonn.rs (they take play.h's ExtraBlackAndKomi; play.cpp is [[ignored]])."
 
 [[module]]
+rust = "crates/katago-core/src/command/commandline.rs"
+upstream = ["cpp/command/commandline.cpp", "cpp/command/commandline.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "partial"
+phase = "M3"
+notes = "Only KataGoCommandLine::maybeApplyOverrideConfigArg (maybe_apply_override_config_arg, over the -override-config values), shared by both hosts. The rest is the hosts': katago-cli's args (parse_args, the TCLAP emulation), get_model_file (getModelFile's default lookup: default_model.bin.gz / .txt.gz in the executable's directory then $HOME/.katago, else its StringError) and load_config (getConfig); katago-wasm's config::build_config; logOverrides is in analysis.rs. Exceptions escaping MainCmds::analysis end like upstream's Linux main (no catch): std::terminate's message and abort() (katago-cli terminate_uncaught). Tested through the hosts: katago-cli tests/analysis_protocol_corpus.rs (override-config cases) and katago-wasm's config tests."
+
+[[module]]
 rust = "crates/katago-core/src/command/analysis.rs"
 upstream = ["cpp/command/analysis.cpp"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
@@ -611,10 +619,6 @@ kind = "fixture"
 paths = ["cpp/command/runtests.cpp"]
 reason = "Unit-test driver; its test cases are consumed as fixtures, not ported."
 
-[[ignored]]
-kind = "replaced"
-paths = ["cpp/command/commandline.cpp", "cpp/command/commandline.h"]
-reason = "KataGoCommandLine -> katago-cli (lib.rs): parse_args (TCLAP emulation), get_model_file (getModelFile's default lookup: default_model.bin.gz / .txt.gz in the executable's directory then $HOME/.katago, else its StringError), load_config (getConfig + maybeApplyOverrideConfigArg); logOverrides is in analysis.rs. Exceptions escaping MainCmds::analysis end like upstream's Linux main (no catch): std::terminate's message and abort() (terminate_uncaught)."
 
 [[ignored]]
 kind = "not-needed"
