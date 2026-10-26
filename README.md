@@ -28,7 +28,7 @@ Status:
 - **M9** WebGPU kernels at native KataGo speed ([docs/M9-report.md](docs/M9-report.md)): Winograd 3x3 convs, an NCHW
   1x1 GEMM, f16 (default with `shader-f16`) and fused batch-norm/mish prologues in cubecl. b18c384nbt forward passes
   at 2.5x native KataGo OpenCL FP16 on an RX 6800 XT (1137 vs 457 evals/s at batch 32); a 400-visit b18 search in
-  Chromium runs at 461-550 visits/s.
+  Chromium runs at 461-550 visits/s. Current numbers: [Benchmarks](#benchmarks).
 - Not ported: loading the SGF files of the avoid-repeated-moves pattern tables (`avoidSgfPatternDirs`, file IO);
   the keys are read and an error is raised if one is fully configured. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -46,6 +46,83 @@ Status:
 | `crates/katago-wasm` | browser host: wasm-bindgen `Engine` running the analysis engine in a Web Worker (WebGPU / wasm CPU) |
 | `packages/katago-web` | npm package: module worker, `KataGoClient` (`analyze`, `reviewGame`), protocol and payload types; Playwright tests (`just web-build`, `just web-test`) |
 | `fixtures/` | reference data generated from upstream KataGo |
+
+## Benchmarks
+
+Measured 2026-10-26 on one machine: Intel i7-8700K (6 cores, 12 threads), AMD Radeon RX 6800 XT (RDNA2), Linux 7.2,
+Mesa 26.2.5 (RADV for Vulkan/WebGPU), ROCm 7.2.3 (HIP, and AMD's OpenCL for upstream), Chromium 156. katago-rs at
+this README's commit, against upstream KataGo v1.16.5 (`ba938676`). Every row has a command; the milestone reports
+([M0](docs/M0-report.md), [M4](docs/M4-report.md), [M7](docs/M7-report.md), [M9](docs/M9-report.md)) have the
+history and the profiles. Nothing here was measured on NVIDIA, Intel or Apple GPUs, or in Firefox or Safari.
+
+### Forward passes
+
+Network evaluations per second, random inputs, one readback of all outputs per batch (as the engine reads them).
+`just bench <backend> <net> <precision>`; wgpu and rocm run the cubecl kernels without burn's autotune (the browser's
+kernel set, and katago-ws's images). f16 runs the 3x3 convolutions in f16 (`useFP16` / katago-web `precision`).
+
+| Net | Backend | Precision | batch 1 | 8 | 16 | 32 | 64 |
+|---|---|---|---:|---:|---:|---:|---:|
+| b10c128 | flex (CPU, 1 thread) | f32 | 30 | 33 | | | |
+| | wgpu (Vulkan) | f32 | 480 | 2942 | 4315 | 5118 | 5499 |
+| | wgpu (Vulkan) | f16 | 462 | 3291 | 4851 | 5942 | 6426 |
+| | rocm (HIP) | f32 | 486 | 2998 | 4183 | 5053 | 5977 |
+| | rocm (HIP) | f16 | 475 | 3357 | 4945 | 5913 | **7065** |
+| b18c384nbt | flex (CPU, 1 thread) | f32 | 2.2 | 2.5 | | | |
+| | wgpu (Vulkan) | f32 | 181 | 652 | 837 | 926 | 864 |
+| | wgpu (Vulkan) | f16 | 182 | 795 | 1014 | 1148 | 1147 |
+| | rocm (HIP) | f32 | 156 | 631 | 719 | 910 | 1157 |
+| | rocm (HIP) | f16 | 176 | 758 | 888 | 1102 | **1374** |
+
+Upstream KataGo for comparison, `just bench-upstream <net>` (KataGo's own `benchmark`, 800 visits; its nnEvals/s at
+the average batch its search threads produce, so a search is running around them). OpenCL FP16 on AMD's OpenCL
+device (`CONFIG` with `openclDeviceToUse = 0`; Mesa's rusticl device, which KataGo picks by default, is slower at
+small batches):
+
+| Net | Engine | avg batch 4 | 8 | 16 | 32 | 49 |
+|---|---|---:|---:|---:|---:|---:|
+| b10c128 | KataGo OpenCL FP16 | 2725 | 3476 | 3774 | 4120 | 4962 |
+| b18c384nbt | KataGo OpenCL FP16 | 295 | 356 | 401 | 441 | 449 |
+| b10c128 | KataGo Eigen (CPU, 12 threads) | 164 at batch 1 | | | | |
+
+So on this GPU katago-rs's b18c384nbt forward pass is about 2.5x upstream's at batch 32 (1102-1148 vs 441), and
+b10c128's about 1.4x (5913-5942 vs 4120). On the CPU, flex is single-threaded: about upstream's Eigen per thread
+(M0), and 5x behind Eigen on 12 threads.
+
+### Searches in the browser
+
+Chromium 156 headless, WebGPU through Vulkan, visits per second of one search at a time on fresh positions (NN cache
+cleared), `just web-build && just bench-web`:
+
+| Net | Backend | 100 visits | 400 visits |
+|---|---|---:|---:|
+| b10c128 | WebGPU (`precision: auto`, f16 here) | 586-734 | |
+| b10c128 | wasm CPU | 10 | |
+| b18c384nbt | WebGPU f32 | 271-429 | 425-580 |
+| b18c384nbt | WebGPU f16 | 363-484 | 441-641 |
+
+One search fills batches of only 7-15 rows; many searches at once (game review, problem generation) reach the
+forward-pass numbers above.
+
+### As a server (katago-ws)
+
+[katago-ws](https://github.com/Sagebati/katago-ws)'s quick bench: 6 games analysed at every turn, 100 visits, 4 games
+in flight, one engine process, two runs each (`scripts/bench_setup.sh`, then `BENCH_PRESET=quick scripts/bench.sh`
+there). Positions per second:
+
+| Net | Engine | Settings (NN servers x batch, analysis threads) | positions/s |
+|---|---|---|---:|
+| b18c384nbt | katago-rs, wgpu (Vulkan) f16 | 4 x 64, 256 | **15.6 / 15.5** |
+| | katago-rs, rocm f16 | 8 x 64, 256 | 13.4 / 13.2 |
+| | KataGo OpenCL FP16, Mesa rusticl (2026-10-25) | 4 x 64, 128 | 7.1 / 7.1 |
+| | KataGo OpenCL FP16, AMD OpenCL | 4 x 64, 128 | 6.3 / 6.3 |
+| b10c128 | katago-rs, rocm f16 | 8 x 64, 256 | 58.0 / 61.5 |
+| | KataGo OpenCL FP16, AMD OpenCL | 4 x 64, 256 | **80.6 / 76.9** |
+| | KataGo OpenCL FP16, Mesa rusticl (2026-10-25) | 4 x 64, 256 | 63.0 / 71.6 |
+
+The analysis quality matches upstream's run-to-run noise (docs/M9-report.md). b18c384nbt is GPU-bound and katago-rs
+is about 2x upstream's throughput. b10c128 is bound by the search side instead (katago-rs runs every search on one OS
+thread, the wasm design): one katago-rs process reaches about 0.75x of upstream's best.
 
 ## Setup
 
