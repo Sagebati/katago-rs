@@ -5,6 +5,7 @@
 //! `load_model` stands in for that open, so it must follow the same two rules.
 //! Not a port of upstream code.
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -92,9 +93,8 @@ fn err_text(r: Evals) -> String {
   }
 }
 
+wasm_test! {
 /// `debugSkipNeuralNet` (config key, or the "/dev/null" default): the model is never opened.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn skip_neural_net_never_loads_the_model() {
   let mut cases = Cases::new("setup_host::skip_neural_net_never_loads_the_model");
   // The "/dev/null" default.
@@ -124,10 +124,10 @@ fn skip_neural_net_never_loads_the_model() {
   assert_eq!(calls, vec![("model0".to_string(), "/dev/null".to_string())]);
   cases.ran();
 }
+}
 
+wasm_test! {
 /// NNEvaluator's own argument checks come before it opens the model, so they win over a missing file.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nneval_argument_errors_come_before_the_model_open() {
   let mut cases = Cases::new("setup_host::nneval_argument_errors_come_before_the_model_open");
   // BENCHMARK takes the caller's defaultMaxBatchSize as is.
@@ -148,11 +148,11 @@ fn nneval_argument_errors_come_before_the_model_open() {
   assert!(calls.is_empty());
   cases.ran();
 }
+}
 
+wasm_test! {
 /// Setup::maybeWarnHumanSLParams: warns (and returns true) only when `humanSLProfile` is set and none of the models
 /// takes SGF metadata; the text lists the models. (Not reachable from the setup oracle: it needs evaluators.)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn maybe_warn_human_sl_params_texts() {
   use katago_core::search::searchparams::SearchParams;
   let mut cases = Cases::new("setup_host::maybe_warn_human_sl_params_texts");
@@ -184,12 +184,12 @@ fn maybe_warn_human_sl_params_texts() {
   assert_eq!(out, "WARNING: humanSLProfile is specified as config param but model(s) don't use it: \n");
   cases.ran();
 }
+}
 
+wasm_test! {
 /// The "burn" backend (katago-nn-burn) takes NCHW inputs like opencl / trt / metal, and reads its own prefixed keys;
 /// "dummybackend" (NHWC) and the foreign backends' keys are ignored. (The setup oracle only builds upstream's
 /// backends, so the port's own prefix is checked here.)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn burn_backend_prefix_defaults_and_keys() {
   let mut cases = Cases::new("setup_host::burn_backend_prefix_defaults_and_keys");
   let nhwc = |prefix: &str, cfg: &str| -> bool {
@@ -205,4 +205,5 @@ fn burn_backend_prefix_defaults_and_keys() {
   assert!(!nhwc("burn", "openclInputsUseNHWC = true\ndummybackendInputsUseNHWC = true\n"), "other backends' keys are ignored");
   assert!(nhwc("dummybackend", "burnInputsUseNHWC = false\n"), "burn keys are ignored by the others");
   cases.ran();
+}
 }

@@ -4,6 +4,7 @@
 //! line. Runs natively and on wasm32 (`just test-wasm`), which is the point: on wasm the std
 //! methods are not glibc's.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -129,8 +130,7 @@ fn hex(s: &str) -> u64 {
   u64::from_str_radix(s, 16).expect("hex in math.txt")
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn math_chunk_hashes_vs_glibc() {
   let expected = fixture("oracle", "math.txt");
   let exp_lines: Vec<&str> = expected.lines().filter(|l| l.starts_with("C ")).collect();
@@ -153,9 +153,9 @@ fn math_chunk_hashes_vs_glibc() {
   }
   assert!(bad.is_empty(), "{} of {} chunks differ from glibc:\n{}", bad.len(), exp_lines.len(), bad.join("\n"));
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn math_special_values_vs_glibc() {
   let expected = fixture("oracle", "math.txt");
   let mut cases = Cases::new("math_special_values_vs_glibc");
@@ -181,6 +181,7 @@ fn math_special_values_vs_glibc() {
     }
   }
   assert!(bad.is_empty(), "{} special values differ from glibc:\n{}", bad.len(), bad.join("\n"));
+}
 }
 
 /// Direct comparison with the host libm, only where the host libm *is* the oracle: glibc on
@@ -210,12 +211,11 @@ fn math_vs_host_glibc() {
   eprintln!("math_vs_host_glibc: {} inputs x 4 functions", n);
 }
 
+wasm_test! {
 /// D13 (b): `atan` is CORE-MATH's correctly rounded atan (+ glibc's misroundings on ScoreValue's
 /// table arguments, see tests/math_atan.rs), so on every target it equals glibc wherever glibc is
 /// correctly rounded: here everywhere but the 2 of 2048 inputs where glibc 2.44 is 1 ulp off
 /// (checked with MPFR). `tan` uses the platform libm: within 1 ulp of glibc (exact natively).
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-#[test]
 fn atan_tan_within_one_ulp_of_glibc() {
   common::init();
   let table = common::fixture("oracle", "math_ulp.txt");
@@ -242,4 +242,5 @@ fn atan_tan_within_one_ulp_of_glibc() {
   assert_eq!(differ_atan, 2, "atan must equal glibc except where glibc is not correctly rounded");
   #[cfg(not(target_arch = "wasm32"))]
   assert_eq!(differ_tan, 0, "native tan must be glibc itself");
+}
 }

@@ -3,6 +3,7 @@
 //! bits per 65536-input chunk and compares the hashes, then checks the special-value lines. Runs
 //! natively and on wasm32 (`just test-wasm`), where the std `f32::tanh` is not glibc's.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -51,8 +52,7 @@ fn gen_tanhf(r: &mut Sm, i: i64) -> f32 {
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn tanhf_chunk_hashes_vs_glibc() {
   let expected = fixture("oracle", "math_tanhf.txt");
   let exp_lines: Vec<&str> = expected.lines().filter(|l| l.starts_with("C ")).collect();
@@ -76,9 +76,9 @@ fn tanhf_chunk_hashes_vs_glibc() {
   }
   assert!(bad.is_empty(), "{} of {} chunks differ from glibc:\n{}", bad.len(), exp_lines.len(), bad.join("\n"));
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn tanhf_special_values_vs_glibc() {
   let expected = fixture("oracle", "math_tanhf.txt");
   let mut cases = Cases::new("tanhf_special_values_vs_glibc");
@@ -96,6 +96,7 @@ fn tanhf_special_values_vs_glibc() {
     }
   }
   assert!(bad.is_empty(), "{} special values differ from glibc:\n{}", bad.len(), bad.join("\n"));
+}
 }
 
 /// Direct comparison with the host libm where it is the oracle (glibc >= 2.41: correctly

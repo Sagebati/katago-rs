@@ -8,6 +8,7 @@
 //!
 //! Runs natively and on wasm32 (`just test-wasm`); natively also directly against the host glibc.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -86,8 +87,7 @@ fn lines_with(prefix: &str) -> Vec<String> {
   fixture("oracle", "math_atan.txt").lines().filter(|l| l.starts_with(prefix)).map(|l| l.to_string()).collect()
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn cr_atan_chunk_hashes_vs_mpfr() {
   let expected = lines_with("C ");
   assert_eq!(expected.len() as i64, CHUNKS, "C lines");
@@ -107,10 +107,10 @@ fn cr_atan_chunk_hashes_vs_mpfr() {
   }
   assert!(bad.is_empty(), "{} of {} chunks differ from MPFR:\n{}", bad.len(), CHUNKS, bad.join("\n"));
 }
+}
 
+wasm_test! {
 /// The point of D13 (b): on every target, `atan` is glibc's atan on every ScoreValue table argument.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn atan_table_args_vs_glibc() {
   let expected = lines_with("T ");
   let mut cases = Cases::new("atan_table_args_vs_glibc (4096 table arguments each)");
@@ -136,11 +136,11 @@ fn atan_table_args_vs_glibc() {
   assert_eq!(c, expected.len(), "T lines");
   assert!(bad.is_empty(), "{} of {} chunks differ from glibc:\n{}", bad.len(), c, bad.join("\n"));
 }
+}
 
+wasm_test! {
 /// `GLIBC_ATAN_OVERRIDES` is exactly the set of table arguments where glibc is not correctly
 /// rounded (D lines: x, glibc, MPFR), and `cr_atan` is the MPFR value there.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn atan_overrides_are_glibc_misroundings() {
   let d: Vec<(u64, u64, u64)> = lines_with("D ")
     .iter()
@@ -159,9 +159,9 @@ fn atan_overrides_are_glibc_misroundings() {
     assert_eq!(bits(math::atan(x)), g, "atan({:e}) vs glibc", x);
   }
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn atan_special_values() {
   let ov = &math::GLIBC_ATAN_OVERRIDES;
   let mut cases = Cases::new("atan_special_values");
@@ -178,6 +178,7 @@ fn atan_special_values() {
     }
   }
   assert!(bad.is_empty(), "{} special values differ:\n{}", bad.len(), bad.join("\n"));
+}
 }
 
 /// Direct comparison with the host glibc 2.44 on x86-64 with FMA (`__atan_fma`): every table

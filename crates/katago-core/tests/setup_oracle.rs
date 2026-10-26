@@ -16,6 +16,7 @@
 
 #![allow(clippy::unnecessary_cast)] // the dump casts every integer field to i64 like the oracle's (long long)
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -534,16 +535,16 @@ fn check(prefix: &str, expected_file: &str, nn_only: bool, label: &'static str) 
   }
 }
 
+wasm_test! {
 /// setup.cpp as the "dummybackend" backend (NHWC inputs), all ops.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn setup_oracle_dummybackend() {
   check("dummybackend", "setup_oracle_dummybackend.txt", false, "setup_oracle::dummybackend");
 }
+}
 
+wasm_test! {
 /// setup.cpp as the "opencl" backend (NCHW inputs, other keys), initializeNNEvaluators ops.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn setup_oracle_opencl() {
   check("opencl", "setup_oracle_opencl.txt", true, "setup_oracle::opencl");
+}
 }

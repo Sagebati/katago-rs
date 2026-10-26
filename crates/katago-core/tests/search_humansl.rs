@@ -9,6 +9,7 @@
 
 #![allow(clippy::write_with_newline)]
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -333,8 +334,7 @@ fn run_case(line: &str) -> String {
 
 const NUM_CASES: usize = 120;
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn search_humansl_vs_upstream() {
   init();
   ScoreValue::init_tables();
@@ -368,4 +368,5 @@ fn search_humansl_vs_upstream() {
   assert!(num_human > 0);
   assert!(text.contains("\"humanPolicy\"") && text.contains("\"humanPrior\""));
   crate::report!("search_humansl_vs_upstream: {} cases ({} with a human evaluator)", blocks.len(), num_human);
+}
 }

@@ -4,6 +4,9 @@
 //! text (fixtures/upstream-v1.16.5/analysis-protocol/expected/bytes_cfg_args.jsonl: bytes_*, multibyte_*).
 //! Not a port of upstream code.
 
+#[macro_use]
+mod common;
+
 use katago_core::core::global::KataError;
 use katago_core::port::nlohmann;
 
@@ -23,8 +26,7 @@ fn report_error_text(line: &[u8]) -> Vec<u8> {
   s
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn dump_string_bytes_dfa() {
   assert_eq!(nlohmann::dump_string_bytes(b"a\"b\\\x01\n\xc3\xa9\xf0\x9f\x98\x80").ok(), Some(b"\"a\\\"b\\\\\\u0001\\n\xc3\xa9\xf0\x9f\x98\x80\"".to_vec()));
   // the same as dump() of the valid string
@@ -37,11 +39,11 @@ fn dump_string_bytes_dfa() {
   assert_eq!(type_error(b"\xf5\x80"), "[json.exception.type_error.316] invalid UTF-8 byte at index 0: 0xF5");
   assert_eq!(type_error(b"a\xe2\x82"), "[json.exception.type_error.316] incomplete UTF-8 string; last byte: 0x82");
 }
+}
 
+wasm_test! {
 /// The upstream-observed failures: the first invalid byte of reportError's text, as the reference binary's
 /// `ERROR: request loop loop thread failed: [json.exception.type_error.316] ...` line reports it.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn report_error_texts_like_upstream() {
   let cases: &[(&[u8], &str)] = &[
     (b"{\"id\":\"a\xffb\",\"action\":\"query_version\"}", "invalid UTF-8 byte at index 154: 0xFF"),
@@ -73,4 +75,5 @@ fn report_error_texts_like_upstream() {
   // parse (&str) is parse_bytes with the what() lossily converted.
   assert!(nlohmann::parse("{\"id\":é}").err().unwrap().what().ends_with("last read: '\"id\":\u{FFFD}'"));
   assert!(nlohmann::parse_bytes("{\"id\":é}".as_bytes()).err().unwrap().what().ends_with(b"last read: '\"id\":\xc3'"));
+}
 }

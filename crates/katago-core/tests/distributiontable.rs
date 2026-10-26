@@ -8,6 +8,7 @@
 
 #![allow(clippy::needless_range_loop, clippy::approx_constant)]
 
+#[macro_use]
 mod common;
 
 use std::fmt::Write as _;
@@ -105,8 +106,7 @@ fn dump(out: &mut String, name: &str, pdf: &dyn Fn(f64) -> f64, cdf: &dyn Fn(f64
   assert!(nq > 400);
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn distributiontable_vs_cpp() {
   let mut cases = Cases::new("distributiontable::distributiontable_vs_cpp");
   let mut out = String::new();
@@ -127,4 +127,5 @@ fn distributiontable_vs_cpp() {
   dump(&mut out, "exp 64", &exp_pdf, &exp_cdf, -8.0, 8.0, 64);
   cases.ran();
   compare_lines("distributiontable.txt", &out, &fixture("oracle", "distributiontable.txt"));
+}
 }

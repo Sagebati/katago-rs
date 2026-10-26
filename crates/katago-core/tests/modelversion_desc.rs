@@ -2,6 +2,7 @@
 //! oracle/modelversion_desc.cpp (the unmodified upstream NNModelVersion, activations.h,
 //! ModelPostProcessParams() and ModelDesc::getSupportedRules), compared line by line.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -22,8 +23,7 @@ fn v(name: &str, arg: i32, r: Result<i32, katago_core::core::global::KataError>)
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn modelversion_and_desc_vs_cpp() {
   let mut cases = Cases::new("modelversion_desc::modelversion_and_desc_vs_cpp");
   let expected = fixture("oracle", "modelversion_desc.txt");
@@ -102,4 +102,5 @@ fn modelversion_and_desc_vs_cpp() {
     assert_eq!(a, e);
     cases.ran();
   }
+}
 }

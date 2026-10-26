@@ -4,6 +4,7 @@
 //! 65536-input chunk and compares the hashes, then checks the special-value lines. Runs natively
 //! and on wasm32 (`just test-wasm`), where Rust's libm is not glibc's.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -121,8 +122,7 @@ fn compare_chunks(label: &'static str, name: &str, actual: Vec<String>) {
   assert!(bad.is_empty(), "{} of {} chunks differ from glibc:\n{}", bad.len(), exp_lines.len(), bad.join("\n"));
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn lgamma_chunk_hashes_vs_glibc() {
   let mut r = Sm(11);
   let mut actual: Vec<String> = Vec::new();
@@ -139,9 +139,9 @@ fn lgamma_chunk_hashes_vs_glibc() {
   }
   compare_chunks("lgamma_chunk_hashes_vs_glibc (65536 inputs each)", "lgamma", actual);
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn expm1_chunk_hashes_vs_glibc() {
   let mut r = Sm(12);
   let mut actual: Vec<String> = Vec::new();
@@ -154,9 +154,9 @@ fn expm1_chunk_hashes_vs_glibc() {
   }
   compare_chunks("expm1_chunk_hashes_vs_glibc (65536 inputs each)", "expm1", actual);
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn lgamma_expm1_special_values_vs_glibc() {
   let expected = fixture("oracle", "math_lgamma.txt");
   let mut cases = Cases::new("lgamma_expm1_special_values_vs_glibc");
@@ -180,6 +180,7 @@ fn lgamma_expm1_special_values_vs_glibc() {
     }
   }
   assert!(bad.is_empty(), "{} special values differ from glibc:\n{}", bad.len(), bad.join("\n"));
+}
 }
 
 /// Direct comparison with the host libm where it is the oracle: glibc 2.44 on x86-64 with FMA

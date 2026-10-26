@@ -10,6 +10,7 @@
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
 #![allow(clippy::needless_range_loop)]
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -672,9 +673,8 @@ fn fnv1a64(s: &str) -> u64 {
   h
 }
 
+wasm_test! {
 /// `boardhistory_fuzz hashes <n> 1`: every game's trace must hash like the C++ one.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn boardhistory_fuzz_game_hashes_vs_cpp() {
   init();
   let mut cases = Cases::new("boardhistory_fuzz_oracle::boardhistory_fuzz_game_hashes_vs_cpp");
@@ -709,10 +709,10 @@ fn boardhistory_fuzz_game_hashes_vs_cpp() {
     failed.join("\n")
   );
 }
+}
 
+wasm_test! {
 /// `boardhistory_fuzz games <n> 7`: full traces, compared line by line.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn boardhistory_fuzz_full_traces_vs_cpp() {
   init();
   let mut cases = Cases::new("boardhistory_fuzz_oracle::boardhistory_fuzz_full_traces_vs_cpp");
@@ -725,11 +725,11 @@ fn boardhistory_fuzz_full_traces_vs_cpp() {
   }
   compare_lines("boardhistory_fuzz_trace.txt", &out, &expected);
 }
+}
 
+wasm_test! {
 /// `boardhistory_fuzz komiedge`: NaN/inf/out-of-range komi and draw values. The `(int64_t)` cast in
 /// getSituationRulesAndKoHash is UB there; x86-64 gives INT64_MIN (port::cpp::static_cast_i64_f32).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn boardhistory_komi_edge_vs_cpp() {
   init();
   let mut cases = Cases::new("boardhistory_fuzz_oracle::boardhistory_komi_edge_vs_cpp");
@@ -740,4 +740,5 @@ fn boardhistory_komi_edge_vs_cpp() {
     cases.ran();
   }
   compare_lines("boardhistory_fuzz_komiedge.txt", &out, &expected);
+}
 }

@@ -9,6 +9,7 @@
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
 #![allow(clippy::excessive_precision, clippy::manual_range_contains, clippy::mixed_case_hex_literals, clippy::needless_range_loop)]
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -39,8 +40,7 @@ fn d(x: f64) -> String {
   cpp_ostream_f64(x)
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn xorshift_and_pcg32_self_tests() {
   let mut cases = Cases::new("rand::xorshift_and_pcg32_self_tests");
   XorShift1024Mult::test();
@@ -48,10 +48,10 @@ fn xorshift_and_pcg32_self_tests() {
   PCG32::test();
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: simpleTest (rand.cpp) static
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn simple_test() {
   let mut cases = Cases::new("rand::simple_test");
   let mut rand = Rand::new_seed("abc");
@@ -116,10 +116,10 @@ fn simple_test() {
   expect("hash test", &mut out, "simpletest.expected0.txt");
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: Rand::runTests (rand.cpp), first half
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn bit_mixer_and_global_roundtrip_tests() {
   let mut cases = Cases::new("rand::bit_mixer_and_global_roundtrip_tests");
   let mut out = String::new();
@@ -171,10 +171,10 @@ fn bit_mixer_and_global_roundtrip_tests() {
   }
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: Rand::runTests (rand.cpp), "Rand tests"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn rand_tests() {
   let mut cases = Cases::new("rand::rand_tests");
   let mut out = String::new();
@@ -251,10 +251,10 @@ fn rand_tests() {
     cases.ran();
   }
 }
+}
 
+wasm_test! {
 /// upstream: Rand::runTests (rand.cpp), "Gamma tests"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn gamma_tests() {
   let mut cases = Cases::new("rand::gamma_tests");
   let mut out = String::new();
@@ -301,10 +301,10 @@ fn gamma_tests() {
     cases.ran();
   }
 }
+}
 
+wasm_test! {
 /// upstream: Rand::runTests (rand.cpp), "Rand moment tests"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn rand_moment_tests() {
   let mut cases = Cases::new("rand::rand_moment_tests");
   let mut out = String::new();
@@ -387,10 +387,10 @@ fn rand_moment_tests() {
   expect(name, &mut out, "rand-moment-tests.expected0.txt");
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: Rand::runTests (rand.cpp), "Shuffle tests"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn shuffle_tests() {
   let mut cases = Cases::new("rand::shuffle_tests");
   let mut out = String::new();
@@ -404,10 +404,10 @@ fn shuffle_tests() {
   expect(name, &mut out, "shuffle-tests.expected0.txt");
   cases.ran();
 }
+}
 
+wasm_test! {
 /// Mirrors `randMode()` in fixtures/upstream-v1.16.5/unit/oracle/oracle.cpp.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn rand_bit_exact_vs_cpp() {
   let mut cases = Cases::new("rand::rand_bit_exact_vs_cpp");
   let expected = fixture("oracle", "rand.txt");
@@ -528,4 +528,5 @@ fn rand_bit_exact_vs_cpp() {
     cases.ran();
   }
   common::compare_lines("oracle/rand.txt", &out, &expected);
+}
 }

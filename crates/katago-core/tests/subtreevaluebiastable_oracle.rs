@@ -4,6 +4,7 @@
 //! shard choice, shared entries, BTreeMap order (Hash128 order) and clearUnusedSynchronous, on random
 //! boards and hand-made ko positions. Not a port of upstream code. Keep in the same order as the oracle.
 
+#[macro_use]
 mod common;
 
 use std::rc::Rc;
@@ -89,8 +90,7 @@ fn dump_entries(shards: i32, step: i32, table: &SubtreeValueBiasTable, values: b
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn subtreevaluebiastable_vs_cpp() {
   let mut cases = Cases::new("subtreevaluebiastable_oracle::subtreevaluebiastable_vs_cpp");
   init();
@@ -224,4 +224,5 @@ fn subtreevaluebiastable_vs_cpp() {
   }
 
   compare_lines("subtreevaluebiastable", &out, &expected);
+}
 }

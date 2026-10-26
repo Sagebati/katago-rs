@@ -9,6 +9,7 @@
 //! TODO: the terminate-after-pop path itself (analysis.rs `handle_request`/the analysis loop) needs the analysis
 //! engine and is covered by katago-cli tests/analysis_protocol.rs; the stop-from-onSearchBegun test below is its
 //! AsyncBot-level half.
+#[macro_use]
 mod common;
 
 use std::cell::Cell;
@@ -143,8 +144,7 @@ fn run_with_callback(threads: i32, visits: i64, period: f64, first: f64, calls: 
   format!("loc={} {}", loc, s)
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn callback_does_not_change_search_result_1thread() {
   init();
   for visits in [1i64, 2, 5, 50, 300] {
@@ -155,9 +155,9 @@ fn callback_does_not_change_search_result_1thread() {
     assert_eq!(a, b, "callback changed the result at visits={visits}");
   }
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn callback_multithread_invariants() {
   init();
   for threads in [2, 4, 8] {
@@ -168,9 +168,9 @@ fn callback_multithread_invariants() {
     crate::report!("threads {threads}: {} callbacks; same as plain: {}", calls.get(), a == b);
   }
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn callback_huge_periods() {
   init();
   let calls = Rc::new(Cell::new(0));
@@ -186,9 +186,9 @@ fn callback_huge_periods() {
   run_with_callback(1, 50, -1.0, 0.0, calls.clone());
   assert_eq!(calls.get(), 1, "callbackPeriod < 0 -> one callback");
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn stop_from_callback_and_kill() {
   init();
   let mut env = make_env();
@@ -234,9 +234,9 @@ fn stop_from_callback_and_kill() {
   env.pool.run_until_stalled();
   assert_eq!(Rc::strong_count(&env.nn_eval), 1);
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn callback_error_ends_search_cleanly() {
   const POLL_BOUND: usize = 200; // 5 when the threads stop; thousands when they run to maxVisits
   init();
@@ -279,9 +279,9 @@ fn callback_error_ends_search_cleanly() {
     assert_eq!(Rc::strong_count(&env.nn_eval), 1, "serve task ended");
   }
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn search_begun_called_once_before_callbacks() {
   init();
   let mut env = make_env();
@@ -301,10 +301,10 @@ fn search_begun_called_once_before_callbacks() {
   assert_eq!(o.iter().filter(|s| s.starts_with("begun")).count(), 1);
   crate::report!("{:?}", &o[..o.len().min(8)]);
 }
+}
 
+wasm_test! {
 /// The three non-analyze overloads return the chosen move, as the 4-argument one does; a killed bot returns NULL_LOC.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn gen_move_synchronous_overloads_return_the_chosen_move() {
   init();
   let mut cases = Cases::new("asyncbot::gen_move_synchronous_overloads_return_the_chosen_move");
@@ -354,11 +354,11 @@ fn gen_move_synchronous_overloads_return_the_chosen_move() {
   env.nn_eval.kill_server_threads();
   env.pool.run_until_stalled();
 }
+}
 
+wasm_test! {
 /// onSearchBegun is called exactly once per search, before any playout (root visits are still those of the reused
 /// tree), by every overload that takes it.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn search_begun_is_called_once_per_search() {
   init();
   let mut cases = Cases::new("asyncbot::search_begun_is_called_once_per_search");
@@ -417,12 +417,12 @@ fn search_begun_is_called_once_per_search() {
   env.nn_eval.kill_server_threads();
   env.pool.run_until_stalled();
 }
+}
 
+wasm_test! {
 /// What analysis.cpp does for a request terminated between the pop and the search start: its onSearchBegun callback
 /// calls `bot->stopWithoutWait()`, and the search must end at once (with whatever root eval it has) instead of running
 /// to maxVisits. Both genMove flavours; the bot is reusable afterwards.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn stop_from_search_begun_ends_the_search_early() {
   init();
   let mut cases = Cases::new("asyncbot::stop_from_search_begun_ends_the_search_early");
@@ -457,11 +457,11 @@ fn stop_from_search_begun_ends_the_search_early() {
     }
   }
 }
+}
 
+wasm_test! {
 /// A stop requested while nothing is running is forgotten when the next genMove starts (genMoveAsync resets
 /// shouldStopNow), for both flavours.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn stop_before_the_search_is_forgotten() {
   init();
   let mut cases = Cases::new("asyncbot::stop_before_the_search_is_forgotten");
@@ -483,4 +483,5 @@ fn stop_before_the_search_is_forgotten() {
   drop(bot);
   env.nn_eval.kill_server_threads();
   env.pool.run_until_stalled();
+}
 }

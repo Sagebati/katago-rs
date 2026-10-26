@@ -6,6 +6,7 @@
 //!   `cr_atan(x) as f32` (port::math::ATANF_TIES) listed.
 //! - `regen_math_atanf_fixture` (native, ignored): writes the fixture from the platform's atanf (glibc 2.44).
 
+#[macro_use]
 mod common;
 
 use common::fixture;
@@ -68,8 +69,7 @@ fn lines(f: impl Fn(f32) -> f32) -> Vec<String> {
   out
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn atanf_sample_hashes_vs_glibc() {
   let expected = fixture("oracle", "math_atanf.txt");
   let expected: Vec<&str> = expected.lines().filter(|l| l.starts_with("C ") || l.starts_with("S ")).collect();
@@ -78,6 +78,7 @@ fn atanf_sample_hashes_vs_glibc() {
   for (a, e) in actual.iter().zip(&expected) {
     assert_eq!(a, e, "atanf differs from glibc");
   }
+}
 }
 
 #[cfg(not(target_arch = "wasm32"))]

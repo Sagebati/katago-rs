@@ -7,6 +7,7 @@
 
 #![allow(clippy::field_reassign_with_default)]
 
+#[macro_use]
 mod common;
 
 use std::collections::BTreeMap;
@@ -117,8 +118,7 @@ fn fnv(row: &[f32]) -> u64 {
   h
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn sgfmetadata_vs_upstream() {
   let text = fixture("oracle", "sgfmetadata.txt");
   let mut cases = Cases::new("sgfmetadata_vs_upstream");
@@ -199,4 +199,5 @@ fn sgfmetadata_vs_upstream() {
     assert!(counts.get(k).copied().unwrap_or(0) > 0, "no {} lines", k);
   }
   crate::report!("sgfmetadata_vs_upstream: line counts {:?}", counts);
+}
 }

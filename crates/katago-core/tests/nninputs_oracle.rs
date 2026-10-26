@@ -14,6 +14,7 @@
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
 #![allow(clippy::field_reassign_with_default)]
 
+#[macro_use]
 mod common;
 
 use std::collections::HashMap;
@@ -219,13 +220,13 @@ fn dump_line(pid: i32, eidx: i32, bin: &[f32], nn_x: i32, nn_y: i32) -> String {
   format!("dump {} {} {}{}", pid, eidx, cnt, d)
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nninputs_features_vs_cpp() {
   // wasm32 has a 1 MB stack: init (the 115 KB zobrist statics, copied around in debug builds) runs from
   // a small frame, and the replay keeps its Board/BoardHistory boxed.
   init();
   run_features();
+}
 }
 
 #[inline(never)]
@@ -309,12 +310,12 @@ fn close(a: f64, b: f64) -> bool {
   false
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn scorevalue_vs_cpp() {
   init();
   ScoreValue::init_tables();
   run_scorevalue();
+}
 }
 
 #[inline(never)]

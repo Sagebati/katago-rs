@@ -13,6 +13,7 @@
 #![allow(non_snake_case)]
 #![allow(clippy::approx_constant, clippy::excessive_precision)] // upstream's literals, verbatim
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -62,9 +63,8 @@ macro_rules! APPROX_EQ {
 
 use FancyMath as FM;
 
+wasm_test! {
 /// upstream: FancyMath::runTests (fancymath.cpp), replayed.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 #[allow(clippy::disallowed_methods)] // asin only builds expected values compared with 1e-13 tolerance
 fn fancymath_run_tests() {
   let mut cases = Cases::new("fancymath::fancymath_run_tests");
@@ -292,6 +292,7 @@ fn fancymath_run_tests() {
     cases.ran();
   }
 }
+}
 
 // ---------------------------------------------------------------------------------------
 // Oracle: fixtures/upstream-v1.16.5/unit/oracle/fancymath.txt
@@ -414,10 +415,9 @@ fn chunks(out: &mut Vec<String>, name: &str, seed: u64, f: &mut dyn FnMut(&mut S
   }
 }
 
+wasm_test! {
 /// search.cpp's `valueWeightDistribution` table: tdistpdf/tdistcdf at 3 degrees of freedom on the
 /// DistributionTable grid, bit for bit.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn fancymath_distribution_table_vs_upstream() {
   let expected = fixture("oracle", "fancymath.txt");
   let mut cases = Cases::new("fancymath_distribution_table_vs_upstream");
@@ -443,9 +443,9 @@ fn fancymath_distribution_table_vs_upstream() {
   assert_eq!(i, size - 1, "table rows");
   assert!(bad.is_empty(), "{} rows differ from upstream:\n{}", bad.len(), bad.join("\n"));
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn fancymath_chunk_hashes_vs_upstream() {
   let expected = fixture("oracle", "fancymath.txt");
   let exp_lines: Vec<&str> = expected.lines().filter(|l| l.starts_with("C ")).collect();
@@ -518,6 +518,7 @@ fn fancymath_chunk_hashes_vs_upstream() {
   }
   assert!(bad.is_empty(), "{} of {} chunks differ from upstream:\n{}", bad.len(), exp_lines.len(), bad.join("\n"));
 }
+}
 
 /// The continued fractions of the `S cf` lines (same order as in fancymath.cpp).
 fn cf_case(c: usize, tol: f64, max_terms: i32) -> f64 {
@@ -558,8 +559,7 @@ fn cf_case(c: usize, tol: f64, max_terms: i32) -> f64 {
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn fancymath_special_values_vs_upstream() {
   let expected = fixture("oracle", "fancymath.txt");
   let mut cases = Cases::new("fancymath_special_values_vs_upstream");
@@ -587,4 +587,5 @@ fn fancymath_special_values_vs_upstream() {
     }
   }
   assert!(bad.is_empty(), "{} special values differ from upstream:\n{}", bad.len(), bad.join("\n"));
+}
 }

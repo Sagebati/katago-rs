@@ -5,6 +5,7 @@
 // only when linting for wasm32-unknown-unknown.
 #![allow(clippy::eq_op)]
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -18,8 +19,7 @@ fn h(x: u64) -> String {
   Global::uint64_to_hex_string(x)
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn hash_bit_exact_vs_cpp() {
   let mut cases = Cases::new("hash::hash_bit_exact_vs_cpp");
   let expected = fixture("oracle", "hash.txt");
@@ -101,4 +101,5 @@ fn hash_bit_exact_vs_cpp() {
     cases.ran();
   }
   common::compare_lines("oracle/hash.txt", &out, &expected);
+}
 }

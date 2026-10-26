@@ -9,6 +9,7 @@
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
 #![allow(clippy::identity_op, clippy::too_many_arguments)]
 
+#[macro_use]
 mod common;
 
 use std::collections::BTreeMap;
@@ -471,8 +472,7 @@ fn run_f(q: &mut Search, t: &[&str], xloc: Loc) -> String {
   o
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn search_evalcache_diff() {
   common::init();
   ScoreValue::init_tables();
@@ -568,4 +568,5 @@ fn search_evalcache_diff() {
   drop(s);
   nn_eval.kill_server_threads();
   pool.run_until_stalled();
+}
 }
