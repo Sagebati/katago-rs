@@ -192,6 +192,11 @@ fn compare(eval_idx: usize, out: &NNOutput, rec: &[u32], diffs: &mut Diffs) {
 /// Runs every eval of `evals_file` through the ported NNEvaluator on the burn flex backend and
 /// compares with `out_file`. `limit`: evaluate only the first `limit` evals.
 fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str, out_file: &str, limit: usize) -> Diffs {
+  run_net_with::<N>(backend_name, bpk, evals_file, out_file, limit, enabled_t::False)
+}
+
+/// [`run_net`] with the evaluator's `useFP16` (`enabled_t::True`: this network's 3x3 convs in f16).
+fn run_net_with<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str, out_file: &str, limit: usize, use_fp16: enabled_t) -> Diffs {
   ScoreValue::init_tables();
   Board::init_hash();
   let positions = parse_positions();
@@ -221,7 +226,7 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
       "",
       "",
       false,
-      enabled_t::False,
+      use_fp16,
       enabled_t::Auto,
       1,
       &[-1],
@@ -507,6 +512,23 @@ fn nn_parity_b18c384nbt_wgpu() {
   let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
   check_wgpu(&d);
+}
+
+/// The precision is per network: an f16 evaluator (useFP16 = true) in the process leaves a later f32 one exactly as
+/// it was before (it used to switch every network of the process to f16).
+#[cfg(all(feature = "wgpu-fixed-kernels", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_precision_is_per_network_wgpu() {
+  type N = katago_nn_burn::b18c384nbt::Model;
+  let _gpu = gpu_lock();
+  let run = |fp16| run_net_with::<N>("wgpu", katago_nn_burn::b18c384nbt::BPK_PATH, "evals_b18.txt", "kata1-b18c384nbt.out.bin", 24, fp16);
+  let before = run(enabled_t::False);
+  let half = run(enabled_t::True);
+  let after = run(enabled_t::False);
+  assert_eq!(before.max, after.max, "an f16 network changed a later f32 one");
+  assert_ne!(before.max, half.max, "useFP16 = true did not run in f16");
+  check_wgpu(&before);
+  check_f16(&half);
 }
 
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt-humanv0"))]
