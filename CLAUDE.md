@@ -137,7 +137,7 @@ suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runne
 - No `std::time::Instant`/`SystemTime` in core (panics on wasm32-unknown-unknown): time
   comes from an injected clock (`core/timer.rs`).
 - No file or network IO in core: models arrive as bytes, configs as `&str`.
-- No `anyhow`; errors are `KataError`. Logging through the `log` crate macros.
+- No `anyhow`; errors are `KataError`. Logging through the `tracing` macros.
 
 ## burn notes (see docs/M0-report.md)
 
