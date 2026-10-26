@@ -20,6 +20,8 @@ use common::compare_lines;
 use common::fixture;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::hash::Hash128;
@@ -50,13 +52,26 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     panic!("debugSkipNeuralNet: no model is loaded")
   }
   fn get_model_desc<'a>(&self, _: &'a dyn LoadedModel) -> &'a ModelDesc {
     panic!("debugSkipNeuralNet")
   }
-  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: &str, _: bool, _: enabled_t, _: enabled_t, _: &dyn LoadedModel) -> Result<Box<dyn ComputeContext>, KataError> {
+  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser) -> Result<Box<dyn ComputeContext>, KataError> {
     panic!("debugSkipNeuralNet")
   }
   fn create_compute_handle(&self, _: &dyn ComputeContext, _: &dyn LoadedModel, _: i32, _: bool, _: bool, _: i32, _: i32) -> Result<Box<dyn ComputeHandle>, KataError> {
@@ -484,8 +499,28 @@ fn search_evalcache_diff() {
   let backend: Rc<dyn NeuralNet> = Rc::new(NoBackend);
   let nn_eval = Rc::new(
     NNEvaluator::new(
-      "search_nonn", "search_nonn", "", 16, 19, 19, false, true, 16, 12, true, "", "", false, enabled_t::False, enabled_t::False, 1, &[0],
-      "runSearchTestsRandSeedrev", false, 0, backend, spawner, Vec::new(),
+      "search_nonn",
+      "search_nonn",
+      "",
+      16,
+      19,
+      19,
+      false,
+      true,
+      16,
+      12,
+      true,
+      "",
+      enabled_t::False,
+      1,
+      &[0],
+      "runSearchTestsRandSeedrev",
+      false,
+      0,
+      &mut ConfigParser::new(false, true),
+      backend,
+      spawner,
+      Vec::new(),
     )
     .expect("NNEvaluator::new"),
   );

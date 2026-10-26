@@ -7,6 +7,7 @@ use std::rc::Rc;
 
 use futures::executor::LocalPool;
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::game::board::Board;
 use katago_core::game::board::Location;
 use katago_core::game::board::P_BLACK;
@@ -56,15 +57,13 @@ fn eval_positions(buckets: Vec<i32>) -> Vec<NNOutput> {
       0,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "bucketSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       bytes,

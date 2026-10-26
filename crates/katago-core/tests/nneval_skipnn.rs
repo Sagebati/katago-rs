@@ -22,6 +22,8 @@ use common::fixture;
 use common::init;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
@@ -100,6 +102,19 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     panic!("debugSkipNeuralNet: no model is loaded")
   }
@@ -108,15 +123,7 @@ impl NeuralNet for NoBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     panic!("debugSkipNeuralNet")
   }
@@ -226,15 +233,13 @@ fn run_oracle() {
           3,
           true,
           "",
-          "",
-          false,
-          enabled_t::False,
           enabled_t::False,
           1,
           &[-1],
           f[4],
           f[5] == "1",
           0,
+          &mut ConfigParser::new(false, true),
           backend.clone(),
           spawner.clone(),
           Vec::new(),
@@ -343,6 +348,19 @@ impl NeuralNet for FakeBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     let mut desc = ModelDesc::new();
     desc.name = "fake".to_string();
@@ -360,15 +378,7 @@ impl NeuralNet for FakeBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     Ok(Box::new(Unit))
   }
@@ -424,8 +434,28 @@ impl NeuralNet for FakeBackend {
 fn fake_eval(backend: Rc<FakeBackend>, spawner: Rc<dyn Spawner>, max_batch: i32) -> Rc<NNEvaluator> {
   Rc::new(
     NNEvaluator::new(
-      "fake", "fake.bin.gz", "", max_batch, 19, 19, false, false, -1, 0, false, "", "", false, enabled_t::False, enabled_t::False, 1, &[-1], "seed", false, 0,
-      backend, spawner, Vec::new(),
+      "fake",
+      "fake.bin.gz",
+      "",
+      max_batch,
+      19,
+      19,
+      false,
+      false,
+      -1,
+      0,
+      false,
+      "",
+      enabled_t::False,
+      1,
+      &[-1],
+      "seed",
+      false,
+      0,
+      &mut ConfigParser::new(false, true),
+      backend,
+      spawner,
+      Vec::new(),
     )
     .unwrap(),
   )

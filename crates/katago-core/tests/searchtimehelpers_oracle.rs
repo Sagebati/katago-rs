@@ -33,6 +33,8 @@ use std::rc::Rc;
 use common::init;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
@@ -98,6 +100,19 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     panic!("debugSkipNeuralNet: no model is loaded")
   }
@@ -106,15 +121,7 @@ impl NeuralNet for NoBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     panic!("debugSkipNeuralNet")
   }
@@ -171,15 +178,13 @@ fn start_nn_eval(ctx: &mut Ctx, seed: &str, nn_x_len: i32, nn_y_len: i32) -> Rc<
     12,
     true,
     "",
-    "",
-    false,
-    enabled_t::False,
     enabled_t::False,
     1,
     &gpu_idx_by_server_thread,
     &nn_rand_seed,
     false,
     0,
+    &mut ConfigParser::new(false, true),
     ctx.backend.clone(),
     ctx.spawner.clone(),
     Vec::new(),

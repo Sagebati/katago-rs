@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/neuralnet/nninputs.cpp, cpp/neuralnet/nninputs.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/neuralnet/nninputs.cpp, cpp/neuralnet/nninputs.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Not ported (port-manifest.toml notes): NNInputs::fillRowV3, fillRowV4, fillRowV5, fillRowV6 (input
 // versions of pre-v8 nets; v8+ nets consume fillRowV7).
@@ -23,6 +23,7 @@ use crate::core::hash::Hash;
 use crate::core::hash::Hash128;
 use crate::game::board::*;
 use crate::game::boardhistory::BoardHistory;
+use crate::game::boardhistory::BoardHistoryModes;
 use crate::game::rules::Rules;
 use crate::port::cpp;
 use crate::port::math;
@@ -126,6 +127,13 @@ pub struct MiscNNInputParams {
   pub symmetry: i32,
   pub policy_optimism: f64,
   pub max_history: i32,
+  // -1 = no override: pass-alive featurization follows hist.modes.alwaysComputePassAliveUnderSuicideRules.
+  // 0/1 = override that flag for featurization (and its contribution to the nn cache hash). Used when
+  // evaluating with a secondary net (e.g. a human SL profile net) whose declared featurization mode
+  // differs from the mode the search itself is using.
+  pub pass_alive_suicide_rules_override: i32,
+  // Same, but for hist.modes.excludeTerritoryAdjacentToAtari.
+  pub exclude_territory_adj_atari_override: i32,
 }
 
 impl Default for MiscNNInputParams {
@@ -141,6 +149,8 @@ impl Default for MiscNNInputParams {
       symmetry: NNInputs::SYMMETRY_NOTSPECIFIED,
       policy_optimism: 0.0,
       max_history: 1000,
+      pass_alive_suicide_rules_override: -1,
+      exclude_territory_adj_atari_override: -1,
     }
   }
 }
@@ -1198,8 +1208,12 @@ impl NNInputs {
   /// upstream: NNInputs::getHash (nninputs.cpp)
   //Currently does NOT depend on history (except for marking ko-illegal spots)
   pub fn get_hash(board: &Board, hist: &BoardHistory, next_player: Player, nn_input_params: &MiscNNInputParams) -> Hash128 {
-    let mut hash: Hash128 =
-      BoardHistory::get_situation_rules_and_ko_hash(board, hist, next_player, nn_input_params.draw_equivalent_wins_for_white);
+    //Hash using the effective BoardHistoryModes for this eval, which are normally hist's own
+    //but may be overridden per-query (e.g. for a secondary net whose declared featurization differs).
+    let mut hash: Hash128 = BoardHistory::get_situation_rules_and_ko_hash_modes(
+      board, hist, next_player, nn_input_params.draw_equivalent_wins_for_white,
+      &nn_input_params.get_modes(hist)
+    );
 
     //Fold in whether a pass ends this phase.
     if hist.pass_would_end_phase(board, next_player) {
@@ -1273,7 +1287,47 @@ impl NNInputs {
 
     hash
   }
+}
 
+impl MiscNNInputParams {
+  /// upstream: MiscNNInputParams::getAlwaysComputePassAliveUnderSuicideRules (nninputs.cpp)
+  // The effective value of modes.alwaysComputePassAliveUnderSuicideRules for featurization: the
+  // override if one is set, else hist's own flag.
+  pub fn get_always_compute_pass_alive_under_suicide_rules(&self, hist: &BoardHistory) -> bool {
+    if self.pass_alive_suicide_rules_override >= 0 {
+      return self.pass_alive_suicide_rules_override != 0;
+    }
+    hist.modes.always_compute_pass_alive_under_suicide_rules
+  }
+
+  /// upstream: MiscNNInputParams::getExcludeTerritoryAdjacentToAtari (nninputs.cpp)
+  // The effective value of modes.excludeTerritoryAdjacentToAtari for featurization: the override
+  // if one is set, else hist's own flag.
+  pub fn get_exclude_territory_adjacent_to_atari(&self, hist: &BoardHistory) -> bool {
+    if self.exclude_territory_adj_atari_override >= 0 {
+      return self.exclude_territory_adj_atari_override != 0;
+    }
+    hist.modes.exclude_territory_adjacent_to_atari
+  }
+
+  /// upstream: MiscNNInputParams::getModes (nninputs.cpp)
+  // The effective full modes for featurization, taking both overrides into account.
+  pub fn get_modes(&self, hist: &BoardHistory) -> BoardHistoryModes {
+    BoardHistoryModes::new_full(
+      self.get_always_compute_pass_alive_under_suicide_rules(hist),
+      self.get_exclude_territory_adjacent_to_atari(hist)
+    )
+  }
+
+  /// upstream: MiscNNInputParams::getSuicideLegalForPassAlive (nninputs.cpp)
+  // The suicide legality to use for pass-alive area computations in featurization, taking the
+  // override and hist.modes.alwaysComputePassAliveUnderSuicideRules into account.
+  pub fn get_suicide_legal_for_pass_alive(&self, hist: &BoardHistory) -> bool {
+    hist.rules.multi_stone_suicide_legal || self.get_always_compute_pass_alive_under_suicide_rules(hist)
+  }
+}
+
+impl NNInputs {
   //===========================================================================================
   //INPUTSVERSION 7
   //===========================================================================================
@@ -1383,7 +1437,7 @@ impl NNInputs {
       let non_pass_alive_stones: bool = true;
       let safe_big_territories: bool = true;
       let unsafe_big_territories: bool = true;
-      board.calculate_area(&mut area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, hist.rules.multi_stone_suicide_legal);
+      board.calculate_area(&mut area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, nn_input_params.get_suicide_legal_for_pass_alive(hist));
     } else {
       let mut keep_territories: bool = false;
       let mut keep_stones: bool = false;
@@ -1418,10 +1472,8 @@ impl NNInputs {
           &mut white_minus_black_independent_life_region_count,
           keep_territories,
           keep_stones,
-          // TODO(v1.18.2 sync): upstream passes nnInputParams.getExcludeTerritoryAdjacentToAtari(hist)
-          false,
-          // TODO(v1.18.2 sync): upstream passes nnInputParams.getSuicideLegalForPassAlive(hist)
-          hist.rules.multi_stone_suicide_legal,
+          nn_input_params.get_exclude_territory_adjacent_to_atari(hist),
+          nn_input_params.get_suicide_legal_for_pass_alive(hist),
         );
         if hist.rules.tax_rule == Rules::TAX_ALL {
           group_tax_adjustment_for_pla = if pla == P_WHITE {

@@ -44,6 +44,7 @@ use common::fixture;
 use common::init;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
@@ -158,6 +159,19 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     panic!("debugSkipNeuralNet: no model is loaded")
   }
@@ -166,15 +180,7 @@ impl NeuralNet for NoBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     panic!("debugSkipNeuralNet")
   }
@@ -238,10 +244,14 @@ fn start_nn_eval(
   let nn_cache_size_power_of_two = 16;
   let nn_mutex_pool_size_power_of_two = 12;
   //bool debugSkipNeuralNet = false;
-  let open_cl_re_tune_per_board_size = false;
   let model_name = model_file;
-  let open_cl_tuner_file = "";
   let home_data_dir_override = "";
+  let mut cfg = ConfigParser::new(false, true);
+  //NHWC layout is no longer a generic NNEvaluator option; only the CUDA backend reads it (off cfg).
+  //Route the test's useNHWC param into a cudaUseNHWC override so it still drives the CUDA layout.
+  cfg.override_key("cudaUseNHWC", if use_nhwc { "true" } else { "false" });
+  //The ONNX backend requires an explicit provider choice in real configs, so tests set cpu.
+  cfg.override_key("onnxProvider", "cpu");
   let num_nn_server_threads_per_model = 1;
   let mut nn_randomize = false;
   let nn_rand_seed = "runSearchTestsRandSeed".to_string() + seed;
@@ -265,16 +275,14 @@ fn start_nn_eval(
     nn_cache_size_power_of_two,
     nn_mutex_pool_size_power_of_two,
     debug_skip_neural_net,
-    open_cl_tuner_file,
     home_data_dir_override,
-    open_cl_re_tune_per_board_size,
     if use_fp16 { enabled_t::True } else { enabled_t::False },
-    if use_nhwc { enabled_t::True } else { enabled_t::False },
     num_nn_server_threads_per_model,
     &gpu_idx_by_server_thread,
     &nn_rand_seed,
     nn_randomize,
     default_symmetry,
+    &mut cfg,
     ctx.backend.clone(),
     ctx.spawner.clone(),
     Vec::new(),

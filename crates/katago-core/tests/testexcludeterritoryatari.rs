@@ -4,24 +4,40 @@
 //! setModes, and the copy / assignment / clear() / copyToInitial preservation of the modes. Upstream
 //! prints only a completion line; every check is a testAssert, so the oracle is the asserts themselves.
 //!
-//! Not ported here (TODO(v1.18.2 sync), they need code other areas re-sync): "MiscNNInputParams override
-//! behavior for the nn cache hash" (MiscNNInputParams::excludeTerritoryAdjAtariOverride /
-//! getExcludeTerritoryAdjacentToAtari, NNInputs::getHash), "Search maintains the invariant ..." (Search::
-//! resolveExcludeTerritoryAdjacentToAtari, SearchParams::excludeTerritoryAdjacentToAtari, NNEvaluator::
-//! modelPreferExcludeTerritoryAdjacentToAtari), "Books record the BoardHistoryModes ..." (book/, not ported),
-//! "The nn cache cannot mix results across featurization modes" (NNEvaluator::evaluate with overrides),
-//! "NN input features 18/19 ..." (fillRowV7 with the mode).
+//! The neuralnet/ parts too: "MiscNNInputParams override behavior for the nn cache hash"
+//! (MiscNNInputParams::excludeTerritoryAdjAtariOverride / getExcludeTerritoryAdjacentToAtari, NNInputs::getHash),
+//! "The nn cache cannot mix results across featurization modes" (a debugSkipNeuralNet NNEvaluator, as upstream's
+//! TestSearchCommon::startNNEval) and "NN input features 18/19 ..." (fillRowV7 with the mode).
+//!
+//! Not ported here: "Search maintains the invariant ..." (TODO(v1.18.2 sync): needs Search::
+//! resolveExcludeTerritoryAdjacentToAtari, SearchParams::excludeTerritoryAdjacentToAtari and the search/ re-sync;
+//! NNEvaluator::modelPreferExcludeTerritoryAdjacentToAtari is ported), "Books record the BoardHistoryModes ..."
+//! (book/, not ported).
 
 // Test code keeps the shapes of upstream's tests (PORTING.md §11b).
 #![allow(clippy::needless_range_loop, clippy::redundant_clone)]
 
 mod common;
+mod common_skipnn;
+
+use std::rc::Rc;
 
 use common::Cases;
 use common::init;
+use common::run_or_stall_panic;
+use common_skipnn::same_outputs;
+use common_skipnn::start_nn_eval;
+use futures::executor::LocalPool;
+use katago_core::core::hash::Hash128;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::*;
 use katago_core::game::rules::Rules;
+use katago_core::neuralnet::nneval::NNResultBuf;
+use katago_core::neuralnet::nninputs::MiscNNInputParams;
+use katago_core::neuralnet::nninputs::NNInputs;
+use katago_core::neuralnet::nninputs::NNOutput;
+use katago_core::neuralnet::nninputs::NNPos;
+use katago_core::port::executor::Spawner;
 use katago_core::testAssert;
 
 fn parse(x: i32, y: i32, s: &str) -> Board {
@@ -165,9 +181,94 @@ fn exclude_territory_atari_mode_game_tests() {
     cases.ran();
   }
 
-  // TODO(v1.18.2 sync): "MiscNNInputParams override behavior for the nn cache hash",
-  // "Search maintains the invariant ...", "Books record the BoardHistoryModes ...",
-  // "The nn cache cannot mix results across featurization modes" (see the file header).
+  //MiscNNInputParams override behavior for the nn cache hash
+  {
+    let hist = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 0, &modes(false, false));
+    let hist_flagged = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 0, &modes(false, true));
+
+    let no_override = MiscNNInputParams::new();
+    let mut force_on = MiscNNInputParams::new();
+    force_on.exclude_territory_adj_atari_override = 1;
+    let mut force_off = MiscNNInputParams::new();
+    force_off.exclude_territory_adj_atari_override = 0;
+
+    testAssert!(!no_override.get_exclude_territory_adjacent_to_atari(&hist));
+    testAssert!(no_override.get_exclude_territory_adjacent_to_atari(&hist_flagged));
+    testAssert!(force_on.get_exclude_territory_adjacent_to_atari(&hist));
+    testAssert!(!force_off.get_exclude_territory_adjacent_to_atari(&hist_flagged));
+
+    //Hash reflects the effective featurization: flag-off + force-on == flag-on + no-override, etc.
+    let off_plain: Hash128 = NNInputs::get_hash(&board, &hist, P_BLACK, &no_override);
+    let on_plain: Hash128 = NNInputs::get_hash(&board, &hist_flagged, P_BLACK, &no_override);
+    let off_forced_on: Hash128 = NNInputs::get_hash(&board, &hist, P_BLACK, &force_on);
+    let on_forced_off: Hash128 = NNInputs::get_hash(&board, &hist_flagged, P_BLACK, &force_off);
+    testAssert!(off_plain != on_plain);
+    testAssert!(off_forced_on == on_plain);
+    testAssert!(on_forced_off == off_plain);
+    cases.ran();
+  }
+
+  // TODO(v1.18.2 sync): "Search maintains the invariant that its root history's modes always match what its
+  // params and nnEval resolve to" (needs Search::resolveExcludeTerritoryAdjacentToAtari, SearchParams::
+  // excludeTerritoryAdjacentToAtari, Search::setPosition/setParams/setParamsNoClearing re-stamping the root
+  // history's modes). "Books record the BoardHistoryModes ..." is not ported (book/).
+
+  //The nn cache cannot mix results across featurization modes: under territory scoring with
+  //TaxRule NONE the two modes hash differently (distinct cache entries), and under other rules
+  //the mode is a genuine no-op and deliberately shares cache entries.
+  {
+    let mut pool = LocalPool::new();
+    let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
+    let nn_eval = start_nn_eval(
+      &mut pool, &spawner, "", "excludeTerritoryAtariCacheTest", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
+      0, true, false, false, true, false
+    );
+    // PORT NOTE: this assert is the first check of upstream's "Search maintains the invariant ..." section (its own
+    // startNNEval, same arguments), the only part of it that needs no Search.
+    //With no loaded model, auto resolves to false
+    testAssert!(!nn_eval.model_prefer_exclude_territory_adjacent_to_atari());
+
+    let no_override = MiscNNInputParams::new();
+    let mut force_on = MiscNNInputParams::new();
+    force_on.exclude_territory_adj_atari_override = 1;
+
+    //Territory scoring with TaxRule NONE: the modes must hit distinct cache entries.
+    {
+      let hist = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 0, &modes(false, false));
+      let buf = Rc::new(NNResultBuf::new());
+      run_or_stall_panic(&mut pool, "evaluate", nn_eval.evaluate(&board, &hist, P_BLACK, &no_override, &buf, false, false)).unwrap();
+      let out_plain: Rc<NNOutput> = buf.result.borrow_mut().take().unwrap();
+      run_or_stall_panic(&mut pool, "evaluate", nn_eval.evaluate(&board, &hist, P_BLACK, &force_on, &buf, false, false)).unwrap();
+      let out_forced_on: Rc<NNOutput> = buf.result.borrow_mut().take().unwrap();
+      run_or_stall_panic(&mut pool, "evaluate", nn_eval.evaluate(&board, &hist, P_BLACK, &no_override, &buf, false, false)).unwrap();
+      let out_plain_again: Rc<NNOutput> = buf.result.borrow_mut().take().unwrap();
+
+      //The debug-skip evaluator returns fresh random outputs on every cache miss, so distinct
+      //entries differ and a repeated query only matches if it hit the cache.
+      testAssert!(!same_outputs(&out_plain, &out_forced_on));
+      testAssert!(same_outputs(&out_plain, &out_plain_again));
+    }
+
+    //Area scoring: the override is a no-op and must share the cache entry.
+    {
+      let mut area_rules = terr_no_tax_rules;
+      area_rules.scoring_rule = Rules::SCORING_AREA;
+      let hist = BoardHistory::new_full(&board, P_BLACK, &area_rules, 0, &modes(false, false));
+      let buf = Rc::new(NNResultBuf::new());
+      run_or_stall_panic(&mut pool, "evaluate", nn_eval.evaluate(&board, &hist, P_BLACK, &no_override, &buf, false, false)).unwrap();
+      let out_plain: Rc<NNOutput> = buf.result.borrow_mut().take().unwrap();
+      run_or_stall_panic(&mut pool, "evaluate", nn_eval.evaluate(&board, &hist, P_BLACK, &force_on, &buf, false, false)).unwrap();
+      let out_forced_on: Rc<NNOutput> = buf.result.borrow_mut().take().unwrap();
+      testAssert!(same_outputs(&out_plain, &out_forced_on));
+    }
+
+    nn_eval.kill_server_threads();
+    pool.run_until_stalled();
+    // PORT NOTE: the cache hits upstream relies on above, counted (NNEvaluator::numCacheHits, v1.18): the repeated
+    // territory query and the area-scoring override query.
+    testAssert!(nn_eval.num_cache_hits() == 2);
+    cases.ran();
+  }
 
   //A pass-alive white group with both phenomena at once: a dead black throw-in stone in atari
   //(A5, with liberty A4) inside its pass-alive territory, and a ko mouth (D7, the sole liberty
@@ -220,8 +321,33 @@ ooooox.
     cases.ran();
   }
 
-  // TODO(v1.18.2 sync): "NN input features 18/19 (current territory) reflect the flag ..." needs
-  // NNInputs::fillRowV7 with MiscNNInputParams::getExcludeTerritoryAdjacentToAtari (neuralnet/nninputs).
+  //NN input features 18/19 (current territory) reflect the flag under territory scoring with
+  //TaxRule NONE in encore phase 2: the atari-adjacent eye counts for black only under v2.
+  {
+    let nn_x_len: i32 = 7;
+    let nn_y_len: i32 = 7;
+    let num_spatial: i32 = NNInputs::NUM_FEATURES_SPATIAL_V7;
+    let mut row_bin_v2: Vec<f32> = vec![0.0f32; (num_spatial * nn_x_len * nn_y_len) as usize];
+    let mut row_bin_v3: Vec<f32> = vec![0.0f32; (num_spatial * nn_x_len * nn_y_len) as usize];
+    let mut row_global_v2: Vec<f32> = vec![0.0f32; NNInputs::NUM_FEATURES_GLOBAL_V7 as usize];
+    let mut row_global_v3: Vec<f32> = vec![0.0f32; NNInputs::NUM_FEATURES_GLOBAL_V7 as usize];
+    let nn_input_params = MiscNNInputParams::new();
+    let hist_v2 = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 2, &modes(false, false));
+    let hist_v3 = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 2, &modes(false, true));
+    NNInputs::fill_row_v7(&board, &hist_v2, P_BLACK, &nn_input_params, nn_x_len, nn_y_len, false, &mut row_bin_v2, &mut row_global_v2);
+    NNInputs::fill_row_v7(&board, &hist_v3, P_BLACK, &nn_input_params, nn_x_len, nn_y_len, false, &mut row_bin_v3, &mut row_global_v3);
+    let eye_pos: i32 = NNPos::loc_to_pos(eye_loc, board.x_size, nn_x_len, nn_y_len);
+    //Feature 18 is the current player's territory; black is to move, so the eye is feature 18 under v2.
+    testAssert!(row_bin_v2[(18 * nn_x_len * nn_y_len + eye_pos) as usize] == 1.0f32);
+    testAssert!(row_bin_v3[(18 * nn_x_len * nn_y_len + eye_pos) as usize] == 0.0f32);
+    //The eye is the sole atari-adjacent counted point on this board, so it is the only difference.
+    for i in 0..num_spatial * nn_x_len * nn_y_len {
+      if i != 18 * nn_x_len * nn_y_len + eye_pos {
+        testAssert!(row_bin_v2[i as usize] == row_bin_v3[i as usize]);
+      }
+    }
+    cases.ran();
+  }
 
   //Torazu sanmoku ("three points without capturing")
   {

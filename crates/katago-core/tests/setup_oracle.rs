@@ -423,18 +423,17 @@ fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
                   Some(c) => c.table_size as i64,
                 };
                 blk.push_str(&format!(
-                  "E {} name={} file={} maxBatch={} curBatch={} x={} y={} exact={} nhwc={} fp16={} nhwcMode={} threads={}",
+                  "E {} name={} file={} maxBatch={} curBatch={} x={} y={} exact={} nhwc={} fp16={} threads={}",
                   i,
                   e.get_model_name(),
                   e.get_model_file_name(),
                   e.get_max_batch_size(),
-                  e.get_current_batch_size(),
+                  e.get_max_rows_to_send_per_batch(),
                   e.get_nnx_len(),
                   e.get_nny_len(),
                   e.require_exact_nn_len as i32,
                   e.inputs_use_nhwc as i32,
                   e.get_using_fp16_mode().to_string(),
-                  e.get_using_nhwc_mode().to_string(),
                   e.num_threads.get()
                 ));
                 blk.push_str(" gpus=");

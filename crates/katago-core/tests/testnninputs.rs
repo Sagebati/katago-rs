@@ -1,5 +1,5 @@
-//! Replays the input-version-7 parts of upstream cpp/tests/testnninputs.cpp @ v1.16.5
-//! (Tests::runNNInputsV3V4Tests). That test prints to cout during `katago runoutputtests`, so the
+//! Replays the input-version-7 parts of upstream cpp/tests/testnninputs.cpp @ v1.18.2
+//! (Tests::runNNInputsV3V4Tests, Tests::runExcludeTerritoryAtariNNInputsTests). That test prints to cout during `katago runoutputtests`, so the
 //! oracle is upstream cpp/tests/results/runOutputTests.txt, cut into one fixture per "VERSION 7"
 //! chunk (plus the fillRowV7-only "Passing hack condition" block) by
 //! tools/extract_runoutputtests.py into fixtures/upstream-v1.18.2/unit/runoutputtests/
@@ -323,7 +323,7 @@ impl CompactSgf {
   }
 
   /// upstream: CompactSgf::setupInitialBoardAndHist (sgf.cpp)
-  fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory) {
+  fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory, modes: &BoardHistoryModes) {
     // getPLSpecifiedColor
     let pl_player: Color = match self.root.get("PL").map(|v| v[0].to_lowercase()) {
       Some(s) if s == "b" || s == "black" => C_BLACK,
@@ -357,9 +357,7 @@ impl CompactSgf {
     *board = Board::new_x_y(self.x_size, self.y_size).unwrap();
     let suc = board.set_stones_fail_if_no_libs(&self.placements);
     assert!(suc, "setupInitialBoardAndHist: initial board position contains invalid stones or zero-liberty stones");
-    // TODO(v1.18.2 sync): upstream setupInitialBoardAndHist takes a `const BoardHistoryModes& modes` parameter and
-    // passes it here; every testnninputs.cpp caller passes BoardHistoryModes(false,false).
-    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, &BoardHistoryModes::new_full(false, false));
+    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, modes);
     if hist.initial_turn_number < board.num_stones_on_board() as i64 {
       hist.initial_turn_number = board.num_stones_on_board() as i64;
     }
@@ -373,7 +371,7 @@ fn setup_and_play(sgf_str: &str, default_rules: &Rules) -> (Board, Player, Board
   let mut next_pla: Player = P_BLACK;
   let mut hist = BoardHistory::new();
   let initial_rules = sgf.get_rules_or_fail_allow_unspecified(default_rules);
-  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist);
+  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist, &BoardHistoryModes::new_full(false, false));
   let moves = &sgf.moves;
   for i in 0..moves.len() {
     hist.make_board_move_assume_legal(&mut board, moves[i].loc, moves[i].pla, None, false);
@@ -588,7 +586,7 @@ fn nn_inputs_ko_prohib() {
   let mut hist = BoardHistory::new();
   let mut initial_rules = Rules::new_full(Rules::KO_SIMPLE, Rules::SCORING_TERRITORY, Rules::TAX_SEKI, false, false, Rules::WHB_ZERO, false, 0.0f32);
   initial_rules = sgf.get_rules_or_fail_allow_unspecified(&initial_rules);
-  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist);
+  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist, &BoardHistoryModes::new_full(false, false));
 
   let nn_x_len = 6;
   let nn_y_len = 6;
@@ -650,7 +648,7 @@ fn nn_inputs_some_other_test_positions() {
   let mut hist = BoardHistory::new();
   let mut initial_rules = Rules::new();
   initial_rules = sgf.get_rules_or_fail_allow_unspecified(&initial_rules);
-  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist);
+  sgf.setup_initial_board_and_hist(&initial_rules, &mut board, &mut next_pla, &mut hist, &BoardHistoryModes::new_full(false, false));
   let moves = &sgf.moves;
 
   let nn_x_len = 13;
@@ -772,6 +770,148 @@ fn nn_inputs_area_feature_and_komi() {
     }
   }
   TestCommon::expect(name, &cout, &expected("nn-inputs-v6-area-feature-and-komi", 0));
+}
+}
+
+wasm_test! {
+/// upstream: Tests::runExcludeTerritoryAtariNNInputsTests (testnninputs.cpp): "NN Inputs Area Feature exclude
+/// territory adjacent to atari" (version 7) and "Score and area with dead chain in atari adjacent to territory, and a
+/// ko mouth", which follows it in the same expected chunk.
+fn nn_inputs_area_feature_exclude_territory_adjacent_to_atari() {
+  init();
+  let mut cases = Cases::new("testnninputs::nn_inputs_area_feature_exclude_territory_adjacent_to_atari");
+  //Twin of the territory TAX_NONE case of "NN Inputs V6 Area Feature and Komi" above (same board,
+  //move sequence, and input versions), but with excludeTerritoryAdjacentToAtari on (rules version
+  //3). Under this mode, empty points adjacent to chains in atari (the seki ko mouth, and black's
+  //eye once black's top right group falls into atari) do not count as territory in features 18/19
+  //or in scoring, and the nn input hash differs from the mode-off hash. The other rules combos of
+  //that test are omitted here since the mode is a no-op under them.
+  {
+    let name = "NN Inputs Area Feature exclude territory adjacent to atari";
+    let mut cout = format!("VERSION {}\n", VERSION);
+    let nn_x_len = 7;
+    let nn_y_len = 7;
+    let draw_equivalent_wins_for_white = 0.5;
+    let (mut row_bin, mut row_global) = allocate_rows(nn_x_len, nn_y_len);
+
+    for go_to_encore2 in 0..=1 {
+      let mut board =
+        Board::parse_board(7, 7, &fixture(INPUTS, "nn-inputs-area-feature-exclude-territory-adjacent-to-atari.input0.txt"), '\n').unwrap();
+      let mut rules = Rules::new();
+      rules.ko_rule = Rules::KO_POSITIONAL;
+      rules.scoring_rule = Rules::SCORING_TERRITORY;
+      rules.komi = 6.5f32;
+      rules.multi_stone_suicide_legal = false;
+      rules.tax_rule = Rules::TAX_NONE;
+      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, true));
+
+      let mut run = |board: &Board, hist: &BoardHistory, inputs_use_nhwc: bool| -> String {
+        let mut out = String::new();
+        let next_pla: Player =
+          if !hist.move_history.is_empty() { get_opp(hist.move_history[hist.move_history.len() - 1].pla) } else { hist.initial_pla };
+        let mut hash = Hash128::default();
+        let nn_input_params = params(draw_equivalent_wins_for_white);
+        fill_rows(&mut hash, board, hist, next_pla, &nn_input_params, nn_x_len, nn_y_len, inputs_use_nhwc, &mut row_bin, &mut row_global);
+        out += &format!("{}\n", hash);
+        print_nn_input_global(&mut out, &row_global, 5);
+        print_nn_input_hw_and_board(&mut out, board, hist, nn_x_len, nn_y_len, inputs_use_nhwc, &row_bin, 18);
+        print_nn_input_hw_and_board(&mut out, board, hist, nn_x_len, nn_y_len, inputs_use_nhwc, &row_bin, 19);
+        out
+      };
+      let print_scoring = |cout: &mut String, board: &Board, hist: &BoardHistory| {
+        let b = board.clone();
+        let mut h = hist.clone();
+        let mut area: [Color; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
+        let mut scoring: [f32; Board::MAX_ARR_SIZE as usize] = [0.0; Board::MAX_ARR_SIZE as usize];
+        h.end_and_score_game_now_area(&b, &mut area);
+        NNInputs::fill_scoring(&b, &area, false, &mut scoring);
+        for y in 0..board.y_size {
+          for x in 0..board.x_size {
+            let loc = Location::get_loc(x, y, board.x_size);
+            *cout += &strprintf!("%4.0f", 100.0f32 * scoring[loc as usize]);
+            *cout += " ";
+          }
+          endl(cout);
+        }
+        endl(cout);
+      };
+      let mut run_both = |cout: &mut String, board: &Board, hist: &BoardHistory| {
+        let actual_nhwc = run(board, hist, true);
+        let actual_nchw = run(board, hist, false);
+        TestCommon::expect(name, &actual_nhwc, &actual_nchw);
+        *cout += &format!("Rules: {}\n", hist.rules);
+        *cout += &format!("Komi and Bonus: {} {}\n", p6(hist.rules.komi as f64), p6(hist.white_bonus_score as f64));
+        *cout += &format!("Encore phase: {}\n", hist.encore_phase);
+        for i in 0..hist.move_history.len() {
+          *cout += &format!("{} ", Location::to_string(hist.move_history[i].loc, board));
+        }
+        *cout += &actual_nhwc;
+        print_scoring(cout, board, hist);
+      };
+
+      cout += "=========================================== \n";
+      cout += &format!("goToEncore2 = {}\n", go_to_encore2);
+
+      run_both(&mut cout, &board, &hist);
+      if go_to_encore2 != 0 {
+        hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_WHITE, None, false);
+        hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_BLACK, None, false);
+        run_both(&mut cout, &board, &hist);
+        hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_WHITE, None, false);
+        hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, P_BLACK, None, false);
+        run_both(&mut cout, &board, &hist);
+      }
+      for (x, y, pla) in [(6, 5, P_WHITE), (5, 6, P_BLACK), (0, 4, P_WHITE), (6, 0, P_BLACK), (1, 0, P_WHITE), (4, 5, P_BLACK), (5, 4, P_WHITE)] {
+        let loc = Location::get_loc(x, y, board.x_size);
+        hist.make_board_move_assume_legal(&mut board, loc, pla, None, false);
+        run_both(&mut cout, &board, &hist);
+      }
+      endl(&mut cout);
+      cases.ran();
+    }
+
+    //A dame-touching pass-alive white group with both phenomena at once: a dead black throw-in
+    //stone in atari (A5, with liberty A4) inside its territory, and a ko mouth (D7, the sole
+    //liberty of the isolated white ko stone E7). The exclusion applies only to chains of the
+    //territory owner's own color, so the throw-in does NOT stop the surrounding territory
+    //(including its liberty A4 and the throw-in stone itself) from counting for white, while the
+    //own-color ko stone in atari DOES stop the mouth D7 from counting - the only point where the
+    //two modes differ.
+    {
+      cout += "Score and area with dead chain in atari adjacent to territory, and a ko mouth =====================\n";
+      let board =
+        Board::parse_board(7, 7, &fixture(INPUTS, "nn-inputs-area-feature-exclude-territory-adjacent-to-atari.input1.txt"), '\n').unwrap();
+      let mut rules = Rules::new();
+      rules.ko_rule = Rules::KO_SIMPLE;
+      rules.scoring_rule = Rules::SCORING_TERRITORY;
+      rules.komi = 6.5f32;
+      rules.multi_stone_suicide_legal = false;
+      rules.tax_rule = Rules::TAX_NONE;
+
+      let mut scores: [f64; 2] = [0.0; 2];
+      for mode in 0..=1 {
+        cout += &format!("excludeTerritoryAdjacentToAtari = {}\n", mode);
+        let b = board.clone();
+        let mut h = BoardHistory::new_full(&b, P_BLACK, &rules, 2, &BoardHistoryModes::new_full(false, mode == 1));
+        let mut area: [Color; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
+        h.end_and_score_game_now_area(&b, &mut area);
+        scores[mode as usize] = h.final_white_minus_black_score as f64;
+        cout += &format!("SCORE NOW {}\n", p6(h.final_white_minus_black_score as f64));
+        for y in 0..board.y_size {
+          for x in 0..board.x_size {
+            let loc = Location::get_loc(x, y, board.x_size);
+            cout.push(PlayerIO::color_to_char(area[loc as usize]));
+          }
+          endl(&mut cout);
+        }
+        endl(&mut cout);
+        cases.ran();
+      }
+      //Opposing-color chains in atari do not block territory; the ko mouth is the only difference.
+      testAssert!(scores[0] == scores[1] + 1.0);
+    }
+    TestCommon::expect(name, &cout, &expected("nn-inputs-area-feature-exclude-territory-adjacent-to-atari", 0));
+  }
 }
 }
 
@@ -1170,7 +1310,7 @@ fn nn_inputs_history_scoring_past_end() {
         let mut next_pla: Player = P_BLACK;
         let mut hist = BoardHistory::new();
         let rules = sgf.get_rules_or_fail_allow_unspecified(&rules_to_use);
-        sgf.setup_initial_board_and_hist(&rules, &mut board, &mut next_pla, &mut hist);
+        sgf.setup_initial_board_and_hist(&rules, &mut board, &mut next_pla, &mut hist, &BoardHistoryModes::new_full(false, false));
 
         let nn_x_len = 9;
         let nn_y_len = 9;

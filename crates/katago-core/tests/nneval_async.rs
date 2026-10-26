@@ -19,6 +19,8 @@ use std::rc::Rc;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
 use futures::task::LocalSpawnExt;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
@@ -109,6 +111,19 @@ impl NeuralNet for FakeBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     let mut desc = ModelDesc::new();
     desc.name = "fake".to_string();
@@ -126,15 +141,7 @@ impl NeuralNet for FakeBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     Ok(Box::new(Unit))
   }
@@ -221,15 +228,13 @@ fn make_eval(backend: Rc<FakeBackend>, spawner: Rc<dyn Spawner>, max_batch: i32,
       0,
       false,
       "",
-      "",
-      false,
-      enabled_t::False,
       enabled_t::False,
       gpus.len() as i32,
       gpus,
       "seed",
       do_randomize,
       default_symmetry,
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       Vec::new(),
@@ -685,7 +690,7 @@ fn stress(seed: &str, num_clients: usize, evals_per_client: usize, max_batch: i3
         }
         if rand.next_uint_n(7) == 0 {
           let bs = 1 + rand.next_uint_n(max_batch as u32) as i32;
-          e.set_current_batch_size(bs).unwrap();
+          e.set_max_rows_to_send_per_batch(bs).unwrap();
         }
         let pi = rand.next_uint_n(ps.len() as u32) as usize;
         let sym = rand.next_uint_n(8) as i32;

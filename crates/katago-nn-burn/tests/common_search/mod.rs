@@ -46,6 +46,7 @@ use burn::prelude::*;
 use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::Global;
 use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
@@ -59,6 +60,7 @@ use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
 use katago_core::neuralnet::nninputs::ScoreValue;
+use katago_core::neuralnet::nninterface::BatchPolicy;
 use katago_core::neuralnet::nninterface::ComputeContext;
 use katago_core::neuralnet::nninterface::ComputeHandle;
 use katago_core::neuralnet::nninterface::InputBuffers;
@@ -262,6 +264,15 @@ impl NeuralNet for PaddedNet {
   fn print_devices(&self) {
     self.inner.print_devices()
   }
+  fn get_runtime_backend_detail(&self, cfg: &mut ConfigParser) -> String {
+    self.inner.get_runtime_backend_detail(cfg)
+  }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> BatchPolicy {
+    self.inner.get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    self.inner.get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
   fn load_model_file(&self, file: &str, model_bytes: Vec<u8>, expected_sha256: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     self.inner.load_model_file(file, model_bytes, expected_sha256)
   }
@@ -273,23 +284,19 @@ impl NeuralNet for PaddedNet {
     gpu_idxs: &[i32],
     nn_x_len: i32,
     nn_y_len: i32,
-    open_cl_tuner_file: &str,
     home_data_dir_override: &str,
-    open_cl_re_tune_per_board_size: bool,
     use_fp16_mode: enabled_t,
-    use_nhwc_mode: enabled_t,
     loaded_model: &dyn LoadedModel,
+    cfg: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     let inner = self.inner.create_compute_context(
       gpu_idxs,
       Net::POS_LEN,
       Net::POS_LEN,
-      open_cl_tuner_file,
       home_data_dir_override,
-      open_cl_re_tune_per_board_size,
       use_fp16_mode,
-      use_nhwc_mode,
       loaded_model,
+      cfg,
     )?;
     Ok(Box::new(PaddedContext { inner, nn_x_len, nn_y_len }))
   }
@@ -312,6 +319,10 @@ impl NeuralNet for PaddedNet {
   fn is_using_fp16(&self, compute_handle: &dyn ComputeHandle) -> bool {
     let h = compute_handle.as_any().downcast_ref::<PaddedHandle>().expect("PaddedHandle");
     self.inner.is_using_fp16(&*h.inner)
+  }
+  fn set_is_warmup(&self, compute_handle: &dyn ComputeHandle, is_warmup: bool) -> bool {
+    let h = compute_handle.as_any().downcast_ref::<PaddedHandle>().expect("PaddedHandle");
+    self.inner.set_is_warmup(&*h.inner, is_warmup)
   }
   fn create_input_buffers(&self, loaded_model: &dyn LoadedModel, max_batch_size: i32, _nn_x_len: i32, _nn_y_len: i32) -> Box<dyn InputBuffers> {
     self.inner.create_input_buffers(loaded_model, max_batch_size, Net::POS_LEN, Net::POS_LEN)
@@ -640,9 +651,9 @@ pub fn run_bot_on_sgf(ctx: &mut Ctx, bot: &mut AsyncBot, sgf_str: &str, default_
 }
 
 /// upstream: TestSearchCommon::startNNEval (testsearchcommon.cpp) — test-local copy
-/// PORT NOTE: `Logger&` dropped (log crate). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useNHWC /
-/// useFP16 = true, which upstream's regen.sh passes to the Eigen build (`true true false`, Eigen rejects NCHW);
-/// the outputs do not depend on them, so callers pass `false` for all three. `spawnServerThreads()` is async and
+/// PORT NOTE: `Logger&` dropped (log crate). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useFP16 = true
+/// and ignores the `cudaUseNHWC` key useNHWC becomes, which upstream's regen.sh passes to the Eigen build (`true true
+/// false`, Eigen rejects NCHW); the outputs do not depend on them, so callers pass `false` for all three. `spawnServerThreads()` is async and
 /// driven to completion; the `sleep_for(0.1)` ordering hack is not needed (one OS thread, deterministic).
 pub fn start_nn_eval(
   ctx: &mut Ctx,
@@ -662,10 +673,14 @@ pub fn start_nn_eval(
   let nn_cache_size_power_of_two = 16;
   let nn_mutex_pool_size_power_of_two = 12;
   //bool debugSkipNeuralNet = false;
-  let open_cl_re_tune_per_board_size = false;
   let model_name = model_file;
-  let open_cl_tuner_file = "";
   let home_data_dir_override = "";
+  let mut cfg = ConfigParser::new(false, true);
+  //NHWC layout is no longer a generic NNEvaluator option; only the CUDA backend reads it (off cfg).
+  //Route the test's useNHWC param into a cudaUseNHWC override so it still drives the CUDA layout.
+  cfg.override_key("cudaUseNHWC", if use_nhwc { "true" } else { "false" });
+  //The ONNX backend requires an explicit provider choice in real configs, so tests set cpu.
+  cfg.override_key("onnxProvider", "cpu");
   let num_nn_server_threads_per_model = 1;
   let mut nn_randomize = false;
   let nn_rand_seed = "runSearchTestsRandSeed".to_string() + seed;
@@ -689,16 +704,14 @@ pub fn start_nn_eval(
     nn_cache_size_power_of_two,
     nn_mutex_pool_size_power_of_two,
     debug_skip_neural_net,
-    open_cl_tuner_file,
     home_data_dir_override,
-    open_cl_re_tune_per_board_size,
     if use_fp16 { enabled_t::True } else { enabled_t::False },
-    if use_nhwc { enabled_t::True } else { enabled_t::False },
     num_nn_server_threads_per_model,
     &gpu_idx_by_server_thread,
     &nn_rand_seed,
     nn_randomize,
     default_symmetry,
+    &mut cfg,
     if nn_x_len == Net::POS_LEN && nn_y_len == Net::POS_LEN { ctx.backend.clone() } else { ctx.padded_backend.clone() },
     ctx.spawner.clone(),
     model_bytes(),

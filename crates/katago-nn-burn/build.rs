@@ -79,6 +79,31 @@ fn write_model_desc(onnx: &str, net: &str) {
       0
     }
   };
+  // Keys added with model version 17 support (tools/bin2onnx/README.md): bin2onnx writes them only for nets that
+  // use v17-era features, so older exports lack them. As upstream's ONNX loader (onnxmodelbuilder.cpp, getBoolOr /
+  // getDoubleOr / getInt64Or), an absent key reads as its default: the prefer* flags false (what desc.cpp reads for
+  // nets before the v15 header slots), the arch summary 0 / false. The arch summary is always `present`: an ONNX
+  // export has no layer structure to walk.
+  let opt = |k: &str| -> Option<&str> { meta.iter().find(|(key, _)| key == k).map(|(_, v)| v.as_str()) };
+  let bool_or = |k: &str, default: bool| -> bool {
+    match opt(k) {
+      None => default,
+      Some("0") | Some("false") => false,
+      Some("1") | Some("true") => true,
+      Some(v) => panic!("{onnx}: {k}: not a boolean: {v}"),
+    }
+  };
+  let prefer_pass_alive = bool_or("preferPassAliveUnderSuicideRules", false);
+  let prefer_exclude_atari = bool_or("preferExcludeTerritoryAdjacentToAtari", false);
+  let trunk_depth_bits: u64 = opt("trunkSpatialConvDepth")
+    .map(|v| v.parse::<f64>().unwrap_or_else(|e| panic!("{onnx}: trunkSpatialConvDepth: {e}")))
+    .unwrap_or(0.0)
+    .to_bits();
+  let num_parameters: i64 = opt("numParameters")
+    .map(|v| v.parse::<i64>().unwrap_or_else(|e| panic!("{onnx}: numParameters: {e}")))
+    .unwrap_or(0);
+  let has_transformer = bool_or("hasAnyTransformerBlocks", false);
+  let has_nbt = bool_or("hasAnyNestedBottleneckBlocks", false);
   let code = format!(
     "/// The network's `ModelDesc`, from the ONNX `metadata_props` written by tools/bin2onnx (desc.cpp-faithful parser).\n\
          pub fn model_desc() -> katago_core::neuralnet::desc::ModelDesc {{\n\
@@ -94,6 +119,8 @@ fn write_model_desc(onnx: &str, net: &str) {
          \x20       num_score_value_channels: {nsvc},\n\
          \x20       num_ownership_channels: {noc},\n\
          \x20       meta_encoder_version: {mev},\n\
+         \x20       prefer_pass_alive_under_suicide_rules: {ppa},\n\
+         \x20       prefer_exclude_territory_adjacent_to_atari: {pea},\n\
          \x20       post_process_params: katago_core::neuralnet::desc::ModelPostProcessParams {{\n\
          \x20           td_score_multiplier: f64::from_bits({td:#x}),\n\
          \x20           score_mean_multiplier: f64::from_bits({sm:#x}),\n\
@@ -103,6 +130,13 @@ fn write_model_desc(onnx: &str, net: &str) {
          \x20           shortterm_value_error_multiplier: f64::from_bits({sv:#x}),\n\
          \x20           shortterm_score_error_multiplier: f64::from_bits({se:#x}),\n\
          \x20           output_scale_multiplier: f32::from_bits({os:#x}),\n\
+         \x20       }},\n\
+         \x20       arch_summary: katago_core::neuralnet::desc::ArchSummary {{\n\
+         \x20           present: true,\n\
+         \x20           trunk_spatial_conv_depth: f64::from_bits({tdepth:#x}),\n\
+         \x20           num_parameters: {nparams},\n\
+         \x20           has_any_transformer_blocks: {htf},\n\
+         \x20           has_any_nested_bottleneck_blocks: {hnbt},\n\
          \x20       }},\n\
          \x20   }}\n\
          }}\n\
@@ -129,6 +163,12 @@ fn write_model_desc(onnx: &str, net: &str) {
     se = f64bits("shorttermScoreErrorMultiplier"),
     os = f32bits("outputScaleMultiplier"),
     pl = int("posLen"),
+    ppa = prefer_pass_alive,
+    pea = prefer_exclude_atari,
+    tdepth = trunk_depth_bits,
+    nparams = num_parameters,
+    htf = has_transformer,
+    hnbt = has_nbt,
   );
   let out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model");
   std::fs::create_dir_all(&out).unwrap();

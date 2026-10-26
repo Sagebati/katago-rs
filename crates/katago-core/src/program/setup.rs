@@ -100,13 +100,28 @@ impl NeuralNet for SkippedNeuralNet {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  // PORT NOTE: NNEvaluator's constructor asks the linked backend for getNumEffectiveDevices even when it skips
+  // the net; these four follow dummybackend.cpp, upstream's NN-less backend.
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     SkippedNeuralNet::skipped()
   }
   fn get_model_desc<'a>(&self, _: &'a dyn LoadedModel) -> &'a ModelDesc {
     SkippedNeuralNet::skipped()
   }
-  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: &str, _: bool, _: enabled_t, _: enabled_t, _: &dyn LoadedModel) -> Result<Box<dyn ComputeContext>, KataError> {
+  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser) -> Result<Box<dyn ComputeContext>, KataError> {
     SkippedNeuralNet::skipped()
   }
   fn create_compute_handle(&self, _: &dyn ComputeContext, _: &dyn LoadedModel, _: i32, _: bool, _: bool, _: i32, _: i32) -> Result<Box<dyn ComputeHandle>, KataError> {
@@ -392,14 +407,12 @@ impl Setup {
 
       let home_data_dir_override: String = Setup::load_home_data_dir_override(cfg)?;
 
-      let mut open_cl_tuner_file: String = String::new();
-      if cfg.contains("openclTunerFile") {
-        open_cl_tuner_file = cfg.get_string("openclTunerFile")?;
-      }
-      let mut open_cl_re_tune_per_board_size: bool = false;
-      if cfg.contains("openclReTunePerBoardSize") {
-        open_cl_re_tune_per_board_size = cfg.get_bool("openclReTunePerBoardSize")?;
-      }
+      // Backend-specific options (e.g. openclTunerFile, cudaDisableGraphSDPA) are read directly by the
+      // relevant compute backend off of cfg (see createComputeContext). Because they follow the backend
+      // prefix convention, the getBackendPrefixes() loop above already marks them used for the backends
+      // that don't read them, so no explicit mark-used is needed here.
+      // PORT NOTE (v1.18.2 nn-layer sync): the openclTunerFile / openclReTunePerBoardSize / useNHWC reads
+      // were removed with the NNEvaluator constructor arguments they fed, as upstream v1.18.2 did.
 
       let mut use_fp16_mode: enabled_t = enabled_t::Auto;
       if cfg.contains(&format!("{backend_prefix}UseFP16-{idx_str}")) {
@@ -412,17 +425,6 @@ impl Setup {
         use_fp16_mode = cfg.get_enabled("useFP16")?;
       }
 
-      let mut use_nhwc_mode: enabled_t = enabled_t::Auto;
-      if cfg.contains(&format!("{backend_prefix}UseNHWC{idx_str}")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("{backend_prefix}UseNHWC{idx_str}"))?;
-      } else if cfg.contains(&format!("useNHWC{idx_str}")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("useNHWC{idx_str}"))?;
-      } else if cfg.contains(&format!("{backend_prefix}UseNHWC")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("{backend_prefix}UseNHWC"))?;
-      } else if cfg.contains("useNHWC") {
-        use_nhwc_mode = cfg.get_enabled("useNHWC")?;
-      }
-
       let mut forced_symmetry: i32 = -1;
       if setup_for != SETUP_FOR_DISTRIBUTED && cfg.contains("nnForcedSymmetry") {
         forced_symmetry = cfg.get_int("nnForcedSymmetry", 0, SymmetryHelpers::NUM_SYMMETRIES - 1)?;
@@ -430,7 +432,7 @@ impl Setup {
 
       log::info!(
         "{}",
-        "After dedups: nnModelFile".to_string() + &idx_str + " = " + nn_model_file + " useFP16 " + &use_fp16_mode.to_string() + " useNHWC " + &use_nhwc_mode.to_string()
+        "After dedups: nnModelFile".to_string() + &idx_str + " = " + nn_model_file + " useFP16 " + &use_fp16_mode.to_string()
       );
 
       let nn_cache_size_power_of_two: i32 = if cfg.contains("nnCacheSizePowerOfTwo") {
@@ -465,6 +467,12 @@ impl Setup {
         cfg.get_int("nnMutexPoolSizePowerOfTwo", -1, 24)?
       };
 
+      // TODO(v1.18.2 sync): upstream v1.18.2 replaces defaultMaxBatchSize with a MaxBatchSizeRequest
+      // (EXPLICIT_SIZE / REQUIRE_FROM_CONFIG / FROM_CONCURRENCY(_STRICT)) turned into nnMaxBatchSize by the
+      // backend's NeuralNet::getBatchPolicy(cfg) (CpuLocal: fixed 2; FixedShape:
+      // computeFixedShapeMaxBatchSize(expectedConcurrentEvals, NeuralNet::getNumEffectiveDevices(cfg,
+      // gpuIdxByServerThread)); Dynamic: max(8, round-up-to-4 of the concurrency) unless nnMaxBatchSize is set),
+      // adds SETUP_FOR_BENCHMARKNN (no spawnServerThreads) and the "onnx" NCHW prefix.
       // PORT NOTE: the `#ifndef USE_EIGEN_BACKEND` branch.
       let nn_max_batch_size: i32;
       if setup_for == SETUP_FOR_BENCHMARK || setup_for == SETUP_FOR_DISTRIBUTED {
@@ -502,16 +510,14 @@ impl Setup {
         nn_cache_size_power_of_two,
         nn_mutex_pool_size_power_of_two,
         debug_skip_neural_net,
-        &open_cl_tuner_file,
         &home_data_dir_override,
-        open_cl_re_tune_per_board_size,
         use_fp16_mode,
-        use_nhwc_mode,
         num_nn_server_threads_per_model,
         &gpu_idx_by_server_thread,
         &nn_rand_seed,
         if forced_symmetry >= 0 { false } else { nn_randomize },
         default_symmetry,
+        cfg,
         backend,
         host.spawner(),
         model_bytes,

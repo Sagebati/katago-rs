@@ -16,6 +16,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::game::board::Board;
 use katago_core::game::board::Location;
 use katago_core::game::board::P_BLACK;
@@ -75,15 +76,13 @@ async fn evaluate_yields_to_the_event_loop() {
       0,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "wasmSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       Rc::new(WasmSpawner),
       bytes,

@@ -113,15 +113,16 @@ cpp/neuralnet/nneval.h	NNEvaluator	numEvalsToAwaken	int	OWNED	Cell<i32>
 cpp/neuralnet/nneval.h	NNEvaluator	waitingForFinish	std::condition_variable	OWNED	WakerList	port::executor::WakerList; waitForNextNNEvalIfAny awaits it
 cpp/neuralnet/nneval.h	NNEvaluator	m_numRowsProcessed	std::atomic<uint64_t>	OWNED	Cell<u64>	
 cpp/neuralnet/nneval.h	NNEvaluator	m_numBatchesProcessed	std::atomic<uint64_t>	OWNED	Cell<u64>	
+cpp/neuralnet/nneval.h	NNEvaluator	m_numCacheHits	std::atomic<uint64_t>	OWNED	Cell<u64>	
 cpp/neuralnet/nneval.h	NNEvaluator	currentDoRandomize	std::atomic<bool>	OWNED	Cell<bool>	
 cpp/neuralnet/nneval.h	NNEvaluator	currentDefaultSymmetry	std::atomic<int>	OWNED	Cell<i32>	
-cpp/neuralnet/nneval.h	NNEvaluator	currentBatchSize	std::atomic<int>	OWNED	Cell<i32>	
+cpp/neuralnet/nneval.h	NNEvaluator	maxRowsToSendPerBatch	std::atomic<int>	OWNED	Cell<i32>	
 cpp/neuralnet/nneval.h	NNEvaluator	queryQueue	ThreadSafeQueue<NNResultBuf*>	SHARED	AsyncQueue<Rc<NNResultBuf>>	port::executor::AsyncQueue; elements are the SearchThread-owned bufs, shared while an eval is pending
 cpp/neuralnet/nneval.h	NNEvaluator	evaluate(buf)	NNResultBuf&	SHARED	&Rc<NNResultBuf>	param; evaluate is async and pushes buf.clone() onto query_queue
 cpp/neuralnet/nneval.h	NNEvaluator	evaluate(sgfMeta)	const SGFMetadata*	NULLABLE_BORROWED	Option<&SGFMetadata>	param
 cpp/neuralnet/nneval.h	NNEvaluator	averageMultipleSymmetries(return)	std::shared_ptr<NNOutput>*	OWNED	Rc<NNOutput>	caller-owned heap shared_ptr becomes a plain Rc
 cpp/neuralnet/nneval.h	NNEvaluator	averageMultipleSymmetries(rand)	Rand&	BORROWED	&mut Rand	param
-cpp/neuralnet/nneval.h	NNEvaluator	serve(buf)	NNServerBuf&	OWNED	NNServerBuf	moved into the spawned serve task, together with its Rand and Box<dyn ComputeHandle>; serve takes self: Rc<Self>
+cpp/neuralnet/nneval.h	NNEvaluator	serve local buf	NNServerBuf	OWNED	NNServerBuf	a local of the spawned serve task (created after createComputeHandle, as upstream since v1.18), together with its Rand and Box<dyn ComputeHandle>; serve takes self: Rc<Self>
 cpp/neuralnet/nneval.h	NNEvaluator	serve local outputBuf	std::vector<NNOutput*>	OWNED	Vec<NNOutput>	each element moved into Rc::new(..) when delivered to its NNResultBuf
 cpp/neuralnet/nninterface.h	NeuralNet	loadModelFile(return)	LoadedModel*	OWNED	Box<dyn LoadedModel>	TODO(port): human decision: core has no file IO, so the backend loads from bytes (plan §5)
 cpp/neuralnet/nninterface.h	NeuralNet	createComputeContext(return)	ComputeContext*	OWNED	Box<dyn ComputeContext>	freeComputeContext becomes Drop

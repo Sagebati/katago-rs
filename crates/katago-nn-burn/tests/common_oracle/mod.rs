@@ -14,6 +14,7 @@ use burn::prelude::*;
 use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::game::board::Board;
 use katago_core::game::board::Loc;
 use katago_core::game::board::Location;
@@ -402,15 +403,13 @@ pub fn new_nn_eval<N: Network + 'static>(name: &str, bpk: &str) -> (LocalPool, R
       12,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "searchEigenSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       std::fs::read(bpk).unwrap(),
