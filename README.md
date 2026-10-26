@@ -64,15 +64,15 @@ kernel set, and katago-ws's images). f16 runs the 3x3 convolutions in f16 (`useF
 | Net | Backend | Precision | batch 1 | 8 | 16 | 32 | 64 |
 |---|---|---|---:|---:|---:|---:|---:|
 | b10c128 | flex (CPU, 1 thread) | f32 | 30 | 33 | | | |
-| | wgpu (Vulkan) | f32 | 480 | 2942 | 4315 | 5118 | 5499 |
-| | wgpu (Vulkan) | f16 | 462 | 3291 | 4851 | 5942 | 6426 |
-| | rocm (HIP) | f32 | 486 | 2998 | 4183 | 5053 | 5977 |
-| | rocm (HIP) | f16 | 475 | 3357 | 4945 | 5913 | **7065** |
+| | wgpu (Vulkan) | f32 | 680 | 3685 | 5756 | 6671 | 7116 |
+| | wgpu (Vulkan) | f16 | 608 | 4169 | 6552 | 8046 | **8582** |
+| | rocm (HIP) | f32 | 654 | 3408 | 4671 | 5641 | 6859 |
+| | rocm (HIP) | f16 | 638 | 4101 | 5633 | 6849 | 8315 |
 | b18c384nbt | flex (CPU, 1 thread) | f32 | 2.2 | 2.5 | | | |
-| | wgpu (Vulkan) | f32 | 181 | 652 | 837 | 926 | 864 |
-| | wgpu (Vulkan) | f16 | 182 | 795 | 1014 | 1148 | 1147 |
-| | rocm (HIP) | f32 | 156 | 631 | 719 | 910 | 1157 |
-| | rocm (HIP) | f16 | 176 | 758 | 888 | 1102 | **1374** |
+| | wgpu (Vulkan) | f32 | 193 | 658 | 835 | 918 | 893 |
+| | wgpu (Vulkan) | f16 | 200 | 801 | 1013 | 1139 | 1152 |
+| | rocm (HIP) | f32 | 154 | 630 | 720 | 912 | 1160 |
+| | rocm (HIP) | f16 | 181 | 756 | 888 | 1104 | **1364** |
 
 Upstream KataGo for comparison, `just bench-upstream <net>` (KataGo's own `benchmark`, 800 visits; its nnEvals/s at
 the average batch its search threads produce, so a search is running around them). OpenCL FP16 on AMD's OpenCL
@@ -85,8 +85,8 @@ small batches):
 | b18c384nbt | KataGo OpenCL FP16 | 295 | 356 | 401 | 441 | 449 |
 | b10c128 | KataGo Eigen (CPU, 12 threads) | 164 at batch 1 | | | | |
 
-So on this GPU katago-rs's b18c384nbt forward pass is about 2.5x upstream's at batch 32 (1102-1148 vs 441), and
-b10c128's about 1.4x (5913-5942 vs 4120). On the CPU, flex is single-threaded: about upstream's Eigen per thread
+So on this GPU katago-rs's b18c384nbt forward pass is about 2.5x upstream's at batch 32 (1104-1139 vs 441), and
+b10c128's 1.7-2x (6849-8046 vs 4120). On the CPU, flex is single-threaded: about upstream's Eigen per thread
 (M0), and 5x behind Eigen on 12 threads.
 
 ### Searches in the browser
@@ -96,10 +96,10 @@ cleared), `just web-build && just bench-web`:
 
 | Net | Backend | 100 visits | 400 visits |
 |---|---|---:|---:|
-| b10c128 | WebGPU (`precision: auto`, f16 here) | 586-734 | |
-| b10c128 | wasm CPU | 10 | |
-| b18c384nbt | WebGPU f32 | 271-429 | 425-580 |
-| b18c384nbt | WebGPU f16 | 363-484 | 441-641 |
+| b10c128 | WebGPU (`precision: auto`, f16 here) | 783-961 | |
+| b10c128 | wasm CPU | 11 | |
+| b18c384nbt | WebGPU f32 | 326-442 | 399-647 |
+| b18c384nbt | WebGPU f16 | 422-529 | 474-672 |
 
 One search fills batches of only 7-15 rows; many searches at once (game review, problem generation) reach the
 forward-pass numbers above.
@@ -116,13 +116,15 @@ there). Positions per second:
 | | katago-rs, rocm f16 | 8 x 64, 256 | 13.4 / 13.2 |
 | | KataGo OpenCL FP16, Mesa rusticl (2026-10-25) | 4 x 64, 128 | 7.1 / 7.1 |
 | | KataGo OpenCL FP16, AMD OpenCL | 4 x 64, 128 | 6.3 / 6.3 |
-| b10c128 | katago-rs, rocm f16 | 8 x 64, 256 | 58.0 / 61.5 |
-| | KataGo OpenCL FP16, AMD OpenCL | 4 x 64, 256 | **80.6 / 76.9** |
+| b10c128 | katago-rs, wgpu (Vulkan) f16 | 4 x 64, 256 | **83.5 / 81.7** |
+| | katago-rs, rocm f16 | 8 x 64, 256 | 66.6 / 65.6 |
+| | KataGo OpenCL FP16, AMD OpenCL | 4 x 64, 256 | 80.6 / 76.9 |
 | | KataGo OpenCL FP16, Mesa rusticl (2026-10-25) | 4 x 64, 256 | 63.0 / 71.6 |
 
 The analysis quality matches upstream's run-to-run noise (docs/M9-report.md). b18c384nbt is GPU-bound and katago-rs
-is about 2x upstream's throughput. b10c128 is bound by the search side instead (katago-rs runs every search on one OS
-thread, the wasm design): one katago-rs process reaches about 0.75x of upstream's best.
+is about 2x upstream's throughput. b10c128 leans on the search side instead (katago-rs runs every search on one OS
+thread, the wasm design), and the GPU's per-batch overhead matters more: on Vulkan, one katago-rs process matches
+upstream's best, and on ROCm it reaches about 0.85x. katago-ws's `BENCH_BACKEND=upstream` runs the KataGo rows.
 
 ## Setup
 
