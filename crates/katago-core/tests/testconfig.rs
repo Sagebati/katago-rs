@@ -8,6 +8,7 @@
 //! Tests::runParseAllConfigsTest (walks ./configs/ on disk) and Tests::runTaskParsingTests
 //! (BUILD_DISTRIBUTED only: distributed/client).
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -22,8 +23,7 @@ fn block(i: usize) -> String {
   fixture(F, &format!("runinlineconfigtests.input{}.txt", i))
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn run_inline_config_tests() {
   let mut cases = Cases::new("testconfig::run_inline_config_tests");
   {
@@ -192,4 +192,5 @@ fn run_inline_config_tests() {
     testAssert!(doubles[2] == 1.0e50);
     cases.ran();
   }
+}
 }

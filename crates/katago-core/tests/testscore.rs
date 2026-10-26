@@ -7,6 +7,10 @@
 //! ScoreValue uses atan/tan (port::math::{atan, tan}: platform libm, <= 1 ulp from glibc on wasm,
 //! DECISIONS.md D13); the printed precision (6 significant digits, "%.3f") hides that.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_range_loop)]
+
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -72,10 +76,9 @@ fn print_score_stats(out: &mut String, board: &Board, hist: &BoardHistory) {
   }
 }
 
+wasm_test! {
 /// upstream: Tests::runScoreTests (testscore.cpp). `cout` is `cout_buf`; `out` is the
 /// ostringstream that each block prints after its name (and never clears, as upstream).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn run_score_tests() {
   init();
   ScoreValue::init_tables();
@@ -139,4 +142,5 @@ fn run_score_tests() {
   }
   let expected = fixture("runoutputtests", "score-and-utility-tests.expected0.txt");
   TestCommon::expect("Score and utility tests", &cout, &expected);
+}
 }

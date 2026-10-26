@@ -104,6 +104,8 @@ pub struct BurnComputeContext {
   pub nn_x_len: i32,
   pub nn_y_len: i32,
   pub device: Device,
+  /// PORT NOTE: port-only. The 3x3 convs of this context's networks run in f16 (wino/; GPU only).
+  pub use_fp16: bool,
 }
 
 impl nninterface::ComputeContext for BurnComputeContext {
@@ -120,6 +122,8 @@ pub struct BurnComputeHandle<N: Network> {
   pub inputs_use_nhwc: bool,
   pub device: Device,
   pub model: N,
+  /// PORT NOTE: port-only, the context's `use_fp16`.
+  pub use_fp16: bool,
   /// PORT NOTE: port-only, see BurnNeuralNet::with_batch_buckets.
   pub batch_buckets: Vec<i32>,
   pub model_version: i32,
@@ -276,19 +280,21 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     // PORT NOTE: the generated graph is NCHW: Auto means NCHW here (Eigen: Auto means NHWC).
     let use_nhwc: bool = if use_nhwc_mode == enabled_t::True { true } else { false };
 
-    // PORT NOTE: useFP16 = true runs the 3x3 convs in f16 (wino.rs) on GPU devices; Auto stays f32 (the Eigen
-    // parity tier). On the CPU (flex) it is rejected as before.
+    // PORT NOTE: useFP16 = true runs this context's 3x3 convs in f16 (wino/) on GPU devices; Auto stays f32 (the
+    // Eigen parity tier), unless the process default is f16 (`wino::set_half`, katago-web's `precision`). On the
+    // CPU (flex) it is rejected as before. Each context keeps its own precision: two networks of one process
+    // (e.g. `-human-model`) can differ.
     if use_fp16 {
-      #[cfg(feature = "wgpu-fixed-kernels")]
-      let gpu = !is_flex(&self.device);
-      #[cfg(not(feature = "wgpu-fixed-kernels"))]
+      #[cfg(feature = "gpu-kernels")]
+      let gpu = !crate::is_cpu(&self.device);
+      #[cfg(not(feature = "gpu-kernels"))]
       let gpu = false;
       if !gpu {
         return Err(KataError::StringError("Burn backend: useFP16 = true not supported".to_string()));
       }
-      #[cfg(feature = "wgpu-fixed-kernels")]
-      crate::wino::set_half(true);
     }
+    #[cfg(feature = "gpu-kernels")]
+    let use_fp16: bool = use_fp16 || (crate::wino::default_half() && !crate::is_cpu(&self.device));
     if use_nhwc {
       return Err(KataError::StringError("Burn backend: useNHWC = true not supported".to_string()));
     }
@@ -299,7 +305,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       ));
     }
 
-    Ok(Box::new(BurnComputeContext { nn_x_len, nn_y_len, device: self.device.clone() }))
+    Ok(Box::new(BurnComputeContext { nn_x_len, nn_y_len, device: self.device.clone(), use_fp16 }))
   }
 
   /// upstream: NeuralNet::createComputeHandle (eigenbackend.cpp)
@@ -336,6 +342,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       inputs_use_nhwc,
       device: context.device.clone(),
       model: N::from_bpk(loaded_model.bpk.clone(), &context.device),
+      use_fp16: context.use_fp16,
       batch_buckets: self.batch_buckets.clone(),
       model_version: m.model_version,
       num_input_channels: m.num_input_channels,
@@ -348,13 +355,8 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
 
   /// upstream: NeuralNet::isUsingFP16 (eigenbackend.cpp)
   fn is_using_fp16(&self, compute_handle: &dyn nninterface::ComputeHandle) -> bool {
-    let _ = compute_handle;
-    // PORT NOTE: wino.rs's f16 3x3 convs (the rest of the network stays f32).
-    #[cfg(feature = "wgpu-fixed-kernels")]
-    if crate::wino::half() {
-      return true;
-    }
-    false
+    // PORT NOTE: wino/'s f16 3x3 convs (the rest of the network stays f32), per context.
+    compute_handle.as_any().downcast_ref::<BurnComputeHandle<N>>().expect("ComputeHandle created by BurnNeuralNet").use_fp16
   }
 
   /// upstream: NeuralNet::createInputBuffers (eigenbackend.cpp)
@@ -380,6 +382,8 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
 }
 
 /// upstream: NeuralNet::getOutput (eigenbackend.cpp)
+/// PORT NOTE: in three parts, in upstream's order: [`copy_inputs`] (the input loop), [`run_network`] (Eigen's
+/// Model::apply, here the generated network and the readback) and [`copy_outputs`] (the output loop).
 async fn get_output_impl<N: Network>(
   compute_handle: &mut BurnComputeHandle<N>,
   input_buffers: &mut BurnInputBuffers,
@@ -401,7 +405,60 @@ async fn get_output_impl<N: Network>(
   debug_assert!((num_spatial_features * nn_x_len * nn_y_len) as usize == input_buffers.single_input_elts);
   debug_assert!(num_global_features as usize == input_buffers.single_input_global_elts);
   let num_policy_channels: i32 = compute_handle.num_policy_channels;
+  let dims = BatchDims {
+    batch_size,
+    nn_x_len,
+    nn_y_len,
+    model_version,
+    num_spatial_features,
+    num_global_features,
+    num_meta_features,
+    num_policy_channels,
+  };
+  let rows = copy_inputs(compute_handle, input_buffers, input_bufs, &dims);
+  let readback = run_network(compute_handle, input_buffers, &dims).await?;
+  copy_outputs(compute_handle, input_buffers, &dims, &rows, &readback, outputs);
+  Ok(())
+}
 
+/// PORT NOTE: port-only. getOutput's locals, shared by its three parts.
+#[derive(Clone, Copy)]
+struct BatchDims {
+  batch_size: i32,
+  nn_x_len: i32,
+  nn_y_len: i32,
+  model_version: i32,
+  num_spatial_features: i32,
+  num_global_features: i32,
+  num_meta_features: i32,
+  num_policy_channels: i32,
+}
+
+/// PORT NOTE: port-only. Each row's symmetry and policy optimism, read while the input is copied.
+struct RowParams {
+  symmetry_by_row: Vec<i32>,
+  policy_optimism_by_row: Vec<f32>,
+}
+
+/// PORT NOTE: port-only. The batch's outputs as read back: rows of `row_len` values (policy, value, score,
+/// ownership), of which the first `batch_size` are real (the rest is bucket padding).
+struct Readback {
+  data: Vec<f32>,
+  hw: usize,
+  policy_row_len: usize,
+  num_value_channels: usize,
+  num_score_value_channels: usize,
+  row_len: usize,
+}
+
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), the input loop
+fn copy_inputs<N: Network>(
+  compute_handle: &BurnComputeHandle<N>,
+  input_buffers: &mut BurnInputBuffers,
+  input_bufs: &[Rc<NNResultBuf>],
+  dims: &BatchDims,
+) -> RowParams {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, num_spatial_features, num_global_features, num_meta_features, .. } = *dims;
   // PORT NOTE: upstream reads `inputBufs[row]->symmetry` / `->policyOptimism` in the output loop
   // below; here that loop runs after an await, so both are read now, while the input is copied
   // (same values: nothing writes them while the eval is queued, PORTING.md §11).
@@ -443,11 +500,15 @@ async fn get_output_impl<N: Network>(
       symmetry_by_row[n_idx],
     );
   }
+  RowParams { symmetry_by_row, policy_optimism_by_row }
+}
 
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), Model::apply
+async fn run_network<N: Network>(compute_handle: &BurnComputeHandle<N>, input_buffers: &BurnInputBuffers, dims: &BatchDims) -> Result<Readback, KataError> {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, num_spatial_features, num_global_features, num_meta_features, num_policy_channels, .. } = *dims;
   // PORT NOTE: Eigen maps the buffers as tensors and calls Model::apply; here the batch is copied
   // into burn tensors (NCHW) and the generated network runs, padded to a batch bucket if configured
   // (rows n..n_run of the input buffers hold stale inputs; their outputs are not read).
-  let n = batch_size as usize;
   let n_run = padded_batch_size(&compute_handle.batch_buckets, batch_size, input_buffers.max_batch_size) as usize;
   let hw = (nn_x_len * nn_y_len) as usize;
   let device = &compute_handle.device;
@@ -471,6 +532,10 @@ async fn get_output_impl<N: Network>(
   } else {
     None
   };
+  // PORT NOTE: the forward pass is built in this handle's precision (wino::with_half).
+  #[cfg(feature = "gpu-kernels")]
+  let raw = crate::wino::with_half(compute_handle.use_fp16, || compute_handle.model.forward(input, input_global, input_meta));
+  #[cfg(not(feature = "gpu-kernels"))]
   let raw = compute_handle.model.forward(input, input_global, input_meta);
 
   // PORT NOTE: one readback for all four outputs (one GPU->CPU round trip per batch).
@@ -494,7 +559,7 @@ async fn get_output_impl<N: Network>(
   // The data a GPU readback returns is backed lazily: the wait for the device happens where its bytes
   // are first touched, so the helper thread converts it to a Vec itself.
   #[cfg(not(target_arch = "wasm32"))]
-  let data: Vec<f32> = if is_flex(device) { read_here(flat).await } else { read_on_helper_thread(flat).await }
+  let data: Vec<f32> = if crate::is_cpu(device) { read_here(flat).await } else { read_on_helper_thread(flat).await }
     .map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
   #[cfg(target_arch = "wasm32")]
   let data: Vec<f32> = read_here(flat).await.map_err(|e| KataError::StringError(format!("Burn backend: readback failed: {e}")))?;
@@ -508,7 +573,24 @@ async fn get_output_impl<N: Network>(
   crate::host::yield_to_event_loop().await;
   let row_len = policy_row_len + num_value_channels + num_score_value_channels + ownership_row_len;
   testAssert!(data.len() == row_len * n_run);
+  Ok(Readback { data, hw, policy_row_len, num_value_channels, num_score_value_channels, row_len })
+}
 
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), the output loop
+fn copy_outputs<N: Network>(
+  compute_handle: &BurnComputeHandle<N>,
+  input_buffers: &BurnInputBuffers,
+  dims: &BatchDims,
+  rows: &RowParams,
+  readback: &Readback,
+  outputs: &mut [NNOutput],
+) {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, model_version, num_policy_channels, .. } = *dims;
+  let RowParams { symmetry_by_row, policy_optimism_by_row } = rows;
+  let Readback { data, hw, policy_row_len, num_value_channels, num_score_value_channels, row_len } = readback;
+  let (hw, policy_row_len, num_value_channels, num_score_value_channels, row_len) =
+    (*hw, *policy_row_len, *num_value_channels, *num_score_value_channels, *row_len);
+  let n = batch_size as usize;
   debug_assert!(input_buffers.single_policy_pass_result_elts == num_policy_channels as usize);
   debug_assert!(input_buffers.single_policy_result_elts == (num_policy_channels as usize) * hw);
 
@@ -604,7 +686,6 @@ async fn get_output_impl<N: Network>(
       unreachable!();
     }
   }
-  Ok(())
 }
 
 
@@ -627,14 +708,4 @@ async fn read_on_helper_thread(tensor: Tensor<2>) -> Result<Vec<f32>, String> {
     })
     .map_err(|e| format!("could not start the readback thread: {e}"))?;
   rx.await.map_err(|_| "the readback thread died".to_string())?
-}
-
-/// Whether `device` is burn flex (the CPU backend).
-fn is_flex(device: &Device) -> bool {
-  #[cfg(feature = "flex")]
-  if matches!(device.as_dispatch(), burn::backend::DispatchDevice::Flex(_)) {
-    return true;
-  }
-  let _ = device;
-  false
 }

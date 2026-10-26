@@ -1193,11 +1193,8 @@ impl NNEvaluator {
         let mut loss_prob: f64;
         let mut no_result_prob: f64;
         //Version 3 neural nets just pack the pre-arctanned scoreValue into the whiteScoreMean field
-        // TODO(port): needs port::math::atanf: `atan(float)` is the float overload upstream;
-        // approximated by the double atan of the widened float rounded back to float (equal
-        // whenever glibc's correctly rounded atanf does not hit a double-rounding case).
-        let score_value: f64 =
-          (math::atan((result.white_score_mean * self.post_process_params.output_scale_multiplier) as f64) as f32) as f64 * twoOverPi;
+        // `atan(float)` is the float overload upstream (glibc's correctly rounded atanf).
+        let score_value: f64 = math::atanf(result.white_score_mean * self.post_process_params.output_scale_multiplier) as f64 * twoOverPi;
         {
           let win_logits: f64 = (result.white_win_prob * self.post_process_params.output_scale_multiplier) as f64;
           let loss_logits: f64 = (result.white_loss_prob * self.post_process_params.output_scale_multiplier) as f64;

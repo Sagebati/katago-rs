@@ -7,6 +7,9 @@
 
 #![allow(non_upper_case_globals)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::manual_memcpy, clippy::needless_range_loop)]
+
 mod common;
 
 use common::Cases;

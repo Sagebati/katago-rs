@@ -19,7 +19,6 @@ use serde_json::Value;
 use crate::core::global::KataError;
 
 /// upstream: nlohmann::detail::dtoa_impl (json.hpp)
-#[allow(dead_code)]
 mod dtoa_impl {
   /// upstream: nlohmann::detail::dtoa_impl::diyfp (json.hpp)
   #[derive(Clone, Copy, Debug)]
@@ -30,6 +29,7 @@ mod dtoa_impl {
   }
 
   impl diyfp {
+    #[expect(dead_code, reason = "mirrors diyfp::kPrecision (json.hpp); nothing in the ported dtoa path reads it")]
     pub const kPrecision: i32 = 64; // = q
 
     pub const fn new(f_: u64, e_: i32) -> diyfp {

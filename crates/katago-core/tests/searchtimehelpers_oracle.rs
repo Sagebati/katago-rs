@@ -23,13 +23,13 @@
 
 #![allow(clippy::too_many_arguments, clippy::field_reassign_with_default)]
 
+#[macro_use]
 mod common;
 
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use common::fixture;
 use common::init;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
@@ -50,15 +50,6 @@ use katago_core::port::executor::Spawner;
 use katago_core::search::search::Search;
 use katago_core::search::searchparams::SearchParams;
 use katago_core::search::timecontrols::TimeControls;
-
-macro_rules! wasm_test {
-  ($(#[$m:meta])* fn $name:ident() $body:block) => {
-    $(#[$m])*
-    #[cfg_attr(not(target_arch = "wasm32"), test)]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-    fn $name() $body
-  };
-}
 
 //------------------------------------------------------------------------------------------------
 // The three functions under test
@@ -550,11 +541,7 @@ struct Counts {
 const NUM_CASES: usize = 150;
 
 fn fixture_text() -> (String, bool) {
-  #[cfg(not(target_arch = "wasm32"))]
-  if let Ok(p) = std::env::var("SEARCHTIMEHELPERS_ORACLE_FILE") {
-    return (std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("{}: {}", p, e)), true);
-  }
-  (fixture("oracle", "searchtimehelpers.txt"), false)
+  common::fixture_or_env("SEARCHTIMEHELPERS_ORACLE_FILE", "oracle", "searchtimehelpers.txt")
 }
 
 wasm_test! {

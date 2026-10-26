@@ -4,7 +4,7 @@ fixtures/<tag>/unit/<stem>/<test-slug>.<role><k>.txt  (role = input | expected).
 
 The test name is the last `const char* name = "..."` seen in the enclosing function, or the
 function name if none. role is `expected` when the block is assigned to `expected`.
-Pilot stand-in for the planned `xtask extract-tests`. Never edit the outputs by hand."""
+Stand-in for the planned (not yet written) `xtask extract-tests`; see also extract_runoutputtests.py. Never edit the outputs by hand."""
 import os, re, sys
 
 def slug(s):

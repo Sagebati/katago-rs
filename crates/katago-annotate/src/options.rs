@@ -97,6 +97,25 @@ pub struct AnnotateOptions {
 }
 
 impl AnnotateOptions {
+    /// The options of a JSON object of [`AnnotateOptions`] fields (camelCase) plus an optional `humanProfile`
+    /// (a string, or null), and that profile: how the hosts read a review's options.
+    ///
+    /// # Errors
+    ///
+    /// Not an object, a `humanProfile` that is not a string, or a field [`AnnotateOptions`] rejects.
+    pub fn from_json_with_profile(
+        mut value: serde_json::Value,
+    ) -> Result<(Self, Option<String>), String> {
+        let obj = value.as_object_mut().ok_or("options must be an object")?;
+        let human_profile = match obj.remove("humanProfile") {
+            None | Some(serde_json::Value::Null) => None,
+            Some(serde_json::Value::String(s)) => Some(s),
+            Some(_) => return Err("humanProfile must be a string".to_owned()),
+        };
+        let options = serde_json::from_value(value).map_err(|e| format!("bad options: {e}"))?;
+        Ok((options, human_profile))
+    }
+
     /// Whether the two-pass (screen, then refine) analysis is enabled.
     #[must_use]
     pub fn two_pass(&self) -> bool {

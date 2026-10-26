@@ -13,5 +13,9 @@ g170-b6c96, upstream's `analysis_example.cfg` and a deterministic search:
   upstream/KataGo/cpp/tests/models/g170-b6c96-s175395328-d26788732.bin.gz`). Against the katago-rs one: same moves,
   candidates, visits and PVs; max deviation 1.1e-6 (win rates), 2.3e-5 (scores), 1.5e-6 (priors), grids equal.
 
+- `hand-9x9.b6c96-human-deterministic.json`: the same with the human SL network beside it (`-human-model` the
+  b18c384nbt-humanv0 `.bpk`, options `"includePolicy":true,"humanModel":"b18c384nbt-humanv0"`): the payload has
+  `rank_5k`'s human policy; identical across runs. `just web-test-human` compares the browser's (`humanModel`).
+
 `just web-test --only review` reviews the same game in the browser with the same config and overrides and
 compares (packages/katago-web/test/review.mjs).

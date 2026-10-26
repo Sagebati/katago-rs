@@ -31,6 +31,7 @@ use katago_core::neuralnet::nninterface::NeuralNet;
 use katago_core::port::executor::LocalBoxFuture;
 use katago_core::port::executor::Spawner;
 use katago_core::program::setup::NNEvaluatorHost;
+use katago_nn_burn::NetId;
 
 use crate::config::Backend;
 use crate::review;
@@ -116,12 +117,20 @@ impl Drop for Sleep {
 /// `port::executor::set_sleep`: a timed wait on the worker's event loop. `setTimeout` takes at most
 /// 2^31-1 ms (~24.8 days; larger delays fire at once), so longer waits are capped there.
 fn sleep(seconds: f64) -> LocalBoxFuture<'static, ()> {
-  let ms = if seconds.is_finite() && seconds > 0.0 { (seconds * 1000.0).min(2147483647.0) } else { 0.0 };
+  let ms = if seconds.is_finite() && seconds > 0.0 {
+    (seconds * 1000.0).min(2147483647.0)
+  } else {
+    0.0
+  };
   let mut handle = JsValue::UNDEFINED;
   let promise = Promise::new(&mut |resolve: Function, _reject: Function| {
     handle = set_timeout_ms(&resolve, ms);
   });
-  Box::pin(Sleep { fut: JsFuture::from(promise), handle, done: false })
+  Box::pin(Sleep {
+    fut: JsFuture::from(promise),
+    handle,
+    done: false,
+  })
 }
 
 /// The browser's local executor: the worker's microtask queue.
@@ -150,7 +159,11 @@ impl log::Log for WebLogger {
   /// The engine's own lines (katago_core, katago_nn_burn, katago_wasm) at info; dependencies (wgpu,
   /// cubecl, burn) only from warn.
   fn enabled(&self, metadata: &log::Metadata) -> bool {
-    if metadata.target().starts_with("katago") { metadata.level() <= log::Level::Info } else { metadata.level() <= log::Level::Warn }
+    if metadata.target().starts_with("katago") {
+      metadata.level() <= log::Level::Info
+    } else {
+      metadata.level() <= log::Level::Warn
+    }
   }
   fn log(&self, record: &log::Record) {
     if !self.enabled(record.metadata()) {
@@ -187,51 +200,6 @@ fn install_globals() {
 //------------------------------------------------------------------------------------------------
 // NN backend
 
-/// The networks compiled into katago-nn-burn (crate features).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Net {
-  #[cfg(feature = "net-b6c96")]
-  B6c96,
-  #[cfg(feature = "net-b10c128")]
-  B10c128,
-  #[cfg(feature = "net-b18c384nbt")]
-  B18c384nbt,
-  #[cfg(feature = "net-b18c384nbt-humanv0")]
-  B18c384nbtHumanv0,
-}
-
-impl Net {
-  fn parse(name: &str) -> Option<Net> {
-    match name {
-      #[cfg(feature = "net-b6c96")]
-      "g170-b6c96" => Some(Net::B6c96),
-      #[cfg(feature = "net-b10c128")]
-      "g170e-b10c128" => Some(Net::B10c128),
-      #[cfg(feature = "net-b18c384nbt")]
-      "kata1-b18c384nbt" => Some(Net::B18c384nbt),
-      #[cfg(feature = "net-b18c384nbt-humanv0")]
-      "b18c384nbt-humanv0" => Some(Net::B18c384nbtHumanv0),
-      _ => None,
-    }
-  }
-
-  fn backend(self, device: Device, batch_buckets: Vec<i32>) -> Rc<dyn NeuralNet> {
-    use katago_nn_burn::backend::BurnNeuralNet;
-    match self {
-      #[cfg(feature = "net-b6c96")]
-      Net::B6c96 => Rc::new(BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b10c128")]
-      Net::B10c128 => Rc::new(BurnNeuralNet::<katago_nn_burn::b10c128::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b18c384nbt")]
-      Net::B18c384nbt => Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt::Model>::new(device).with_batch_buckets(batch_buckets)),
-      #[cfg(feature = "net-b18c384nbt-humanv0")]
-      Net::B18c384nbtHumanv0 => {
-        Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(device).with_batch_buckets(batch_buckets))
-      }
-    }
-  }
-}
-
 thread_local! {
   /// cubecl registers one runtime per device: initialise WebGPU once per worker.
   static WEBGPU_DEVICE: RefCell<Option<Device>> = const { RefCell::new(None) };
@@ -245,7 +213,10 @@ async fn make_device(backend: Backend) -> Result<Device, JsError> {
       }
       // Before the first kernel: compiled WGSL is recorded, and looked up in what kernelCacheImport loaded.
       cubecl_wgpu::wgsl_cache::enable();
-      let d = Device::wgpu_options().init_async().await.map_err(|e| JsError::new(&format!("WebGPU init failed: {e:?}")))?;
+      let d = Device::wgpu_options()
+        .init_async()
+        .await
+        .map_err(|e| JsError::new(&format!("WebGPU init failed: {e:?}")))?;
       WEBGPU_DEVICE.set(Some(d.clone()));
       Ok(d)
     }
@@ -354,7 +325,13 @@ impl NeuralNet for StatsNeuralNet {
   fn is_using_fp16(&self, compute_handle: &dyn nninterface::ComputeHandle) -> bool {
     self.inner.is_using_fp16(compute_handle)
   }
-  fn create_input_buffers(&self, loaded_model: &dyn nninterface::LoadedModel, max_batch_size: i32, nn_x_len: i32, nn_y_len: i32) -> Box<dyn nninterface::InputBuffers> {
+  fn create_input_buffers(
+    &self,
+    loaded_model: &dyn nninterface::LoadedModel,
+    max_batch_size: i32,
+    nn_x_len: i32,
+    nn_y_len: i32,
+  ) -> Box<dyn nninterface::InputBuffers> {
     self.max_batch_size.set(max_batch_size);
     self.inner.create_input_buffers(loaded_model, max_batch_size, nn_x_len, nn_y_len)
   }
@@ -403,11 +380,14 @@ impl NeuralNet for StatsNeuralNet {
   }
 }
 
-/// Setup's NNEvaluatorHost: one network with its weights handed over by the worker.
+/// Setup's NNEvaluatorHost: the network, and the human SL network when one is given, with their weights handed
+/// over by the worker.
 struct WebNNHost {
   device: Device,
-  net: Net,
+  net: NetId,
   bpk: RefCell<Option<Vec<u8>>>,
+  /// The human SL network (`-human-model`): its `-human-model` name, network and weights.
+  human: RefCell<Option<(String, NetId, Vec<u8>)>>,
   stats: Rc<NnStats>,
   /// Batch-shape buckets (WebGPU), also warmed up before the first batch; empty on the CPU.
   batch_buckets: Vec<i32>,
@@ -429,12 +409,21 @@ impl NNEvaluatorHost for WebNNHost {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn load_model(&self, _nn_model_name: &str, nn_model_file: &str) -> Result<(Rc<dyn NeuralNet>, Vec<u8>), KataError> {
-    let bytes = self.bpk.borrow_mut().take().ok_or_else(|| {
-      KataError::StringError(format!(
-        "Error loading or parsing model file {nn_model_file}: katago-wasm loads one network per engine (no human-SL model, no second evaluator)"
-      ))
-    })?;
-    let inner = self.net.backend(self.device.clone(), self.batch_buckets.clone());
+    let human = self.human.borrow().as_ref().is_some_and(|(file, _, _)| file == nn_model_file);
+    let (net, bytes) = if human {
+      let (_, net, bytes) = self.human.borrow_mut().take().expect("checked above");
+      (net, bytes)
+    } else {
+      let bytes = self.bpk.borrow_mut().take().ok_or_else(|| {
+        KataError::StringError(format!(
+          "Error loading or parsing model file {nn_model_file}: katago-wasm loads the network and at most one human SL network per engine"
+        ))
+      })?;
+      (self.net, bytes)
+    };
+    let inner = net
+      .neural_net(self.device.clone(), self.batch_buckets.clone())
+      .expect("a compiled-in network (Engine::create checks)");
     Ok((
       Rc::new(StatsNeuralNet {
         inner,
@@ -486,7 +475,12 @@ pub fn kernel_cache_export() -> Vec<u8> {
 pub fn kernel_cache_stats() -> JsValue {
   let (entries, added, hits, misses) = cubecl_wgpu::wgsl_cache::stats();
   let o = js_sys::Object::new();
-  for (k, v) in [("entries", entries as f64), ("added", added as f64), ("hits", hits as f64), ("misses", misses as f64)] {
+  for (k, v) in [
+    ("entries", entries as f64),
+    ("added", added as f64),
+    ("hits", hits as f64),
+    ("misses", misses as f64),
+  ] {
     let _ = Reflect::set(&o, &JsValue::from_str(k), &JsValue::from_f64(v));
   }
   o.into()
@@ -520,7 +514,10 @@ fn get_overrides(options: &JsValue) -> Result<Vec<String>, JsError> {
       }
       if js_sys::Array::is_array(&v) {
         let arr: js_sys::Array = v.unchecked_into();
-        return arr.iter().map(|x| x.as_string().ok_or_else(|| JsError::new("option overrides: array entries must be strings"))).collect();
+        return arr
+          .iter()
+          .map(|x| x.as_string().ok_or_else(|| JsError::new("option overrides: array entries must be strings")))
+          .collect();
       }
       Err(JsError::new("option overrides must be a string or an array of strings"))
     }
@@ -534,7 +531,11 @@ fn deferred() -> (Promise, Function, Function) {
     resolve = Some(res);
     reject = Some(rej);
   });
-  (promise, resolve.expect("Promise executor runs synchronously"), reject.expect("Promise executor runs synchronously"))
+  (
+    promise,
+    resolve.expect("Promise executor runs synchronously"),
+    reject.expect("Promise executor runs synchronously"),
+  )
 }
 
 //------------------------------------------------------------------------------------------------
@@ -550,6 +551,8 @@ pub struct Engine {
   reviews: Rc<RefCell<std::collections::HashMap<String, Rc<review::ReviewState>>>>,
   backend: Backend,
   network: String,
+  /// The human SL network loaded beside `network`, if any.
+  human_network: Option<String>,
   config_text: String,
   stats: Rc<NnStats>,
   finished: Promise,
@@ -561,6 +564,8 @@ impl Engine {
   /// - `backend`: "webgpu" | "cpu" (required; the worker resolves "auto");
   /// - `network`: one of [`crate::compiled_networks`] (required); `model` are its `.bpk` weights;
   /// - `expectedSha256`: if given, `model` must hash to it (lowercase hex) or creation fails;
+  /// - `humanNetwork`: the human SL network (b18c384nbt-humanv0) whose weights are `human_model`, loaded as
+  ///   `-human-model` (queries and reviews may then use a `humanSLProfile`);
   /// - `modelFile`: the `-model` name the engine reports (default: the network name);
   /// - `config`: a full config text replacing analysis_example.cfg (then the browser defaults are not applied);
   /// - `overrides`: "key=value, ..." string(s), as `-override-config`;
@@ -570,13 +575,17 @@ impl Engine {
   /// `on_line(line)` receives every response line; `on_log(kind, text)` the log ("error" | "warn" | "info")
   /// and stderr ("stderr"). The model is loaded asynchronously after this returns: the first response
   /// (e.g. to a `query_version` action) arrives once the engine is ready.
-  pub async fn create(options: JsValue, model: Vec<u8>, on_line: Function, on_log: Function) -> Result<Engine, JsError> {
+  pub async fn create(options: JsValue, model: Vec<u8>, on_line: Function, on_log: Function, human_model: Option<Vec<u8>>) -> Result<Engine, JsError> {
     install_globals();
     let backend_name = get_string(&options, "backend")?.ok_or_else(|| JsError::new("option backend is required (webgpu | cpu)"))?;
     let backend = Backend::parse(&backend_name).ok_or_else(|| JsError::new(&format!("unknown backend {backend_name} (webgpu | cpu)")))?;
     let network = get_string(&options, "network")?.ok_or_else(|| JsError::new("option network is required"))?;
-    let net = Net::parse(&network)
-      .ok_or_else(|| JsError::new(&format!("network {network} is not compiled in (this build has: {})", crate::compiled_networks().join(", "))))?;
+    let net = NetId::from_name(&network).filter(|net| net.is_compiled()).ok_or_else(|| {
+      JsError::new(&format!(
+        "network {network} is not compiled in (this build has: {})",
+        crate::compiled_networks().join(", ")
+      ))
+    })?;
     if let Some(expected) = get_string(&options, "expectedSha256")? {
       let got = sha256_hex(&model);
       if got != expected.to_ascii_lowercase() {
@@ -584,6 +593,22 @@ impl Engine {
       }
     }
     let model_file = get_string(&options, "modelFile")?.unwrap_or_else(|| network.clone());
+    let human_network = get_string(&options, "humanNetwork")?;
+    let human = match (human_network, human_model) {
+      (None, None) => None,
+      (Some(name), Some(bytes)) => {
+        let net = NetId::from_name(&name).filter(|net| net.is_compiled()).ok_or_else(|| {
+          JsError::new(&format!(
+            "human network {name} is not compiled in (this build has: {})",
+            crate::compiled_networks().join(", ")
+          ))
+        })?;
+        Some((name, net, bytes))
+      }
+      _ => return Err(JsError::new("option humanNetwork and the human model's weights go together")),
+    };
+    let human_model_file = human.as_ref().map(|(name, _, _)| name.clone()).unwrap_or_default();
+    let human_network = human.as_ref().map(|(name, _, _)| name.clone());
     let base = get_string(&options, "config")?;
     let overrides = get_overrides(&options)?;
     let analysis_threads: Option<i32> = match get(&options, "analysisThreads")? {
@@ -613,12 +638,19 @@ impl Engine {
     let (tx, rx) = mpsc::unbounded::<Vec<Vec<u8>>>();
     let stats = Rc::new(NnStats::default());
     let (finished, resolve, reject) = deferred();
-    let nn_host = WebNNHost { device, net, bpk: RefCell::new(Some(model)), stats: stats.clone(), batch_buckets };
+    let nn_host = WebNNHost {
+      device,
+      net,
+      bpk: RefCell::new(Some(model)),
+      human: RefCell::new(human),
+      stats: stats.clone(),
+      batch_buckets,
+    };
     let router = review::Router::default();
     let output_router = router.clone();
     let args = AnalysisArgs {
       model_file,
-      human_model_file: String::new(),
+      human_model_file,
       num_analysis_threads_cmdline_specified: analysis_threads.is_some(),
       num_analysis_threads_cmdline: analysis_threads.unwrap_or(0),
       quit_without_waiting,
@@ -654,7 +686,17 @@ impl Engine {
         }
       }
     });
-    Ok(Engine { input: RefCell::new(Some(tx)), router, reviews: Default::default(), backend, network, config_text, stats, finished })
+    Ok(Engine {
+      input: RefCell::new(Some(tx)),
+      router,
+      reviews: Default::default(),
+      backend,
+      network,
+      human_network,
+      config_text,
+      stats,
+      finished,
+    })
   }
 
   /// "webgpu" | "cpu"
@@ -682,7 +724,8 @@ impl Engine {
     let tx = input.as_ref().ok_or_else(|| JsError::new("input is closed"))?;
     self.stats.batches_at_last_input.set(self.stats.batches.get());
     self.stats.rows_at_last_input.set(self.stats.rows.get());
-    tx.unbounded_send(lines.into_iter().map(String::into_bytes).collect()).map_err(|_| JsError::new("the engine has exited"))
+    tx.unbounded_send(lines.into_iter().map(String::into_bytes).collect())
+      .map_err(|_| JsError::new("the engine has exited"))
   }
 
   /// Reviews a whole game as katago-ws does (crate katago-annotate): one analysis query over every turn, or
@@ -693,13 +736,14 @@ impl Engine {
   /// - `options`: katago-ws's analysis settings in camelCase (`maxVisits` 100, `screenVisits` 0 = one pass,
   ///   `refineWinrateDelta` 0.03, `refineScoreDelta` 1, `topK` 10, `analysisPvLen` 15, `includeOwnership`,
   ///   `includeOwnershipStdev`, `includePolicy` (all true), `defaultKomi` 7.5, `defaultBoardSize` 19) and
-  ///   `humanProfile` (dropped with a warning: no human SL model in the browser);
+  ///   `humanProfile` (the human policy of that profile when the engine has a human SL network, `humanNetwork`;
+  ///   dropped with a warning otherwise);
   /// - `on_progress({pass, passes, turnNumber, done, total, analysed})` after each analysed turn.
   ///
   /// Rejects on a bad game or options, an engine error, or [`Engine::cancel_review`] ("review cancelled").
   #[wasm_bindgen(js_name = reviewGame)]
   pub fn review_game(&self, review_id: String, game: JsValue, options: JsValue, on_progress: Function) -> Result<Promise, JsError> {
-    let (game, opts, human_profile) = review::read_args(&game, &options, &self.network)?;
+    let (game, opts, human_profile) = review::read_args(&game, &options, &self.network, self.human_network.as_deref())?;
     let input = self.input.borrow().clone().ok_or_else(|| JsError::new("input is closed"))?;
     if self.reviews.borrow().contains_key(&review_id) {
       return Err(JsError::new(&format!("review {review_id} is already running")));

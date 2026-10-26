@@ -66,7 +66,7 @@ from upstream KataGo's MIT python code (`upstream/KataGo/python/katago/game`).
 
 ```sh
 .venv/bin/python -I tools/bin2onnx/verify.py \
-  --model /home/sam/src/web/katago-ws/bench/models/g170e-b10c128.bin.gz \
+  --model ../katago-ws/bench/models/g170e-b10c128.bin.gz \
   --onnx models/onnx/g170e-b10c128.onnx
 ```
 

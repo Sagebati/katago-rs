@@ -13,6 +13,7 @@
 //!   with `kata-get-params` then `quit` on stdin; the stdout line after "= " is the fixture.
 #![allow(clippy::bool_comparison, clippy::needless_late_init, clippy::field_reassign_with_default)]
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -297,8 +298,7 @@ fn unchangeable(name: &str, a: &SearchParams, b: &SearchParams, out: &mut String
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn searchparams_vs_cpp() {
   install_logger();
   let mut cases = Cases::new("searchparams_oracle::searchparams_vs_cpp");
@@ -361,6 +361,7 @@ fn searchparams_vs_cpp() {
   cases.ran();
 
   compare_lines("searchparams", &out, &expected);
+}
 }
 
 /// upstream: Setup::loadParams (setup.cpp) + the `loadParams` lambda of gtp.cpp, test-local subset:
@@ -513,8 +514,7 @@ fn gtp_genmove_params_for_example_cfg() -> SearchParams {
   params
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn searchparams_vs_real_katago_get_params() {
   let mut cases = Cases::new("searchparams_oracle::searchparams_vs_real_katago_get_params");
   let reply = fixture("oracle", "searchparams_gtp_kata_get_params.txt");
@@ -555,4 +555,5 @@ fn searchparams_vs_real_katago_get_params() {
   assert_eq!(SearchParams::new().subtree_value_bias_table_num_shards, 65536);
   assert_eq!(expected_obj["subtreeValueBiasTableNumShards"], 65536);
   cases.ran();
+}
 }

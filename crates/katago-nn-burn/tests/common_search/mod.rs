@@ -23,6 +23,8 @@
 //!
 //! Each section is reported as `exact` (byte-identical after the log filter), `within tolerance` (max deviation in
 //! last-digit units and absolute), or `DIVERGED` (first diverging line, both texts).
+// Copies of upstream (testsearchcommon.cpp): keeps upstream's line breaks (rustfmt.toml).
+#![cfg_attr(rustfmt, rustfmt::skip)]
 
 #![allow(dead_code, clippy::needless_late_init, clippy::default_constructed_unit_structs)]
 
@@ -33,6 +35,12 @@ use std::fmt::Write as _;
 use std::future::Future;
 use std::rc::Rc;
 use std::sync::OnceLock;
+use std::time::Duration;
+
+// The net-agnostic helpers shared with nn_parity / search_smoke / search_tolerance (tests/common_nn/mod.rs).
+#[path = "../common_nn/mod.rs"]
+mod common_nn;
+use common_nn::fake_clock;
 
 use burn::prelude::*;
 use futures::executor::LocalPool;
@@ -140,11 +148,6 @@ impl log::Log for CoutLogger {
 
 static LOGGER: CoutLogger = CoutLogger;
 
-/// Deterministic clock for `ClockTimer` (no time limit is set anywhere in these tests).
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 /// Program start (upstream main + runtests): Board::initHash, ScoreValue::initTables, the Logger and the clock.
 pub fn init() {
   static ONCE: OnceLock<()> = OnceLock::new();
@@ -166,33 +169,9 @@ pub fn take_out() -> String {
 // Executor
 
 /// Drives `fut` on `pool`; panics when the pool stalls with `fut` pending and not woken (lost wakeup).
-/// flex completes everything inside the pool. (As search_smoke.rs.)
+/// flex completes everything inside the pool, so no grace period (common_nn::run_watchdog with grace 0).
 pub fn run_watchdog<F: Future>(pool: &mut LocalPool, label: &str, fut: F) -> F::Output {
-  use std::sync::Arc;
-  use std::sync::atomic::AtomicBool;
-  use std::sync::atomic::Ordering;
-  use std::task::Context;
-  use std::task::Poll;
-  struct Flag(AtomicBool);
-  impl futures::task::ArcWake for Flag {
-    fn wake_by_ref(arc_self: &Arc<Self>) {
-      arc_self.0.store(true, Ordering::SeqCst);
-    }
-  }
-  let flag = Arc::new(Flag(AtomicBool::new(true)));
-  let waker = futures::task::waker(flag.clone());
-  let mut cx = Context::from_waker(&waker);
-  let mut fut = std::pin::pin!(fut);
-  loop {
-    flag.0.store(false, Ordering::SeqCst);
-    if let Poll::Ready(v) = fut.as_mut().poll(&mut cx) {
-      return v;
-    }
-    pool.run_until_stalled();
-    if !flag.0.load(Ordering::SeqCst) {
-      panic!("{label}: the executor stalled with the future pending and not woken (lost wakeup)");
-    }
-  }
+  common_nn::run_watchdog(pool, label, Duration::ZERO, fut)
 }
 
 /// The executor the NN server tasks and the searches run on, and the burn backend.

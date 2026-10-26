@@ -41,8 +41,9 @@
 //! glibc's misroundings on ScoreValue's table arguments (D13 b). `tan` (IBM, LGPL) wraps the
 //! platform libm (D13). `log10` (fdlibm) is [`log10`]. `tanh` and `atanh` (CORE-MATH, MIT,
 //! correctly rounded, = glibc 2.44) are ports of `cr_tanh` / `cr_atanh` in math/tanh.rs and
-//! math/atanh.rs ([`tanh`], [`atanh`]). `atanf` (CORE-MATH) is not here yet: see the TODO(port)
-//! at the end of the file. `sqrt` is correctly rounded everywhere and stays `f64::sqrt`.
+//! math/atanh.rs ([`tanh`], [`atanh`]). `atanf` (CORE-MATH, correctly rounded) is [`atanf`]: [`cr_atan`]
+//! rounded to float, plus the inputs where that rounding is a tie. `sqrt` is correctly rounded everywhere and stays
+//! `f64::sqrt`.
 
 // ---------------------------------------------------------------------------------------
 // math_config.h helpers
@@ -812,6 +813,8 @@ pub fn tanhf(x: f32) -> f32 {
   if !(ax >= f32::from_bits(0x39000000) && ax < 10.0f32) {
     return tanhf_reference(x);
   }
+  // The platform tanh is only a candidate: the rounding check below decides whether it is used.
+  #[allow(clippy::disallowed_methods)]
   let r: f64 = (ax as f64).tanh();
   // r is in [2^-13, 1): its nearest f32 and the two rounding boundaries around it (exact in f64).
   let f: f32 = r as f32;
@@ -1176,23 +1179,29 @@ pub fn log10(mut x: f64) -> f64 {
   z + y * LOG10_2HI
 }
 
-// TODO(port): glibc does not use optimized-routines for the other transcendentals the
-// upstream code calls, and Rust's wasm libm differs from glibc on all of them (measured
-// 2*10^6 inputs each, libm 0.2.16 vs glibc 2.44: atan 6.1%, tan 3.8%, tanh 8.0% (now ported), expm1 0.24%,
-// log10 3.8%, lgamma 37%, tanhf 8.0%, atanf 6.2%). Not needed by the modules ported so far
-// (rand.cpp only calls log/pow/sqrt). Before porting their callers, add them here:
-//   - atanf (nneval.cpp v3 score): glibc 2.44 uses CORE-MATH's correctly rounded version (MIT):
-//     port it, or do as tanhf above (any correctly rounded implementation is bit-identical;
-//     check exhaustively for atanf).
-//   - tanh (searchmirror.cpp), atanh: done (CORE-MATH ports, math/tanh.rs and math/atanh.rs,
-//     checked against the host glibc 2.44 on 1.5*10^8 inputs each).
-//   - tanhf (nneval.cpp ownership): done above.
-//   - lgamma, expm1 (fancymath.cpp): done (lgamma: CORE-MATH port in math/lgamma.rs; expm1:
-//     fdlibm with glibc's FMA contractions, above).
-//   - log10 (global.cpp roundDynamic): done above (fdlibm, no FMA variant in glibc).
-//   - atan (nninputs.cpp ScoreValue): done (CORE-MATH port + glibc overrides, math/atan.rs, D13).
-//   - tan (nninputs.cpp inverse_atan, v3 nets only): platform-libm wrapper above (D13: glibc's is
-//     LGPL-2.1+ IBM code; ≤ 1 ulp drift on wasm is accepted).
+/// The inputs where [`cr_atan`] of the widened float lands exactly on a rounding midpoint between two
+/// floats, so rounding it to f32 cannot tell which side the exact arctangent is on: (input bits, correctly
+/// rounded result bits), sorted. Found and checked exhaustively against glibc 2.44's correctly rounded atanf
+/// (tests/math_atanf.rs).
+#[rustfmt::skip]
+pub static ATANF_TIES: [(u32, u32); 2] = [
+  (0x3d8d6b23, 0x3d8d31c3), // x = 0.069052..., cr_atan(x) exactly between 0x3d8d31c2 and 0x3d8d31c3
+  (0xbd8d6b23, 0xbd8d31c3), // -x
+];
+
+/// upstream: C `atanf` (the float overload of `atan`), as called by NNEvaluator for v3 nets (nneval.cpp).
+///
+/// Correctly rounded, the same on every target, so bit-identical to glibc 2.44's CORE-MATH atanf:
+/// [`cr_atan`] is the correctly rounded double arctangent, and rounding it to f32 gives the correctly rounded
+/// float result unless it is exactly a midpoint between two floats (a float boundary b != r is a double, so
+/// the exact value lies on r's side of it; atan of a nonzero float is never itself a midpoint). Those few
+/// inputs are [`ATANF_TIES`].
+pub fn atanf(x: f32) -> f32 {
+  if let Ok(k) = ATANF_TIES.binary_search_by_key(&x.to_bits(), |e| e.0) {
+    return f32::from_bits(ATANF_TIES[k].1);
+  }
+  cr_atan(x as f64) as f32
+}
 
 // ---------------------------------------------------------------------------------------
 // Tables (generated; see the module docs)

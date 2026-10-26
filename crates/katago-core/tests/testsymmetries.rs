@@ -7,6 +7,10 @@
 //! tools/extract_runoutputtests.py).
 #![allow(clippy::needless_range_loop, clippy::bool_comparison)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::type_complexity)]
+
+#[macro_use]
 mod common;
 
 use std::fmt::Write;
@@ -46,9 +50,8 @@ fn f(x: f32) -> String {
   cpp_ostream_f64(x as f64)
 }
 
+wasm_test! {
 /// upstream: Tests::runBasicSymmetryTests (testsymmetries.cpp)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn run_basic_symmetry_tests() {
   init();
   let mut cases = Cases::new("testsymmetries::run_basic_symmetry_tests");
@@ -203,6 +206,7 @@ fn run_basic_symmetry_tests() {
     cases.ran();
   }
 }
+}
 
 /// upstream: the `printMarkedSymDupArea` lambda in Tests::runBoardSymmetryTests
 fn print_marked_sym_dup_area(out: &mut String, board: &Board, is_sym_dup_loc: &[bool], valid_symmetries: &[i32]) {
@@ -236,9 +240,8 @@ fn compute_and_print_marked_sym_dup_area(out: &mut String, board: &Board, pla: P
   print_marked_sym_dup_area(out, board, &is_sym_dup_loc, &valid_symmetries);
 }
 
+wasm_test! {
 /// upstream: Tests::runBoardSymmetryTests (testsymmetries.cpp)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn run_board_symmetry_tests() {
   init();
   let mut cases = Cases::new("testsymmetries::run_board_symmetry_tests");
@@ -285,6 +288,7 @@ fn run_board_symmetry_tests() {
   }
   TestCommon::expect_string(name, &mut out, &fixture(F, &format!("{}.expected0.txt", slug)));
 }
+}
 
 /// upstream: the `testSymmetryDifferences` lambda in Tests::runSymmetryDifferenceTests
 fn test_symmetry_differences(out: &mut String, board: &Board, other: &Board, max_difference_to_report: f64) {
@@ -304,9 +308,8 @@ fn test_symmetry_differences(out: &mut String, board: &Board, other: &Board, max
   endl(out);
 }
 
+wasm_test! {
 /// upstream: Tests::runSymmetryDifferenceTests (testsymmetries.cpp)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn run_symmetry_difference_tests() {
   init();
   let mut cases = Cases::new("testsymmetries::run_symmetry_difference_tests");
@@ -337,6 +340,7 @@ fn run_symmetry_difference_tests() {
     TestCommon::expect_string(name, &mut out, &fixture(F, &format!("{}.expected0.txt", slug)));
     cases.ran();
   }
+}
 }
 
 /// upstream: NCHWtoNHWC (testnn.cpp) static
@@ -399,9 +403,8 @@ fn test_configurations(out: &mut String, label: &str, batch_size: i32, num_chann
   }
 }
 
+wasm_test! {
 /// upstream: Tests::runNNSymmetryTests (testnn.cpp); its cout is part of runOutputTests.txt.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn run_nn_symmetry_tests() {
   init();
   let mut cases = Cases::new("testsymmetries::run_nn_symmetry_tests");
@@ -449,4 +452,5 @@ fn run_nn_symmetry_tests() {
   }
   let expected = fixture("runoutputtests", "nn-symmetry-tests.expected0.txt");
   common::compare_lines("runNNSymmetryTests", &out, &expected);
+}
 }

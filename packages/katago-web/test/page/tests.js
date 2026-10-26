@@ -17,10 +17,11 @@ const onLog = (kind, t) => {
 // The scenarios compare against the Eigen reference, so they run the WebGPU convolutions in f32 unless a
 // scenario asks for `precision` (the client's own default is `auto`: f16 where the adapter has shader-f16).
 async function client(opts) {
-  const { network = "g170e-b10c128", cpuNetwork, precision = "f32", ...rest } = opts;
+  const { network = "g170e-b10c128", cpuNetwork, humanNetwork, precision = "f32", ...rest } = opts;
   const model = await fetchModelSpec("/pkg/models/models.json", network);
   const cpuModel = cpuNetwork ? await fetchModelSpec("/pkg/models/models.json", cpuNetwork) : undefined;
-  const c = new KataGoClient({ model, cpuModel, onLog, precision, ...rest });
+  const humanModel = humanNetwork ? await fetchModelSpec("/pkg/models/models.json", humanNetwork) : undefined;
+  const c = new KataGoClient({ model, cpuModel, humanModel, onLog, precision, ...rest });
   const ready = await c.ready;
   return { c, ready };
 }
@@ -226,9 +227,9 @@ export async function kernelCacheParity({ network, cacheKernels = true }) {
  * KataGoClient.reviewGame. Returns per review the payload JSON text (or the error), the progress events with
  * their times, and the wall clock; `config` / `overrides` / `analysisThreads` set up the engine (deterministic
  * runs for the native comparison). With `cancelAfter`, the review is cancelled after that many progress events. */
-export async function review({ backend, network, config, configUrl, overrides, analysisThreads, warmupVisits, reviews, clearCache }) {
+export async function review({ backend, network, humanNetwork, allowSlowCpu, config, configUrl, overrides, analysisThreads, warmupVisits, reviews, clearCache }) {
   if (configUrl) config = await text(configUrl);
-  const { c, ready } = await client({ backend, network, config, overrides, analysisThreads, warmupVisits });
+  const { c, ready } = await client({ backend, network, humanNetwork, allowSlowCpu, config, overrides, analysisThreads, warmupVisits });
   const out = [];
   for (const { game, options, cancelAfter } of reviews) {
     if (clearCache) await c.clearCache();

@@ -4,6 +4,10 @@
 //! 2. Strings and JSON against the real C++ (fixtures/upstream-v1.16.5/unit/oracle/rules.txt).
 //!    Mirrors `rulesMode()` in oracle.cpp.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_range_loop, clippy::too_many_arguments)]
+
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -19,8 +23,7 @@ fn rules8(k: i32, s: i32, t: i32, suic: bool, button: bool, whb: i32, pok: bool,
   )
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn rules_roundtrip_and_parsing_bug() {
   let mut cases = Cases::new("rules::rules_roundtrip_and_parsing_bug");
   {
@@ -81,6 +84,7 @@ fn rules_roundtrip_and_parsing_bug() {
     cases.ran();
   }
 }
+}
 
 fn print_rules(out: &mut String, r: &Rules) {
   *out += &format!("  toString {}\n", r.to_string());
@@ -92,8 +96,7 @@ fn print_rules(out: &mut String, r: &Rules) {
   *out += &format!("  gameResultWillBeInteger {}\n", r.game_result_will_be_integer() as i32);
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn rules_vs_cpp() {
   let mut cases = Cases::new("rules::rules_vs_cpp");
   let expected = fixture("oracle", "rules.txt");
@@ -175,13 +178,13 @@ fn rules_vs_cpp() {
   out += &format!("simpleTerritory {}\n", Rules::get_simple_territory().to_string());
   common::compare_lines("oracle/rules.txt", &out, &expected);
 }
+}
 
+wasm_test! {
 /// `(int)komi` / `(int)(komi * 2)` out of range: C++ UB, x86-64 cvttss2si gives INT_MIN.
 /// Expected values from the real C++ (Rules::komiIsIntOrHalfInt / gameResultWillBeInteger built
 /// from upstream rules.cpp with g++ 16.2.1 -O1 on x86-64): komi, intOrHalfInt,
 /// willBeInteger(no button), willBeInteger(button).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn rules_int_cast_out_of_range_vs_cpp() {
   let cases_table: [(f32, bool, bool, bool); 9] = [
     (1073741824.0, false, true, false),
@@ -205,11 +208,11 @@ fn rules_int_cast_out_of_range_vs_cpp() {
     cases.ran();
   }
 }
+}
 
+wasm_test! {
 /// `e.what()` is `message.c_str()`: a message built from input with a NUL stops there in C++.
 /// Expected texts from the real C++ (Rules::parseRules / Hash128::ofString, review harness).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn kata_error_what_stops_at_nul_vs_cpp() {
   let mut cases = Cases::new("kata_error_what_stops_at_nul_vs_cpp");
   let e = Rules::parse_rules("Tromp\0Taylor").expect_err("invalid rules");
@@ -222,4 +225,5 @@ fn kata_error_what_stops_at_nul_vs_cpp() {
   let e = katago_core::core::hash::Hash128::of_string("AB\0CD").expect_err("invalid hash");
   assert_eq!(e.what(), "Could not parse as Hash128: AB");
   cases.ran();
+}
 }

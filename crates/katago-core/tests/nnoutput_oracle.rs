@@ -5,6 +5,7 @@
 //! legality-mismatch fallback, policyOptimismUsed averaging). This test parses the o lines, replays
 //! every op through the port and must print the same bytes. Not a port of upstream code.
 
+#[macro_use]
 mod common;
 
 use std::rc::Rc;
@@ -101,11 +102,11 @@ fn out_line(tag: &str, o: &NNOutput, with_noised: bool) -> String {
   s
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nnoutput_vs_cpp() {
   init();
   run();
+}
 }
 
 #[inline(never)]

@@ -154,14 +154,10 @@ fn fill_fake(o: &mut NNOutput, spatial: &[f32], global: &[f32], sym: i32) {
   }
 }
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn init() {
   common::init();
   ScoreValue::init_tables();
-  katago_core::core::timer::set_clock(fake_clock);
+  katago_core::core::timer::set_clock(common::fixed_clock);
 }
 
 fn make_eval(pool: &mut LocalPool, backend: Rc<FakeBackend>, max_batch: i32, num_server_threads: usize) -> Rc<NNEvaluator> {

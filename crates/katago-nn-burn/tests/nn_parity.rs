@@ -20,7 +20,6 @@
 #![cfg(feature = "flex")]
 
 use std::cell::RefCell;
-use std::future::Future;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -29,59 +28,28 @@ use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::hash::Hash128;
+use katago_core::core::rand::Rand;
 use katago_core::game::board::Board;
-use katago_core::game::board::Location;
-use katago_core::game::boardhistory::BoardHistory;
-use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::neuralnet::nninputs::MiscNNInputParams;
 use katago_core::neuralnet::nninputs::NNOutput;
-use katago_core::core::rand::Rand;
 use katago_core::neuralnet::nninputs::ScoreValue;
 use katago_core::neuralnet::sgfmetadata::SGFMetadata;
 use katago_core::port::executor::Spawner;
 use katago_nn_burn::Network;
 use katago_nn_burn::backend::BurnNeuralNet;
 
-const WORDS_PER_RECORD: usize = 4 + 10 + 362 + 361;
+mod common_nn;
 
-/// Drives `fut` on `pool` like `LocalPool::run_until`, but never blocks forever: after each poll it
-/// runs the other ready tasks (`run_until_stalled`); if `fut` is then pending and not woken, it
-/// waits up to `grace` for a wakeup from outside the pool (a GPU readback callback) and panics
-/// after that: a lost wakeup fails the test. flex completes everything inside the pool (grace 0).
-fn run_watchdog<F: Future>(pool: &mut LocalPool, label: &str, grace: Duration, fut: F) -> F::Output {
-  use std::sync::Arc;
-  use std::sync::atomic::AtomicBool;
-  use std::sync::atomic::Ordering;
-  use std::task::Context;
-  use std::task::Poll;
-  struct Flag(AtomicBool);
-  impl futures::task::ArcWake for Flag {
-    fn wake_by_ref(arc_self: &Arc<Self>) {
-      arc_self.0.store(true, Ordering::SeqCst);
-    }
-  }
-  let flag = Arc::new(Flag(AtomicBool::new(true)));
-  let waker = futures::task::waker(flag.clone());
-  let mut cx = Context::from_waker(&waker);
-  let mut fut = std::pin::pin!(fut);
-  loop {
-    flag.0.store(false, Ordering::SeqCst);
-    if let Poll::Ready(v) = fut.as_mut().poll(&mut cx) {
-      return v;
-    }
-    pool.run_until_stalled();
-    let start = std::time::Instant::now();
-    while !flag.0.load(Ordering::SeqCst) {
-      if start.elapsed() >= grace {
-        panic!("{label}: the executor stalled with the future pending and not woken for {grace:?} (lost wakeup)");
-      }
-      std::thread::sleep(Duration::from_millis(1));
-      pool.run_until_stalled();
-    }
-  }
-}
+use common_nn::Pos;
+use common_nn::hex_u32;
+use common_nn::hex_u64;
+use common_nn::parse_pos_tokens;
+use common_nn::replay;
+use common_nn::run_watchdog;
+
+const WORDS_PER_RECORD: usize = 4 + 10 + 362 + 361;
 
 /// No outside wakeups on flex; wgpu readbacks may complete from the device's own thread.
 fn grace_for(backend_name: &str) -> Duration {
@@ -92,25 +60,6 @@ fn fixture_path(name: &str) -> String {
   format!("{}/../../fixtures/upstream-v1.16.5/nn/{}", env!("CARGO_MANIFEST_DIR"), name)
 }
 
-fn hex_u64(s: &str) -> u64 {
-  u64::from_str_radix(s, 16).unwrap()
-}
-fn hex_u32(s: &str) -> u32 {
-  u32::from_str_radix(s, 16).unwrap()
-}
-
-/// A `pos` line of the shared position format (see the oracle's header).
-struct Pos {
-  x_size: i32,
-  y_size: i32,
-  rules: Rules,
-  encore_phase: i32,
-  initial_pla: i8,
-  assume_multi_handicap: bool,
-  setup: Vec<(i32, i32, i8)>,
-  moves: Vec<(i32, i32, i8, bool)>,
-}
-
 fn parse_positions() -> Vec<Pos> {
   let text = std::fs::read_to_string(fixture_path("positions.txt")).unwrap();
   let mut out = Vec::new();
@@ -118,51 +67,9 @@ fn parse_positions() -> Vec<Pos> {
     let t: Vec<&str> = line.split_whitespace().collect();
     assert_eq!(t[0], "pos");
     assert_eq!(t[1].parse::<usize>().unwrap(), i, "positions are numbered 0..");
-    let n = |k: usize| -> i32 { t[k].parse().unwrap() };
-    let rules = Rules::new_full(n(4), n(5), n(6), n(7) != 0, n(8) != 0, n(9), n(10) != 0, f32::from_bits(hex_u32(t[11])));
-    let mut k = 15;
-    let n_setup = n(k) as usize;
-    k += 1;
-    let mut setup = Vec::new();
-    for _ in 0..n_setup {
-      setup.push((n(k), n(k + 1), n(k + 2) as i8));
-      k += 3;
-    }
-    let n_moves = n(k) as usize;
-    k += 1;
-    let mut moves = Vec::new();
-    for _ in 0..n_moves {
-      moves.push((n(k), n(k + 1), n(k + 2) as i8, n(k + 3) != 0));
-      k += 4;
-    }
-    assert_eq!(k, t.len());
-    out.push(Pos {
-      x_size: n(2),
-      y_size: n(3),
-      rules,
-      encore_phase: n(12),
-      initial_pla: n(13) as i8,
-      assume_multi_handicap: n(14) != 0,
-      setup,
-      moves,
-    });
+    out.push(parse_pos_tokens(&t));
   }
   out
-}
-
-fn replay(p: &Pos) -> (Board, BoardHistory) {
-  let mut board = Board::new_x_y(p.x_size, p.y_size).unwrap();
-  for &(x, y, c) in &p.setup {
-    assert!(board.set_stone(Location::get_loc(x, y, p.x_size), c));
-  }
-  let mut hist = BoardHistory::new_full(&board, p.initial_pla, &p.rules, p.encore_phase);
-  hist.set_assume_multiple_starting_black_moves_are_handicap(p.assume_multi_handicap);
-  for &(x, y, pla, prevent_encore) in &p.moves {
-    let loc = if x == -1 { Board::PASS_LOC } else { Location::get_loc(x, y, p.x_size) };
-    assert!(hist.is_legal(&board, loc, pla));
-    hist.make_board_move_assume_legal(&mut board, loc, pla, None, prevent_encore);
-  }
-  (board, hist)
 }
 
 /// An `eval` line.
@@ -203,15 +110,20 @@ fn parse_eval_tokens(t: &[&str]) -> Eval {
     params.policy_optimism = f64::from_bits(hex_u64(t[11]));
     params.max_history = t[12].parse().unwrap();
     assert_eq!((t[13], t[14]), ("19", "19"));
-    Eval { pos_id: t[1].parse().unwrap(), next_pla: t[3].parse().unwrap(), params, profile: None }
+    Eval {
+      pos_id: t[1].parse().unwrap(),
+      next_pla: t[3].parse().unwrap(),
+      params,
+      profile: None,
+    }
   }
 }
 
 fn read_records(file: &str) -> Vec<Vec<u32>> {
   let bytes = std::fs::read(fixture_path(file)).unwrap();
   assert_eq!(bytes.len() % (4 * WORDS_PER_RECORD), 0);
-  let words: Vec<u32> = bytes.chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
-  words.chunks_exact(WORDS_PER_RECORD).map(|c| c.to_vec()).collect()
+  let words: Vec<u32> = bytes.as_chunks::<4>().0.iter().map(|b| u32::from_le_bytes(*b)).collect();
+  words.as_chunks::<WORDS_PER_RECORD>().0.iter().map(|c| c.to_vec()).collect()
 }
 
 const FIELDS: [&str; 11] = [
@@ -267,7 +179,14 @@ fn compare(eval_idx: usize, out: &NNOutput, rec: &[u32], diffs: &mut Diffs) {
     let want = f32::from_bits(rec[14 + pos]);
     let g = out.policy_probs[pos];
     if want < 0.0 || g < 0.0 {
-      assert!(want == -1.0 && g == -1.0, "eval {}: policy[{}] legality: got {} want {}", eval_idx, pos, g, want);
+      assert!(
+        want == -1.0 && g == -1.0,
+        "eval {}: policy[{}] legality: got {} want {}",
+        eval_idx,
+        pos,
+        g,
+        want
+      );
     } else {
       diffs.add(9, g, want);
     }
@@ -276,7 +195,13 @@ fn compare(eval_idx: usize, out: &NNOutput, rec: &[u32], diffs: &mut Diffs) {
   for pos in 0..361 {
     let want = f32::from_bits(rec[14 + 362 + pos]);
     if want == 0.0 {
-      assert!(own[pos] == 0.0 || (own[pos] as f64).abs() < 1e-4, "eval {}: ownership[{}] got {} want 0", eval_idx, pos, own[pos]);
+      assert!(
+        own[pos] == 0.0 || (own[pos] as f64).abs() < 1e-4,
+        "eval {}: ownership[{}] got {} want 0",
+        eval_idx,
+        pos,
+        own[pos]
+      );
     }
     diffs.add(10, own[pos], want);
   }
@@ -285,6 +210,11 @@ fn compare(eval_idx: usize, out: &NNOutput, rec: &[u32], diffs: &mut Diffs) {
 /// Runs every eval of `evals_file` through the ported NNEvaluator on the burn flex backend and
 /// compares with `out_file`. `limit`: evaluate only the first `limit` evals.
 fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str, out_file: &str, limit: usize) -> Diffs {
+  run_net_with::<N>(backend_name, bpk, evals_file, out_file, limit, enabled_t::False)
+}
+
+/// [`run_net`] with the evaluator's `useFP16` (`enabled_t::True`: this network's 3x3 convs in f16).
+fn run_net_with<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str, out_file: &str, limit: usize, use_fp16: enabled_t) -> Diffs {
   ScoreValue::init_tables();
   Board::init_hash();
   let positions = parse_positions();
@@ -294,14 +224,7 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
   evals.truncate(limit);
   assert!(!evals.is_empty());
 
-  let device: Device = match backend_name {
-    "flex" => burn::backend::FlexDevice::default().into(),
-    #[cfg(feature = "wgpu")]
-    "wgpu" => burn::backend::WgpuDevice::default().into(),
-    #[cfg(feature = "rocm")]
-    "rocm" => burn::backend::RocmDevice::default().into(),
-    other => panic!("backend {other} not compiled in"),
-  };
+  let device: Device = katago_nn_burn::device(backend_name).unwrap_or_else(|| panic!("backend {backend_name} not compiled in"));
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let backend = Rc::new(BurnNeuralNet::<N>::new(device));
@@ -321,7 +244,7 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
       "",
       "",
       false,
-      enabled_t::False,
+      use_fp16,
       enabled_t::Auto,
       1,
       &[-1],
@@ -349,7 +272,10 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
         let (board, hist) = replay(&positions[e.pos_id]);
         assert_eq!(e.next_pla, hist.presumed_next_move_pla);
         let meta: Option<SGFMetadata> = e.profile.as_ref().map(|p| SGFMetadata::get_profile(p).unwrap());
-        nn_eval.evaluate_sgf_meta(&board, &hist, e.next_pla, meta.as_ref(), &e.params, &buf, true, true).await.unwrap();
+        nn_eval
+          .evaluate_sgf_meta(&board, &hist, e.next_pla, meta.as_ref(), &e.params, &buf, true, true)
+          .await
+          .unwrap();
         let r = buf.result.borrow_mut().take().expect("result");
         results.borrow_mut()[i] = Some(r);
         i += NUM_VIRTUAL_THREADS;
@@ -363,11 +289,20 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
   let avg_batch = nn_eval.average_processed_batch_size();
   assert!(avg_batch > 1.5, "evals were not batched (average batch {avg_batch})");
 
-  let mut diffs = Diffs { max: [0.0; 11], scale: [0.0; 11] };
+  let mut diffs = Diffs {
+    max: [0.0; 11],
+    scale: [0.0; 11],
+  };
   for (i, r) in results.borrow().iter().enumerate() {
     compare(i, r.as_ref().unwrap(), &records[i], &mut diffs);
   }
-  eprintln!("{} on {}: {} evals, average batch {:.2}, max |burn - eigen|:", N::NAME, backend_name, evals.len(), avg_batch);
+  eprintln!(
+    "{} on {}: {} evals, average batch {:.2}, max |burn - eigen|:",
+    N::NAME,
+    backend_name,
+    evals.len(),
+    avg_batch
+  );
   for (i, name) in FIELDS.iter().enumerate() {
     eprintln!("  {:<22} {:.3e}   (max |eigen| {:.3})", name, diffs.max[i], diffs.scale[i]);
   }
@@ -394,7 +329,6 @@ fn check(diffs: &Diffs) {
   }
 }
 
-
 #[cfg(feature = "net-b6c96")]
 #[test]
 fn nn_parity_b6c96_rand() {
@@ -405,13 +339,13 @@ fn nn_parity_b6c96_rand() {
   let text = std::fs::read_to_string(fixture_path("evals_rand.txt")).unwrap();
   let bytes = std::fs::read(fixture_path("g170-b6c96.rand.out.bin")).unwrap();
   assert_eq!(bytes.len() % (4 * (1 + WORDS_PER_RECORD)), 0);
-  let words: Vec<u32> = bytes.chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
-  let records: Vec<&[u32]> = words.chunks_exact(1 + WORDS_PER_RECORD).collect();
+  let words: Vec<u32> = bytes.as_chunks::<4>().0.iter().map(|b| u32::from_le_bytes(*b)).collect();
+  let records: Vec<&[u32]> = words.as_chunks::<{ 1 + WORDS_PER_RECORD }>().0.iter().map(|c| &c[..]).collect();
 
   let mut lines = text.lines().filter(|l| !l.is_empty());
   let cfg: Vec<&str> = lines.next().unwrap().split_whitespace().collect();
   assert_eq!(cfg[0], "config");
-  let device: Device = burn::backend::FlexDevice::default().into();
+  let device: Device = burn::backend::FlexDevice.into();
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let backend = Rc::new(BurnNeuralNet::<N>::new(device));
@@ -440,14 +374,17 @@ fn nn_parity_b6c96_rand() {
       cfg[3].parse().unwrap(),
       backend,
       spawner,
-      std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap(),
+      std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(),
     )
     .unwrap(),
   );
   let grace = Duration::ZERO;
   run_watchdog(&mut pool, "spawnServerThreads", grace, nn_eval.spawn_server_threads()).unwrap();
   let buf = Rc::new(NNResultBuf::new());
-  let mut diffs = Diffs { max: [0.0; 11], scale: [0.0; 11] };
+  let mut diffs = Diffs {
+    max: [0.0; 11],
+    scale: [0.0; 11],
+  };
   let (mut n, mut num_avg, mut num_respawn, mut num_pass_capped, mut num_drawn) = (0usize, 0, 0, 0, 0);
   for line in lines {
     let t: Vec<&str> = line.split_whitespace().collect();
@@ -490,7 +427,11 @@ fn nn_parity_b6c96_rand() {
         if e.params.enable_passing_hacks && (want_pass - 0.95).abs() < 1e-4 {
           // The cap binds: pass = 19 x (sum of the other moves), i.e. 0.95 after normalization.
           num_pass_capped += 1;
-          assert!((out.policy_probs[361] - 0.95).abs() < 1e-5, "eval {n}: pass {} with the cap binding", out.policy_probs[361]);
+          assert!(
+            (out.policy_probs[361] - 0.95).abs() < 1e-5,
+            "eval {n}: pass {} with the cap binding",
+            out.policy_probs[361]
+          );
         }
         n += 1;
       }
@@ -513,21 +454,27 @@ fn nn_parity_b6c96_rand() {
 #[cfg(feature = "net-b6c96")]
 #[test]
 fn nn_parity_b6c96() {
-  let d = run_net::<katago_nn_burn::b6c96::Model>("flex", katago_nn_burn::bpk_path!("g170-b6c96"), "evals.txt", "g170-b6c96.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b6c96::Model>("flex", katago_nn_burn::b6c96::BPK_PATH, "evals.txt", "g170-b6c96.out.bin", usize::MAX);
   check(&d);
 }
 
 #[cfg(feature = "net-b10c128")]
 #[test]
 fn nn_parity_b10c128() {
-  let d = run_net::<katago_nn_burn::b10c128::Model>("flex", katago_nn_burn::bpk_path!("g170e-b10c128"), "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b10c128::Model>("flex", katago_nn_burn::b10c128::BPK_PATH, "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
   check(&d);
 }
 
 #[cfg(feature = "net-b18c384nbt")]
 #[test]
 fn nn_parity_b18c384nbt() {
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("flex", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "flex",
+    katago_nn_burn::b18c384nbt::BPK_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
   check(&d);
 }
 
@@ -536,7 +483,7 @@ fn nn_parity_b18c384nbt() {
 fn nn_parity_b18c384nbt_humanv0() {
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "flex",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -547,14 +494,14 @@ fn nn_parity_b18c384nbt_humanv0() {
 /// wgpu (native Vulkan/Metal): PORTING.md §13 / CLAUDE.md: 2e-4 on logits, 1e-4 on win rate and
 /// ownership. After post-processing that is 1e-4 absolute on probabilities, policy and
 /// ownership, and 1e-4 relative (floor 1e-4) on the score-like outputs.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "gpu-kernels")]
 fn check_wgpu(diffs: &Diffs) {
   check_wgpu_with(diffs, 1e-4, 1e-4);
 }
 
 /// `abs` on probabilities, policy and ownership; `rel` of the largest magnitude (floor `abs`) on the score-like
 /// outputs.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "gpu-kernels")]
 fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
@@ -566,19 +513,19 @@ fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
 }
 
 /// The wgpu tests share the process-wide precision switch of wino.rs: one at a time.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "gpu-kernels")]
 static GPU: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "gpu-kernels")]
 fn gpu_lock() -> std::sync::MutexGuard<'static, ()> {
   GPU.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 /// wino.rs in f16 for the guard's lifetime.
-#[cfg(feature = "wgpu")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 struct Half;
 
-#[cfg(feature = "wgpu")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 impl Half {
   fn on() -> Self {
     katago_nn_burn::wino::set_half(true);
@@ -586,7 +533,7 @@ impl Half {
   }
 }
 
-#[cfg(feature = "wgpu")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 impl Drop for Half {
   fn drop(&mut self) {
     katago_nn_burn::wino::set_half(false);
@@ -597,7 +544,7 @@ impl Drop for Half {
 #[test]
 fn nn_parity_b10c128_wgpu() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b10c128::Model>("wgpu", katago_nn_burn::bpk_path!("g170e-b10c128"), "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b10c128::Model>("wgpu", katago_nn_burn::b10c128::BPK_PATH, "evals.txt", "g170e-b10c128.out.bin", usize::MAX);
   check_wgpu(&d);
 }
 
@@ -605,8 +552,40 @@ fn nn_parity_b10c128_wgpu() {
 #[test]
 fn nn_parity_b18c384nbt_wgpu() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "wgpu",
+    katago_nn_burn::b18c384nbt::BPK_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
   check_wgpu(&d);
+}
+
+/// The precision is per network: an f16 evaluator (useFP16 = true) in the process leaves a later f32 one exactly as
+/// it was before (it used to switch every network of the process to f16).
+#[cfg(all(feature = "wgpu-fixed", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_precision_is_per_network_wgpu() {
+  type N = katago_nn_burn::b18c384nbt::Model;
+  let _gpu = gpu_lock();
+  let run = |fp16| {
+    run_net_with::<N>(
+      "wgpu",
+      katago_nn_burn::b18c384nbt::BPK_PATH,
+      "evals_b18.txt",
+      "kata1-b18c384nbt.out.bin",
+      24,
+      fp16,
+    )
+  };
+  let before = run(enabled_t::False);
+  let half = run(enabled_t::True);
+  let after = run(enabled_t::False);
+  assert_eq!(before.max, after.max, "an f16 network changed a later f32 one");
+  assert_ne!(before.max, half.max, "useFP16 = true did not run in f16");
+  check_wgpu(&before);
+  check_f16(&half);
 }
 
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt-humanv0"))]
@@ -615,7 +594,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
   let _gpu = gpu_lock();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -629,7 +608,13 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
 fn nn_parity_b18c384nbt_wgpu_f16() {
   let _gpu = gpu_lock();
   let _half = Half::on();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("wgpu", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "wgpu",
+    katago_nn_burn::b18c384nbt::BPK_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
   check_f16(&d);
 }
 
@@ -640,7 +625,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
   let _half = Half::on();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
-    katago_nn_burn::bpk_path!("b18c384nbt-humanv0"),
+    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -654,7 +639,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
 /// (policy per move by the top-policy delta); scoreMeanSq and varTimeLeft, which testgpuerror does not report, get
 /// 5% of their largest magnitude. Measured here (b18, 72 evals): winrate 2.5e-3, lead 0.21, stScoreError 0.16,
 /// policy 9.6e-3, ownership 1.3e-2.
-#[cfg(feature = "wgpu")]
+#[cfg(feature = "gpu-kernels")]
 fn check_f16(diffs: &Diffs) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
@@ -676,7 +661,13 @@ fn check_f16(diffs: &Diffs) {
 #[test]
 fn nn_parity_b18c384nbt_rocm() {
   let _gpu = gpu_lock();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "rocm",
+    katago_nn_burn::b18c384nbt::BPK_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
   check_wgpu(&d);
 }
 
@@ -685,7 +676,13 @@ fn nn_parity_b18c384nbt_rocm() {
 fn nn_parity_b18c384nbt_rocm_f16() {
   let _gpu = gpu_lock();
   let _half = Half::on();
-  let d = run_net::<katago_nn_burn::b18c384nbt::Model>("rocm", katago_nn_burn::bpk_path!("kata1-b18c384nbt"), "evals_b18.txt", "kata1-b18c384nbt.out.bin", usize::MAX);
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "rocm",
+    katago_nn_burn::b18c384nbt::BPK_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
   check_f16(&d);
 }
 
@@ -696,9 +693,11 @@ fn nn_parity_b18c384nbt_rocm_f16() {
 fn backend_rejects_unsupported_layouts() {
   use katago_core::neuralnet::nninterface::NeuralNet;
   type N = katago_nn_burn::b6c96::Model;
-  let device: Device = burn::backend::FlexDevice::default().into();
+  let device: Device = burn::backend::FlexDevice.into();
   let backend = BurnNeuralNet::<N>::new(device);
-  let model = backend.load_model_file("b6", std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap(), "").unwrap();
+  let model = backend
+    .load_model_file("b6", std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(), "")
+    .unwrap();
   let desc = backend.get_model_desc(&*model);
   assert_eq!((desc.model_version, desc.num_policy_channels, desc.num_score_value_channels), (8, 1, 4));
   assert!(backend.load_model_file("b6", Vec::new(), "abc").is_err());
@@ -708,7 +707,9 @@ fn backend_rejects_unsupported_layouts() {
   assert!(!ctx(9, 9, enabled_t::False, enabled_t::Auto));
   assert!(!ctx(19, 19, enabled_t::True, enabled_t::Auto));
   assert!(!ctx(19, 19, enabled_t::False, enabled_t::True));
-  let context = backend.create_compute_context(&[-1], 19, 19, "", "", false, enabled_t::False, enabled_t::Auto, &*model).unwrap();
+  let context = backend
+    .create_compute_context(&[-1], 19, 19, "", "", false, enabled_t::False, enabled_t::Auto, &*model)
+    .unwrap();
   assert!(backend.create_compute_handle(&*context, &*model, 4, false, true, -1, 0).is_err());
   let handle = backend.create_compute_handle(&*context, &*model, 4, false, false, -1, 0).unwrap();
   assert!(!backend.is_using_fp16(&*handle));

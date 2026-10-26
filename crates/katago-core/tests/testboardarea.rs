@@ -2,6 +2,9 @@
 //! fixtures/upstream-v1.16.5/unit/testboardarea/ (all 22 expected blocks; the three
 //! groupTaxScoring blocks use NNInputs::fillScoring, M2).
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::bool_comparison, clippy::collapsible_if)]
+
 mod common;
 
 use common::Cases;

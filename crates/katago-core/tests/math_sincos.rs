@@ -9,6 +9,7 @@
 // upstream's twopi literal (sgfmetadata.cpp) kept verbatim
 #![allow(clippy::approx_constant, clippy::excessive_precision)]
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -27,9 +28,8 @@ fn hex(s: &str) -> u64 {
     u64::from_str_radix(s, 16).expect("hex in math_sincos.txt")
 }
 
+wasm_test! {
 /// Replays the `S <x bits> <sin(x) bits> <cos(x) bits>` lines.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn sincos_vs_core_math_fixture() {
     let text = fixture("oracle", "math_sincos.txt");
     let mut cases = Cases::new("sincos_vs_core_math_fixture");
@@ -62,10 +62,10 @@ fn sincos_vs_core_math_fixture() {
         bad.iter().take(20).cloned().collect::<Vec<_>>().join("\n")
     );
 }
+}
 
+wasm_test! {
 /// Symmetries and special values that follow from correct rounding, on every target.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn sincos_symmetry_and_specials() {
     let mut cases = Cases::new("sincos_symmetry_and_specials");
     let mut z = 12345u64;
@@ -90,6 +90,7 @@ fn sincos_symmetry_and_specials() {
     for x in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
         assert!(math::sin(x).is_nan() && math::cos(x).is_nan());
     }
+}
 }
 
 /// sgfmetadata.cpp fillMetadataRow computes `(float)cos(x)` / `(float)sin(x)` with

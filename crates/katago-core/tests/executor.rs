@@ -7,6 +7,7 @@
 //! analysis.cpp) and tryPop semantics are checked too.
 //! Not a port of upstream code (upstream's queues are not unit-tested).
 
+#[macro_use]
 mod common;
 
 use std::cell::Cell;
@@ -64,9 +65,8 @@ fn values(log: &Log) -> Vec<i64> {
   v
 }
 
+wasm_test! {
 /// Waiters parked on an empty queue; pushes (one at a time, then bursts) must reach them all, with nothing left over.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn async_queue_waiters_registered_before_push_are_woken() {
   let mut cases = Cases::new("executor::async_queue_waiters_registered_before_push_are_woken");
   let mut pool = LocalPool::new();
@@ -97,9 +97,9 @@ fn async_queue_waiters_registered_before_push_are_woken() {
   pool.run_until_stalled();
   assert_eq!(ended.get(), 3);
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn priority_queue_waiters_registered_before_push_are_woken() {
   let mut cases = Cases::new("executor::priority_queue_waiters_registered_before_push_are_woken");
   let mut pool = LocalPool::new();
@@ -124,11 +124,11 @@ fn priority_queue_waiters_registered_before_push_are_woken() {
   pool.run_until_stalled();
   assert_eq!(ended.get(), 3);
 }
+}
 
+wasm_test! {
 /// close() with waiters registered before it: every waiter wakes and gets None; queued elements are dropped;
 /// writes fail afterwards.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn close_wakes_waiters_registered_before_it() {
   let mut cases = Cases::new("executor::close_wakes_waiters_registered_before_it");
   {
@@ -182,11 +182,11 @@ fn close_wakes_waiters_registered_before_it() {
     cases.ran();
   }
 }
+}
 
+wasm_test! {
 /// setReadOnly() with waiters registered before it: they wake and see an empty read-only queue (None), leftover
 /// elements are still drained first, and after unsetReadOnly a new waiter blocks again and is woken by a push.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn set_read_only_wakes_waiters_registered_before_it() {
   let mut cases = Cases::new("executor::set_read_only_wakes_waiters_registered_before_it");
   {
@@ -252,10 +252,10 @@ fn set_read_only_wakes_waiters_registered_before_it() {
     cases.ran();
   }
 }
+}
 
+wasm_test! {
 /// The batch server: waiters in wait_pop_up_to_n parked before a push get everything queued when they run, at most n.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn wait_pop_up_to_n_waiter_registered_before_push() {
   let mut cases = Cases::new("executor::wait_pop_up_to_n_waiter_registered_before_push");
   let mut pool = LocalPool::new();
@@ -290,11 +290,11 @@ fn wait_pop_up_to_n_waiter_registered_before_push() {
   assert_eq!(batches.borrow().len(), 4);
   cases.ran();
 }
+}
 
+wasm_test! {
 /// Equal keys pop in insertion order (FIFO tie-break), by tryPop and by waitPop, also across later pushes; the
 /// greatest key still wins over earlier insertions.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn priority_queue_equal_keys_are_fifo() {
   let mut cases = Cases::new("executor::priority_queue_equal_keys_are_fifo");
   let q: AsyncPriorityQueue<i32, i32> = AsyncPriorityQueue::new();
@@ -346,11 +346,11 @@ fn priority_queue_equal_keys_are_fifo() {
   assert_eq!(got, (0..20).collect::<Vec<i64>>());
   cases.ran();
 }
+}
 
+wasm_test! {
 /// tryPop: false/None on an empty queue without blocking, FIFO / greatest-first on a non-empty one, false/None after
 /// close (even if elements were queued: close drops them), and it still drains a read-only queue.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn try_pop_semantics() {
   let mut cases = Cases::new("executor::try_pop_semantics");
   let q: AsyncQueue<i32> = AsyncQueue::new();
@@ -393,10 +393,10 @@ fn try_pop_semantics() {
   assert_eq!(q.try_pop(), None, "closed: no pop");
   cases.ran();
 }
+}
 
+wasm_test! {
 /// The model check of the reviewer's: random interleavings of pushes and pops against std's max-heap order.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn priority_queue_matches_std_priority_queue_semantics() {
   // std::priority_queue<pair<pair<i64,i64>, V>>: greatest pair first. Keys unique as in analysis.cpp.
   let mut cases = Cases::new("executor::priority_queue_matches_std_priority_queue_semantics");
@@ -418,11 +418,11 @@ fn priority_queue_matches_std_priority_queue_semantics() {
     }
   }
 }
+}
 
+wasm_test! {
 /// WakerList: a condition that is already true never parks; notify_all without waiters is harmless; a waiter whose
 /// future was dropped (cancelled) does not break later notifications; polling one waiter twice registers it once.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn waker_list_edge_cases() {
   let mut cases = Cases::new("executor::waker_list_edge_cases");
   let mut pool = LocalPool::new();
@@ -501,4 +501,5 @@ fn waker_list_edge_cases() {
   assert!(fin.get());
   assert_eq!(cv.num_waiting(), 0);
   cases.ran();
+}
 }

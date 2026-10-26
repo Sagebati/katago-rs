@@ -30,4 +30,6 @@ futures = { version = "0.3", default-features = false, features = ["std", "execu
 log = "0.4"
 # Local-time log stamps (strftime, as DateTime::writeTimeToStream) and mkdir errno (MakeDir::make).
 libc = "0.2"
+
+[dev-dependencies]
 serde_json = { version = "1", features = ["float_roundtrip"] }

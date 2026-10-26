@@ -26,34 +26,19 @@ mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::*;
 
-use sha2::Digest;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 /// Lowercase hex SHA-256 of `bytes` (the worker checks downloaded and cached weights with it).
 #[wasm_bindgen(js_name = sha256Hex)]
 pub fn sha256_hex(bytes: &[u8]) -> String {
-  let digest = sha2::Sha256::digest(bytes);
-  let mut s = String::with_capacity(64);
-  for b in digest {
-    s.push_str(&format!("{b:02x}"));
-  }
-  s
+  katago_core::port::digest::sha2_get256_hex_bytes(bytes)
 }
 
 /// The networks compiled into this build (`network` option of [`Engine`]).
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(js_name = compiledNetworks)]
 pub fn compiled_networks() -> Vec<String> {
-  let mut v: Vec<String> = Vec::new();
-  if cfg!(feature = "net-b6c96") {
-    v.push("g170-b6c96".to_string());
-  }
-  if cfg!(feature = "net-b10c128") {
-    v.push("g170e-b10c128".to_string());
-  }
-  if cfg!(feature = "net-b18c384nbt") {
-    v.push("kata1-b18c384nbt".to_string());
-  }
-  v
+  katago_nn_burn::NetId::compiled().map(|net| net.name().to_string()).collect()
 }
 
 #[cfg(test)]

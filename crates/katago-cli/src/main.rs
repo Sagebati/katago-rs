@@ -98,7 +98,10 @@ fn run(args: Vec<String>) -> i32 {
     },
     "version" => {
       // Version::getKataGoVersionFullInfo
-      print!("{}", katago_cli::version_text().trim_start_matches("\nanalysis  version: ").trim_end_matches('\n'));
+      print!(
+        "{}",
+        katago_cli::version_text().trim_start_matches("\nanalysis  version: ").trim_end_matches('\n')
+      );
       println!();
       0
     }
@@ -115,7 +118,11 @@ fn main() {
   // Global::fatalError: "\nFATAL ERROR:\n<s>" to stdout, then quick_exit(EXIT_FAILURE).
   let default_hook = std::panic::take_hook();
   std::panic::set_hook(Box::new(move |info| {
-    let msg: Option<&str> = info.payload().downcast_ref::<String>().map(String::as_str).or_else(|| info.payload().downcast_ref::<&str>().copied());
+    let msg: Option<&str> = info
+      .payload()
+      .downcast_ref::<String>()
+      .map(String::as_str)
+      .or_else(|| info.payload().downcast_ref::<&str>().copied());
     if let Some(m) = msg.filter(|m| m.starts_with("\nFATAL ERROR:\n")) {
       katago_cli::write_stdout_line(m);
       std::process::exit(1);

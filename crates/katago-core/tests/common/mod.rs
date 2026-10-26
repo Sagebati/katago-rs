@@ -1,6 +1,20 @@
 //! Shared helpers for the fixture-driven tests (not a port of upstream code).
 #![allow(dead_code)]
 
+// Declared first: macro_rules! are textually scoped, so a test binary that uses `wasm_test!`
+// declares this module with `#[macro_use] mod common;`.
+
+/// A `#[test]` that also runs under wasm-bindgen-test on wasm32 (`just test-wasm`).
+#[allow(unused_macros)]
+macro_rules! wasm_test {
+  ($(#[$m:meta])* fn $name:ident() $body:block) => {
+    $(#[$m])*
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    fn $name() $body
+  };
+}
+
 use std::path::PathBuf;
 
 use katago_core::game::board::Board;
@@ -15,6 +29,18 @@ pub fn fixture_dir() -> PathBuf {
 pub fn fixture(stem: &str, file: &str) -> String {
   let p = fixture_dir().join(stem).join(file);
   std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("missing fixture {}: {}", p.display(), e))
+}
+
+/// `fixture(stem, file)` and `false`; or, natively, when the environment variable `var` names a file,
+/// that file's text and `true` (exploration of another oracle output: callers skip their case counts).
+pub fn fixture_or_env(var: &str, stem: &str, file: &str) -> (String, bool) {
+  #[cfg(not(target_arch = "wasm32"))]
+  if let Ok(p) = std::env::var(var) {
+    return (std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("{}: {}", p, e)), true);
+  }
+  #[cfg(target_arch = "wasm32")]
+  let _ = var;
+  (fixture(stem, file), false)
 }
 
 /// wasm32 (`just test-wasm`, run under node by wasm-bindgen-test-runner): read the same file
@@ -45,6 +71,12 @@ macro_rules! report {
     #[cfg(target_arch = "wasm32")]
     wasm_bindgen_test::console_log!($($t)*);
   }};
+}
+
+/// Deterministic clock for `core::timer::set_clock`: the searches need one installed, and no time
+/// limit is set where this is used.
+pub fn fixed_clock() -> f64 {
+  1000.0
 }
 
 /// Upstream's test driver calls Board::initHash() at program start.

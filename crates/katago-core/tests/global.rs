@@ -2,6 +2,7 @@
 //! (fixtures/upstream-v1.16.5/unit/oracle/global.txt from oracle/global.cpp; same order).
 #![allow(clippy::approx_constant)] // 3.14159265 is a deliberate test input, not a pi approximation
 
+#[macro_use]
 mod common;
 
 use std::collections::BTreeMap;
@@ -22,8 +23,7 @@ fn b(x: bool) -> i32 {
   x as i32
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn global_vs_cpp() {
   let mut cases = Cases::new("global::global_vs_cpp");
   let mut out = String::new();
@@ -279,6 +279,7 @@ fn global_vs_cpp() {
   }
   cases.ran();
 }
+}
 
 fn hx(s: &str) -> String {
   s.bytes().map(|c| format!("{:02X}", c)).collect()
@@ -288,10 +289,9 @@ fn unhex(h: &str) -> Vec<u8> {
   (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap()).collect()
 }
 
+wasm_test! {
 /// CustomScopeGuard / WrappedWithDeleter / make_unique_void: no C++ output to compare; checks the
 /// destructor semantics (guard runs once at scope end; deleter only when assigned).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn global_raii_helpers() {
   let mut cases = Cases::new("global::global_raii_helpers");
   let ran = std::cell::Cell::new(0);
@@ -327,4 +327,5 @@ fn global_raii_helpers() {
   let p: unique_ptr_void = make_unique_void(Box::new(42i32));
   assert_eq!(p.downcast_ref::<i32>(), Some(&42));
   cases.ran();
+}
 }

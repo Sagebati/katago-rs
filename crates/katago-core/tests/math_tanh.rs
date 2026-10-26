@@ -5,6 +5,7 @@
 //! `f64::tanh` / `f64::atanh` are not glibc's. Natively it also compares directly with the host
 //! libm on freshly generated inputs.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -50,24 +51,23 @@ fn replay(tag: &str, name: &'static str, f: fn(f64) -> f64) {
     );
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn tanh_vs_glibc_fixture() {
     replay("T ", "tanh_vs_glibc_fixture", math::tanh);
 }
+}
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn atanh_vs_glibc_fixture() {
     replay("A ", "atanh_vs_glibc_fixture", math::atanh);
 }
+}
 
+wasm_test! {
 /// `tanh(atanh(w) + s*o)`, the form the caller (searchmirror.cpp) uses, on a grid: the fixture
 /// only has random draws of it; this checks the C-visible invariants that follow from correct
 /// rounding (odd symmetry, |result| < 1 or = 1 only when saturated, exact fixed points) on every
 /// target.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn tanh_atanh_symmetry_and_limits() {
     let mut cases = Cases::new("tanh_atanh_symmetry_and_limits");
     let mut z = 12345u64;
@@ -104,6 +104,7 @@ fn tanh_atanh_symmetry_and_limits() {
         math::atanh(1.5).is_nan() && math::atanh(-2.0).is_nan() && math::atanh(f64::NAN).is_nan()
     );
     assert!(math::tanh(f64::NAN).is_nan());
+}
 }
 
 /// Direct comparison with the host libm (glibc 2.44 on the fixture machine): fresh pseudo-random

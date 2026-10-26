@@ -264,6 +264,7 @@ export class KataGoClient {
       model: this.options.model,
       cpuModel: this.options.cpuModel,
       allowSlowCpu: this.options.allowSlowCpu,
+      humanModel: this.options.humanModel,
       backend,
       config: this.options.config,
       overrides: overridesToStrings(this.options.overrides),

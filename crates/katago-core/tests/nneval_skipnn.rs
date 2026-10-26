@@ -9,6 +9,7 @@
 //! `common::run_or_stall_panic`, so a lost wakeup fails instead of hanging.
 //! Not a port of upstream code. Also: a Rust-only batching test with a fake backend.
 
+#[macro_use]
 mod common;
 
 use std::cell::Cell;
@@ -182,13 +183,13 @@ fn parse_params(f: &[&str]) -> (MiscNNInputParams, bool, bool) {
   (p, f[10] == "1", f[11] == "1")
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nneval_skipnn_oracle() {
   // Separate frames: debug-build Board::initHash and the replay loop (with its Board/BoardHistory
   // temporaries) would not fit together in wasm's 1 MiB stack.
   init();
   run_oracle();
+}
 }
 
 fn run_oracle() {
@@ -446,8 +447,7 @@ fn positions() -> Vec<Pos> {
   v
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nneval_batching_fake_backend() {
   init();
   let mut cases = Cases::new("nneval_skipnn::nneval_batching_fake_backend");
@@ -505,5 +505,6 @@ fn nneval_batching_fake_backend() {
   pool.run_until_stalled();
   assert_eq!(Rc::strong_count(&single), 1);
   assert_eq!(Rc::strong_count(&batched), 1);
+}
 }
 

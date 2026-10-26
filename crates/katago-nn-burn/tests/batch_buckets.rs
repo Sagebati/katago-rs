@@ -38,7 +38,7 @@ fn eval_positions(buckets: Vec<i32>) -> Vec<NNOutput> {
   ScoreValue::init_tables();
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
-  let bytes = std::fs::read(katago_nn_burn::bpk_path!("g170-b6c96")).unwrap();
+  let bytes = std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap();
   let device: burn::prelude::Device = burn::backend::FlexDevice.into();
   let backend = Rc::new(BurnNeuralNet::<katago_nn_burn::b6c96::Model>::new(device).with_batch_buckets(buckets));
   let nn_eval = Rc::new(
@@ -81,7 +81,10 @@ fn eval_positions(buckets: Vec<i32>) -> Vec<NNOutput> {
       hist.make_board_move_assume_legal(&mut board, Location::get_loc(x, y, 19), pla, None, false);
       let buf = Rc::new(NNResultBuf::new());
       let next = hist.presumed_next_move_pla;
-      nn_eval.evaluate(&board, &hist, next, &MiscNNInputParams::new(), &buf, true, true).await.unwrap();
+      nn_eval
+        .evaluate(&board, &hist, next, &MiscNNInputParams::new(), &buf, true, true)
+        .await
+        .unwrap();
       outputs.push((**buf.result.borrow().as_ref().unwrap()).clone());
     }
     outputs
@@ -97,13 +100,21 @@ fn padded_batches_give_the_same_outputs() {
   // batch 1 runs as 4 rows: three of stale (here: the previous positions' or zero) inputs
   let padded = eval_positions(vec![4, 8]);
   for (i, (a, b)) in plain.iter().zip(&padded).enumerate() {
-    let max_policy = a.policy_probs.iter().zip(b.policy_probs.iter()).map(|(x, y)| (x - y).abs()).fold(0.0f32, f32::max);
+    let max_policy = a
+      .policy_probs
+      .iter()
+      .zip(b.policy_probs.iter())
+      .map(|(x, y)| (x - y).abs())
+      .fold(0.0f32, f32::max);
     let own_a = a.white_owner_map.as_ref().unwrap();
     let own_b = b.white_owner_map.as_ref().unwrap();
     let max_own = own_a.iter().zip(own_b.iter()).map(|(x, y)| (x - y).abs()).fold(0.0f32, f32::max);
     let d_win = (a.white_win_prob - b.white_win_prob).abs();
     let d_lead = (a.white_lead - b.white_lead).abs();
     // flex runs each row the same way whatever the batch size; allow accumulation-order noise only.
-    assert!(max_policy <= 1e-6 && max_own <= 1e-6 && d_win <= 1e-6 && d_lead <= 1e-5, "position {i}: policy {max_policy:e}, ownership {max_own:e}, win {d_win:e}, lead {d_lead:e}");
+    assert!(
+      max_policy <= 1e-6 && max_own <= 1e-6 && d_win <= 1e-6 && d_lead <= 1e-5,
+      "position {i}: policy {max_policy:e}, ownership {max_own:e}, win {d_win:e}, lead {d_lead:e}"
+    );
   }
 }

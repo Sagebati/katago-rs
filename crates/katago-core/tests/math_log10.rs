@@ -4,6 +4,7 @@
 //! power of ten and its neighbours: what Global::roundDynamic's floor(log10(x)) depends on).
 //! Runs natively and on wasm32 (`just test-wasm`).
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -45,8 +46,7 @@ fn gen_input(r: &mut Sm, i: i64) -> f64 {
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn log10_matches_glibc() {
   let text = fixture("oracle", "math_log10.txt");
   let mut cases = Cases::new("math_log10");
@@ -77,4 +77,5 @@ fn log10_matches_glibc() {
     }
   }
   assert_eq!(chunk, 16);
+}
 }

@@ -16,7 +16,7 @@ ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
 KATAGO=$ROOT/${KATAGO:-build/eigen/katago}
 OUT=$(realpath -m "${1:-$ROOT/fixtures/upstream-v1.16.5/analysis}")
 LOGDIR=${LOGDIR:-/tmp/katago-rs-analysis-regen}
-HUMAN_MODEL=${HUMAN_MODEL:-/home/sam/src/web/baduk_review/backend/docker/models/b18c384nbt-humanv0.bin.gz}
+HUMAN_MODEL=${HUMAN_MODEL:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/../katago-ws/bench/nets/b18c384nbt-humanv0.bin.gz}
 mkdir -p "$OUT" "$LOGDIR"
 LOGDIR=$(realpath "$LOGDIR")
 # cwd with upstream's relative layout

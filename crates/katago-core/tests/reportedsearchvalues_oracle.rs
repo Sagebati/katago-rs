@@ -4,6 +4,7 @@
 //! search::Search (TODO(port) in the source) and is not covered. Not a port of upstream code.
 //! Keep in the same order as the oracle.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -36,8 +37,7 @@ impl Splitmix {
   }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn reportedsearchvalues_display_vs_cpp() {
   let mut cases = Cases::new("reportedsearchvalues_oracle::reportedsearchvalues_display_vs_cpp");
   let expected = fixture("oracle", "reportedsearchvalues.txt");
@@ -104,4 +104,5 @@ fn reportedsearchvalues_display_vs_cpp() {
   }
 
   compare_lines("reportedsearchvalues", &out, &expected);
+}
 }

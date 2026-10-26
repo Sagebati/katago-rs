@@ -12,6 +12,10 @@
 //! other unit tier). The upstream `expect(name, actualNHWC, actualNCHW)` consistency checks run too.
 #![allow(clippy::needless_range_loop, clippy::too_many_arguments)]
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::field_reassign_with_default, clippy::type_complexity)]
+
+#[macro_use]
 mod common;
 
 use std::collections::BTreeMap;
@@ -418,8 +422,7 @@ fn sgf_section(
   TestCommon::expect(name, &cout, &expected(slug, 0));
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nn_inputs_sgf_sections() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_sgf_sections");
@@ -449,10 +452,10 @@ fn nn_inputs_sgf_sections() {
   sgf_section("NN Inputs V3V4V5V6 7x7 embedded in 9x9", "nn-inputs-v3v4v5v6-7x7-embedded-in-9x9", sgf7, 9, 9, 0.8, None);
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V3V4V6 Area Komi"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_area_komi() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_area_komi");
@@ -500,10 +503,10 @@ fn nn_inputs_area_komi() {
   TestCommon::expect(name, &cout, &expected("nn-inputs-v3v4v6-area-komi", 0));
   cases.ran();
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V3V4V5V6 Rules" (board sizes 7 then 6: two VERSION 7 chunks)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_rules() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_rules");
@@ -563,10 +566,10 @@ fn nn_inputs_rules() {
     size -= 1;
   }
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V3V4V6 Ko Prohib and pass hist and whitebonus and encorestart"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_ko_prohib() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_ko_prohib");
@@ -628,10 +631,10 @@ fn nn_inputs_ko_prohib() {
   let cout = format!("VERSION {}\n{}\n", VERSION, out);
   TestCommon::expect(name, &cout, &expected("nn-inputs-v3v4v6-ko-prohib-and-pass-hist-and-whitebonus-and-encorestart", 0));
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V3V4V6 some other test positions"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_some_other_test_positions() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_some_other_test_positions");
@@ -672,10 +675,10 @@ fn nn_inputs_some_other_test_positions() {
   let cout = format!("VERSION {}\n{}\n", VERSION, out);
   TestCommon::expect(name, &cout, &expected("nn-inputs-v3v4v6-some-other-test-positions", 0));
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V6 Area Feature and Komi"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_area_feature_and_komi() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_area_feature_and_komi");
@@ -767,10 +770,10 @@ fn nn_inputs_area_feature_and_komi() {
   }
   TestCommon::expect(name, &cout, &expected("nn-inputs-v6-area-feature-and-komi", 0));
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs V6 Pass history"
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_pass_history() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_pass_history");
@@ -818,10 +821,10 @@ fn nn_inputs_pass_history() {
   }
   TestCommon::expect(name, &cout, &expected("nn-inputs-v6-pass-history", 0));
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs SelfKomi Handicap White Bonus" (version 7 only upstream)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_self_komi_handicap_white_bonus() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_self_komi_handicap_white_bonus");
@@ -928,6 +931,7 @@ fn nn_inputs_self_komi_handicap_white_bonus() {
     cases.ran();
   }
   TestCommon::expect(name, &cout, &expected("nn-inputs-selfkomi-handicap-white-bonus", 0));
+}
 }
 
 /// upstream: the `testScoring` lambda of the "Passing hack condition based on as-is scoring" block.
@@ -1049,9 +1053,8 @@ fn test_scoring(cout: &mut String, board: &Board, hist: &BoardHistory, expected_
   }
 }
 
+wasm_test! {
 /// upstream: "Passing hack condition based on as-is scoring" (calls fillRowV7 directly).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn passing_hack_condition_based_on_as_is_scoring() {
   init();
   let mut cases = Cases::new("testnninputs::passing_hack_condition_based_on_as_is_scoring");
@@ -1112,11 +1115,11 @@ fn passing_hack_condition_based_on_as_is_scoring() {
   cout += "Ok\n";
   TestCommon::expect("Passing hack condition based on as-is scoring", &cout, &expected("passing-hack-condition-based-on-as-is-scoring", 0));
 }
+}
 
+wasm_test! {
 /// upstream: "NN Inputs history scoring past end of game or end of phase" (24 VERSION 7 chunks:
 /// 4 rules x 2 SGFs x 3 modes; each chunk starts with its "rules" and "enablePassingHacks" lines).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn nn_inputs_history_scoring_past_end() {
   init();
   let mut cases = Cases::new("testnninputs::nn_inputs_history_scoring_past_end");
@@ -1238,4 +1241,5 @@ fn nn_inputs_history_scoring_past_end() {
     }
   }
   assert_eq!(k, 24);
+}
 }

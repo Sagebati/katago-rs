@@ -4,12 +4,10 @@
 //! (`KataGoCommandLine::getConfig` + `maybeApplyOverrideConfigArg`: `Setup::getMutexKeySets`).
 //! Not a port of upstream code.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
-use katago_core::program::setup::Setup;
 
 /// upstream `cpp/configs/analysis_example.cfg` (v1.16.5), the base config when the caller gives none.
 pub const ANALYSIS_EXAMPLE_CFG: &str = include_str!("../../../upstream/KataGo/cpp/configs/analysis_example.cfg");
@@ -59,17 +57,6 @@ pub fn browser_defaults(backend: Backend) -> &'static str {
   }
 }
 
-/// `-override-config <s>` (commandline.cpp maybeApplyOverrideConfigArg).
-fn apply_override(cfg: &mut ConfigParser, override_config: &str) -> Result<(), KataError> {
-  if !override_config.is_empty() {
-    let newkvs: BTreeMap<String, String> = ConfigParser::parse_comma_separated(override_config)?;
-    //HACK to avoid a common possible conflict - if we specify some of the rules options on one side, the other side should be erased.
-    let mutex_key_sets = Setup::get_mutex_key_sets();
-    cfg.override_keys_newkvs_mutex_key_sets(&newkvs, &mutex_key_sets);
-  }
-  Ok(())
-}
-
 /// The config: `base` (analysis_example.cfg when None) then, only when `base` is None, the browser defaults,
 /// then each of `overrides` ("key=value, key=value"). `@include` is an error (no files in the browser).
 /// Returns the ConfigParser and the override strings applied (for AnalysisArgs::override_configs, which the
@@ -77,7 +64,9 @@ fn apply_override(cfg: &mut ConfigParser, override_config: &str) -> Result<(), K
 pub fn build_config(base: Option<&str>, backend: Backend, overrides: &[String]) -> Result<(ConfigParser, Vec<String>), KataError> {
   let mut cfg = ConfigParser::new(false, true);
   cfg.set_include_reader(Rc::new(|path: &str| -> Result<String, KataError> {
-    Err(KataError::IOError(format!("Could not open file {path} - does not exist or invalid permissions? (no config files in the browser)")))
+    Err(KataError::IOError(format!(
+      "Could not open file {path} - does not exist or invalid permissions? (no config files in the browser)"
+    )))
   }));
   cfg.initialize_in(base.unwrap_or(ANALYSIS_EXAMPLE_CFG))?;
   let mut applied: Vec<String> = Vec::new();
@@ -85,9 +74,7 @@ pub fn build_config(base: Option<&str>, backend: Backend, overrides: &[String]) 
     applied.push(browser_defaults(backend).to_string());
   }
   applied.extend(overrides.iter().filter(|s| !s.is_empty()).cloned());
-  for o in &applied {
-    apply_override(&mut cfg, o)?;
-  }
+  katago_core::command::commandline::maybe_apply_override_config_arg(&mut cfg, &applied)?;
   Ok((cfg, applied))
 }
 

@@ -6,6 +6,10 @@
 //! its inputs; this test sets the same state, recomputes the outputs with the port and the whole text must match byte for
 //! byte (`common::compare_lines`). Also on wasm32 (`just test-wasm`). Not a port of upstream code.
 
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::identity_op, clippy::too_many_arguments)]
+
+#[macro_use]
 mod common;
 
 use std::collections::BTreeMap;
@@ -468,16 +472,11 @@ fn run_f(q: &mut Search, t: &[&str], xloc: Loc) -> String {
   o
 }
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn search_evalcache_diff() {
   common::init();
   ScoreValue::init_tables();
-  katago_core::core::timer::set_clock(fake_clock);
+  katago_core::core::timer::set_clock(common::fixed_clock);
   let expected: String = fixture("oracle", "search_evalcache_diff.txt");
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
@@ -569,4 +568,5 @@ fn search_evalcache_diff() {
   drop(s);
   nn_eval.kill_server_threads();
   pool.run_until_stalled();
+}
 }

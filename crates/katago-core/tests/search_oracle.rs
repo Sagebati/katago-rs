@@ -26,6 +26,7 @@
 
 #![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::write_with_newline, clippy::manual_clamp)]
 
+#[macro_use]
 mod common;
 
 use std::cell::Cell;
@@ -124,10 +125,6 @@ impl log::Log for SearchLogger {
 
 static LOGGER: SearchLogger = SearchLogger;
 
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn install_logger_clock_and_hook() {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
@@ -153,7 +150,7 @@ fn install_logger_clock_and_hook() {
       }));
     }
   });
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
 }
 
 /// Runs `f`, returning the panic message instead of unwinding (only the capturing threads' panics are swallowed).
@@ -1360,10 +1357,7 @@ const NUM_MT_CASES: usize = 36;
 /// The fixture text. For exploration only, the environment variable SEARCH_ORACLE_FILE names another output of
 /// search_nonn.cpp (e.g. `ORACLE_SEED=x ORACLE_STRESS_ONLY=2000 search_nonn`); then the case count is not checked.
 fn fixture_text() -> (String, bool) {
-  if let Ok(p) = std::env::var("SEARCH_ORACLE_FILE") {
-    return (std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("{}: {}", p, e)), true);
-  }
-  (fixture("oracle", "search_nonn.txt"), false)
+  common::fixture_or_env("SEARCH_ORACLE_FILE", "oracle", "search_nonn.txt")
 }
 
 struct Mismatch {
@@ -1445,10 +1439,10 @@ fn run_oracle_on_big_stack() -> (usize, Vec<Mismatch>) {
   run_oracle()
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn search_oracle() {
   run_oracle_report();
+}
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1731,6 +1725,7 @@ fn run_multithread() -> String {
   summary
 }
 
+wasm_test! {
 /// Rust-only (no C++ counterpart): numSearchThreads = 2, 4 and 16 virtual threads on 36 of the oracle cases (small
 /// boards, 20..300 visits, spread over every generator) plus the two largest wide trees. Per case: tree mode
 /// (useGraphSearch and the passing hacks off: the strict counting invariants apply) with 2, 4 and 16 threads, graph
@@ -1745,8 +1740,6 @@ fn run_multithread() -> String {
 ///      enumerate_tree_post_order visits each node once with children before parents and the root last; the node table
 ///      holds exactly the reachable non-root nodes; in tree mode #nodes == 1 + #child pointers;
 ///  (c) no stall: every pool run goes through `common::run_or_stall_panic`.
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn multithread_virtual_threads() {
   let summary = {
     #[cfg(not(target_arch = "wasm32"))]
@@ -1766,4 +1759,5 @@ fn multithread_virtual_threads() {
   };
   crate::report!("search_oracle multithread:\n{}", summary);
   assert!(!summary.contains("FAILURES"), "multi-thread invariants violated:\n{}", summary);
+}
 }

@@ -3,6 +3,7 @@
 //! stream and tables, getHash, and getHashWithSym over every symmetry and color flip, on random boards.
 //! Not a port of upstream code. Keep in the same order as the oracle.
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -52,8 +53,7 @@ fn fnv_hash(h: &mut u64, x: &Hash128) {
 
 const FNV0: u64 = 0xcbf29ce484222325;
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn localpattern_vs_cpp() {
   let mut cases = Cases::new("localpattern_oracle::localpattern_vs_cpp");
   init();
@@ -172,4 +172,5 @@ fn localpattern_vs_cpp() {
   }
 
   compare_lines("localpattern", &out, &expected);
+}
 }

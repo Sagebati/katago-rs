@@ -1,6 +1,11 @@
 //! core/hash bit-exactness against the real C++ (fixtures/upstream-v1.16.5/unit/oracle/hash.txt).
 //! Mirrors `hashMode()` in oracle.cpp.
 
+// Upstream's oracle compares a hash with itself (`h2 <= h2`) to cover operator<=; clippy flags that
+// only when linting for wasm32-unknown-unknown.
+#![allow(clippy::eq_op)]
+
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -14,8 +19,7 @@ fn h(x: u64) -> String {
   Global::uint64_to_hex_string(x)
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn hash_bit_exact_vs_cpp() {
   let mut cases = Cases::new("hash::hash_bit_exact_vs_cpp");
   let expected = fixture("oracle", "hash.txt");
@@ -97,4 +101,5 @@ fn hash_bit_exact_vs_cpp() {
     cases.ran();
   }
   common::compare_lines("oracle/hash.txt", &out, &expected);
+}
 }

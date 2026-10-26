@@ -2,6 +2,7 @@
 //! expected blocks are fixtures/upstream-v1.16.5/unit/datetime/runtests.expected{0,1}.txt.
 #![allow(clippy::bool_comparison, clippy::nonminimal_bool, clippy::identity_op, clippy::eq_op, clippy::neg_cmp_op_on_partial_ord)]
 
+#[macro_use]
 mod common;
 
 use common::Cases;
@@ -18,9 +19,8 @@ fn ss(s: &str) -> SimpleDate {
   SimpleDate::new_s(s).expect("valid date string")
 }
 
+wasm_test! {
 /// upstream: DateTime::runTests (datetime.cpp)
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn datetime_run_tests() {
   let mut cases = Cases::new("datetime_run_tests");
   testAssert!(sd(1999, 1, 11) == sd(1999, 1, 11));
@@ -165,10 +165,10 @@ fn datetime_run_tests() {
   let expected = fixture("datetime", "runtests.expected1.txt");
   TestCommon::expect_string("Counting forward dates", &mut out, &expected);
 }
+}
 
+wasm_test! {
 /// The constructors' error paths (upstream throws StringError with these texts).
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 fn datetime_invalid_dates() {
   let mut cases = Cases::new("datetime_invalid_dates");
   for (y, m, d) in [(2001, 2, 29), (2000, 13, 1), (2000, 0, 1), (2000, 4, 31), (2000, 1, 0)] {
@@ -184,4 +184,5 @@ fn datetime_invalid_dates() {
     assert_eq!(e.to_string(), format!("SimpleDate: Unable to parse as ISO8601 date: {}", s));
     cases.ran();
   }
+}
 }

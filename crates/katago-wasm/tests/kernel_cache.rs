@@ -15,7 +15,9 @@ fn put_str(out: &mut Vec<u8>, s: &str) {
 }
 
 fn fnv1a(bytes: &[u8]) -> u64 {
-  bytes.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x0000_0100_0000_01b3))
+  bytes
+    .iter()
+    .fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x0000_0100_0000_01b3))
 }
 
 /// One entry: device properties hash, kernel id stable hash, stable format, entry point, WGSL, buffer

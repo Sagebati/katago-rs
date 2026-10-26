@@ -10,16 +10,13 @@
 use std::rc::Rc;
 
 use burn::prelude::*;
-use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::hash::Hash128;
 use katago_core::game::board::Board;
-use katago_core::game::board::Location;
-use katago_core::game::boardhistory::BoardHistory;
-use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::neuralnet::nninputs::MiscNNInputParams;
@@ -28,6 +25,13 @@ use katago_core::neuralnet::sgfmetadata::SGFMetadata;
 use katago_core::port::executor::LocalBoxFuture;
 use katago_core::port::executor::Spawner;
 use katago_nn_burn::backend::BurnNeuralNet;
+
+mod common_nn;
+
+use common_nn::hex_u32;
+use common_nn::hex_u64;
+use common_nn::parse_pos_tokens;
+use common_nn::replay;
 
 const NUM_EVALS: usize = 12;
 const WORDS_PER_RECORD: usize = 4 + 10 + 362 + 361;
@@ -59,58 +63,57 @@ impl Spawner for WasmSpawner {
   }
 }
 
-fn hex_u64(s: &str) -> u64 {
-  u64::from_str_radix(s, 16).unwrap()
-}
-fn hex_u32(s: &str) -> u32 {
-  u32::from_str_radix(s, 16).unwrap()
-}
-
-/// A `pos` line (nneval_eigen.cpp's shared position format), replayed into a board and history.
-fn replay(line: &str) -> (Board, BoardHistory) {
-  let t: Vec<&str> = line.split_whitespace().collect();
-  let n = |k: usize| -> i32 { t[k].parse().unwrap() };
-  let rules = Rules::new_full(n(4), n(5), n(6), n(7) != 0, n(8) != 0, n(9), n(10) != 0, f32::from_bits(hex_u32(t[11])));
-  let (xs, ys) = (n(2), n(3));
-  let mut board = Board::new_x_y(xs, ys).unwrap();
-  let mut k = 15;
-  let n_setup = n(k) as usize;
-  k += 1;
-  for _ in 0..n_setup {
-    assert!(board.set_stone(Location::get_loc(n(k), n(k + 1), xs), n(k + 2) as i8));
-    k += 3;
-  }
-  let mut hist = BoardHistory::new_full(&board, n(13) as i8, &rules, n(12));
-  hist.set_assume_multiple_starting_black_moves_are_handicap(n(14) != 0);
-  let n_moves = n(k) as usize;
-  k += 1;
-  for _ in 0..n_moves {
-    let loc = if n(k) == -1 { Board::PASS_LOC } else { Location::get_loc(n(k), n(k + 1), xs) };
-    let pla = n(k + 2) as i8;
-    assert!(hist.is_legal(&board, loc, pla));
-    hist.make_board_move_assume_legal(&mut board, loc, pla, None, n(k + 3) != 0);
-    k += 4;
-  }
-  assert_eq!(k, t.len());
-  (board, hist)
-}
-
 #[wasm_bindgen_test]
 async fn human_net_on_wasm_flex() {
   Board::init_hash();
   ScoreValue::init_tables();
-  let positions: Vec<String> = String::from_utf8(fixture("positions.txt")).unwrap().lines().filter(|l| !l.is_empty()).map(str::to_string).collect();
-  let evals: Vec<String> = String::from_utf8(fixture("evals_human.txt")).unwrap().lines().filter(|l| !l.is_empty()).map(str::to_string).collect();
-  let words: Vec<u32> = fixture("b18c384nbt-humanv0.out.bin").chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
+  let positions: Vec<String> = String::from_utf8(fixture("positions.txt"))
+    .unwrap()
+    .lines()
+    .filter(|l| !l.is_empty())
+    .map(str::to_string)
+    .collect();
+  let evals: Vec<String> = String::from_utf8(fixture("evals_human.txt"))
+    .unwrap()
+    .lines()
+    .filter(|l| !l.is_empty())
+    .map(str::to_string)
+    .collect();
+  let words: Vec<u32> = fixture("b18c384nbt-humanv0.out.bin")
+    .chunks_exact(4)
+    .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+    .collect();
   assert_eq!(words.len(), evals.len() * WORDS_PER_RECORD);
 
-  let bytes = read(katago_nn_burn::bpk_path!("b18c384nbt-humanv0"));
+  let bytes = read(katago_nn_burn::b18c384nbt_humanv0::BPK_PATH);
   let device: Device = burn::backend::FlexDevice::default().into();
   let backend = Rc::new(BurnNeuralNet::<katago_nn_burn::b18c384nbt_humanv0::Model>::new(device));
   let nn_eval = Rc::new(
     NNEvaluator::new(
-      "wasm", "b18c384nbt-humanv0", "", 1, 19, 19, false, false, -1, 0, false, "", "", false, enabled_t::False, enabled_t::Auto, 1, &[-1],
-      "wasmSeed", false, 0, backend, Rc::new(WasmSpawner), bytes,
+      "wasm",
+      "b18c384nbt-humanv0",
+      "",
+      1,
+      19,
+      19,
+      false,
+      false,
+      -1,
+      0,
+      false,
+      "",
+      "",
+      false,
+      enabled_t::False,
+      enabled_t::Auto,
+      1,
+      &[-1],
+      "wasmSeed",
+      false,
+      0,
+      backend,
+      Rc::new(WasmSpawner),
+      bytes,
     )
     .unwrap(),
   );
@@ -135,10 +138,15 @@ async fn human_net_on_wasm_flex() {
     params.policy_optimism = f64::from_bits(hex_u64(t[11]));
     params.max_history = t[12].parse().unwrap();
     let meta = SGFMetadata::get_profile(t[15]).unwrap();
-    let (board, hist) = replay(&positions[t[1].parse::<usize>().unwrap()]);
+    let (board, hist) = replay(&parse_pos_tokens(
+      &positions[t[1].parse::<usize>().unwrap()].split_whitespace().collect::<Vec<_>>(),
+    ));
     let pla: i8 = t[3].parse().unwrap();
     let buf = Rc::new(NNResultBuf::new());
-    nn_eval.evaluate_sgf_meta(&board, &hist, pla, Some(&meta), &params, &buf, true, true).await.unwrap();
+    nn_eval
+      .evaluate_sgf_meta(&board, &hist, pla, Some(&meta), &params, &buf, true, true)
+      .await
+      .unwrap();
     let out = buf.result.borrow_mut().take().unwrap();
     let rec = &words[i * WORDS_PER_RECORD..(i + 1) * WORDS_PER_RECORD];
     let want_hash = Hash128::new(rec[0] as u64 | ((rec[1] as u64) << 32), rec[2] as u64 | ((rec[3] as u64) << 32));

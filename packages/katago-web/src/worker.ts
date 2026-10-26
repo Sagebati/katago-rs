@@ -258,12 +258,19 @@ async function saveKernels(options: EngineInitOptions, adapter: string): Promise
   }
 }
 
-async function createEngine(backend: Backend, options: EngineInitOptions, network: string, bytes: Uint8Array, half: boolean): Promise<Engine> {
+/** A network's name and weights. */
+interface Weights {
+  network: string;
+  bytes: Uint8Array;
+}
+
+async function createEngine(backend: Backend, options: EngineInitOptions, network: string, bytes: Uint8Array, half: boolean, human?: Weights): Promise<Engine> {
   setHalfPrecision(backend === "webgpu" && half);
   return Engine.create(
     {
       backend,
       network,
+      humanNetwork: human?.network,
       modelFile: options.modelFile,
       config: options.config,
       overrides: options.overrides,
@@ -272,7 +279,20 @@ async function createEngine(backend: Backend, options: EngineInitOptions, networ
     bytes,
     onEngineLine,
     onEngineLog,
+    human?.bytes,
   );
+}
+
+/** The human SL network's weights when `humanModel` is given and the backend can run it (WebGPU, or the CPU with
+ * `allowSlowCpu`); a warning otherwise. */
+async function loadHuman(options: EngineInitOptions, backend: Backend): Promise<Weights | undefined> {
+  const spec = options.humanModel;
+  if (!spec) return undefined;
+  if (backend === "cpu" && !options.allowSlowCpu) {
+    onEngineLog("warn", `${spec.network} (humanModel) is not loaded on the CPU, where it runs at ~1 eval/s (allowSlowCpu loads it)`);
+    return undefined;
+  }
+  return { network: spec.network, bytes: (await loadModel(options, spec)).bytes };
 }
 
 async function start(options: EngineInitOptions): Promise<void> {
@@ -281,7 +301,7 @@ async function start(options: EngineInitOptions): Promise<void> {
   const wasm = await init(options.wasmUrl ? { module_or_path: new URL(options.wasmUrl, self.location.href) } : undefined);
   const wasmInitMs = performance.now() - tStart;
   const networks = compiledNetworks();
-  for (const m of [options.model, options.cpuModel]) {
+  for (const m of [options.model, options.cpuModel, options.humanModel]) {
     if (m && !networks.includes(m.network)) throw new Error(`network ${m.network} is not compiled into this build (${networks.join(", ")})`);
   }
 
@@ -325,19 +345,22 @@ async function start(options: EngineInitOptions): Promise<void> {
   } else {
     loading = loadModel(options, spec);
   }
-  const [model] = await Promise.all([loading, probing]);
+  // The human SL network once the backend is known (it is not fetched for a CPU engine that would not load it).
+  const humanLoading = probing.then(() => loadHuman(options, backend));
+  const [model, , human] = await Promise.all([loading, probing, humanLoading]);
+  let loadedHuman = human;
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
   let half = (options.precision ?? "auto") !== "f32" && adapterF16;
   try {
     try {
-      engine = await createEngine(backend, options, spec.network, model.bytes, half);
+      engine = await createEngine(backend, options, spec.network, model.bytes, half, loadedHuman);
     } catch (e) {
       // An adapter that advertises shader-f16 but fails with it (driver bugs): WebGPU in f32 before the CPU.
       if (!half || backend !== "webgpu" || options.precision === "f16") throw e;
       onEngineLog("warn", `WebGPU engine failed in f16, retrying in f32: ${String((e as Error)?.message ?? e)}`);
       half = false;
-      engine = await createEngine(backend, options, spec.network, model.bytes, false);
+      engine = await createEngine(backend, options, spec.network, model.bytes, false, loadedHuman);
     }
   } catch (e) {
     if (choice !== "auto" || backend === "cpu") throw e;
@@ -353,7 +376,8 @@ async function start(options: EngineInitOptions): Promise<void> {
     spec = cpu;
     model.bytes = cpuModel.bytes;
     model.source = cpuModel.source;
-    engine = await createEngine(backend, options, spec.network, model.bytes, false);
+    loadedHuman = await loadHuman(options, backend);
+    engine = await createEngine(backend, options, spec.network, model.bytes, false, loadedHuman);
   }
   const configText = engine.configText;
   engine.finished().then(
@@ -386,6 +410,7 @@ async function start(options: EngineInitOptions): Promise<void> {
     precision: backend === "webgpu" ? (half ? "f16" : "f32") : undefined,
     network: spec.network,
     requestedNetwork: spec.network !== options.model.network ? options.model.network : undefined,
+    humanNetwork: loadedHuman?.network,
     version: String(version.version),
     gitHash: String(version.git_hash),
     modelSource: model.source,

@@ -2,9 +2,10 @@
 #
 # Upstream is KataGo, vendored as the git submodule `upstream/KataGo` (never edited).
 # This file says, for every file under `upstream/KataGo/cpp/`, either which Rust (or
-# tool) module ports it or why it is not ported. `cargo xtask upstream-diff --to <tag>`
-# uses it to turn an upstream release into a list of modules (and, via the
-# `/// upstream: Class::method (file.cpp)` tags, functions) to re-port.
+# tool) module ports it or why it is not ported. The planned (not yet written) `xtask
+# upstream-diff --to <tag>` will use it to turn an upstream release into a list of modules
+# (and, via the `/// upstream: Class::method (file.cpp)` tags, functions) to re-port. No xtask
+# crate exists yet; the Python stand-ins are tools/manifest_check.py and tools/extract_*.py.
 #
 # Paths in `upstream`, `secondary` and `paths` are relative to `upstream/KataGo` and start
 # with `cpp/`. Rust paths are relative to the repo root.
@@ -30,7 +31,7 @@
 #              behind their params) | "fixture" (consumed as test data, never ported)
 #   reason     one line
 #
-# INVARIANT (checked by `python3 -I tools/manifest_check.py`, run in CI):
+# INVARIANT (checked by `python3 -I tools/manifest_check.py`, run by `just manifest-check`; there is no CI):
 #   every file under upstream/KataGo/cpp/ (recursively, every extension, nothing
 #   excluded) is OWNED exactly once: either it is listed in exactly one [[module]]
 #   `upstream` list, or it matches exactly one [[ignored]] entry, never both.
@@ -180,7 +181,7 @@ upstream = ["cpp/neuralnet/nneval.cpp", "cpp/neuralnet/nneval.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
 status = "done"
 phase = "M2"
-notes = "Whole file except getTrunkSpatialConvDepth (needs layer descs; no callers outside nneval) and getLogger (logger dropped). NNResultBuf (Cell/RefCell fields, client_waiting_for_result: WakerList), NNServerBuf, NNCacheTable (+ Entry at module level; mutex pool removed, its size argument still validated), NNEvaluator: ctor takes trailing backend: Rc<dyn NeuralNet>, spawner: Rc<dyn Spawner>, model_bytes (PORT NOTE, D6); fields written after construction are Cell/RefCell (incl. numThreads, gpuIdxByServerThread, numServerThreadsEverSpawned: not in OWNERSHIP.tsv). Async (§11): evaluate / evaluate_sgf_meta (overload names), average_multiple_symmetries (returns Rc<NNOutput>), wait_for_next_nn_eval_if_any, spawn_server_threads (self: &Rc<Self>; D8), serve (spawned task, AsyncQueue<Rc<NNResultBuf>> batching). kill_server_threads does not join (the serve tasks end on their next poll): the join moves to the next spawn_server_threads (D8), which awaits num_server_threads_alive == 0 on the new server_threads_exited WakerList before isKilled = false, the post-join testAsserts and unsetReadOnly (kill does them itself when no task is alive); serve tasks hold an Rc so the host must call kill_server_threads before the evaluator can drop. Post-processing mutates buf.result in place (Rc::get_mut through the RefCell), so an error leaves the partial result there as upstream. Debug assert against queueing a buf twice (a cancelled evaluate future, PORTING §11). Post-processing exact: expf/exp/ln/tanhf via port::math, cpp_min/cpp_max. Human-SL nets (M8): nnHash ^= SGFMetadata::getHash, fillMetadataRow into rowMetaBuf (sgfmetadata.rs). TODO(port): fillRowV3..V6 (inputsVersion != 7 -> Err), modelVersion 3's atan(float) needs port::math::atanf (uses atan of the widened float). Parity: tests/nneval_skipnn.rs vs oracle/nneval_skipnn.cpp (upstream NNEvaluator with debugSkipNeuralNet: 583 evals over 5 evaluator configs incl. cache hits, hadResultWithoutOwnerMap, averageMultipleSymmetries, dagger ban, passing hacks, temperatures, and kill->respawn on one evaluator (new server Rand): bit-exact natively and on wasm32) + a fake-backend batching test; tests/nneval_async.rs (fake backend): kill->respawn (no zombie server, new Rand stream, waits for the in-flight batch), waitForNextNNEvalIfAny and its kill wakeup, serve symmetry choice (doRandomize/defaultSymmetry/requested), averageMultipleSymmetries' choice, post-processing error, cancelled-evaluate debug assert, randomized many-virtual-thread stress, executor queue/WakerList tests; all pool runs under a stall watchdog (tests/common run_or_stall_panic). Real nets end to end in katago-nn-burn tests/nn_parity.rs (incl. the human-SL net b18c384nbt-humanv0 with SGFMetadata profiles: nnHash exact), incl. evals_rand.txt (symmetry choice, respawn, averageMultipleSymmetries, the 95% pass cap binding) vs the upstream NNEvaluator."
+notes = "Whole file except getTrunkSpatialConvDepth (needs layer descs; no callers outside nneval) and getLogger (logger dropped). NNResultBuf (Cell/RefCell fields, client_waiting_for_result: WakerList), NNServerBuf, NNCacheTable (+ Entry at module level; mutex pool removed, its size argument still validated), NNEvaluator: ctor takes trailing backend: Rc<dyn NeuralNet>, spawner: Rc<dyn Spawner>, model_bytes (PORT NOTE, D6); fields written after construction are Cell/RefCell (incl. numThreads, gpuIdxByServerThread, numServerThreadsEverSpawned: not in OWNERSHIP.tsv). Async (§11): evaluate / evaluate_sgf_meta (overload names), average_multiple_symmetries (returns Rc<NNOutput>), wait_for_next_nn_eval_if_any, spawn_server_threads (self: &Rc<Self>; D8), serve (spawned task, AsyncQueue<Rc<NNResultBuf>> batching). kill_server_threads does not join (the serve tasks end on their next poll): the join moves to the next spawn_server_threads (D8), which awaits num_server_threads_alive == 0 on the new server_threads_exited WakerList before isKilled = false, the post-join testAsserts and unsetReadOnly (kill does them itself when no task is alive); serve tasks hold an Rc so the host must call kill_server_threads before the evaluator can drop. Post-processing mutates buf.result in place (Rc::get_mut through the RefCell), so an error leaves the partial result there as upstream. Debug assert against queueing a buf twice (a cancelled evaluate future, PORTING §11). Post-processing exact: expf/exp/ln/tanhf/atanf via port::math, cpp_min/cpp_max. Human-SL nets (M8): nnHash ^= SGFMetadata::getHash, fillMetadataRow into rowMetaBuf (sgfmetadata.rs). TODO(port): fillRowV3..V6 (inputsVersion != 7 -> Err). modelVersion 3's atan(float) is port::math::atanf (correctly rounded, = glibc 2.44). Parity: tests/nneval_skipnn.rs vs oracle/nneval_skipnn.cpp (upstream NNEvaluator with debugSkipNeuralNet: 583 evals over 5 evaluator configs incl. cache hits, hadResultWithoutOwnerMap, averageMultipleSymmetries, dagger ban, passing hacks, temperatures, and kill->respawn on one evaluator (new server Rand): bit-exact natively and on wasm32) + a fake-backend batching test; tests/nneval_async.rs (fake backend): kill->respawn (no zombie server, new Rand stream, waits for the in-flight batch), waitForNextNNEvalIfAny and its kill wakeup, serve symmetry choice (doRandomize/defaultSymmetry/requested), averageMultipleSymmetries' choice, post-processing error, cancelled-evaluate debug assert, randomized many-virtual-thread stress, executor queue/WakerList tests; all pool runs under a stall watchdog (tests/common run_or_stall_panic). Real nets end to end in katago-nn-burn tests/nn_parity.rs (incl. the human-SL net b18c384nbt-humanv0 with SGFMetadata profiles: nnHash exact), incl. evals_rand.txt (symmetry choice, respawn, averageMultipleSymmetries, the 95% pass cap binding) vs the upstream NNEvaluator."
 
 [[module]]
 rust = "crates/katago-nn-burn/src/backend.rs"
@@ -344,7 +345,7 @@ notes = "PrintTreeOptions (all of searchprint.h; searchprint.cpp only includes i
 rust = "crates/katago-core/src/search/subtreevaluebiastable.rs"
 upstream = ["cpp/search/subtreevaluebiastable.cpp", "cpp/search/subtreevaluebiastable.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "compiles"
+status = "done"
 phase = "M3"
 notes = "mutex pool and spin lock removed (PORT NOTE), get takes &self (RefCell), file statics in OnceLock, RNG order unchanged. Oracle tests/subtreevaluebiastable_oracle.rs."
 
@@ -352,7 +353,7 @@ notes = "mutex pool and spin lock removed (PORT NOTE), get takes &self (RefCell)
 rust = "crates/katago-core/src/search/localpattern.rs"
 upstream = ["cpp/search/localpattern.cpp", "cpp/search/localpattern.h"]
 synced = "ba938676d7f42d70950b3a535af2466fb642008c"
-status = "compiles"
+status = "done"
 phase = "M3"
 notes = "all of LocalPatternHasher. Oracle tests/localpattern_oracle.rs."
 
@@ -403,6 +404,14 @@ synced = "ba938676d7f42d70950b3a535af2466fb642008c"
 status = "partial"
 phase = "M3"
 notes = "Ported: getHackedLCBForWinrate (searchresults.cpp), printGenmoveLog (analysis.cpp; Result: alsoBranch throws), getNoiselessParams (static), computeOwnership, computeAnticipatedStatusesSimple, computeAnticipatedStatusesWithOwnership, maybeCleanupBeforePass (&AsyncBot), maybeFriendlyPass (&mut Search), getFullSymmetryNNOutput; those that run a search or an NN eval are async and return Result. Parity: katago-nn-burn tests/testsearchv8.rs ('Friendly pass', 'Fill dame before pass', 'Conservative pass') and testsearchv9.rs ('Single symmetry and full symmetry raw nets'); printGenmoveLog only feeds the log (logSearchInfo). Everything else (game init, komi helpers, benchmark, getWhiteScoreValues, ...) is not ported; chooseExtraBlackAndKomi, setKomiWithNoise (+ its roundKomiWithLinearProb) and roundAndClipKomi have faithful test-local copies in katago-core tests/testsearchnonn.rs (they take play.h's ExtraBlackAndKomi; play.cpp is [[ignored]])."
+
+[[module]]
+rust = "crates/katago-core/src/command/commandline.rs"
+upstream = ["cpp/command/commandline.cpp", "cpp/command/commandline.h"]
+synced = "ba938676d7f42d70950b3a535af2466fb642008c"
+status = "partial"
+phase = "M3"
+notes = "Only KataGoCommandLine::maybeApplyOverrideConfigArg (maybe_apply_override_config_arg, over the -override-config values), shared by both hosts. The rest is the hosts': katago-cli's args (parse_args, the TCLAP emulation), get_model_file (getModelFile's default lookup: default_model.bin.gz / .txt.gz in the executable's directory then $HOME/.katago, else its StringError) and load_config (getConfig); katago-wasm's config::build_config; logOverrides is in analysis.rs. Exceptions escaping MainCmds::analysis end like upstream's Linux main (no catch): std::terminate's message and abort() (katago-cli terminate_uncaught). Tested through the hosts: katago-cli tests/analysis_protocol_corpus.rs (override-config cases) and katago-wasm's config tests."
 
 [[module]]
 rust = "crates/katago-core/src/command/analysis.rs"
@@ -610,10 +619,6 @@ kind = "fixture"
 paths = ["cpp/command/runtests.cpp"]
 reason = "Unit-test driver; its test cases are consumed as fixtures, not ported."
 
-[[ignored]]
-kind = "replaced"
-paths = ["cpp/command/commandline.cpp", "cpp/command/commandline.h"]
-reason = "KataGoCommandLine -> katago-cli (lib.rs): parse_args (TCLAP emulation), get_model_file (getModelFile's default lookup: default_model.bin.gz / .txt.gz in the executable's directory then $HOME/.katago, else its StringError), load_config (getConfig + maybeApplyOverrideConfigArg); logOverrides is in analysis.rs. Exceptions escaping MainCmds::analysis end like upstream's Linux main (no catch): std::terminate's message and abort() (terminate_uncaught)."
 
 [[ignored]]
 kind = "not-needed"
@@ -679,7 +684,7 @@ paths = [
 ]
 reason = "Configs for gtp/match/contribute/book/training."
 
-# --- tests: the oracle. Consumed as fixtures (xtask extract-tests, search parity), never ported.
+# --- tests: the oracle. Consumed as fixtures (planned xtask extract-tests, today tools/extract_*.py; search parity), never ported.
 
 [[ignored]]
 kind = "fixture"
@@ -689,7 +694,7 @@ paths = [
   "cpp/tests/testsymmetries.cpp", "cpp/tests/testcommon.cpp", "cpp/tests/tests.h",
   "cpp/tests/testconfig.cpp", "cpp/tests/testtime.cpp",
 ]
-reason = "Unit tests whose R\"%%(...)%%\" expected blocks / asserted values become M1-M3 fixtures (xtask extract-tests); testconfig and testtime cover config_parser.rs and timecontrols.rs."
+reason = "Unit tests whose R\"%%(...)%%\" expected blocks / asserted values become M1-M3 fixtures (tools/extract_raw_blocks.py; planned xtask extract-tests); testconfig and testtime cover config_parser.rs and timecontrols.rs."
 
 [[ignored]]
 kind = "fixture"

@@ -137,14 +137,7 @@ async fn pass<A: Analyzer>(
     if turns.is_empty() {
         return Ok(Vec::new());
     }
-    let query = AnalysisQuery::new(
-        game,
-        cfg,
-        turns,
-        visits,
-        pass.priority(),
-        human_profile,
-    );
+    let query = AnalysisQuery::new(game, cfg, turns, visits, pass.priority(), human_profile);
     engine.analyze(pass, query).await
 }
 

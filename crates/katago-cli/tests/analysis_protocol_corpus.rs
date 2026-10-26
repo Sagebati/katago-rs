@@ -24,9 +24,9 @@ use std::io::Write as _;
 use std::os::unix::process::ExitStatusExt;
 use std::process::Command;
 use std::process::Stdio;
+use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
 
 use common::*;
 use serde_json::Value;
@@ -56,7 +56,10 @@ const KEEP: &[&str] = &[
 /// Cases where katago-rs knowingly differs from the reference binary, with the reason. The test fails if
 /// one of them starts matching (remove it then).
 const KNOWN_DIVERGENCES: &[(&str, &str)] = &[
-  ("cfg_18", "nnMaxBatchSize=0: upstream's Eigen backend ignores nnMaxBatchSize; burn follows the non-Eigen branch (range 1..65536)"),
+  (
+    "cfg_18",
+    "nnMaxBatchSize=0: upstream's Eigen backend ignores nnMaxBatchSize; burn follows the non-Eigen branch (range 1..65536)",
+  ),
   // ovr_24 (investigated 2026-10, benign): on the empty 9x9 board the 8-symmetry average makes the four
   // center-adjacent points symmetric, so their priors tie up to float noise. Reference (Eigen): E4 = F5 =
   // 0.102564141 exactly, D5 = E6 = 0.102564074; selectBestChildToDescend's "best new child" loop takes the first
@@ -100,8 +103,20 @@ fn keep(line: &str) -> bool {
 
 fn run_case(case: &Value) -> Outcome {
   let extra = case["extra"].as_str().unwrap_or("");
-  let ov = if extra.is_empty() { COMMON_OVERRIDES.to_string() } else { format!("{COMMON_OVERRIDES}, {extra}") };
-  let mut argv: Vec<String> = vec!["analysis".into(), "-config".into(), CFG.into(), "-model".into(), M6.into(), "-override-config".into(), ov];
+  let ov = if extra.is_empty() {
+    COMMON_OVERRIDES.to_string()
+  } else {
+    format!("{COMMON_OVERRIDES}, {extra}")
+  };
+  let mut argv: Vec<String> = vec![
+    "analysis".into(),
+    "-config".into(),
+    CFG.into(),
+    "-model".into(),
+    M6.into(),
+    "-override-config".into(),
+    ov,
+  ];
   if let Some(a) = case.get("args").and_then(Value::as_array) {
     argv.extend(a.iter().map(|x| x.as_str().expect("arg").to_string()));
   }
@@ -167,10 +182,17 @@ fn compare_variant(case: &Value, var: &Value, got: &Outcome) -> Result<(), Strin
   let gold_out = strs(&var["stdout"]);
   let gold_err = strs(&var["stderr"]);
   let lines = case["lines"].as_array().unwrap();
-  let rdse = lines.iter().any(|l| l.as_str().is_some_and(|s| s.contains("reportDuringSearchEvery") || s.contains("firstReportDuringSearchAfter")));
+  let rdse = lines.iter().any(|l| {
+    l.as_str()
+      .is_some_and(|s| s.contains("reportDuringSearchEvery") || s.contains("firstReportDuringSearchAfter"))
+  });
   let split = |out: &[String]| -> (Vec<String>, Vec<String>) {
-    let json: Vec<String> =
-      out.iter().filter(|l| l.starts_with('{')).filter(|l| !(rdse && l.contains("\"isDuringSearch\":true"))).map(|l| normalize(l)).collect();
+    let json: Vec<String> = out
+      .iter()
+      .filter(|l| l.starts_with('{'))
+      .filter(|l| !(rdse && l.contains("\"isDuringSearch\":true")))
+      .map(|l| normalize(l))
+      .collect();
     let log: Vec<String> = out.iter().filter(|l| !l.starts_with('{') && keep(l)).cloned().collect();
     (json, log)
   };
@@ -221,22 +243,24 @@ fn run_corpus(name: &str) {
   let t0 = std::time::Instant::now();
   std::thread::scope(|s| {
     for _ in 0..jobs {
-      s.spawn(|| loop {
-        let i = next.fetch_add(1, Ordering::SeqCst);
-        if i >= cases.len() {
-          break;
-        }
-        let case = &cases[i];
-        let got = run_case(case);
-        let variants = case["variants"].as_array().expect("variants");
-        let mut r: Result<(), String> = Err("no variant".to_string());
-        for v in variants {
-          r = compare_variant(case, v, &got);
-          if r.is_ok() {
+      s.spawn(|| {
+        loop {
+          let i = next.fetch_add(1, Ordering::SeqCst);
+          if i >= cases.len() {
             break;
           }
+          let case = &cases[i];
+          let got = run_case(case);
+          let variants = case["variants"].as_array().expect("variants");
+          let mut r: Result<(), String> = Err("no variant".to_string());
+          for v in variants {
+            r = compare_variant(case, v, &got);
+            if r.is_ok() {
+              break;
+            }
+          }
+          results.lock().unwrap().insert(i, r);
         }
-        results.lock().unwrap().insert(i, r);
       });
     }
   });

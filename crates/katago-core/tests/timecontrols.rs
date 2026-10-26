@@ -15,6 +15,7 @@
 
 #![allow(clippy::bool_comparison, clippy::needless_range_loop, clippy::vec_init_then_push)]
 
+#[macro_use]
 mod common;
 
 use std::fmt::Write as _;
@@ -29,15 +30,6 @@ use katago_core::game::boardhistory::*;
 use katago_core::game::rules::Rules;
 use katago_core::port::fmt::cpp_ostream_f64;
 use katago_core::search::timecontrols::TimeControls;
-
-macro_rules! wasm_test {
-  ($(#[$m:meta])* fn $name:ident() $body:block) => {
-    $(#[$m])*
-    #[cfg_attr(not(target_arch = "wasm32"), test)]
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
-    fn $name() $body
-  };
-}
 
 fn bits(x: f64) -> String {
   if x.is_nan() {

@@ -5,78 +5,82 @@
 
 use burn_onnx::ext::proc_macro2::{Ident, Span, TokenStream};
 use burn_onnx::ext::quote::quote;
-use burn_onnx::ext::{
-    CodegenContext, Field, Imports, Node, NodeType, OpOverride, PackTensor, ProcessError,
-    arg_to_ident, create_deferred_tensor,
-};
+use burn_onnx::ext::{CodegenContext, Field, Imports, Node, NodeType, OpOverride, PackTensor, ProcessError, arg_to_ident, create_deferred_tensor};
 use burn_onnx::{LoadStrategy, ModelGen};
 
 const NETS: &[(&str, &str)] = &[
-    ("NET_B6C96", "g170-b6c96"),
-    ("NET_B10C128", "g170e-b10c128"),
-    ("NET_B18C384NBT", "kata1-b18c384nbt"),
-    // Human-SL net (model v15, metaEncoderVersion 1: a third input `meta_input`, SGFMetadata rows).
-    ("NET_B18C384NBT_HUMANV0", "b18c384nbt-humanv0"),
+  ("NET_B6C96", "g170-b6c96"),
+  ("NET_B10C128", "g170e-b10c128"),
+  ("NET_B18C384NBT", "kata1-b18c384nbt"),
+  // Human-SL net (model v15, metaEncoderVersion 1: a third input `meta_input`, SGFMetadata rows).
+  ("NET_B18C384NBT_HUMANV0", "b18c384nbt-humanv0"),
 ];
 
 fn main() {
-    let models = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/onnx");
-    for (feature, net) in NETS {
-        if std::env::var_os(format!("CARGO_FEATURE_{feature}")).is_none() {
-            continue;
-        }
-        let onnx = format!("{models}/{net}.onnx");
-        println!("cargo:rerun-if-changed={onnx}");
-        ModelGen::new()
-            .input(&onnx)
-            .out_dir("model/")
-            // Weights are fetched at runtime (browser) or read from disk, never embedded.
-            .load_strategy(LoadStrategy::Bytes)
-            .register_op_override(SameConv)
-            .register_op_override(SpatialReduce(NodeType::ReduceSum, "spatial_sum"))
-            .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
-            .run_from_script();
-        fuse_bn_act(net);
-        write_model_desc(&onnx, net);
+  let models = concat!(env!("CARGO_MANIFEST_DIR"), "/../../models/onnx");
+  for (feature, net) in NETS {
+    if std::env::var_os(format!("CARGO_FEATURE_{feature}")).is_none() {
+      continue;
     }
+    let onnx = format!("{models}/{net}.onnx");
+    println!("cargo:rerun-if-changed={onnx}");
+    ModelGen::new()
+      .input(&onnx)
+      .out_dir("model/")
+      // Weights are fetched at runtime (browser) or read from disk, never embedded.
+      .load_strategy(LoadStrategy::Bytes)
+      .register_op_override(SameConv)
+      .register_op_override(SpatialReduce(NodeType::ReduceSum, "spatial_sum"))
+      .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
+      .run_from_script();
+    fuse_bn_act(net);
+    write_model_desc(&onnx, net);
+  }
 }
 
 /// Reads `ModelProto.metadata_props` (field 14, repeated `StringStringEntryProto {1: key, 2: value}`)
 /// with a minimal protobuf walk and writes `$OUT_DIR/model/<net>.desc.rs`, a `model_desc()` fn.
 fn write_model_desc(onnx: &str, net: &str) {
-    let bytes = std::fs::read(onnx).unwrap_or_else(|e| panic!("{onnx}: {e}"));
-    let mut meta: Vec<(String, String)> = Vec::new();
-    for (field, value) in proto_fields(&bytes) {
-        if field == 14 {
-            let mut key = String::new();
-            let mut val = String::new();
-            for (f, v) in proto_fields(value) {
-                match f {
-                    1 => key = String::from_utf8(v.to_vec()).unwrap(),
-                    2 => val = String::from_utf8(v.to_vec()).unwrap(),
-                    _ => {}
-                }
-            }
-            meta.push((key, val));
+  let bytes = std::fs::read(onnx).unwrap_or_else(|e| panic!("{onnx}: {e}"));
+  let mut meta: Vec<(String, String)> = Vec::new();
+  for (field, value) in proto_fields(&bytes) {
+    if field == 14 {
+      let mut key = String::new();
+      let mut val = String::new();
+      for (f, v) in proto_fields(value) {
+        match f {
+          1 => key = String::from_utf8(v.to_vec()).unwrap(),
+          2 => val = String::from_utf8(v.to_vec()).unwrap(),
+          _ => {}
         }
+      }
+      meta.push((key, val));
     }
-    let get = |k: &str| -> &str {
-        meta.iter().find(|(key, _)| key == k).map(|(_, v)| v.as_str()).unwrap_or_else(|| panic!("{onnx}: metadata_props lacks {k} (re-run `just convert`)"))
-    };
-    let int = |k: &str| -> i32 { get(k).parse().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")) };
-    let f64bits = |k: &str| -> u64 { get(k).parse::<f64>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
-    let f32bits = |k: &str| -> u32 { get(k).parse::<f32>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
-    let num_input_meta_channels = int("numInputMetaChannels");
-    // Exports made before bin2onnx wrote metaEncoderVersion are all metaEncoderVersion 0.
-    let meta_encoder_version: i32 = match meta.iter().find(|(key, _)| key == "metaEncoderVersion") {
-        Some((_, v)) => v.parse().unwrap_or_else(|e| panic!("{onnx}: metaEncoderVersion: {e}")),
-        None => {
-            assert_eq!(num_input_meta_channels, 0, "{onnx}: numInputMetaChannels > 0 without metaEncoderVersion (re-run `just convert`)");
-            0
-        }
-    };
-    let code = format!(
-        "/// The network's `ModelDesc`, from the ONNX `metadata_props` written by tools/bin2onnx (desc.cpp-faithful parser).\n\
+  }
+  let get = |k: &str| -> &str {
+    meta
+      .iter()
+      .find(|(key, _)| key == k)
+      .map(|(_, v)| v.as_str())
+      .unwrap_or_else(|| panic!("{onnx}: metadata_props lacks {k} (re-run `just convert`)"))
+  };
+  let int = |k: &str| -> i32 { get(k).parse().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")) };
+  let f64bits = |k: &str| -> u64 { get(k).parse::<f64>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
+  let f32bits = |k: &str| -> u32 { get(k).parse::<f32>().unwrap_or_else(|e| panic!("{onnx}: {k}: {e}")).to_bits() };
+  let num_input_meta_channels = int("numInputMetaChannels");
+  // Exports made before bin2onnx wrote metaEncoderVersion are all metaEncoderVersion 0.
+  let meta_encoder_version: i32 = match meta.iter().find(|(key, _)| key == "metaEncoderVersion") {
+    Some((_, v)) => v.parse().unwrap_or_else(|e| panic!("{onnx}: metaEncoderVersion: {e}")),
+    None => {
+      assert_eq!(
+        num_input_meta_channels, 0,
+        "{onnx}: numInputMetaChannels > 0 without metaEncoderVersion (re-run `just convert`)"
+      );
+      0
+    }
+  };
+  let code = format!(
+    "/// The network's `ModelDesc`, from the ONNX `metadata_props` written by tools/bin2onnx (desc.cpp-faithful parser).\n\
          pub fn model_desc() -> katago_core::neuralnet::desc::ModelDesc {{\n\
          \x20   katago_core::neuralnet::desc::ModelDesc {{\n\
          \x20       name: {name:?}.to_string(),\n\
@@ -106,132 +110,131 @@ fn write_model_desc(onnx: &str, net: &str) {
          pub const POS_LEN: i32 = {pl};\n\
          /// Width of the `meta_input` graph input (0: the graph has none).\n\
          pub const NUM_INPUT_META_CHANNELS: i32 = {nimc};\n",
-        name = get("name"),
-        mv = int("modelVersion"),
-        nic = int("numInputChannels"),
-        nigc = int("numInputGlobalChannels"),
-        nimc = num_input_meta_channels,
-        mev = meta_encoder_version,
-        npc = int("numPolicyChannels"),
-        nvc = int("numValueChannels"),
-        nsvc = int("numScoreValueChannels"),
-        noc = int("numOwnershipChannels"),
-        td = f64bits("tdScoreMultiplier"),
-        sm = f64bits("scoreMeanMultiplier"),
-        ss = f64bits("scoreStdevMultiplier"),
-        lm = f64bits("leadMultiplier"),
-        vt = f64bits("varianceTimeMultiplier"),
-        sv = f64bits("shorttermValueErrorMultiplier"),
-        se = f64bits("shorttermScoreErrorMultiplier"),
-        os = f32bits("outputScaleMultiplier"),
-        pl = int("posLen"),
-    );
-    let out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model");
-    std::fs::create_dir_all(&out).unwrap();
-    std::fs::write(out.join(format!("{net}.desc.rs")), code).unwrap();
+    name = get("name"),
+    mv = int("modelVersion"),
+    nic = int("numInputChannels"),
+    nigc = int("numInputGlobalChannels"),
+    nimc = num_input_meta_channels,
+    mev = meta_encoder_version,
+    npc = int("numPolicyChannels"),
+    nvc = int("numValueChannels"),
+    nsvc = int("numScoreValueChannels"),
+    noc = int("numOwnershipChannels"),
+    td = f64bits("tdScoreMultiplier"),
+    sm = f64bits("scoreMeanMultiplier"),
+    ss = f64bits("scoreStdevMultiplier"),
+    lm = f64bits("leadMultiplier"),
+    vt = f64bits("varianceTimeMultiplier"),
+    sv = f64bits("shorttermValueErrorMultiplier"),
+    se = f64bits("shorttermScoreErrorMultiplier"),
+    os = f32bits("outputScaleMultiplier"),
+    pl = int("posLen"),
+  );
+  let out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model");
+  std::fs::create_dir_all(&out).unwrap();
+  std::fs::write(out.join(format!("{net}.desc.rs")), code).unwrap();
 }
 
 /// Top-level fields of a protobuf message: (field number, payload) for length-delimited fields;
 /// varint/fixed fields are skipped.
 fn proto_fields(mut b: &[u8]) -> Vec<(u64, &[u8])> {
-    fn varint(b: &mut &[u8]) -> u64 {
-        let mut x = 0u64;
-        let mut shift = 0;
-        loop {
-            let byte = b[0];
-            *b = &b[1..];
-            x |= ((byte & 0x7f) as u64) << shift;
-            if byte & 0x80 == 0 {
-                return x;
-            }
-            shift += 7;
-        }
+  fn varint(b: &mut &[u8]) -> u64 {
+    let mut x = 0u64;
+    let mut shift = 0;
+    loop {
+      let byte = b[0];
+      *b = &b[1..];
+      x |= ((byte & 0x7f) as u64) << shift;
+      if byte & 0x80 == 0 {
+        return x;
+      }
+      shift += 7;
     }
-    let mut out = Vec::new();
-    while !b.is_empty() {
-        let tag = varint(&mut b);
-        match tag & 7 {
-            0 => {
-                varint(&mut b);
-            }
-            1 => b = &b[8..],
-            2 => {
-                let len = varint(&mut b) as usize;
-                out.push((tag >> 3, &b[..len]));
-                b = &b[len..];
-            }
-            5 => b = &b[4..],
-            w => panic!("unsupported protobuf wire type {w}"),
-        }
+  }
+  let mut out = Vec::new();
+  while !b.is_empty() {
+    let tag = varint(&mut b);
+    match tag & 7 {
+      0 => {
+        varint(&mut b);
+      }
+      1 => b = &b[8..],
+      2 => {
+        let len = varint(&mut b) as usize;
+        out.push((tag >> 3, &b[..len]));
+        b = &b[len..];
+      }
+      5 => b = &b[4..],
+      w => panic!("unsupported protobuf wire type {w}"),
     }
-    out
+  }
+  out
 }
 
-/// Routes every Conv through `crate::conv::conv2d_same`, which lowers spatial
-/// kernels to im2col + matmul: burn's direct conv kernel is ~7x slower than
-/// matmul on GPUs without matrix cores. Weights keep the built-in `Conv2d`
-/// field and `<name>.weight` path, so the generated `.bpk` is unchanged.
+/// Routes every Conv through `crate::conv::conv2d_same`, which on GPUs runs 3x3 kernels as Winograd convolutions
+/// and 1x1 kernels as an NCHW GEMM (wino/), and any other size as im2col + matmul; burn's own conv on the CPU.
+/// Weights keep the built-in `Conv2d` field and `<name>.weight` path, so the generated `.bpk` is unchanged.
 struct SameConv;
 
 /// The (kernel, padding) of a stride-1, undilated, ungrouped, bias-free conv
 /// with "same" padding: the only kind KataGo nets contain.
 fn same_conv(node: &Node) -> Result<([usize; 2], [usize; 2]), ProcessError> {
-    let Node::Conv2d(conv) = node else {
-        return Err(ProcessError::Custom("expected a Conv2d node".into()));
-    };
-    let c = &conv.config;
-    let (top, left, bottom, right) = c.padding.as_tuple();
-    let [kh, kw] = c.kernel_size;
-    let same = top == kh / 2 && bottom == kh / 2 && left == kw / 2 && right == kw / 2;
-    let biased = conv.inputs.get(2).is_some_and(|b| !b.is_optional());
-    if c.stride != [1, 1] || c.dilation != [1, 1] || c.groups != 1 || !same || biased || !conv.inputs[1].is_static() {
-        return Err(ProcessError::Custom(format!("{}: unsupported conv {c:?}", conv.name)));
-    }
-    Ok((c.kernel_size, [kh / 2, kw / 2]))
+  let Node::Conv2d(conv) = node else {
+    return Err(ProcessError::Custom("expected a Conv2d node".into()));
+  };
+  let c = &conv.config;
+  let (top, left, bottom, right) = c.padding.as_tuple();
+  let [kh, kw] = c.kernel_size;
+  let same = top == kh / 2 && bottom == kh / 2 && left == kw / 2 && right == kw / 2;
+  let biased = conv.inputs.get(2).is_some_and(|b| !b.is_optional());
+  if c.stride != [1, 1] || c.dilation != [1, 1] || c.groups != 1 || !same || biased || !conv.inputs[1].is_static() {
+    return Err(ProcessError::Custom(format!("{}: unsupported conv {c:?}", conv.name)));
+  }
+  Ok((c.kernel_size, [kh / 2, kw / 2]))
 }
 
 impl OpOverride for SameConv {
-    fn target(&self) -> NodeType {
-        NodeType::Conv2d
-    }
+  fn target(&self) -> NodeType {
+    NodeType::Conv2d
+  }
 
-    fn field(&self, node: &Node) -> Result<Option<Field>, ProcessError> {
-        let ([kh, kw], [ph, pw]) = same_conv(node)?;
-        let shape = node.inputs()[1].ty.static_shape_known().expect("static conv weight");
-        let (oc, ic) = (shape[0], shape[1]);
-        let name = Ident::new(node.name(), Span::call_site());
-        Ok(Some(Field::new(
-            node.name().to_string(),
-            quote! { Conv2d },
-            quote! {
-                let #name = Conv2dConfig::new([#ic, #oc], [#kh, #kw])
-                    .with_padding(PaddingConfig2d::Explicit(#ph, #pw, #ph, #pw))
-                    .with_bias(false)
-                    .init(device);
-            },
-        )))
-    }
+  fn field(&self, node: &Node) -> Result<Option<Field>, ProcessError> {
+    let ([kh, kw], [ph, pw]) = same_conv(node)?;
+    let shape = node.inputs()[1].ty.static_shape_known().expect("static conv weight");
+    let (oc, ic) = (shape[0], shape[1]);
+    let name = Ident::new(node.name(), Span::call_site());
+    Ok(Some(Field::new(
+      node.name(),
+      quote! { Conv2d },
+      quote! {
+          let #name = Conv2dConfig::new([#ic, #oc], [#kh, #kw])
+              .with_padding(PaddingConfig2d::Explicit(#ph, #pw, #ph, #pw))
+              .with_bias(false)
+              .init(device);
+      },
+    )))
+  }
 
-    fn collect_tensors(&self, node: &Node, field_name: &str) -> Result<Vec<PackTensor>, ProcessError> {
-        let weight = create_deferred_tensor(&node.inputs()[1], &format!("{field_name}.weight"));
-        Ok(weight.into_iter().collect())
-    }
+  fn collect_tensors(&self, node: &Node, field_name: &str) -> Result<Vec<PackTensor>, ProcessError> {
+    let weight = create_deferred_tensor(&node.inputs()[1], &format!("{field_name}.weight"));
+    Ok(weight.into_iter().collect())
+  }
 
-    fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
-        same_conv(node)?;
-        let input = ctx.arg(&node.inputs()[0]);
-        let output = arg_to_ident(&node.outputs()[0]);
-        let field = Ident::new(node.name(), Span::call_site());
-        Ok(quote! {
-            let #output = crate::conv::conv2d_same(&self.#field, #input);
-        })
-    }
+  fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
+    same_conv(node)?;
+    let input = ctx.arg(&node.inputs()[0]);
+    let output = arg_to_ident(&node.outputs()[0]);
+    let field = Ident::new(node.name(), Span::call_site());
+    Ok(quote! {
+        let #output = crate::conv::conv2d_same(&self.#field, #input);
+    })
+  }
 
-    fn register_imports(&self, imports: &mut Imports<'_>) {
-        imports.register("burn::nn::PaddingConfig2d");
-        imports.register("burn::nn::conv::Conv2d");
-        imports.register("burn::nn::conv::Conv2dConfig");
-    }
+  fn register_imports(&self, imports: &mut Imports<'_>) {
+    imports.register("burn::nn::PaddingConfig2d");
+    imports.register("burn::nn::conv::Conv2d");
+    imports.register("burn::nn::conv::Conv2dConfig");
+  }
 }
 
 /// Routes ReduceSum / ReduceMax through `crate::conv::spatial_sum` / `spatial_max`: KataGo nets only reduce the
@@ -240,36 +243,38 @@ impl OpOverride for SameConv {
 struct SpatialReduce(NodeType, &'static str);
 
 impl OpOverride for SpatialReduce {
-    fn target(&self) -> NodeType {
-        self.0.clone()
-    }
+  fn target(&self) -> NodeType {
+    self.0.clone()
+  }
 
-    fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
-        let (axes, keepdims) = match node {
-            Node::ReduceSum(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
-            Node::ReduceMax(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
-            _ => return Err(ProcessError::Custom("expected a ReduceSum or ReduceMax node".into())),
-        };
-        let rank = match &node.inputs()[0].ty {
-            burn_onnx::ext::ArgType::Tensor(t) => t.rank,
-            other => return Err(ProcessError::Custom(format!("{}: reduce of {other:?}", node.name()))),
-        };
-        if axes != "Static([2])" || keepdims || rank != 3 {
-            return Err(ProcessError::Custom(format!(
-                "{}: unsupported reduce (axes {axes}, keepdims {keepdims}, rank {rank})",
-                node.name()
-            )));
-        }
-        let input = ctx.arg(&node.inputs()[0]);
-        let output = arg_to_ident(&node.outputs()[0]);
-        let f = Ident::new(self.1, Span::call_site());
-        Ok(quote! {
-            let #output = crate::conv::#f(#input);
-        })
+  fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
+    let (axes, keepdims) = match node {
+      Node::ReduceSum(n) => (&n.config.axes, n.config.keepdims),
+      Node::ReduceMax(n) => (&n.config.axes, n.config.keepdims),
+      _ => return Err(ProcessError::Custom("expected a ReduceSum or ReduceMax node".into())),
+    };
+    let rank = match &node.inputs()[0].ty {
+      burn_onnx::ext::ArgType::Tensor(t) => t.rank,
+      other => return Err(ProcessError::Custom(format!("{}: reduce of {other:?}", node.name()))),
+    };
+    let last_axis = matches!(axes, onnx_ir::node::reduce::ReduceAxes::Static(dims) if dims[..] == [2]);
+    if !last_axis || keepdims || rank != 3 {
+      return Err(ProcessError::Custom(format!(
+        "{}: unsupported reduce (axes {axes:?}, keepdims {keepdims}, rank {rank})",
+        node.name()
+      )));
     }
+    let input = ctx.arg(&node.inputs()[0]);
+    let output = arg_to_ident(&node.outputs()[0]);
+    let f = Ident::new(self.1, Span::call_site());
+    Ok(quote! {
+        let #output = crate::conv::#f(#input);
+    })
+  }
 }
 
-/// Rewrites, in the generated `$OUT_DIR/model/<net>.rs`, every batch norm + mish + mask chain that only feeds convs
+/// Rewrites, in the generated `$OUT_DIR/model/<net>.rs`, every batch norm + activation + mask chain that only feeds
+/// convs. The mish chain (b18c384nbt and the human-SL net)
 ///
 /// ```text
 /// let c1 = self.S.val(); let m = X[.clone()].mul(c1); let c2 = self.B.val(); let a = m.add(c2);
@@ -277,62 +282,243 @@ impl OpOverride for SpatialReduce {
 /// ... crate::conv::conv2d_same(&self.CONV, m2[.clone()]) ...
 /// ```
 ///
-/// into `crate::conv::conv2d_bn_act(&self.CONV, X, self.S.val(), self.B.val(), MASK.clone())`, which on GPUs runs the
-/// chain inside the conv's input loads. A chain is rewritten only when none of its intermediates is used
-/// elsewhere and every use of its result is such a conv; anything else is left as generated.
+/// becomes `crate::conv::conv2d_bn_act(&self.CONV, X, self.S.val(), self.B.val(), MASK.clone())`, and the relu chain
+/// of the older nets (b6c96, b10c128), the same with `let r = relu(a); let m2 = r.mul(MASK.clone());`, becomes
+/// `crate::conv::conv2d_bn_relu(...)`. On GPUs these run the chain inside the conv's input loads. A chain is
+/// rewritten only when none of its intermediates is used elsewhere and every use of its result is such a conv;
+/// anything else is left as generated.
 fn fuse_bn_act(net: &str) {
-    let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model").join(format!("{net}.rs"));
-    let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let chain = regex::Regex::new(concat!(
-        r"let (\w+) = self\.(\w+)\.val\(\);\s*",
-        r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
-        r"let (\w+) = self\.(\w+)\.val\(\);\s*",
-        r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
-        r"let (\w+) = burn::tensor::activation::softplus\(\s*(\w+)\.clone\(\),\s*1\.0,?\s*\);\s*",
-        r"let (\w+) = (\w+)\.tanh\(\);\s*",
-        r"let (\w+) = (\w+)\.mul\((\w+)\);\s*",
-        r"let (\w+) = (\w+)\.mul\((\w+)\.clone\(\)\);",
-    ))
-    .unwrap();
-    let count = |name: &str| regex::Regex::new(&format!(r"\b{name}\b")).unwrap().find_iter(&code).count();
-    let mut edits: Vec<(usize, usize, String)> = Vec::new();
-    let mut fused = 0;
-    for m in chain.captures_iter(&code) {
-        let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
-        let (c1, scale, mul, x, x_clone, c2, bias, add, sp, th, m1, out, mask) =
-            (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16), g(19), g(21));
-        let linked = g(6) == c1 && g(10) == mul && g(11) == c2 && g(13) == add && g(15) == sp && g(17) == add && g(18) == th && g(20) == m1;
-        // Each intermediate appears exactly as often as the chain itself uses it.
-        let private = [(c1, 2), (mul, 2), (c2, 2), (add, 3), (sp, 2), (th, 2), (m1, 2)].iter().all(|(n, k)| count(n) == *k);
-        if !linked || !private {
-            continue;
-        }
-        let whole = m.get(0).unwrap();
-        let rest = &code[whole.end()..];
-        let uses = regex::Regex::new(&format!(r"\b{out}\b")).unwrap();
-        let conv_use = regex::Regex::new(&format!(r"crate::conv::conv2d_same\(&self\.(\w+), {out}(\.clone\(\))?\)")).unwrap();
-        let convs: Vec<_> = conv_use.captures_iter(rest).collect();
-        if convs.is_empty() || convs.len() != uses.find_iter(rest).count() {
-            continue;
-        }
-        edits.push((whole.start(), whole.end(), String::new()));
-        for (i, c) in convs.iter().enumerate() {
-            // X is cloned unless the chain consumed it and this is its last use.
-            let x_arg = if x_clone.is_empty() && i + 1 == convs.len() { x.to_string() } else { format!("{x}.clone()") };
-            let span = c.get(0).unwrap();
-            edits.push((
-                whole.end() + span.start(),
-                whole.end() + span.end(),
-                format!("crate::conv::conv2d_bn_act(&self.{}, {x_arg}, self.{scale}.val(), self.{bias}.val(), {mask}.clone())", &c[1]),
-            ));
-        }
-        fused += 1;
+  let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap())
+    .join("model")
+    .join(format!("{net}.rs"));
+  let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+  let mish = regex::Regex::new(concat!(
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::softplus\(\s*(\w+)\.clone\(\),\s*1\.0,?\s*\);\s*",
+    r"let (\w+) = (\w+)\.tanh\(\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)\.clone\(\)\);",
+  ))
+  .unwrap();
+  let relu = regex::Regex::new(concat!(
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  let relu_loaded = regex::Regex::new(concat!(
+    r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  // Bias only (the scale folded into the previous conv): `let c = self.B.val(); let a = X[.clone()].add(c); relu, mask`.
+  let bias_relu = regex::Regex::new(concat!(
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)(\.clone\(\))?\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  // Bias only, with the bias loaded into a variable earlier (b6c96's generated code).
+  let bias_relu_loaded = regex::Regex::new(concat!(
+    r"let (\w+) = (\w+)(\.clone\(\))?\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+  for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(&code) {
+    *words.entry(w.as_str()).or_default() += 1;
+  }
+  let count = |name: &str| words.get(name).copied().unwrap_or(0);
+  let mut edits: Vec<(usize, usize, String)> = Vec::new();
+
+  // One matched chain: its span, its input X (and whether the chain cloned it), S, B, MASK and its result. Rewrites
+  // the convs that consume the result, if they are its only uses.
+  struct Chain<'a> {
+    start: usize,
+    end: usize,
+    x: &'a str,
+    x_cloned: bool,
+    /// The scale and bias arguments (`self.S.val()`, or a variable the generated code loaded earlier); no scale for
+    /// a bias-only chain.
+    scale: Option<String>,
+    bias: String,
+    mask: &'a str,
+    out: &'a str,
+  }
+  // The chains already rewritten: the patterns overlap (a hoisted-constants or bias-only match can be the tail of
+  // a full chain), so a chain inside one of these spans is skipped.
+  let mut taken: Vec<(usize, usize)> = Vec::new();
+  let mut rewrite = |c: Chain<'_>, func: &str| -> bool {
+    if taken.iter().any(|&(start, end)| c.start < end && start < c.end) {
+      return false;
     }
-    edits.sort_by_key(|e| std::cmp::Reverse(e.0));
-    let mut out = code.clone();
-    for (start, end, text) in edits {
-        out.replace_range(start..end, &text);
+    let rest = &code[c.end..];
+    let uses = regex::Regex::new(&format!(r"\b{}\b", c.out)).unwrap();
+    let conv_use = regex::Regex::new(&format!(r"crate::conv::conv2d_same\(&self\.(\w+), {}(\.clone\(\))?\)", c.out)).unwrap();
+    let convs: Vec<_> = conv_use.captures_iter(rest).collect();
+    if convs.is_empty() || convs.len() != uses.find_iter(rest).count() {
+      return false;
     }
-    out.insert_str(0, &format!("// build.rs fuse_bn_act: {fused} batch norm + mish + mask chains fused into their convs.\n"));
-    std::fs::write(&path, out).unwrap();
+    taken.push((c.start, c.end));
+    edits.push((c.start, c.end, String::new()));
+    for (i, conv) in convs.iter().enumerate() {
+      // X is cloned unless the chain consumed it and this is its last use.
+      let x_arg = if !c.x_cloned && i + 1 == convs.len() {
+        c.x.to_string()
+      } else {
+        format!("{}.clone()", c.x)
+      };
+      let span = conv.get(0).unwrap();
+      edits.push((
+        c.end + span.start(),
+        c.end + span.end(),
+        match &c.scale {
+          Some(scale) => format!("crate::conv::{func}(&self.{}, {x_arg}, {scale}, {}, {}.clone())", &conv[1], c.bias, c.mask),
+          None => format!("crate::conv::{func}(&self.{}, {x_arg}, {}, {}.clone())", &conv[1], c.bias, c.mask),
+        },
+      ));
+    }
+    true
+  };
+
+  let mut fused_mish = 0;
+  for m in mish.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (c1, scale, mul, x, x_clone, c2, bias, add, sp, th, m1, out, mask) =
+      (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16), g(19), g(21));
+    let linked = g(6) == c1 && g(10) == mul && g(11) == c2 && g(13) == add && g(15) == sp && g(17) == add && g(18) == th && g(20) == m1;
+    // Each intermediate appears exactly as often as the chain itself uses it.
+    let private = [(c1, 2), (mul, 2), (c2, 2), (add, 3), (sp, 2), (th, 2), (m1, 2)]
+      .iter()
+      .all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let (scale, bias) = (Some(format!("self.{scale}.val()")), format!("self.{bias}.val()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_act") {
+      fused_mish += 1;
+    }
+  }
+  let mut fused_relu = 0;
+  for m in relu.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (c1, scale, mul, x, x_clone, c2, bias, add, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16));
+    let linked = g(6) == c1 && g(10) == mul && g(11) == c2 && g(13) == add && g(15) == r;
+    let private = [(c1, 2), (mul, 2), (c2, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let (scale, bias) = (Some(format!("self.{scale}.val()")), format!("self.{bias}.val()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_relu") {
+      fused_relu += 1;
+    }
+  }
+  // The same relu chain where the scale and bias were loaded into variables earlier (b6c96's generated code).
+  for m in relu_loaded.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (mul, x, x_clone, scale, add, bias, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(10), g(12));
+    let linked = g(6) == mul && g(9) == add && g(11) == r;
+    let private = [(mul, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let (scale, bias) = (Some(format!("{scale}.clone()")), format!("{bias}.clone()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_relu") {
+      fused_relu += 1;
+    }
+  }
+  for m in bias_relu.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (c, bias, add, x, x_clone, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(9), g(11));
+    let linked = g(6) == c && g(8) == add && g(10) == r;
+    let private = [(c, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale: None,
+      bias: format!("self.{bias}.val()"),
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bias_relu") {
+      fused_relu += 1;
+    }
+  }
+  for m in bias_relu_loaded.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (add, x, x_clone, bias, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(9));
+    let linked = g(6) == add && g(8) == r;
+    let private = [(add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale: None,
+      bias: format!("{bias}.clone()"),
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bias_relu") {
+      fused_relu += 1;
+    }
+  }
+  // A net with mish (softplus) or relu activations and nothing fused means the generated code no longer has the shape
+  // the chain regexes expect (a burn-onnx update): fail rather than silently lose the fused GPU path.
+  for (fused, op, act) in [(fused_mish, "softplus", "mish"), (fused_relu, "relu", "relu")] {
+    if fused == 0 && code.contains(&format!("burn::tensor::activation::{op}(")) {
+      panic!(
+        "build.rs fuse_bn_act: {net} has {act} activations but no batch norm + {act} + mask chain matched; \
+         burn-onnx's generated code changed shape, update the regex in fuse_bn_act"
+      );
+    }
+  }
+  edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+  let mut out = code.clone();
+  for (start, end, text) in edits {
+    out.replace_range(start..end, &text);
+  }
+  out.insert_str(
+    0,
+    &format!("// build.rs fuse_bn_act: {fused_mish} batch norm + mish + mask and {fused_relu} batch norm + relu + mask chains fused into their convs.\n"),
+  );
+  std::fs::write(&path, out).unwrap();
 }

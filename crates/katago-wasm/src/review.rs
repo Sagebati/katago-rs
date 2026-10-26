@@ -15,13 +15,14 @@ use js_sys::Reflect;
 use wasm_bindgen::prelude::*;
 
 use katago_annotate::AnalysisQuery;
+use katago_annotate::Analyzer;
 use katago_annotate::AnnotateError;
 use katago_annotate::AnnotateOptions;
 use katago_annotate::AnnotateResult;
-use katago_annotate::Analyzer;
+use katago_annotate::Fed;
 use katago_annotate::GameInput;
 use katago_annotate::Pass;
-use katago_annotate::ResponseLine;
+use katago_annotate::TurnCollector;
 use katago_annotate::TurnResponse;
 
 /// Ids of the review queries (and of their terminate actions): `__kgr_<review>_<n>`.
@@ -39,7 +40,9 @@ impl Router {
     if self.routes.borrow().is_empty() || !line.contains(REVIEW_ID_PREFIX) {
       return false;
     }
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else { return false };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+      return false;
+    };
     let Some(id) = value.get("id").and_then(|v| v.as_str()) else { return false };
     match self.routes.borrow().get(id) {
       Some(tx) => {
@@ -53,7 +56,11 @@ impl Router {
   fn add(&self, id: &str) -> Route {
     let (tx, rx) = mpsc::unbounded();
     self.routes.borrow_mut().insert(id.to_owned(), tx);
-    Route { router: self.clone(), id: id.to_owned(), rx }
+    Route {
+      router: self.clone(),
+      id: id.to_owned(),
+      rx,
+    }
   }
 }
 
@@ -129,29 +136,33 @@ impl Analyzer for WasmAnalyzer {
     let expected = query.analyze_turns.len();
     let line = serde_json::to_string(&query).map_err(|e| AnnotateError::Inference(format!("serialize query: {e}")))?;
     let mut route = self.router.add(&id);
-    self.input.unbounded_send(vec![line.into_bytes()]).map_err(|_| AnnotateError::Inference("the engine has exited".to_owned()))?;
+    self
+      .input
+      .unbounded_send(vec![line.into_bytes()])
+      .map_err(|_| AnnotateError::Inference("the engine has exited".to_owned()))?;
     *self.state.active.borrow_mut() = Some(id.clone());
-    let mut got: Vec<TurnResponse> = Vec::with_capacity(expected);
+    let mut collector = TurnCollector::new(id.clone(), expected);
     let result = loop {
-      if got.len() >= expected {
+      if collector.is_done() {
         break Ok(());
       }
-      let Some(line) = route.rx.next().await else { break Err(AnnotateError::Inference("the engine has exited".to_owned())) };
-      match ResponseLine::parse(&line) {
-        ResponseLine::Turn { turn, .. } => {
-          // No reportDuringSearchEvery in these queries: every turn line is a final.
+      let Some(line) = route.rx.next().await else {
+        break Err(AnnotateError::Inference("the engine has exited".to_owned()));
+      };
+      match collector.feed(&line) {
+        Ok(Fed::Turn) => {
           self.analysed.set(self.analysed.get() + 1);
-          got.push(*turn);
           // After a cancel the terminated turns still report (partial or noResults): not progress.
           if !self.state.cancelled.get() {
-            self.progress(pass, got.last().expect("just pushed"), got.len(), expected);
+            let turns = collector.turns();
+            self.progress(pass, turns.last().expect("just fed"), turns.len(), expected);
           }
         }
-        ResponseLine::Error { error, .. } => break Err(AnnotateError::Inference(format!("katago: {error}"))),
-        ResponseLine::Warning { warning, .. } => log::warn!("katago-wasm review: warning: {warning}"),
-        ResponseLine::Unparsable(e) => log::warn!("katago-wasm review: unparsable line: {e}"),
-        ResponseLine::UnparsableResponse { error, .. } => log::warn!("katago-wasm review: unparsable response: {error}"),
-        ResponseLine::NoId => {}
+        Ok(Fed::Warning(warning)) => log::warn!("katago-wasm review: warning: {warning}"),
+        Ok(Fed::Unparsable(e)) => log::warn!("katago-wasm review: {e}"),
+        // The router only hands this query its own lines.
+        Ok(Fed::OtherQuery(_) | Fed::NoId) => {}
+        Err(e) => break Err(e),
       }
     };
     *self.state.active.borrow_mut() = None;
@@ -160,7 +171,7 @@ impl Analyzer for WasmAnalyzer {
     if self.state.cancelled.get() {
       return Err(cancelled());
     }
-    Ok(got)
+    Ok(collector.into_turns())
   }
 }
 
@@ -184,38 +195,44 @@ pub(crate) enum ReviewInput {
 
 /// Reads `reviewGame`'s arguments: the game (SGF text, or an object of KataGo query fields) and the options
 /// (AnnotateOptions in camelCase, plus `humanProfile`). Returns the options with the engine's identity set.
-pub(crate) fn read_args(input: &JsValue, options: &JsValue, network: &str) -> Result<(ReviewInput, AnnotateOptions, Option<String>), JsError> {
+pub(crate) fn read_args(
+  input: &JsValue,
+  options: &JsValue,
+  network: &str,
+  human_network: Option<&str>,
+) -> Result<(ReviewInput, AnnotateOptions, Option<String>), JsError> {
   let input = if let Some(sgf) = input.as_string() {
     ReviewInput::Sgf(sgf)
   } else if input.is_object() {
-    let text: String = js_sys::JSON::stringify(input).map_err(|_| JsError::new("reviewGame: the game is not JSON-serializable"))?.into();
+    let text: String = js_sys::JSON::stringify(input)
+      .map_err(|_| JsError::new("reviewGame: the game is not JSON-serializable"))?
+      .into();
     ReviewInput::Moves(serde_json::from_str(&text).map_err(|e| JsError::new(&format!("reviewGame: bad game: {e}")))?)
   } else {
     return Err(JsError::new("reviewGame: the game must be SGF text or {moves, rules, komi, ...}"));
   };
-  let mut opts_json = if options.is_undefined() || options.is_null() {
+  let opts_json = if options.is_undefined() || options.is_null() {
     serde_json::Value::Object(Default::default())
   } else {
-    let text: String = js_sys::JSON::stringify(options).map_err(|_| JsError::new("reviewGame: options are not JSON-serializable"))?.into();
+    let text: String = js_sys::JSON::stringify(options)
+      .map_err(|_| JsError::new("reviewGame: options are not JSON-serializable"))?
+      .into();
     serde_json::from_str(&text).map_err(|e| JsError::new(&format!("reviewGame: bad options: {e}")))?
   };
-  let obj = opts_json.as_object_mut().ok_or_else(|| JsError::new("reviewGame: options must be an object"))?;
-  let human_profile = match obj.remove("humanProfile") {
-    None | Some(serde_json::Value::Null) => None,
-    Some(serde_json::Value::String(s)) => Some(s),
-    Some(_) => return Err(JsError::new("reviewGame: humanProfile must be a string")),
-  };
-  for key in ["model", "humanModel", "engineName", "engineVersion"] {
-    if obj.contains_key(key) {
-      return Err(JsError::new(&format!("reviewGame: option {key} is set by the engine")));
+  if let Some(obj) = opts_json.as_object() {
+    for key in ["model", "humanModel", "engineName", "engineVersion"] {
+      if obj.contains_key(key) {
+        return Err(JsError::new(&format!("reviewGame: option {key} is set by the engine")));
+      }
     }
   }
-  let mut opts: AnnotateOptions = serde_json::from_value(opts_json).map_err(|e| JsError::new(&format!("reviewGame: bad options: {e}")))?;
-  // What produced the payload (docs/M6-report.md): this engine, the KataGo version it follows, its network.
-  // No human SL model in the browser: a humanProfile is dropped with a warning, as katago-ws does.
+  let (mut opts, human_profile) = AnnotateOptions::from_json_with_profile(opts_json).map_err(|e| JsError::new(&format!("reviewGame: {e}")))?;
+  // What produced the payload (docs/M6-report.md): this engine, the KataGo version it follows, its network, and
+  // the human SL network when the engine loaded one (`humanModel`): a humanProfile then gets the human policy.
+  // Without one, a humanProfile is dropped with a warning, as katago-ws does.
   opts.engine_name = "katago-rs-wasm".to_owned();
   opts.engine_version = Some(katago_core::command::analysis::KATAGO_VERSION.to_owned());
   opts.model = network.to_owned();
-  opts.human_model = String::new();
+  opts.human_model = human_network.unwrap_or_default().to_owned();
   Ok((input, opts, human_profile))
 }

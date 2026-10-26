@@ -28,6 +28,7 @@
 
 #![allow(clippy::too_many_arguments, clippy::field_reassign_with_default, clippy::needless_range_loop, clippy::assign_op_pattern)]
 
+#[macro_use]
 mod common;
 
 use std::cell::RefCell;
@@ -138,18 +139,13 @@ impl log::Log for CoutLogger {
 
 static LOGGER: CoutLogger = CoutLogger;
 
-/// Deterministic clock for `ClockTimer` (the search needs one installed; no time limit is set anywhere here).
-fn fake_clock() -> f64 {
-  1000.0
-}
-
 fn install_logger_and_clock() {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
     log::set_logger(&LOGGER).expect("no other logger in this test binary");
     log::set_max_level(log::LevelFilter::Trace);
   });
-  set_clock(fake_clock);
+  set_clock(common::fixed_clock);
 }
 
 //------------------------------------------------------------------------------------------------
@@ -3087,8 +3083,8 @@ fn run_nn_less_search_tests() {
   assert!(num_fail == 0, "{} of {} compared sections differ from the upstream output:\n{}", num_fail, NUM_COMPARED, summary);
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+wasm_test! {
 fn nn_less_search_tests() {
   run_nn_less_search_tests();
+}
 }

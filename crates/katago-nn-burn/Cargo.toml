@@ -20,17 +20,17 @@ net-b18c384nbt-humanv0 = []
 flex = ["burn/flex", "dep:burn-flex"]
 # GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser, with burn's autotune (each kernel family is
 # benchmarked once per process and shape).
-wgpu = ["wgpu-fixed-kernels", "burn/autotune"]
-# wgpu without autotune: burn's default kernel for each op, no tuning pass. katago-wasm uses this: in the browser
-# the tuning results cannot be kept across page loads and the pass cost ~8 s per load (docs/M4-report.md).
-# Implies fusion: wino.rs's kernels are a burn backend extension whose Fusion routing must exist whenever burn's
-# fusion is on (katago-wasm turns it on), else the call panics at runtime.
-wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "dep:burn-cubecl", "dep:half", "fusion"]
-# Native-only: SPIR-V compiler for Vulkan (cooperative matrices), and kernel fusion.
-vulkan = ["wgpu", "burn/vulkan"]
-fusion = ["burn/fusion"]
+wgpu = ["wgpu-fixed", "burn/autotune"]
+# wgpu without autotune: burn's default kernel for each op, no tuning pass, plus gpu-kernels. katago-wasm uses
+# this: in the browser the tuning results cannot be kept across page loads and the pass cost ~8 s per load
+# (docs/M4-report.md).
+wgpu-fixed = ["gpu-kernels", "burn/wgpu"]
+# The cubecl kernels of wino/ (Winograd 3x3, NCHW 1x1, board reduces), for any cubecl GPU runtime (wgpu, rocm).
+# Includes burn's fusion: wino/'s kernels are a burn backend extension whose Fusion routing must exist whenever
+# burn's fusion is on (katago-wasm turns it on), else the call panics at runtime.
+gpu-kernels = ["burn/extension", "burn/fusion", "dep:burn-cubecl", "dep:half"]
 # Native AMD GPUs through HIP (ROCm), with wino.rs's kernels (the same cubecl source as on WebGPU). Not a browser path.
-rocm = ["wgpu-fixed-kernels", "burn/rocm"]
+rocm = ["gpu-kernels", "burn/rocm"]
 
 [dependencies]
 # The ported engine (nninterface.rs trait, NNEvaluator, SymmetryHelpers); backend.rs implements its NeuralNet trait.
@@ -57,5 +57,12 @@ wasm-bindgen-test = "=0.3.79"
 
 [build-dependencies]
 burn-onnx.workspace = true
+# build.rs SpatialReduce matches the reduce axes (burn-onnx does not re-export onnx-ir's ReduceAxes): the version
+# burn-onnx uses, so the types are the same.
+onnx-ir = "=0.22.0"
 # build.rs fuse_bn_act: rewriting the generated forward passes.
 regex = "1"
+
+[[example]]
+name = "wino_bench"
+required-features = ["wgpu-fixed"]
