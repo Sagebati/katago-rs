@@ -719,6 +719,8 @@ fn fuse_tf(net: &str) {
        generated code changed shape, update the regex in fuse_tf"
     );
   }
+  let (out_tok, attention_tokens) = fuse_attention_tokens(&out);
+  out = out_tok;
   if fused_rms == 0 {
     panic!(
       "build.rs fuse_tf: {net} has attention but no transformer RMSNorm chain matched; burn-onnx's generated code \
@@ -727,7 +729,114 @@ fn fuse_tf(net: &str) {
   }
   out.insert_str(
     0,
-    &format!("// build.rs fuse_tf: {fused_rms} RMSNorms, {linears} linears and {attentions} attentions routed to crate::tf.\n"),
+    &format!(
+      "// build.rs fuse_tf: {fused_rms} RMSNorms, {linears} linears and {attentions} attentions routed to crate::tf \
+       ({attention_tokens} of them on the token layout with their RoPE).\n"
+    ),
   );
   std::fs::write(&path, out).unwrap();
+}
+
+/// The attention of each transformer block from its q/k/v projections to its merged heads (the head splits, the RoPE
+/// of q and k, `crate::tf::attention_masked`'s block and the head merge) as one `crate::tf::attention_tokens`, when its
+/// intermediates have no other use. Returns the rewritten code and the number of blocks rewritten.
+fn fuse_attention_tokens(code: &str) -> (String, usize) {
+  const LOADS: &str = r"(?:let \w+ = self\.\w+\.val\(\);\s*)*";
+  let split = |p: &str| {
+    format!(
+      r"let (?P<{p}r>\w+) = (?P<{p}in>\w+)\s*\.reshape\(\[-1, (?P<{p}s>\d+), (?P<{p}h>\d+), (?P<{p}d>\d+)\]\);\s*let (?P<{p}t>\w+) = (?P<{p}r2>\w+)\.permute\(\[0, 2, 1, 3\]\);\s*"
+    )
+  };
+  let rope = |p: &str| {
+    format!(
+      concat!(
+        r"let (?P<{p}a>\w+) = (?P<{p}x1>\w+)\.clone\(\)\s*\.slice\(s!\[\.\., \.\., \.\., 0\.\.(?P<{p}h1>\d+)\]\);\s*",
+        r"let (?P<{p}b>\w+) = (?P<{p}x2>\w+)\s*\.slice\(s!\[\.\., \.\., \.\., (?P<{p}h2>\d+)\.\.(?P<{p}d>\d+)\]\);\s*",
+        "{loads}",
+        r"let (?P<{p}m1>\w+) = (?P<{p}a1>\w+)\.clone\(\)\s*\.mul\((?P<{p}cos>\w+)(?:\.clone\(\))?\);\s*",
+        "{loads}",
+        r"let (?P<{p}m2>\w+) = (?P<{p}b1>\w+)\.clone\(\)\s*\.mul\((?P<{p}sin>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}r0>\w+) = (?P<{p}m1b>\w+)\.sub\((?P<{p}m2b>\w+)\);\s*",
+        r"let (?P<{p}m3>\w+) = (?P<{p}a2>\w+)\.mul\((?P<{p}sin2>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}m4>\w+) = (?P<{p}b2>\w+)\.mul\((?P<{p}cos2>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}r1>\w+) = (?P<{p}m3b>\w+)\.add\((?P<{p}m4b>\w+)\);\s*",
+        r"let (?P<{p}cat>\w+) = burn::tensor::Tensor::cat\(\s*\[(?P<{p}r0b>\w+), (?P<{p}r1b>\w+)\]\.into\(\),\s*3,?\s*\);\s*",
+      ),
+      p = p,
+      loads = LOADS
+    )
+  };
+  let block = concat!(
+    r"let \((?P<mm>\w+),\) = \{\s*let q = (?P<cq>\w+);\s*let k = (?P<ck>\w+);\s*let v = (?P<cv>\w+);\s*",
+    r"let groups = q\.dims\(\)\[1\] / k\.dims\(\)\[1\];[\s\S]*?\} else \{\s*\(k, v\)\s*\};\s*",
+    r"let score_bias = (?P<bias>\w+)(?:\.clone\(\))?;\s*",
+    r"let (?P<mm2>\w+) = crate::tf::attention_masked\(q, k, v, score_bias, burn::tensor::ops::AttentionModuleOptions \{\s*",
+    r"scale: Some\((?P<scale>[0-9.eE+-]+)f64\),\s*softcap: None,\s*is_causal: false,?\s*\}\);\s*\((?P<mm3>\w+),\)\s*\};\s*",
+    r"let (?P<t6>\w+) = (?P<mm4>\w+)\.permute\(\[0, 2, 1, 3\]\);\s*",
+    r"let (?P<out>\w+) = (?P<t6b>\w+)\s*\.reshape\(\[-1, (?P<os>\d+), (?P<oc>\d+)\]\);",
+  );
+  let re = regex::Regex::new(&format!(
+    "{}{}{}{LOADS}{}{LOADS}{}{block}",
+    split("q"),
+    split("k"),
+    split("v"),
+    rope("rq"),
+    rope("rk")
+  ))
+  .unwrap();
+  let loads = regex::Regex::new(r"let \w+ = self\.\w+\.val\(\);").unwrap();
+  let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+  for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(code) {
+    *words.entry(w.as_str()).or_default() += 1;
+  }
+  let count = |name: &str| words.get(name).copied().unwrap_or(0);
+  let mut edits: Vec<(usize, usize, String)> = Vec::new();
+  for c in re.captures_iter(code) {
+    let g = |n: &str| c.name(n).map_or("", |m| m.as_str());
+    let num = |n: &str| g(n).parse::<usize>().unwrap();
+    let (seq, heads, kv_heads, dq, dv) = (num("qs"), num("qh"), num("kh"), num("qd"), num("vd"));
+    let mut ok = g("qr") == g("qr2") && g("kr") == g("kr2") && g("vr") == g("vr2");
+    ok &= num("ks") == seq && num("vs") == seq && num("os") == seq && num("kd") == dq && heads == kv_heads;
+    ok &= g("cv") == g("vt") && g("mm") == g("mm2") && g("mm") == g("mm3") && g("mm") == g("mm4") && g("t6") == g("t6b");
+    ok &= num("oc") == heads * dv;
+    for (p, input, cat) in [("rq", "qt", "cq"), ("rk", "kt", "ck")] {
+      let h = |n: &str| g(&format!("{p}{n}"));
+      ok &= h("x1") == g(input) && h("x2") == g(input) && g(cat) == h("cat");
+      ok &= h("a1") == h("a") && h("a2") == h("a") && h("b1") == h("b") && h("b2") == h("b");
+      ok &= h("m1b") == h("m1") && h("m2b") == h("m2") && h("m3b") == h("m3") && h("m4b") == h("m4");
+      ok &= h("r0b") == h("r0") && h("r1b") == h("r1") && h("cos2") == h("cos") && h("sin2") == h("sin");
+      ok &= h("h1") == h("h2") && 2 * h("h1").parse::<usize>().unwrap_or(0) == dq && h("d").parse::<usize>().ok() == Some(dq);
+      ok &= ["m1", "m2", "m3", "m4", "r0", "r1", "cat"].iter().all(|n| count(h(n)) == 2);
+      ok &= count(h("a")) == 3 && count(h("b")) == 3;
+    }
+    ok &= ["qr", "kr", "vr", "vt", "t6"].iter().all(|n| count(g(n)) == 2);
+    ok &= count(g("qt")) == 3 && count(g("kt")) == 3 && count(g("mm")) == 4;
+    if !ok {
+      continue;
+    }
+    let whole = c.get(0).unwrap();
+    let kept: String = loads.find_iter(whole.as_str()).map(|l| format!("{}\n", l.as_str())).collect();
+    let (cq, sq, ck, sk) = (g("rqcos"), g("rqsin"), g("rkcos"), g("rksin"));
+    edits.push((
+      whole.start(),
+      whole.end(),
+      format!(
+        "{kept}let {} = crate::tf::attention_tokens({}, {}, {}, Some([{cq}.clone(), {sq}.clone(), {ck}.clone(), {sk}.clone()]), \
+         {}.clone(), {heads}, {kv_heads}, {dq}, {dv}, {}f64);",
+        g("out"),
+        g("qin"),
+        g("kin"),
+        g("vin"),
+        g("bias"),
+        g("scale"),
+      ),
+    ));
+  }
+  let n = edits.len();
+  let mut out = code.to_string();
+  edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+  for (start, end, text) in edits {
+    out.replace_range(start..end, &text);
+  }
+  (out, n)
 }

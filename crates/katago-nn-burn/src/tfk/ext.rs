@@ -21,6 +21,11 @@ pub fn attention_shape(q: &Shape, v: &Shape) -> Shape {
   Shape::new([q[0], q[1], q[2], v[3]])
 }
 
+/// Output shape of [`TfOps::tf_attention_tokens`]: `[N, S, heads * dv]`.
+pub fn attention_tokens_shape(q: &Shape, heads: &usize, dv: &usize) -> Shape {
+  Shape::new([q[0], q[1], heads * dv])
+}
+
 #[allow(clippy::too_many_arguments)]
 #[backend_extension(Cube, Fusion)]
 pub trait TfOps: Backend {
@@ -43,6 +48,27 @@ pub trait TfOps: Backend {
   /// and the `[N, S]` key bias; `scale_bits` is the f32 scale's bits.
   #[fusion(dtype = q, shape = attention_shape(q, v))]
   fn tf_attention(q: FloatTensor<Self>, k: FloatTensor<Self>, v: FloatTensor<Self>, bias: FloatTensor<Self>, scale_bits: u32) -> FloatTensor<Self>;
+
+  /// [`TfOps::tf_attention`] on the token layout with the rotary embedding fused (`attention_tok_kernel`): `q`
+  /// `[N, S, heads * dq]`, `k`, `v` `[N, S, kv_heads * dq | dv]`, `cos_*`/`sin_*` `[1 | heads, S, dq / 2]` (q) and
+  /// `[1 | kv_heads, S, dq / 2]` (k), read only with `rope`; out `[N, S, heads * dv]`.
+  #[fusion(dtype = q, shape = attention_tokens_shape(q, heads, dv))]
+  fn tf_attention_tokens(
+    q: FloatTensor<Self>,
+    k: FloatTensor<Self>,
+    v: FloatTensor<Self>,
+    cos_q: FloatTensor<Self>,
+    sin_q: FloatTensor<Self>,
+    cos_k: FloatTensor<Self>,
+    sin_k: FloatTensor<Self>,
+    bias: FloatTensor<Self>,
+    heads: usize,
+    kv_heads: usize,
+    dq: usize,
+    dv: usize,
+    scale_bits: u32,
+    rope: bool,
+  ) -> FloatTensor<Self>;
 }
 
 fn contiguous(t: CubeTensor) -> CubeTensor {
@@ -65,6 +91,40 @@ impl TfOps for CubeBackend {
     let (wk, n) = (w.meta.shape()[0], w.meta.shape()[1]);
     assert_eq!(k, wk, "tf_linear: x is [{m}, {k}], w [{wk}, {n}]");
     let out = empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([m, n]), x.dtype);
+    // An f16 weight: the vector GEMM (weight and output as 4-wide vectors, packed f16 inner products), widths a
+    // multiple of 4. f32: the scalar GEMM (the vector one is ~12% slower there, as for wino_gemm_v).
+    if w.dtype == DType::F16 {
+      assert!(n.is_multiple_of(4), "tf_linear: an f16 weight needs a width that is a multiple of 4, not {n}");
+      macro_rules! launch_v {
+        ($f:ty, $s:ty) => {
+          // SAFETY: contiguous buffers of the lengths given (in vectors of 4 for w, bias and out); the kernel
+          // bounds-checks every edge.
+          unsafe {
+            linear_gemm_v::launch::<$f, $s>(
+              &x.client,
+              CubeCount::Static(m.div_ceil(LIN_M) as u32, n.div_ceil(LIN_N) as u32, 1),
+              CubeDim::new_2d(LIN_T as u32, LIN_T as u32),
+              4,
+              BufferArg::from_raw_parts(x.handle.clone(), len(&x)),
+              BufferArg::from_raw_parts(w.handle.clone(), len(&w) / 4),
+              BufferArg::from_raw_parts(bias.handle.clone(), (len(&bias) / 4).max(1)),
+              BufferArg::from_raw_parts(out.handle.clone(), m * n / 4),
+              m as u32,
+              n as u32,
+              k as u32,
+              has_bias,
+            )
+          }
+        };
+      }
+      match (x.dtype, w.dtype) {
+        (DType::F32, DType::F16) => launch_v!(f32, half::f16),
+        (DType::F16, DType::F16) => launch_v!(half::f16, half::f16),
+        other => panic!("tf_linear: unsupported dtypes {other:?}"),
+      }
+      return out;
+    }
+    assert_eq!(w.dtype, x.dtype, "tf_linear: x {:?}, w {:?}", x.dtype, w.dtype);
     macro_rules! launch {
       ($f:ty) => {
         // SAFETY: contiguous buffers of the lengths given; the kernel bounds-checks every edge.
@@ -172,6 +232,79 @@ impl TfOps for CubeBackend {
       DType::F32 => launch!(f32),
       DType::F16 => launch!(half::f16),
       other => panic!("tf_attention: unsupported dtype {other:?}"),
+    }
+    out
+  }
+
+  fn tf_attention_tokens(
+    q: CubeTensor,
+    k: CubeTensor,
+    v: CubeTensor,
+    cos_q: CubeTensor,
+    sin_q: CubeTensor,
+    cos_k: CubeTensor,
+    sin_k: CubeTensor,
+    bias: CubeTensor,
+    heads: usize,
+    kv_heads: usize,
+    dq: usize,
+    dv: usize,
+    scale_bits: u32,
+    rope: bool,
+  ) -> CubeTensor {
+    let (q, k, v, bias) = (contiguous(q), contiguous(k), contiguous(v), contiguous(bias));
+    let (cos_q, sin_q, cos_k, sin_k) = (contiguous(cos_q), contiguous(sin_q), contiguous(cos_k), contiguous(sin_k));
+    let (n, seq) = (q.meta.shape()[0], q.meta.shape()[1]);
+    assert_eq!(len(&q), n * seq * heads * dq, "tf_attention_tokens: q");
+    assert_eq!(len(&k), n * seq * kv_heads * dq, "tf_attention_tokens: k");
+    assert_eq!(len(&v), n * seq * kv_heads * dv, "tf_attention_tokens: v");
+    assert_eq!(len(&bias), n * seq, "tf_attention_tokens: bias");
+    assert!(heads.is_multiple_of(kv_heads) && dq.is_multiple_of(2));
+    let tables = |t: &CubeTensor, hmax: usize| {
+      let rows = len(t) / (seq * dq / 2);
+      assert!(
+        !rope || (len(t) == rows * seq * dq / 2 && (rows == 1 || rows == hmax)),
+        "tf_attention_tokens: rope table"
+      );
+      rows as u32
+    };
+    let (q_tables, k_tables) = (tables(&cos_q, heads), tables(&cos_k, kv_heads));
+    let out = empty_device_contiguous_dtype(q.client.clone(), q.device.clone(), Shape::new([n, seq, heads * dv]), q.dtype);
+    let scale = f32::from_bits(scale_bits);
+    macro_rules! launch {
+      ($f:ty) => {
+        // SAFETY: contiguous buffers of the sizes asserted above; the kernel bounds-checks the sequence.
+        unsafe {
+          attention_tok_kernel::launch::<$f>(
+            &q.client,
+            CubeCount::Static(seq.div_ceil(ATT_Q) as u32, heads as u32, n as u32),
+            CubeDim::new_1d(ATT_Q as u32),
+            BufferArg::from_raw_parts(q.handle.clone(), len(&q)),
+            BufferArg::from_raw_parts(k.handle.clone(), len(&k)),
+            BufferArg::from_raw_parts(v.handle.clone(), len(&v)),
+            BufferArg::from_raw_parts(cos_q.handle.clone(), len(&cos_q)),
+            BufferArg::from_raw_parts(sin_q.handle.clone(), len(&sin_q)),
+            BufferArg::from_raw_parts(cos_k.handle.clone(), len(&cos_k)),
+            BufferArg::from_raw_parts(sin_k.handle.clone(), len(&sin_k)),
+            BufferArg::from_raw_parts(bias.handle.clone(), n * seq),
+            BufferArg::from_raw_parts(out.handle.clone(), n * seq * heads * dv),
+            seq as u32,
+            heads as u32,
+            kv_heads as u32,
+            q_tables,
+            k_tables,
+            scale,
+            dq,
+            dv,
+            rope,
+          )
+        }
+      };
+    }
+    match q.dtype {
+      DType::F32 => launch!(f32),
+      DType::F16 => launch!(half::f16),
+      other => panic!("tf_attention_tokens: unsupported dtype {other:?}"),
     }
     out
   }
