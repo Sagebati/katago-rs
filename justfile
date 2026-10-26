@@ -118,6 +118,7 @@ search-smoke *flags="":
 # Analysis goldens (M3, D9): cpp/tests/analysis/*.txt through the ported analysis engine (katago-cli, burn flex,
 # g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.18.2/analysis/*.stdout (structure exact, floats within
 # the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
+# `-F net-b10c384h6nbttflrs` adds the transformer-net goldens (~2 min).
 analysis-goldens *flags="":
     cargo nextest run --release -p katago-cli --success-output final {{flags}}
 

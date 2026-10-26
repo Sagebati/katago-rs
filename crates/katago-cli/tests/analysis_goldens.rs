@@ -8,6 +8,11 @@
 //! humansl_sidetomove (M8): the b6c96 main net with `-human-model models/b18c384nbt-humanv0.bin.gz` and
 //! humanSLProfile preaz_18k (humanPrior / humanPolicy / the rootInfo human* keys from the human-SL net).
 //!
+//! b10c384h6nbttflrs_basic / _symmetry (feature `net-b10c384h6nbttflrs`): a transformer net (model v15) as the main
+//! net, basic.txt (7x7 boards included) and symmetry.txt (13x7 and 7x13 boards), our own Eigen goldens
+//! (fixtures/upstream-v1.18.2/analysis/regen_tf.sh), within `TF_TOL`. Release only
+//! (`just analysis-goldens -F net-b10c384h6nbttflrs`).
+//!
 //! Debug runs take a few minutes (the two 1000-visit pvvisits goldens dominate); `just analysis-goldens`
 //! runs them in release. Not a port of upstream code.
 
@@ -191,4 +196,37 @@ fn golden_pvvisits_nograph() {
     "rootSymmetryPruning=false, useGraphSearch=false",
   );
   assert_ok("pvvisits_nograph", &c);
+}
+
+/// regen_tf.sh's model path (`-model models/b10c384h6nbttflrs.bin.gz`).
+#[cfg(feature = "net-b10c384h6nbttflrs")]
+const TF: &str = "models/b10c384h6nbttflrs.bin.gz";
+
+/// The comparator's tolerances ([`TOL`]) with values at 2e-5 instead of 1e-5 and weights at 5e-5 relative instead of
+/// 1e-5: the transformer net's NN outputs agree with Eigen's to ~4e-6 on probabilities but ~2e-5 relative on the
+/// score-like and shortterm-error outputs (nn_parity `check_tf`: eigenbackend sums its spatial RMSNorm's C*361
+/// squares sequentially in float), and the weights (1 / shortterm uncertainty) and utilities follow. Measured worst
+/// (both goldens): weight 2.6e-5 relative, utility 1.0e-5, rawVarTimeLeft 1.9e-5 relative, winrate 4.4e-6, scoreLead
+/// 7.2e-5; visits, moves, order and PVs exact.
+#[cfg(feature = "net-b10c384h6nbttflrs")]
+const TF_TOL: Tolerances = Tolerances {
+  value: 2e-5,
+  weight_rel: 5e-5,
+  ..TOL
+};
+
+#[cfg(feature = "net-b10c384h6nbttflrs")]
+#[cfg_attr(debug_assertions, ignore = "release only: a transformer net on burn flex in debug")]
+#[test]
+fn golden_b10c384h6nbttflrs_basic() {
+  let c = check_golden_with("b10c384h6nbttflrs_basic.stdout", "tests/analysis/basic.txt", TF, LOOP_OVERRIDES, &TF_TOL);
+  assert_ok("b10c384h6nbttflrs_basic", &c);
+}
+
+#[cfg(feature = "net-b10c384h6nbttflrs")]
+#[cfg_attr(debug_assertions, ignore = "release only: a transformer net on burn flex in debug")]
+#[test]
+fn golden_b10c384h6nbttflrs_symmetry() {
+  let c = check_golden_with("b10c384h6nbttflrs_symmetry.stdout", "tests/analysis/symmetry.txt", TF, LOOP_OVERRIDES, &TF_TOL);
+  assert_ok("b10c384h6nbttflrs_symmetry", &c);
 }
