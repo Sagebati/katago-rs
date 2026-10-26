@@ -183,7 +183,7 @@ web-build *features="":
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
     entries=()
-    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0; do
+    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0 b10c384h6nbttflrs b10c512h8nbt3tflrs-fson-silu-rsnh; do
         bpk="$nn_out/model/$net.bpk"
         [ -f "$bpk" ] || continue
         sha="$(sha256sum "$bpk" | cut -d' ' -f1)"
