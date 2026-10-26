@@ -1,5 +1,5 @@
 //! search/distributiontable (DistributionTable) against the real C++:
-//! fixtures/upstream-v1.16.5/unit/oracle/distributiontable.txt from oracle/distributiontable.cpp (same order;
+//! fixtures/upstream-v1.18.2/unit/oracle/distributiontable.txt from oracle/distributiontable.cpp (same order;
 //! the oracle's header has the build command). Doubles are compared as bits (16 hex digits).
 //! The oracle's pdf/cdf use only + - * / sqrt and exp (via port::math::exp, glibc-identical).
 //!

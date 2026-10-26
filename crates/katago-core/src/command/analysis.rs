@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/command/analysis.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/command/analysis.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // `MainCmds::analysis`, the JSON-lines analysis engine, as a library function over injected host
 // services (port-manifest.toml notes, PORTING.md §11):
@@ -76,6 +76,7 @@ use crate::port::executor::AsyncQueue;
 use crate::port::executor::WakerList;
 use crate::port::nlohmann;
 use crate::program::playutils::PlayUtils;
+use crate::program::setup::MaxBatchSizeRequest;
 use crate::program::setup::NNEvaluatorHost;
 use crate::program::setup::Setup;
 use crate::search::asyncbot::AnalyzeCallback;
@@ -91,12 +92,12 @@ use crate::testAssert;
 
 /// upstream: Version::getKataGoVersion (main.cpp)
 /// PORT NOTE: main.cpp is [[ignored]]; the version is [upstream].tag (port-manifest.toml).
-pub const KATAGO_VERSION: &str = "1.16.5";
+pub const KATAGO_VERSION: &str = "1.18.2";
 /// upstream: Version::getKataGoVersionForHelp (main.cpp)
-pub const KATAGO_VERSION_FOR_HELP: &str = "KataGo v1.16.5";
+pub const KATAGO_VERSION_FOR_HELP: &str = "KataGo v1.18.2";
 /// upstream: Version::getGitRevision (main.cpp)
 /// PORT NOTE: the revision a release build of the tag reports: [upstream].commit.
-pub const GIT_REVISION: &str = "ba938676d7f42d70950b3a535af2466fb642008c";
+pub const GIT_REVISION: &str = "fd0723fdbc0e9d82cf269c9630af8c27c57c07c4";
 
 /// upstream: AnalyzeRequest (analysis.cpp)
 pub struct AnalyzeRequest {
@@ -1186,10 +1187,10 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
 
   if json_contains(&input, "komi") {
     let mut komi: f64 = 0.0;
-    // static_assert(Rules::MIN_USER_KOMI == -150.0f, "");
-    // static_assert(Rules::MAX_USER_KOMI == 150.0f, "");
-    const _: () = assert!(Rules::MIN_USER_KOMI == -150.0f32 && Rules::MAX_USER_KOMI == 150.0f32);
-    let msg: &str = "Must be a integer or half-integer from -150.0 to 150.0";
+    // static_assert(Rules::MIN_USER_KOMI == -400.0f, "");
+    // static_assert(Rules::MAX_USER_KOMI == 400.0f, "");
+    const _: () = assert!(Rules::MIN_USER_KOMI == -400.0f32 && Rules::MAX_USER_KOMI == 400.0f32);
+    let msg: &str = "Must be a integer or half-integer from -400.0 to 400.0";
     let suc: bool = parse_double(ctx, &rbase_id, &input, "komi", &mut komi, Rules::MIN_USER_KOMI as f64, Rules::MAX_USER_KOMI as f64, msg);
     if !suc {
       return Ok(());
@@ -1397,12 +1398,14 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
       return Ok(());
     }
     let avoid_params_list: &Vec<Value> = avoid_params_list.as_array().expect("checked is_array");
-    if has_allow_moves && avoid_params_list.len() > 1 {
-      ctx.report_error_for_id(&rbase_id, field, "Currently allowMoves only allows one entry");
+    if has_allow_moves && avoid_params_list.len() > 2 {
+      ctx.report_error_for_id(&rbase_id, field, "Currently allowMoves only allows at most one entry per player");
       return Ok(());
     }
 
     let mut failed: bool = false;
+    let mut got_allow_moves_black: bool = false;
+    let mut got_allow_moves_white: bool = false;
     for i in 0..avoid_params_list.len() {
       let avoid_params: &Value = &avoid_params_list[i];
       if !json_contains(avoid_params, "moves") || !json_contains(avoid_params, "untilDepth") || !json_contains(avoid_params, "player") {
@@ -1429,6 +1432,19 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
       if !suc {
         failed = true;
         break;
+      }
+
+      //For allowMoves, at most one entry per player is permitted. Two entries for the same player would be
+      //ambiguous/incorrect since the std::fill below for the second entry would wipe out the first entry's allowed locs.
+      //Two entries for different players are fine since they write to separate per-player vectors.
+      if has_allow_moves {
+        let got_allow_moves: &mut bool = if avoid_pla == P_BLACK { &mut got_allow_moves_black } else { &mut got_allow_moves_white };
+        if *got_allow_moves {
+          ctx.report_error_for_id(&rbase_id, field, "Cannot specify allowMoves more than once for the same player");
+          failed = true;
+          break;
+        }
+        *got_allow_moves = true;
       }
 
       let avoid_move_until_by_loc: &mut Vec<i32> =
@@ -1473,7 +1489,10 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
   }
 
   let mut next_pla: Player = initial_player;
-  let mut hist: BoardHistory = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  //Keep this request's history consistent with the BoardHistoryModes that the search
+  //for this request will resolve to. (The search would re-stamp its own copy anyway, but this keeps
+  //any adjudication done during request setup/replay consistent with them.)
+  let mut hist: BoardHistory = BoardHistory::new_full(&board, next_pla, &rules, 0, &Search::resolve_history_modes(&rbase.params, Some(&*ctx.nn_eval)));
   hist.set_assume_multiple_starting_black_moves_are_handicap(ctx.assume_multiple_starting_black_moves_are_handicap);
 
   if ctx.warn_unused_fields {
@@ -1660,7 +1679,6 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     Setup::initialize_session(&mut cfg, host.nn_host);
     let expected_concurrent_evals: i32 = num_analysis_threads * default_params.num_threads;
     let default_require_exact_nn_len: bool = false;
-    let default_max_batch_size: i32 = -1;
     let disable_fp16: bool = false;
     let expected_sha256: String = String::new();
     nn_eval = Setup::initialize_nn_evaluator(
@@ -1672,7 +1690,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
       expected_concurrent_evals,
       NNPos::MAX_BOARD_LEN,
       NNPos::MAX_BOARD_LEN,
-      default_max_batch_size,
+      MaxBatchSizeRequest::require_from_config(),
       default_require_exact_nn_len,
       disable_fp16,
       Setup::SETUP_FOR_ANALYSIS,
@@ -1689,7 +1707,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
         expected_concurrent_evals,
         NNPos::MAX_BOARD_LEN,
         NNPos::MAX_BOARD_LEN,
-        default_max_batch_size,
+        MaxBatchSizeRequest::require_from_config(),
         default_require_exact_nn_len,
         disable_fp16,
         Setup::SETUP_FOR_ANALYSIS,

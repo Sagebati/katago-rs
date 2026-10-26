@@ -1,6 +1,6 @@
 //! wasm32 only, opt-in (`just test-wasm-human`, node, release): the human-SL net b18c384nbt-humanv0 on burn flex inside
 //! wasm, through the ported NNEvaluator with SGFMetadata profiles, against the upstream NNEvaluator + Eigen records of
-//! fixtures/upstream-v1.16.5/nn (evals_human.txt / b18c384nbt-humanv0.out.bin, the same data as the native
+//! fixtures/upstream-v1.18.2/nn (evals_human.txt / b18c384nbt-humanv0.out.bin, the same data as the native
 //! nn_parity_b18c384nbt_humanv0): the first NUM_EVALS evals (the empty board under 8 profiles, then mixed positions,
 //! symmetries and profiles), nnHash exact (incl. SGFMetadata::getHash), policyOptimismUsed exact, the illegal-move
 //! set exact, floats within the flex tolerances of nn_parity.rs. It shows the human net runs in the browser's CPU
@@ -15,6 +15,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::hash::Hash128;
 use katago_core::game::board::Board;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -47,7 +48,7 @@ fn read(path: &str) -> Vec<u8> {
 }
 
 fn fixture(name: &str) -> Vec<u8> {
-  read(&format!("{}/../../fixtures/upstream-v1.16.5/nn/{}", env!("CARGO_MANIFEST_DIR"), name))
+  read(&format!("{}/../../fixtures/upstream-v1.18.2/nn/{}", env!("CARGO_MANIFEST_DIR"), name))
 }
 
 #[wasm_bindgen]
@@ -102,15 +103,13 @@ async fn human_net_on_wasm_flex() {
       0,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "wasmSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       Rc::new(WasmSpawner),
       bytes,

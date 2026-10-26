@@ -1,13 +1,13 @@
 //! Transcription (a test, not a port) of upstream cpp/tests/testsearchv8.cpp `Tests::runSearchTestsV8` and its
 //! sub-functions (runV8TestsSize9, runV8TestsRandomSym, runV8Tests, runMoreV8Tests, runMoreV8Tests2,
-//! runMoreV8TestsRandomizedNNEvals, runV8SearchMultithreadTest) @ v1.16.5, with the TestSearchCommon helpers as
+//! runMoreV8TestsRandomizedNNEvals, runV8SearchMultithreadTest) @ v1.18.2, with the TestSearchCommon helpers as
 //! test-local copies (common_search/mod.rs).
 //!
 //! It replays the same calls in the same order (same params, seeds and printing) through the ported AsyncBot /
 //! Search / NNEvaluator with the REAL network g170-b6c96 on the burn flex backend, and compares the captured stdout
-//! with our Eigen rerun of upstream (fixtures/upstream-v1.16.5/unit/testsearchv8/runsearchtestsv8-g170-bin.expected0.txt
+//! with our Eigen rerun of upstream (fixtures/upstream-v1.18.2/unit/testsearchv8/runsearchtestsv8-g170-bin.expected0.txt
 //! = stdout of `katago runsearchtestsv8 g170-b6c96.bin.gz true true false`, see
-//! fixtures/upstream-v1.16.5/unit/testsearchcommon/regen.sh). Board diagrams: the extracted `R"%%(...)%%"` blocks
+//! fixtures/upstream-v1.18.2/unit/testsearchcommon/regen.sh). Board diagrams: the extracted `R"%%(...)%%"` blocks
 //! `<function>.input<k>.txt`.
 //!
 //! runSearchTestsV8 creates its evaluators in seven groups (one per sub-function); each group is one #[test] here
@@ -39,6 +39,7 @@ use common_search::*;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nninputs::NNPos;
@@ -65,12 +66,12 @@ fn new_search(params: &SearchParams, nn_eval: &Rc<NNEvaluator>, seed: &str) -> B
   Box::new(Search::new(params, nn_eval.clone(), seed))
 }
 
-/// `std::unique_ptr<CompactSgf> sgf = CompactSgf::parse(sgfStr); ... sgf->setupBoardAndHistAssumeLegal(initialRules, board, nextPla, hist, turnIdx);`
+/// `std::unique_ptr<CompactSgf> sgf = CompactSgf::parse(sgfStr); ... sgf->setupBoardAndHistAssumeLegal(initialRules, board, nextPla, hist, turnIdx,BoardHistoryModes(false,false));`
 fn setup_from_sgf(sgf: &CompactSgf, initial_rules: &Rules, turn_idx: i64) -> (Board, Player, Box<BoardHistory>) {
   let mut board = Board::new();
   let mut next_pla: Player = P_BLACK;
   let mut hist = Box::new(BoardHistory::new());
-  sgf.setup_board_and_hist_assume_legal(initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx);
+  sgf.setup_board_and_hist_assume_legal(initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx, &BoardHistoryModes::new_full(false, false));
   (board, next_pla, hist)
 }
 
@@ -281,7 +282,7 @@ fn run_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
 
     let start_pla: Player = P_WHITE;
     let rules = Rules::get_tromp_taylorish();
-    let hist = Box::new(BoardHistory::new_full(&board, start_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, start_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
     let mut base_params = SearchParams::for_tests_v1();
     base_params.max_visits = 400;
     base_params.max_visits_pondering = 600;
@@ -525,7 +526,7 @@ fn run_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
 
     let next_pla = P_BLACK;
     let rules = Rules::parse_rules("Chinese").unwrap();
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.max_visits = 400;
@@ -736,7 +737,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       if has_button {
         rules.has_button = true;
       }
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, encore));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, encore, &BoardHistoryModes::new_full(false, false)));
       {
         coutln!("Without root ending bonus pts===================");
         coutln!();
@@ -777,7 +778,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
 
       let next_pla = P_WHITE;
       let rules = Rules::parse_rules("Chinese").unwrap();
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
       {
         let mut bot = new_bot(&params2, nn_eval, "async bot ending bonus points seed");
         run_bot_on_position(ctx, &mut bot, &board, next_pla, &hist, &opts);
@@ -795,7 +796,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let next_pla = P_BLACK;
     let rules = Rules::get_tromp_taylorish();
     let board = board_input(MORE, k, 9, 9);
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.max_visits = max_visits;
@@ -829,7 +830,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
 
     let next_pla = P_BLACK;
     let rules = Rules::parse_rules("Chinese").unwrap();
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params_fast = SearchParams::for_tests_v1();
     params_fast.max_visits = 5;
@@ -945,7 +946,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
 
     let next_pla = P_WHITE;
     let rules = Rules::parse_rules("Chinese").unwrap();
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params_base = SearchParams::for_tests_v1();
     params_base.max_visits = 500;
@@ -1001,7 +1002,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       ("Fill dame before pass, black to play", P_BLACK, true),
     ] {
       let rules = Rules::parse_rules("Japanese").unwrap();
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       header_trio(title);
       let mut params = params_base.clone();
@@ -1029,7 +1030,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       if let Some(k) = komi {
         rules.komi = k;
       }
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       //Both blocks print "White to play" upstream.
       header_trio("White to play");
@@ -1061,7 +1062,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     {
       let mut rules = Rules::parse_rules("Japanese").unwrap();
       rules.komi = 8.0;
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       header_trio("White to play");
       let params = params_base.clone();
@@ -1085,7 +1086,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       let mut next_pla = pass_pla;
       let mut rules = Rules::parse_rules("Chinese").unwrap();
       rules.komi = komi;
-      let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
       hist.make_board_move_assume_legal(&mut board, Board::PASS_LOC, next_pla, None, false);
       next_pla = get_opp(pass_pla);
 
@@ -1112,7 +1113,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let next_pla_base = P_BLACK;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = 6.5;
-    let hist_base = Box::new(BoardHistory::new_full(&board_base, next_pla_base, &rules, 0));
+    let hist_base = Box::new(BoardHistory::new_full(&board_base, next_pla_base, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params_base = SearchParams::for_tests_v1();
     params_base.max_visits = 1000;
@@ -1157,7 +1158,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_BLACK;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = 6.5;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params0 = SearchParams::for_tests_v1();
     params0.max_visits = 1000;
@@ -1223,7 +1224,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_BLACK;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = 6.5;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params0 = SearchParams::for_tests_v1();
     params0.max_visits = 1000;
@@ -1257,7 +1258,7 @@ fn run_more_v8_tests(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_WHITE;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = 25.5;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params0 = SearchParams::for_tests_v1();
     params0.max_visits = 1000;
@@ -1292,7 +1293,7 @@ fn run_more_v8_tests2(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let next_pla = P_WHITE;
     let rules = Rules::get_tromp_taylorish();
     let board = board_input("runmorev8tests2", 0, 7, 9);
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.max_visits = 100;
@@ -1325,7 +1326,7 @@ fn run_more_v8_tests_randomized_nn_evals(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator
 
     let next_pla = P_BLACK;
     let rules = Rules::parse_rules("AGA").unwrap();
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.root_num_symmetries_to_sample = 8;
@@ -1397,7 +1398,7 @@ fn run_v8_search_multithread_test(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_BLACK;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = 8.5;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.max_visits = 16000;
@@ -1447,7 +1448,7 @@ fn run_v8_search_multithread_test(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_WHITE;
     let mut rules = Rules::parse_rules("Chinese").unwrap();
     rules.komi = 6.5;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut params = SearchParams::for_tests_v1();
     params.max_visits = 8000;

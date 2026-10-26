@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/neuralnet/modelversion.cpp, cpp/neuralnet/modelversion.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/neuralnet/modelversion.cpp, cpp/neuralnet/modelversion.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use crate::core::global::Global;
 use crate::core::global::KataError;
@@ -24,6 +24,7 @@ use crate::neuralnet::nninputs::NNInputs;
 //14 = V7 features, Squared softplus for error variance predictions
 //15 = V7 features, Extra nonlinearity for pass output
 //16 = V7 features, Q value predictions in the policy head
+//17 = V7 features, dropped Q value predictions, introduced transformers and added guards to unused params
 
 /// upstream: NNModelVersion (modelversion.h)
 // Model versions
@@ -32,9 +33,9 @@ pub struct NNModelVersion;
 impl NNModelVersion {
   /// upstream: NNModelVersion::latestModelVersionImplemented, latestInputsVersionImplemented,
   /// defaultModelVersion, oldestModelVersionImplemented, oldestInputsVersionImplemented (modelversion.h)
-  pub const latestModelVersionImplemented: i32 = 16;
+  pub const latestModelVersionImplemented: i32 = 17;
   pub const latestInputsVersionImplemented: i32 = 7;
-  pub const defaultModelVersion: i32 = 16;
+  pub const defaultModelVersion: i32 = 17;
 
   pub const oldestModelVersionImplemented: i32 = 3;
   pub const oldestInputsVersionImplemented: i32 = 3;
@@ -42,7 +43,7 @@ impl NNModelVersion {
   /// upstream: NNModelVersion::getInputsVersion (modelversion.cpp)
   // Which V* feature version from NNInputs does a given model version consume?
   pub fn get_inputs_version(model_version: i32) -> Result<i32, KataError> {
-    if model_version >= 8 && model_version <= 16 {
+    if model_version >= 8 && model_version <= 17 {
       return Ok(7);
     } else if model_version == 7 {
       return Ok(6);
@@ -61,7 +62,7 @@ impl NNModelVersion {
   // Convenience functions, feeds forward the number of features and the size of
   // the row vector that the net takes as input
   pub fn get_num_spatial_features(model_version: i32) -> Result<i32, KataError> {
-    if model_version >= 8 && model_version <= 16 {
+    if model_version >= 8 && model_version <= 17 {
       return Ok(NNInputs::NUM_FEATURES_SPATIAL_V7);
     } else if model_version == 7 {
       return Ok(NNInputs::NUM_FEATURES_SPATIAL_V6);
@@ -78,7 +79,7 @@ impl NNModelVersion {
 
   /// upstream: NNModelVersion::getNumGlobalFeatures (modelversion.cpp)
   pub fn get_num_global_features(model_version: i32) -> Result<i32, KataError> {
-    if model_version >= 8 && model_version <= 16 {
+    if model_version >= 8 && model_version <= 17 {
       return Ok(NNInputs::NUM_FEATURES_GLOBAL_V7);
     } else if model_version == 7 {
       return Ok(NNInputs::NUM_FEATURES_GLOBAL_V6);
@@ -120,5 +121,5 @@ fn fail<T>(model_version: i32) -> Result<T, KataError> {
 /// upstream: static_assert block (modelversion.cpp)
 const _: () = assert!(NNModelVersion::oldestModelVersionImplemented == 3);
 const _: () = assert!(NNModelVersion::oldestInputsVersionImplemented == 3);
-const _: () = assert!(NNModelVersion::latestModelVersionImplemented == 16);
+const _: () = assert!(NNModelVersion::latestModelVersionImplemented == 17);
 const _: () = assert!(NNModelVersion::latestInputsVersionImplemented == 7);

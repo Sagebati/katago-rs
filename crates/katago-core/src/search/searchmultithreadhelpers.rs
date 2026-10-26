@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchmultithreadhelpers.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchmultithreadhelpers.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE (PORTING.md §11): there is no task thread pool. numAdditionalThreadsToUseForTasks()
 // returns 0, so every sharded or tree-walking task runs on thread index 0 only (and no PCG32 is

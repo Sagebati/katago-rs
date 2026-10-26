@@ -1,9 +1,12 @@
 //! Differential fuzz regression oracle for game/board against the real C++
-//! (fixtures/upstream-v1.16.5/unit/oracle/board_fuzz.cpp, adopted from the pilot board review).
+//! (fixtures/upstream-v1.18.2/unit/oracle/board_fuzz.cpp, adopted from the pilot board review).
 //! Mirrors board_fuzz.cpp line for line: same splitmix stream, same queries, same output text.
 //!   board_fuzz_hashes.txt  one FNV-1a 64 of each game's full trace (seed0 = 1)
 //!   board_fuzz_trace.txt   full traces of a few games (seed0 = 7), compared line by line
 //!   board_fuzz_loc.txt     Location::tryOfString on malformed / overflowing input
+
+// Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
+#![allow(clippy::needless_late_init)]
 
 mod common;
 
@@ -61,6 +64,12 @@ fn st(b: &Board) -> String {
 fn bi(x: bool) -> String {
   (x as i32).to_string()
 }
+fn cons(b: &Board) -> String {
+  match b.check_consistency() {
+    Ok(()) => "ok".to_string(),
+    Err(e) => format!("ERR {}", e),
+  }
+}
 fn area_str(b: &Board, r: &[Color]) -> String {
   let mut s = String::new();
   for y in 0..b.y_size {
@@ -80,9 +89,10 @@ fn analyze(out: &mut String, rng: &mut R, b: &mut Board, sui: bool, tag: i32) {
     b.calculate_area(&mut area, m & 1 != 0, (m >> 1) & 1 != 0, (m >> 2) & 1 != 0, (m >> 3) & 1 != 0);
     *out += &format!("CA {} {}\n", m, area_str(b, &area));
   }
-  for m in 0..8 {
+  // m < 8: excludeTerritoryAdjacentToAtari = false (the v1.16.5 behavior); m >= 8: the v1.18.2 rules-v3 mode.
+  for m in 0..16 {
     let mut cnt: i32 = -999;
-    b.calculate_independent_life_area(&mut area, &mut cnt, m & 1 != 0, (m >> 1) & 1 != 0, (m >> 2) & 1 != 0);
+    b.calculate_independent_life_area(&mut area, &mut cnt, m & 1 != 0, (m >> 1) & 1 != 0, (m >> 3) & 1 != 0, (m >> 2) & 1 != 0);
     *out += &format!("IL {} {} {}\n", m, cnt, area_str(b, &area));
   }
   let mut pa = [0 as Color; Board::MAX_ARR_SIZE as usize];
@@ -257,6 +267,49 @@ fn run_game(out: &mut String, g: i32, seed0: u64) {
       *out += &format!("S {} {} {} {}{}\n", which, l, c, bi(ok), st(&b));
     }
     analyze(out, &mut rng, &mut b, sui, -3);
+  }
+  // regenChainsFromColors on a copy, then setStonesTolerant (v1.18.2): random placements, including
+  // off-board / wall / out-of-range locations and invalid colors (ignored), duplicates (last one wins),
+  // and dense fills that leave zero-liberty groups to be removed simultaneously.
+  {
+    let mut rg = b.clone();
+    rg.regen_chains_from_colors();
+    *out += &format!("RG{} {}\n", st(&rg), cons(&rg));
+    let nt = rng.rnd(4) + 1;
+    for _k in 0..nt {
+      let np = rng.rnd(area + 4);
+      let mut pl: Vec<Move> = Vec::new();
+      let mut ps = String::new();
+      for _j in 0..np {
+        let kind = rng.rnd(12);
+        let l: Loc;
+        if kind == 0 {
+          let z = rng.rnd(Board::MAX_ARR_SIZE + 40);
+          l = (z - 20) as Loc;
+        } else {
+          let lx = rng.rnd(xs);
+          let ly = rng.rnd(ys);
+          l = Location::get_loc(lx, ly, xs);
+        }
+        let cc = rng.rnd(8);
+        let c: Color;
+        if cc <= 2 {
+          c = C_BLACK;
+        } else if cc <= 5 {
+          c = C_WHITE;
+        } else if cc == 6 {
+          c = C_EMPTY;
+        } else {
+          let bad = rng.rnd(3);
+          c = if bad == 0 { -1 } else if bad == 1 { C_WALL } else { 4 };
+        }
+        pl.push(Move::new(l, c));
+        ps += &format!("{}:{},", l, c);
+      }
+      let nr = b.set_stones_tolerant(&pl);
+      *out += &format!("T {} {} {}{} {}\n", np, ps, nr, st(&b), cons(&b));
+    }
+    analyze(out, &mut rng, &mut b, sui, -4);
   }
 }
 

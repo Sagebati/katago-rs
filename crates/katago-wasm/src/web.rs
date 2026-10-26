@@ -22,6 +22,7 @@ use katago_core::command::analysis::AnalysisArgs;
 use katago_core::command::analysis::AnalysisHost;
 use katago_core::command::analysis::LoggerSettings;
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNResultBuf;
@@ -269,6 +270,15 @@ impl NeuralNet for StatsNeuralNet {
   fn print_devices(&self) {
     self.inner.print_devices()
   }
+  fn get_runtime_backend_detail(&self, cfg: &mut ConfigParser) -> String {
+    self.inner.get_runtime_backend_detail(cfg)
+  }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+    self.inner.get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    self.inner.get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
   fn load_model_file(&self, file: &str, model_bytes: Vec<u8>, expected_sha256: &str) -> Result<Box<dyn nninterface::LoadedModel>, KataError> {
     self.inner.load_model_file(file, model_bytes, expected_sha256)
   }
@@ -280,24 +290,14 @@ impl NeuralNet for StatsNeuralNet {
     gpu_idxs: &[i32],
     nn_x_len: i32,
     nn_y_len: i32,
-    open_cl_tuner_file: &str,
     home_data_dir_override: &str,
-    open_cl_re_tune_per_board_size: bool,
     use_fp16_mode: enabled_t,
-    use_nhwc_mode: enabled_t,
     loaded_model: &dyn nninterface::LoadedModel,
+    cfg: &mut ConfigParser,
   ) -> Result<Box<dyn nninterface::ComputeContext>, KataError> {
-    self.inner.create_compute_context(
-      gpu_idxs,
-      nn_x_len,
-      nn_y_len,
-      open_cl_tuner_file,
-      home_data_dir_override,
-      open_cl_re_tune_per_board_size,
-      use_fp16_mode,
-      use_nhwc_mode,
-      loaded_model,
-    )
+    self
+      .inner
+      .create_compute_context(gpu_idxs, nn_x_len, nn_y_len, home_data_dir_override, use_fp16_mode, loaded_model, cfg)
   }
   fn create_compute_handle(
     &self,
@@ -324,6 +324,9 @@ impl NeuralNet for StatsNeuralNet {
   }
   fn is_using_fp16(&self, compute_handle: &dyn nninterface::ComputeHandle) -> bool {
     self.inner.is_using_fp16(compute_handle)
+  }
+  fn set_is_warmup(&self, compute_handle: &dyn nninterface::ComputeHandle, is_warmup: bool) -> bool {
+    self.inner.set_is_warmup(compute_handle, is_warmup)
   }
   fn create_input_buffers(
     &self,
@@ -437,6 +440,12 @@ impl NNEvaluatorHost for WebNNHost {
   }
   fn spawner(&self) -> Rc<dyn Spawner> {
     Rc::new(WasmSpawner)
+  }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+    katago_nn_burn::backend::get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    katago_nn_burn::backend::get_num_effective_devices(cfg, gpu_idx_by_server_thread)
   }
 }
 

@@ -3,8 +3,8 @@
 Scope: every upstream search test (`cpp/tests/testsearch*.cpp`) and every analysis golden
 (`cpp/tests/analysis/*.txt`), with what each one needs and which oracle to use. Generated while
 preparing the oracles; the fixtures named here are checked in and never hand-edited.
-Regenerate with `fixtures/upstream-v1.16.5/analysis/regen.sh` and
-`fixtures/upstream-v1.16.5/unit/testsearchcommon/regen.sh` (both run the Eigen build,
+Regenerate with `fixtures/upstream-v1.18.2/analysis/regen.sh` and
+`fixtures/upstream-v1.18.2/unit/testsearchcommon/regen.sh` (both run the Eigen build,
 `just katago-eigen`; the second takes about 20 minutes, V8 dominates).
 
 ## 1. Findings that change the plan
@@ -44,7 +44,7 @@ Regenerate with `fixtures/upstream-v1.16.5/analysis/regen.sh` and
    (`program/play.cpp` is `[[ignored]]`), `Setup::loadSingleParams` for GTP/MATCH/BENCHMARK/OTHER/DISTRIBUTED
    (only the analysis branch is ported), the human-SL net (`bin2onnx` rejected `metaEncoderVersion > 0` until M8; resolved, section 7).
 
-## 2. Analysis goldens (`fixtures/upstream-v1.16.5/analysis/`)
+## 2. Analysis goldens (`fixtures/upstream-v1.18.2/analysis/`)
 
 Invocation (all from `runcmdtests.sh`, rerun literally by `regen.sh` from a cwd that mirrors `cpp/`):
 `katago analysis -config configs/analysis_example.cfg -model <model> -override-config "<COMMON>, <row overrides>"`
@@ -73,7 +73,7 @@ order and format. Order in this table is the suggested porting order.
 | 7 | `pvvisits.txt.stdout` (7.3 KB) | `pvvisits.txt`: 2 queries, 7x7, 1000 visits | b6c96 | maxVisits=100 (the queries' own 1000 wins), graph search on (default) | `includePVVisits`, `pvEdgeVisits`, graph search (transpositions) | **structurally different**: both responses have different visit distributions (edgeVisits/pvEdgeVisits off by up to 14, one 10-move pv vs a 9-move one, one pv move different). A 1000-visit search amplifies float noise |
 | 8 | `pvvisits_nograph.stdout` (7.9 KB) | `pvvisits.txt` | b6c96 | no maxVisits on the command line (the queries say 1000), useGraphSearch=false | same without graph search (tree edge visits == visits) | **structurally different**: one response lists 10 moves vs 9, move order differs in places, edgeVisits off by up to 11 |
 | 9 | `evalcache.txt.stdout` (4.7 KB) | `evalcache.txt`: A/B/C (25/27/25 moves, 50/100/50 visits) | b6c96 | maxVisits=100 (loop form, no eval cache) | repeatability: C must equal A | n/a (upstream has no golden for it; the loop run is unchecked) |
-| 10 | `eval_cache.stdout` (8 KB) | `evalcache.txt` through fifos (line N+1 only after response N) | **b10c128** | useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10 | `useEvalCache`: C is *not* equal to A (root visits 50, top move R19 with 8 visits vs S13 with 42), B reuses A's cache | n/a (upstream throws stdout away and keeps only `eval_cache.txt.log`); fed by the fifo handshake in `regen.sh` |
+| 10 | `eval_cache.stdout` (8 KB) | `evalcache.txt` through fifos (line N+1 only after response N) | **b10c128** | useGraphSearch=true, useEvalCache=true, evalCacheMinVisits=10 | `useEvalCache`: C equals A again (root visits 50, S13 with 42 visits) since v1.18.2's eval cache fix (upstream b03b0244: `SearchParams::getHash` folded into every eval cache key, so B's 100-visit results stay out of A's and C's lookups); against v1.16.5 C was *not* equal to A (top move R19 with 8 visits) | n/a (upstream throws stdout away and keeps only `eval_cache.txt.log`); fed by the fifo handshake in `regen.sh` |
 | 11 | `humansl_sidetomove.stdout` (17 KB) | `humansl.txt.noauto`: 5 searches + `query_models` + a 91-stone position with `humanSLRootExploreProbWeightless/CpuctPermanent` | b6c96 + human net `b18c384nbt-humanv0` (model v15, outside this repo: `backend/docker/models`) | + SIDETOMOVE, humanSLProfile = preaz_18k | human-SL head, `humanScoreMean/Stdev`, `query_models` | same shape; humanScoreMean <= 2.8e-2, scoreLead 5.8e-3. `query_models` line differs by backend: `maxBatchSize` 2 vs 64, `usingFP16` "auto" vs "false". Passes since M8 (`golden_humansl_sidetomove`, maxBatchSize normalized) |
 
 Per-golden notes for the test writer:
@@ -82,7 +82,7 @@ Per-golden notes for the test writer:
 - At <= 100 visits all six search goldens that exist upstream (#2-#6, #11) agree with ours on moves, order, visits and pv. Expect Rust-vs-Eigen to agree there too, and to diverge at 500-1000 visits (#7, #8): compare those on root visits, the top move, and the first few pv moves, or use a tolerance for visit counts.
 - `query_models` (#11, line 5) echoes the `-model` path as given: tests must pass the same relative names (`tests/models/...`) or mask `name`, `maxBatchSize`, `usingFP16`.
 
-## 3. Search-test fixtures (`fixtures/upstream-v1.16.5/unit/testsearch*/`)
+## 3. Search-test fixtures (`fixtures/upstream-v1.18.2/unit/testsearch*/`)
 
 Each stem has `INDEX.tsv` (same four columns as `extract_raw_blocks.py`): `role=input` rows are the 72 board
 blocks (appendix A), `role=expected` rows are the files below. For Eigen reruns the INDEX `line` is 1 (no source
@@ -164,7 +164,7 @@ Blocks are listed in appendix A; counts below are input boards.
 
 - Analysis goldens: two concurrent complete runs byte-identical.
 - Search fixtures: the complete `testsearchcommon/regen.sh` was run twice into separate scratch directories (first run 21 min, second 19 min, 6 jobs in parallel); all 12 expected fixtures are byte-identical between the runs, including the V8 sections with 30/40 search threads and the randomized-symmetry evaluators (with 1 NN server thread the Eigen outputs are reproducible even where upstream calls them nondeterministic). The NN-less slice is also a verbatim substring of upstream's file.
-- Sizes: `fixtures/upstream-v1.16.5/analysis/` 176 KB (11 `.stdout` + `regen.sh`); `unit/testsearch*/` 2.3 MB (72 input blocks, 12 expected files totalling 1.9 MB incl. V8 500 KB and V9 559 KB, INDEX files, `testsearchcommon/regen.sh`). Total 2.4 MB.
+- Sizes: `fixtures/upstream-v1.18.2/analysis/` 176 KB (11 `.stdout` + `regen.sh`); `unit/testsearch*/` 2.3 MB (72 input blocks, 12 expected files totalling 1.9 MB incl. V8 500 KB and V9 559 KB, INDEX files, `testsearchcommon/regen.sh`). Total 2.4 MB.
 - `tools/extract_raw_blocks.py`: one backward-compatible fix. The function-name regex did not accept digits, so
   every `runV8Tests*`, `runV9Positions` block was filed under `toplevel`. With the fix the already extracted stems
   (testrules, testscore, testboardarea, testboardbasic, testsymmetries, testnninputs, rand) regenerate
@@ -282,7 +282,7 @@ in the source; it is exact for the NN-less file (the 32 blocks map, in order, on
   line N+1 after response N; within tolerance, C differs from A as upstream). All analysis goldens are compared,
   `humansl_sidetomove` since M8 (b6c96 + `-human-model b18c384nbt-humanv0`, within tolerance; max deviation
   humanScoreMean 5.5e-5).
-- `runNNLessSearchTests`: 44/44 sections byte-exact ("Board size distribution" through a test-local GameInitializer).
+- `runNNLessSearchTests`: 45/45 sections byte-exact (44 at v1.16.5; v1.18.2 added "Eval cache keys depend on search params") ("Board size distribution" through a test-local GameInitializer).
 - `runNNOnTinyBoard`: katago-nn-burn `tests/testsearchmisc.rs`, exact (39 lines). Only `runNNSymmetries` (g103 v5)
   stays on the fixture_coverage allowlist from testsearchmisc.
 - V8: the antiMirror sections (2) are within tolerance; the pattern-bonus sections (3) are compared and allowlisted

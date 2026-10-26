@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchhelpers.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchhelpers.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE: `std::shared_ptr<NNOutput>*` results are `Rc<NNOutput>`; maybeAddPolicyNoiseAndTemp,
 // addDirichletNoise and computeDirichletAlphaDistribution return Result because

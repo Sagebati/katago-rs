@@ -218,9 +218,18 @@ class Position:
         legal[POS_LEN * POS_LEN] = True
         return legal
 
-    def features(self, feats: Features):
+    def features(self, feats: Features, desc=None):
         gs = self.gs
         rules = dict(gs.rules)
+        # Model header options (v17 header slots; KataGo's search sets BoardHistoryModes from them, and
+        # kata-raw-nn featurizes with those modes):
+        #  - preferExcludeTerritoryAdjacentToAtari: territory area features (encore phases only) skip empty
+        #    points next to own chains in atari (upstream python reads rules["excludeTerritoryAdjacentToAtari"]).
+        #  - preferPassAliveUnderSuicideRules: pass-alive area features computed as if multi-stone suicide
+        #    were legal; the suicide global feature and the legal moves keep the real rule.
+        prefer_pass_alive = bool(desc is not None and desc.prefer_pass_alive_under_suicide_rules)
+        if desc is not None and desc.prefer_exclude_territory_adjacent_to_atari:
+            rules["excludeTerritoryAdjacentToAtari"] = True
         pla = self.pla
         opp = Board.get_opp(pla)
         # Simple-ko only rules, main phase, no button: a pass ends the phase iff the last move was a pass
@@ -242,7 +251,13 @@ class Position:
             boards, moves, move_idx = [gs.board], [], 0
         else:
             boards, moves, move_idx = gs.boards, gs.moves, len(gs.moves)
-        feats.fill_row_features(gs.board, pla, opp, boards, moves, move_idx, rules,
+        board = gs.board
+        if prefer_pass_alive:
+            board = gs.board.copy()
+            area_fn, nondame_fn = board.calculateArea, board.calculateNonDameTouchingArea
+            board.calculateArea = lambda *a: area_fn(*a[:-1], True)
+            board.calculateNonDameTouchingArea = lambda *a: nondame_fn(*a[:-1], True)
+        feats.fill_row_features(board, pla, opp, boards, moves, move_idx, rules,
                                 bin_input, global_input, idx=0)
         bin_input = bin_input.reshape([1, POS_LEN, POS_LEN, -1]).transpose(0, 3, 1, 2)
         return np.ascontiguousarray(bin_input), global_input
@@ -418,6 +433,10 @@ def main():
     ap.add_argument("--extra-overrides", default="", help="extra -override-config entries (comma separated)")
     ap.add_argument("--tol-prob", type=float, default=1e-4)
     ap.add_argument("--tol-score", type=float, default=1e-3)
+    ap.add_argument("--tol-score-rel", type=float, default=0.0,
+                    help="also accept lead/scoreMean diffs up to this fraction of |reference| (default 0 = off). "
+                         "Eigen sums squares sequentially in float32 (spatial trunk-tip RMSNorm: C*361 terms), "
+                         "which alone can move |score| > 100 by ~1e-3")
     ap.add_argument("--dump-features", default=None,
                     help="Save features/raw outputs to this .npz (human-SL nets: <name>.<profile>.npz per profile)")
     ap.add_argument("--human-sl-profiles", default="preaz_18k,rank_9d,rank_1k_15k,proyear_1850,proyear_2022",
@@ -445,19 +464,30 @@ def main():
     profiles = [p for p in args.human_sl_profiles.split(",") if p] if meta else [None]
     sess = ort.InferenceSession(args.onnx, providers=["CPUExecutionProvider"])
     tmp = tempfile.mkdtemp(prefix="bin2onnx-verify-")
-    bins, globs = zip(*(p.features(feats) for p in positions))
+    bins, globs = zip(*(p.features(feats, desc) for p in positions))
     bin_input = np.concatenate(bins)
     global_input = np.concatenate(globs)
     # NNEvaluator::evaluate: "Avoid using policy optimism for humanSL"
     policy_optimism = 0.0 if meta else args.policy_optimism
 
-    print(f"model  {desc.name} (version {desc.model_version}, metaEncoderVersion {desc.meta_encoder_version})")
+    print(f"model  {desc.name} (version {desc.model_version}, metaEncoderVersion {desc.meta_encoder_version}, "
+          f"transformer {int(desc.has_any_transformer_blocks)}, trunkNormKind {desc.trunk.trunk_norm_kind}, "
+          f"preferPassAliveUnderSuicideRules {int(desc.prefer_pass_alive_under_suicide_rules)}, "
+          f"preferExcludeTerritoryAdjacentToAtari {int(desc.prefer_exclude_territory_adjacent_to_atari)})")
     print(f"onnx   {args.onnx}")
     print(f"katago {katago}")
     print(f"policyOptimism {policy_optimism}  (GTP print precision: probs 1e-6, ownership 1e-7, scores 1e-3)")
     hdr = f"{'position':<22} {'rules':<8} {'tomove':<6} {'policy':>9} {'wl/nr':>9} {'owner':>9} {'lead':>8} {'scoreM':>8} {'scoreSq':>8} {'other':>8}  ok"
     all_ok = True
     worst = {}
+    worst_rel = {}
+
+    def rel(d, ref, floor):
+        """Relative error |d| / max(|ref|, floor) (floor avoids blowing up near 0; values print-rounded)."""
+        d = np.abs(np.asarray(d, dtype=np.float64))
+        ref = np.abs(np.asarray(ref, dtype=np.float64))
+        r = d / np.maximum(ref, floor)
+        return float(np.nanmax(r)) if r.size else 0.0
     for profile in profiles:
         # --- ONNX ---
         feeds = {"bin_input": bin_input, "global_input": global_input}
@@ -506,17 +536,34 @@ def main():
             d_sq = abs(r["whiteScoreSelfplaySq"] - ours["whiteScoreSelfplaySq"])
             d_other = max(abs(r[k] - ours[k]) for k in ("varTimeLeft", "shorttermWinlossError", "shorttermScoreError"))
             ok = (legal_match and d_pol <= args.tol_prob and d_wl <= args.tol_prob and d_own <= args.tol_prob
-                  and d_lead <= args.tol_score and d_sm <= args.tol_score)
+                  and d_lead <= max(args.tol_score, args.tol_score_rel * abs(r["whiteLead"]))
+                  and d_sm <= max(args.tol_score, args.tol_score_rel * abs(r["whiteScoreSelfplay"])))
             all_ok &= ok
             for k, v in (("policy", d_pol), ("wl/nr", d_wl), ("owner", d_own), ("lead", d_lead),
                          ("scoreM", d_sm), ("scoreSq", d_sq), ("other", d_other)):
                 worst[k] = max(worst.get(k, 0.0), v)
+            pol_mask = ~(nan_ref | nan_ours)
+            rels = {
+                "policy": max(rel((r["policy"] - ours["policy"])[pol_mask], r["policy"][pol_mask], 1e-3),
+                              rel(r["policyPass"] - ours["policyPass"], r["policyPass"], 1e-3)),
+                "wl/nr": max(rel(r[k] - ours[k], r[k], 1e-3) for k in ("whiteWin", "whiteLoss", "noResult")),
+                "owner": rel(r["ownership"] - ours["ownership"], r["ownership"], 1e-3),
+                "lead": rel(r["whiteLead"] - ours["whiteLead"], r["whiteLead"], 1.0),
+                "scoreM": rel(r["whiteScoreSelfplay"] - ours["whiteScoreSelfplay"], r["whiteScoreSelfplay"], 1.0),
+                "scoreSq": rel(r["whiteScoreSelfplaySq"] - ours["whiteScoreSelfplaySq"], r["whiteScoreSelfplaySq"], 1.0),
+                "other": max(rel(r[k] - ours[k], r[k], 1e-2)
+                             for k in ("varTimeLeft", "shorttermWinlossError", "shorttermScoreError")),
+            }
+            for k, v in rels.items():
+                worst_rel[k] = max(worst_rel.get(k, 0.0), v)
             tomove = "B" if p.pla == B else "W"
             flag = "OK" if ok else ("FAIL" + ("" if legal_match else " (legal mask mismatch)"))
             print(f"{p.label:<22} {p.rules_name:<8} {tomove:<6} {d_pol:9.2e} {d_wl:9.2e} {d_own:9.2e} "
                   f"{d_lead:8.1e} {d_sm:8.1e} {d_sq:8.1e} {d_other:8.1e}  {flag}")
     print("-" * len(hdr))
-    print("max    " + "  ".join(f"{k}={v:.2e}" for k, v in worst.items()))
+    print("max abs " + "  ".join(f"{k}={v:.2e}" for k, v in worst.items()))
+    print("max rel " + "  ".join(f"{k}={v:.2e}" for k, v in worst_rel.items())
+          + "   (|d|/max(|ref|,floor); floor 1e-3 probs/ownership, 1 scores, 1e-2 other)")
     print("RESULT:", "PASS" if all_ok else "FAIL")
     sys.exit(0 if all_ok else 1)
 

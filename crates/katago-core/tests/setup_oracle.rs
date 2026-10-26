@@ -1,4 +1,4 @@
-//! Setup (program/setup.rs) against the unmodified upstream program/setup.cpp: fixtures/upstream-v1.16.5/unit/oracle/
+//! Setup (program/setup.rs) against the unmodified upstream program/setup.cpp: fixtures/upstream-v1.18.2/unit/oracle/
 //! setup_oracle.cpp drives upstream's Setup on the config cases of setup_oracle_cases.txt (every upstream config,
 //! mutated variants, fuzzed configs; made by setup_oracle_gen.py) and dumps what it produces. This test replays
 //! every op through the port and must print the same bytes (see the oracle's header for the record format):
@@ -11,6 +11,9 @@
 //! Differences the test accounts for (all port-side, none changes a result):
 //! - `Setup::getBackendPrefixes` ends with "burn" (katago-nn-burn's backend; PORT NOTE in setup.rs). The oracle
 //!   generator leaves "burn*" keys out of the cases, so the only place it shows is the PREFIXES line.
+//! - The oracle compiles setup.cpp without a backend define but links the Eigen build's neuralnet objects, so its
+//!   `NeuralNet::getBatchPolicy` / `getNumEffectiveDevices` are eigenbackend.cpp's (CpuLocal, 1): the test host
+//!   answers the same (`NNEvaluatorHost::get_batch_policy`, D6).
 //!
 //! Not a port of upstream code.
 
@@ -33,8 +36,10 @@ use katago_core::game::board::C_EMPTY;
 use katago_core::game::board::P_BLACK;
 use katago_core::game::board::P_WHITE;
 use katago_core::game::board::Player;
+use katago_core::neuralnet::nninterface::BatchPolicy;
 use katago_core::neuralnet::nninterface::NeuralNet;
 use katago_core::port::executor::Spawner;
+use katago_core::program::setup::MaxBatchSizeRequest;
 use katago_core::program::setup::NNEvaluatorHost;
 use katago_core::program::setup::Setup;
 use katago_core::program::setup::setup_for_t;
@@ -74,6 +79,13 @@ impl NNEvaluatorHost for Host {
   }
   fn spawner(&self) -> Rc<dyn Spawner> {
     self.spawner.clone()
+  }
+  // eigenbackend.cpp's, the backend the oracle links (see the module doc).
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::CpuLocal
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, _: &[i32]) -> i32 {
+    1
   }
 }
 
@@ -398,7 +410,9 @@ fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
       for sf in 0..6 {
         for variant in 0..4 {
           let Some(mut cfg) = mk(&mut o) else { continue };
-          let default_max_batch_size = if variant & 1 != 0 { 16 } else { -1 };
+          // v1.18.2: the oracle maps the old int defaultMaxBatchSize 16 -> explicitSize(16), -1 -> fromConcurrency().
+          let default_max_batch_size =
+            if variant & 1 != 0 { MaxBatchSizeRequest::explicit_size(16) } else { MaxBatchSizeRequest::from_concurrency() };
           let disable_fp16 = variant & 2 != 0;
           let n_models = if variant == 3 { 1 } else { 2 };
           o.push_str(&format!("N {} {}\n", sf, variant));
@@ -423,18 +437,17 @@ fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
                   Some(c) => c.table_size as i64,
                 };
                 blk.push_str(&format!(
-                  "E {} name={} file={} maxBatch={} curBatch={} x={} y={} exact={} nhwc={} fp16={} nhwcMode={} threads={}",
+                  "E {} name={} file={} maxBatch={} curBatch={} x={} y={} exact={} nhwc={} fp16={} threads={}",
                   i,
                   e.get_model_name(),
                   e.get_model_file_name(),
                   e.get_max_batch_size(),
-                  e.get_current_batch_size(),
+                  e.get_max_rows_to_send_per_batch(),
                   e.get_nnx_len(),
                   e.get_nny_len(),
                   e.require_exact_nn_len as i32,
                   e.inputs_use_nhwc as i32,
                   e.get_using_fp16_mode().to_string(),
-                  e.get_using_nhwc_mode().to_string(),
                   e.num_threads.get()
                 ));
                 blk.push_str(" gpus=");

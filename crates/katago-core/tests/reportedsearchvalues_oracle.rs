@@ -1,5 +1,5 @@
 //! search/reportedsearchvalues: `operator<<` against the unmodified upstream
-//! (fixtures/upstream-v1.16.5/unit/oracle/reportedsearchvalues.txt, from oracle/reportedsearchvalues.cpp)
+//! (fixtures/upstream-v1.18.2/unit/oracle/reportedsearchvalues.txt, from oracle/reportedsearchvalues.cpp)
 //! over special and generated field values. The constructor taking `const Search&` waits for
 //! search::Search (TODO(port) in the source) and is not covered. Not a port of upstream code.
 //! Keep in the same order as the oracle.

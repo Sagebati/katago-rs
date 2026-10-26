@@ -74,7 +74,7 @@ fn cli_bad_arguments() {
 }
 
 /// An exception escaping MainCmds::analysis: std::terminate's message on stderr and SIGABRT (exit 134), as
-/// upstream's Linux build (fixtures/upstream-v1.16.5/analysis-protocol has the config / argv cases).
+/// upstream's Linux build (fixtures/upstream-v1.18.2/analysis-protocol has the config / argv cases).
 #[test]
 fn cli_uncaught_exception_aborts() {
   use std::os::unix::process::ExitStatusExt;

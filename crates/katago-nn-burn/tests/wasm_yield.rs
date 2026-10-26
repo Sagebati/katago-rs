@@ -16,11 +16,13 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::game::board::Board;
 use katago_core::game::board::Location;
 use katago_core::game::board::P_BLACK;
 use katago_core::game::board::P_WHITE;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
@@ -74,15 +76,13 @@ async fn evaluate_yields_to_the_event_loop() {
       0,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "wasmSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       Rc::new(WasmSpawner),
       bytes,
@@ -93,7 +93,7 @@ async fn evaluate_yields_to_the_event_loop() {
 
   let mut board = Board::new_x_y(19, 19).unwrap();
   let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5);
-  let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+  let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
   for (x, y) in [(3, 3), (15, 15), (2, 15)] {
     let pla = hist.presumed_next_move_pla;
     hist.make_board_move_assume_legal(&mut board, Location::get_loc(x, y, 19), pla, None, false);

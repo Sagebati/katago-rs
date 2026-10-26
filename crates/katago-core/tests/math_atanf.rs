@@ -1,7 +1,7 @@
 //! port::math::atanf against glibc 2.44's correctly rounded atanf (CORE-MATH).
 //!
 //! - `atanf_sample_hashes_vs_glibc` (native and wasm32): 2^20 pseudo-random inputs plus special values, their
-//!   result bits folded per 65536-input chunk, against fixtures/upstream-v1.16.5/unit/oracle/math_atanf.txt.
+//!   result bits folded per 65536-input chunk, against fixtures/upstream-v1.18.2/unit/oracle/math_atanf.txt.
 //! - `atanf_exhaustive_vs_glibc` (native, ignored): every f32 against the platform's atanf, and the ties of
 //!   `cr_atan(x) as f32` (port::math::ATANF_TIES) listed.
 //! - `regen_math_atanf_fixture` (native, ignored): writes the fixture from the platform's atanf (glibc 2.44).
@@ -154,12 +154,12 @@ fn atanf_exhaustive_vs_glibc() {
   assert_eq!(table, ties, "ATANF_TIES must be exactly the tie inputs, with glibc's results");
 }
 
-/// Writes fixtures/upstream-v1.16.5/unit/oracle/math_atanf.txt from the platform atanf (run on glibc 2.44).
+/// Writes fixtures/upstream-v1.18.2/unit/oracle/math_atanf.txt from the platform atanf (run on glibc 2.44).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 #[ignore = "regenerates the oracle: cargo nextest run -p katago-core --test math_atanf --run-ignored only -E 'test(regen)'"]
 fn regen_math_atanf_fixture() {
-  let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/upstream-v1.16.5/unit/oracle/math_atanf.txt");
+  let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/upstream-v1.18.2/unit/oracle/math_atanf.txt");
   let mut text = String::from("# glibc 2.44 atanf (CORE-MATH, correctly rounded) on tests/math_atanf.rs's inputs; regen_math_atanf_fixture\n");
   for l in lines(glibc_atanf) {
     text.push_str(&l);

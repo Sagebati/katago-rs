@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-A file-by-file Rust port of KataGo's analysis engine (upstream v1.16.5, `ba938676`), compiled
+A file-by-file Rust port of KataGo's analysis engine (upstream v1.18.2, `fd0723fd`), compiled
 to wasm so KataGo runs in the browser: WebGPU via burn + wgpu, with a single-threaded wasm CPU
 fallback. Networks are not ported as Rust layer code: `tools/bin2onnx` converts `.bin.gz` to
 ONNX and burn-onnx generates the model (`crates/katago-nn-burn`). Everything else (board,

@@ -1,5 +1,5 @@
 //! core/global: the functions the pilot left out, against the real C++
-//! (fixtures/upstream-v1.16.5/unit/oracle/global.txt from oracle/global.cpp; same order).
+//! (fixtures/upstream-v1.18.2/unit/oracle/global.txt from oracle/global.cpp; same order).
 #![allow(clippy::approx_constant)] // 3.14159265 is a deliberate test input, not a pi approximation
 
 #[macro_use]

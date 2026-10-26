@@ -1,5 +1,5 @@
-//! Replays upstream cpp/tests/testboardarea.cpp @ v1.16.5 (Tests::runBoardAreaTests) against
-//! fixtures/upstream-v1.16.5/unit/testboardarea/ (all 22 expected blocks; the three
+//! Replays upstream cpp/tests/testboardarea.cpp @ v1.18.2 (Tests::runBoardAreaTests) against
+//! fixtures/upstream-v1.18.2/unit/testboardarea/ (all 26 expected blocks; the three
 //! groupTaxScoring blocks use NNInputs::fillScoring, M2).
 
 // Test code keeps the shapes of upstream's tests and oracle programs (PORTING.md §11b).
@@ -81,8 +81,8 @@ fn print_areas(out: &mut String, board: &Board, result: &mut [Color; Board::MAX_
   }
 }
 
-/// upstream: the `printIndependentLifeAreas` lambda in Tests::runBoardAreaTests
-fn print_independent_life_areas(out: &mut String, board: &Board, result: &mut [Color; Board::MAX_ARR_SIZE as usize]) {
+/// upstream: the `printIndependentLifeAreasWithMode` lambda in Tests::runBoardAreaTests
+fn print_independent_life_areas_with_mode(out: &mut String, board: &Board, result: &mut [Color; Board::MAX_ARR_SIZE as usize], exclude_territory_adjacent_to_atari: bool) {
   let keep_territories_buf: [bool; 4] = [false, true, false, true];
   let keep_stones_buf: [bool; 4] = [false, false, true, true];
 
@@ -97,6 +97,7 @@ fn print_independent_life_areas(out: &mut String, board: &Board, result: &mut [C
       &mut white_minus_black_independent_life_region_count,
       keep_territories,
       keep_stones,
+      exclude_territory_adjacent_to_atari,
       multi_stone_suicide_legal,
     );
     *out += &format!("Keep Territories {} Keep Stones {} Suicide {}\n", b(keep_territories), b(keep_stones), b(multi_stone_suicide_legal));
@@ -117,6 +118,14 @@ fn print_independent_life_areas(out: &mut String, board: &Board, result: &mut [C
     testAssert!(boards_seem_equal(&copy, board));
     copy.check_consistency().unwrap();
   }
+}
+
+//Legacy rules version 2 behavior (excludeTerritoryAdjacentToAtari off) - the "IndependentLife"
+//tests below use this. The "(v3 excludeTerritoryAdjacentToAtari)" tests at the end cover
+//excludeTerritoryAdjacentToAtari = true.
+/// upstream: the `printIndependentLifeAreas` lambda in Tests::runBoardAreaTests
+fn print_independent_life_areas(out: &mut String, board: &Board, result: &mut [Color; Board::MAX_ARR_SIZE as usize]) {
+  print_independent_life_areas_with_mode(out, board, result, false);
 }
 
 /// One case: parse each (x, y, input file), print with `f`, compare with `<slug>.expected0.txt`.
@@ -296,5 +305,30 @@ fn group_tax_scoring_cases() {
     true,
     true,
   );
+  cases.ran();
+}
+
+/// upstream: the "(v3 excludeTerritoryAdjacentToAtari)" blocks at the end of Tests::runBoardAreaTests
+/// (printIndependentLifeAreasWithMode(board,result,true), one board each).
+fn case_v3(name: &str, slug: &str, x: i32, y: i32) {
+  let mut out = String::new();
+  let mut result: [Color; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
+  let board = parse(x, y, &fixture(F, &format!("{}.input0.txt", slug)));
+  print_independent_life_areas_with_mode(&mut out, &board, &mut result, true);
+  let expected = fixture(F, &format!("{}.expected0.txt", slug));
+  TestCommon::expect_string(name, &mut out, &expected);
+}
+
+#[test]
+fn independent_life_v3_cases() {
+  init();
+  let mut cases = Cases::new("testboardarea::independent_life_v3_cases");
+  case_v3("IndependentLife 1 (v3 excludeTerritoryAdjacentToAtari)", "independentlife-1-v3-excludeterritoryadjacenttoatari", 19, 19);
+  cases.ran();
+  case_v3("IndependentLife 2 (v3 excludeTerritoryAdjacentToAtari)", "independentlife-2-v3-excludeterritoryadjacenttoatari", 19, 19);
+  cases.ran();
+  case_v3("IndependentLife 7 (v3 excludeTerritoryAdjacentToAtari)", "independentlife-7-v3-excludeterritoryadjacenttoatari", 15, 5);
+  cases.ran();
+  case_v3("IndependentLife 10 (v3 excludeTerritoryAdjacentToAtari)", "independentlife-10-v3-excludeterritoryadjacenttoatari", 15, 5);
   cases.ran();
 }

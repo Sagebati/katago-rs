@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/game/board.cpp, cpp/game/board.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/game/board.cpp, cpp/game/board.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 /*
  * board.h
@@ -1033,6 +1033,82 @@ impl Board {
       }
     }
     true
+  }
+
+  /// upstream: Board::regenChainsFromColors (board.cpp)
+  //Recompute pos_hash and all chain bookkeeping (chain_head, next_in_chain, chain_data) from scratch
+  //based purely on the current colors[] array. Does not modify colors[] or ko_loc. Requires that colors[]
+  //already be a valid configuration (walls intact); any stone group is allowed, including zero-liberty groups.
+  pub fn regen_chains_from_colors(&mut self) {
+    //Recompute the position hash from scratch and mark every stone's head as invalid (NULL_LOC) so
+    //that rebuildChain, which requires unbuilt heads to point at an invalid location, can floodfill them.
+    self.pos_hash = Board::statics().ZOBRIST_SIZE_X_HASH[self.x_size as usize] ^ Board::statics().ZOBRIST_SIZE_Y_HASH[self.y_size as usize];
+    for y in 0..self.y_size {
+      for x in 0..self.x_size {
+        let loc: Loc = Location::get_loc(x, y, self.x_size);
+        let c: Color = self.colors[loc as usize];
+        if c == C_BLACK || c == C_WHITE {
+          self.pos_hash ^= Board::statics().ZOBRIST_BOARD_HASH[loc as usize][c as usize];
+          self.chain_head[loc as usize] = Board::NULL_LOC;
+        }
+      }
+    }
+    //Rebuild each chain's links and liberties by floodfilling from any not-yet-rebuilt stone.
+    for y in 0..self.y_size {
+      for x in 0..self.x_size {
+        let loc: Loc = Location::get_loc(x, y, self.x_size);
+        let c: Color = self.colors[loc as usize];
+        if (c == C_BLACK || c == C_WHITE) && self.chain_head[loc as usize] == Board::NULL_LOC {
+          self.rebuild_chain(loc, c);
+        }
+      }
+    }
+  }
+
+  /// upstream: Board::setStonesTolerant (board.cpp)
+  //Faithfully overlays the given placements (loc -> color, where C_EMPTY clears a location) onto the current board,
+  //even if doing so temporarily produces groups with zero liberties. Then SIMULTANEOUSLY removes every black or white
+  //stone belonging to a group that has zero liberties (so if two touching groups of opposing colors both have zero
+  //liberties, both groups are removed). Placements on walls or off-board locations are ignored, as are placements with
+  //a color other than C_EMPTY/C_BLACK/C_WHITE. Clears the simple ko location. Returns the number of stones removed by
+  //the zero-liberty cleanup.
+  pub fn set_stones_tolerant(&mut self, placements: &[Move]) -> i32 {
+    //Faithfully overlay the placements onto the raw colors array, ignoring anything off-board or on a wall.
+    //This may temporarily create groups with zero liberties.
+    for placement in placements {
+      let loc: Loc = placement.loc;
+      let color: Color = placement.pla;
+      if loc < 0 || loc as i32 >= Board::MAX_ARR_SIZE || self.colors[loc as usize] == C_WALL {
+        continue;
+      }
+      if color != C_EMPTY && color != C_BLACK && color != C_WHITE {
+        continue;
+      }
+      self.colors[loc as usize] = color;
+    }
+    //Rebuild chains so that liberty counts reflect the full faithful configuration.
+    self.regen_chains_from_colors();
+
+    //Find every stone whose group has zero liberties, basing the determination on the full configuration so
+    //that removal is simultaneous (e.g. two touching opposing zero-liberty groups are both removed).
+    let mut num_removed: i32 = 0;
+    for y in 0..self.y_size {
+      for x in 0..self.x_size {
+        let loc: Loc = Location::get_loc(x, y, self.x_size);
+        let c: Color = self.colors[loc as usize];
+        if (c == C_BLACK || c == C_WHITE) && self.chain_data[self.chain_head[loc as usize] as usize].num_liberties == 0 {
+          self.colors[loc as usize] = C_EMPTY;
+          num_removed += 1;
+        }
+      }
+    }
+    //Rebuild once more to restore valid chain bookkeeping and hash after the simultaneous removal.
+    if num_removed > 0 {
+      self.regen_chains_from_colors();
+    }
+
+    self.ko_loc = Board::NULL_LOC;
+    num_removed
   }
 
   /// upstream: Board::playMove (board.cpp)
@@ -2236,7 +2312,9 @@ impl Board {
   //Calculates the area (including non pass alive stones, safe and unsafe big territories)
   //However, strips out any "seki" regions.
   //Seki regions are that are adjacent to any remaining empty regions.
-  //If keepTerritories, then keeps the surrounded territories in seki regions, only strips points for stones.
+  //If keepTerritories, then keeps the surrounded territories in seki regions, only strips points for stones,
+  //except that if excludeTerritoryAdjacentToAtari, empty points adjacent to a chain in atari
+  //(e.g. unfilled ko mouths in seki) are also stripped (rules version 3 scoring behavior).
   //If keepStones, then keeps the stones, only strips points for surrounded territories.
   //whiteMinusBlackIndependentLifeRegionCount - multiply this by two for a group tax.
   pub fn calculate_independent_life_area(
@@ -2245,6 +2323,7 @@ impl Board {
     white_minus_black_independent_life_region_count: &mut i32,
     keep_territories: bool,
     keep_stones: bool,
+    exclude_territory_adjacent_to_atari: bool,
     is_multi_stone_suicide_legal: bool,
   ) {
     //First, just compute basic area.
@@ -2271,7 +2350,24 @@ impl Board {
         for x in 0..self.x_size {
           let loc: Loc = Location::get_loc(x, y, self.x_size);
           if basic_area[loc as usize] != C_EMPTY && basic_area[loc as usize] != self.colors[loc as usize] {
-            result[loc as usize] = basic_area[loc as usize];
+            //If excludeTerritoryAdjacentToAtari (rules version 3), empty points adjacent to a chain of
+            //the territory owner's own color in atari (e.g. unfilled ko mouths in seki, or the eye of
+            //a group whose eye is its last liberty) don't count. Otherwise, under territory scoring
+            //with TaxRule NONE, possession of an unfillable ko mouth in a seki would be worth a point,
+            //resulting in pass fights over such kos. Chains of the opposing color in atari (e.g. dead
+            //throw-in stones within pass-alive territory) deliberately do NOT block the territory.
+            let mut adj_chain_in_atari: bool = false;
+            if exclude_territory_adjacent_to_atari && self.colors[loc as usize] == C_EMPTY {
+              for adjoffset in [-(self.x_size + 1), -1, 1, self.x_size + 1] {
+                let adj: Loc = (loc as i32 + adjoffset) as Loc;
+                if self.colors[adj as usize] == basic_area[loc as usize] && self.get_num_liberties(adj) == 1 {
+                  adj_chain_in_atari = true;
+                }
+              }
+            }
+            if !adj_chain_in_atari {
+              result[loc as usize] = basic_area[loc as usize];
+            }
           }
         }
       }

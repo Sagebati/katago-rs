@@ -13,6 +13,7 @@ use futures::executor::LocalPool;
 use katago_core::game::board::Board;
 use katago_core::game::board::Location;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 
 /// Deterministic clock for `ClockTimer` (no time limit is set anywhere in these tests).
@@ -115,7 +116,7 @@ pub fn replay(p: &Pos) -> (Board, BoardHistory) {
   for &(x, y, c) in &p.setup {
     assert!(board.set_stone(Location::get_loc(x, y, p.x_size), c));
   }
-  let mut hist = BoardHistory::new_full(&board, p.initial_pla, &p.rules, p.encore_phase);
+  let mut hist = BoardHistory::new_full(&board, p.initial_pla, &p.rules, p.encore_phase, &BoardHistoryModes::new());
   hist.set_assume_multiple_starting_black_moves_are_handicap(p.assume_multi_handicap);
   for &(x, y, pla, prevent_encore) in &p.moves {
     let loc = if x == -1 { Board::PASS_LOC } else { Location::get_loc(x, y, p.x_size) };

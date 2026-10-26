@@ -1,4 +1,4 @@
-//! port::math::log10 against glibc (fixtures/upstream-v1.16.5/unit/oracle/math_log10.txt, made by
+//! port::math::log10 against glibc (fixtures/upstream-v1.18.2/unit/oracle/math_log10.txt, made by
 //! math_log10.cpp next to it). Regenerates the oracle's 2^20 pseudo-random inputs, folds the result
 //! bits per 65536-input chunk and compares the hashes, then checks the special-value lines (every
 //! power of ten and its neighbours: what Global::roundDynamic's floor(log10(x)) depends on).

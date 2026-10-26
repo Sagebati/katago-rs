@@ -1,4 +1,4 @@
-//! port::math::{cr_atan, atan} (DECISIONS.md D13, option b) against fixtures/upstream-v1.16.5/
+//! port::math::{cr_atan, atan} (DECISIONS.md D13, option b) against fixtures/upstream-v1.18.2/
 //! unit/oracle/math_atan.txt, made by math_atan.cpp next to it:
 //! - `cr_atan` (CORE-MATH port) vs MPFR's correctly rounded atan: regenerates the oracle's 2^20
 //!   pseudo-random inputs, folds the result bits per 65536-input chunk and compares the hashes;

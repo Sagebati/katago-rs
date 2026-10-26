@@ -20,11 +20,14 @@ use std::rc::Rc;
 use common::Cases;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -43,9 +46,22 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> { panic!() }
   fn get_model_desc<'a>(&self, _: &'a dyn LoadedModel) -> &'a ModelDesc { panic!() }
-  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: &str, _: bool, _: enabled_t, _: enabled_t, _: &dyn LoadedModel) -> Result<Box<dyn ComputeContext>, KataError> { panic!() }
+  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser) -> Result<Box<dyn ComputeContext>, KataError> { panic!() }
   fn create_compute_handle(&self, _: &dyn ComputeContext, _: &dyn LoadedModel, _: i32, _: bool, _: bool, _: i32, _: i32) -> Result<Box<dyn ComputeHandle>, KataError> { panic!() }
   fn is_using_fp16(&self, _: &dyn ComputeHandle) -> bool { panic!() }
   fn create_input_buffers(&self, _: &dyn LoadedModel, _: i32, _: i32, _: i32) -> Box<dyn InputBuffers> { panic!() }
@@ -81,8 +97,28 @@ fn make_env() -> Env {
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let nn_eval = Rc::new(
     NNEvaluator::new(
-      "m", "m", "", 16, 9, 9, false, true, 12, 4, true, "", "", false, enabled_t::False, enabled_t::False, 1, &[0], "asyncbotseed", false, 0,
-      Rc::new(NoBackend), spawner, Vec::new(),
+      "m",
+      "m",
+      "",
+      16,
+      9,
+      9,
+      false,
+      true,
+      12,
+      4,
+      true,
+      "",
+      enabled_t::False,
+      1,
+      &[0],
+      "asyncbotseed",
+      false,
+      0,
+      &mut ConfigParser::new(false, true),
+      Rc::new(NoBackend),
+      spawner,
+      Vec::new(),
     )
     .unwrap(),
   );
@@ -101,7 +137,7 @@ fn make_bot(env: &Env, p: &SearchParams) -> AsyncBot {
   let mut bot = AsyncBot::new(p, env.nn_eval.clone(), "asyncbotseed");
   let board = Board::new_x_y(9, 9).unwrap();
   let rules = Rules::get_tromp_taylorish();
-  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
   bot.set_position(P_BLACK, &board, &hist).unwrap();
   bot.set_always_include_owner_map(true);
   bot

@@ -1,5 +1,5 @@
 //! port::nlohmann::parse against the vendored nlohmann/json 3.8.0
-//! (fixtures/upstream-v1.16.5/unit/oracle/nlohmann_parse.cpp; inputs in nlohmann_parse.input.txt).
+//! (fixtures/upstream-v1.18.2/unit/oracle/nlohmann_parse.cpp; inputs in nlohmann_parse.input.txt).
 //! Per input the oracle prints a `D` line (json::parse: dump() or e.what()) and an `S` line
 //! (json::sax_parse event stream, which shows the lexer's unsigned/integer/float classification).
 

@@ -19,12 +19,12 @@ use std::path::PathBuf;
 
 use katago_core::game::board::Board;
 
-/// `fixtures/upstream-v1.16.5/unit`
+/// `fixtures/upstream-v1.18.2/unit`
 pub fn fixture_dir() -> PathBuf {
-  PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/upstream-v1.16.5/unit")
+  PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/upstream-v1.18.2/unit")
 }
 
-/// Reads `fixtures/upstream-v1.16.5/unit/<stem>/<file>`; panics if missing (an empty glob must fail).
+/// Reads `fixtures/upstream-v1.18.2/unit/<stem>/<file>`; panics if missing (an empty glob must fail).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn fixture(stem: &str, file: &str) -> String {
   let p = fixture_dir().join(stem).join(file);

@@ -1,4 +1,4 @@
-//! The analysis-protocol corpora (fixtures/upstream-v1.16.5/analysis-protocol, see its regen.py) replayed
+//! The analysis-protocol corpora (fixtures/upstream-v1.18.2/analysis-protocol, see its regen.py) replayed
 //! through the `katago-rs` binary and compared with the reference KataGo's outputs: every corpus line set
 //! runs as its own process with the same argv / override-config / stdin bytes as upstream did, and the
 //! test compares
@@ -77,7 +77,7 @@ const KNOWN_DIVERGENCES: &[(&str, &str)] = &[
 ];
 
 fn fixture_dir() -> String {
-  format!("{ROOT}/fixtures/upstream-v1.16.5/analysis-protocol")
+  format!("{ROOT}/fixtures/upstream-v1.18.2/analysis-protocol")
 }
 
 fn decode_line(v: &Value) -> Vec<u8> {

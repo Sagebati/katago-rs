@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/program/setup.cpp, cpp/program/setup.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/program/setup.cpp, cpp/program/setup.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Divergences (port-manifest.toml notes):
 // - `Logger&` / `Logger*` parameters dropped (log crate, PORTING.md §3); `logger.write` -> `log::info!`.
@@ -51,11 +51,76 @@ pub enum setup_for_t {
   SETUP_FOR_ANALYSIS,
   SETUP_FOR_OTHER,
   SETUP_FOR_DISTRIBUTED,
+  // Pure NN forward benchmark - does not spawn NN server threads, the benchmark drives
+  // compute handles itself. See NNEvaluator::benchmarkPureForward.
+  SETUP_FOR_BENCHMARKNN,
+}
+
+/// upstream: Setup::MaxBatchSizeRequest::Kind (setup.h)
+#[allow(clippy::upper_case_acronyms)]
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+  // Size it for expectedConcurrentEvals, with room to spare: this is a search whose threads all
+  // want evaluations at once, and a batch a little larger than strictly needed costs nothing on
+  // a GPU. The overwhelmingly common case.
+  FROM_CONCURRENCY,
+  // Size it for exactly expectedConcurrentEvals, with no rounding up or floor. For callers
+  // that already know their true concurrency and mean it exactly, rather than a search whose
+  // thread count is only an upper bound on how many evals are really in flight.
+  FROM_CONCURRENCY_STRICT,
+  // No default at all: nnMaxBatchSize must come from the config, and it is an error if absent.
+  // For the long-running multi-game tools whose configs are expected to set it.
+  REQUIRE_FROM_CONFIG,
+  // Use exactly this batch size, overriding every policy including CpuLocal's fixed size and
+  // any config value. For benchmarking and testing tools whose number is already a batch size
+  // rather than a concurrency, so no policy transform may be applied to it.
+  EXPLICIT_SIZE,
+}
+
+/// upstream: Setup::MaxBatchSizeRequest (setup.h)
+// How a caller wants nnMaxBatchSize decided. The caller says what it knows about the work it
+// is about to do, and the backend's NeuralNet::BatchPolicy decides how that turns into a batch
+// size, since the right answer differs between GPU backends, fixed-shape backends and CPU
+// backends.
+// A user-specified nnMaxBatchSize wins over the concurrency-based kinds, except where setupFor
+// forces the caller's value (benchmarks sweeping thread counts, and distributed). It never
+// applies under EXPLICIT_SIZE, nor for CpuLocal backends, which ignore it entirely.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MaxBatchSizeRequest {
+  pub kind: Kind,
+  pub size: i32, // Only meaningful for EXPLICIT_SIZE
+}
+
+impl MaxBatchSizeRequest {
+  /// upstream: Setup::MaxBatchSizeRequest::FROM_CONCURRENCY .. EXPLICIT_SIZE (setup.h), as `MaxBatchSizeRequest::X` reads them.
+  pub const FROM_CONCURRENCY: Kind = Kind::FROM_CONCURRENCY;
+  pub const FROM_CONCURRENCY_STRICT: Kind = Kind::FROM_CONCURRENCY_STRICT;
+  pub const REQUIRE_FROM_CONFIG: Kind = Kind::REQUIRE_FROM_CONFIG;
+  pub const EXPLICIT_SIZE: Kind = Kind::EXPLICIT_SIZE;
+
+  /// upstream: Setup::MaxBatchSizeRequest::fromConcurrency (setup.h)
+  pub fn from_concurrency() -> MaxBatchSizeRequest {
+    MaxBatchSizeRequest { kind: Kind::FROM_CONCURRENCY, size: -1 }
+  }
+  /// upstream: Setup::MaxBatchSizeRequest::fromConcurrencyStrict (setup.h)
+  pub fn from_concurrency_strict() -> MaxBatchSizeRequest {
+    MaxBatchSizeRequest { kind: Kind::FROM_CONCURRENCY_STRICT, size: -1 }
+  }
+  /// upstream: Setup::MaxBatchSizeRequest::requireFromConfig (setup.h)
+  pub fn require_from_config() -> MaxBatchSizeRequest {
+    MaxBatchSizeRequest { kind: Kind::REQUIRE_FROM_CONFIG, size: -1 }
+  }
+  /// upstream: Setup::MaxBatchSizeRequest::explicitSize (setup.h)
+  pub fn explicit_size(size: i32) -> MaxBatchSizeRequest {
+    MaxBatchSizeRequest { kind: Kind::EXPLICIT_SIZE, size }
+  }
 }
 
 // The enum values as names in scope, as inside `namespace Setup`.
 use setup_for_t::SETUP_FOR_ANALYSIS;
 use setup_for_t::SETUP_FOR_BENCHMARK;
+use setup_for_t::SETUP_FOR_BENCHMARKNN;
 use setup_for_t::SETUP_FOR_DISTRIBUTED;
 use setup_for_t::SETUP_FOR_GTP;
 use setup_for_t::SETUP_FOR_MATCH;
@@ -81,6 +146,13 @@ pub trait NNEvaluatorHost {
   fn load_model(&self, nn_model_name: &str, nn_model_file: &str) -> Result<(Rc<dyn NeuralNet>, Vec<u8>), KataError>;
   /// The host's local executor (NNEvaluator::spawnServerThreads spawns the server tasks on it).
   fn spawner(&self) -> Rc<dyn Spawner>;
+  /// `NeuralNet::getBatchPolicy(cfg)` of the linked backend, which Setup::initializeNNEvaluators asks before
+  /// any model is loaded (also with debugSkipNeuralNet). PORT NOTE (D6): a static function of the backend linked
+  /// at build time upstream; here the host's backend answers.
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> BatchPolicy;
+  /// `NeuralNet::getNumEffectiveDevices(cfg, gpuIdxByServerThread)` of the linked backend (FixedShape sizing in
+  /// Setup::initializeNNEvaluators). PORT NOTE (D6): as `get_batch_policy`.
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32;
 }
 
 /// The `NeuralNet` of an evaluator with debugSkipNeuralNet: NNEvaluator never calls its backend then
@@ -100,13 +172,28 @@ impl NeuralNet for SkippedNeuralNet {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  // PORT NOTE: NNEvaluator's constructor asks the linked backend for getNumEffectiveDevices even when it skips
+  // the net; these four follow dummybackend.cpp, upstream's NN-less backend.
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     SkippedNeuralNet::skipped()
   }
   fn get_model_desc<'a>(&self, _: &'a dyn LoadedModel) -> &'a ModelDesc {
     SkippedNeuralNet::skipped()
   }
-  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: &str, _: bool, _: enabled_t, _: enabled_t, _: &dyn LoadedModel) -> Result<Box<dyn ComputeContext>, KataError> {
+  fn create_compute_context(&self, _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser) -> Result<Box<dyn ComputeContext>, KataError> {
     SkippedNeuralNet::skipped()
   }
   fn create_compute_handle(&self, _: &dyn ComputeContext, _: &dyn LoadedModel, _: i32, _: bool, _: bool, _: i32, _: i32) -> Result<Box<dyn ComputeHandle>, KataError> {
@@ -154,13 +241,14 @@ fn check_nn_evaluator_args(max_batch_size: i32, nn_x_len: i32, nn_y_len: i32, nu
 pub struct Setup;
 
 impl Setup {
-  /// upstream: Setup::SETUP_FOR_GTP .. SETUP_FOR_DISTRIBUTED (setup.h), as `Setup::X` call sites read them.
+  /// upstream: Setup::SETUP_FOR_GTP .. SETUP_FOR_BENCHMARKNN (setup.h), as `Setup::X` call sites read them.
   pub const SETUP_FOR_GTP: setup_for_t = setup_for_t::SETUP_FOR_GTP;
   pub const SETUP_FOR_BENCHMARK: setup_for_t = setup_for_t::SETUP_FOR_BENCHMARK;
   pub const SETUP_FOR_MATCH: setup_for_t = setup_for_t::SETUP_FOR_MATCH;
   pub const SETUP_FOR_ANALYSIS: setup_for_t = setup_for_t::SETUP_FOR_ANALYSIS;
   pub const SETUP_FOR_OTHER: setup_for_t = setup_for_t::SETUP_FOR_OTHER;
   pub const SETUP_FOR_DISTRIBUTED: setup_for_t = setup_for_t::SETUP_FOR_DISTRIBUTED;
+  pub const SETUP_FOR_BENCHMARKNN: setup_for_t = setup_for_t::SETUP_FOR_BENCHMARKNN;
 
   /// upstream: Setup::MAX_BOT_PARAMS_FROM_CFG, DEFAULT_ANALYSIS_WIDE_ROOT_NOISE, DEFAULT_ANALYSIS_IGNORE_PRE_ROOT_HISTORY (setup.h)
   pub const MAX_BOT_PARAMS_FROM_CFG: i32 = 4096;
@@ -185,7 +273,9 @@ impl Setup {
     prefixes.push("trt".to_string());
     prefixes.push("metal".to_string());
     prefixes.push("opencl".to_string());
+    prefixes.push("rocm".to_string());
     prefixes.push("eigen".to_string());
+    prefixes.push("onnx".to_string());
     prefixes.push("dummybackend".to_string());
     prefixes.push("burn".to_string());
     prefixes
@@ -202,7 +292,7 @@ impl Setup {
     expected_concurrent_evals: i32,
     default_nnx_len: i32,
     default_nny_len: i32,
-    default_max_batch_size: i32,
+    max_batch_size_request: MaxBatchSizeRequest,
     default_require_exact_nn_len: bool,
     disable_fp16: bool,
     setup_for: setup_for_t,
@@ -217,7 +307,7 @@ impl Setup {
       expected_concurrent_evals,
       default_nnx_len,
       default_nny_len,
-      default_max_batch_size,
+      max_batch_size_request,
       default_require_exact_nn_len,
       disable_fp16,
       setup_for,
@@ -242,7 +332,7 @@ impl Setup {
     expected_concurrent_evals: i32,
     default_nnx_len: i32,
     default_nny_len: i32,
-    default_max_batch_size: i32,
+    max_batch_size_request: MaxBatchSizeRequest,
     default_require_exact_nn_len: bool,
     disable_fp16: bool,
     setup_for: setup_for_t,
@@ -254,7 +344,21 @@ impl Setup {
 
     // PORT NOTE: `#if defined(USE_CUDA_BACKEND) ... string backendPrefix = "cuda"; ...` -> the host's.
     let backend_prefix: String = host.backend_prefix();
-    let _ = expected_concurrent_evals; // only read by the Eigen branch (computeDefaultEigenBackendThreads)
+
+    // PORT NOTE: `#if defined(USE_ONNX_BACKEND)` -> the host's backend prefix is "onnx" (never true for the
+    // port's own backends, kept for fidelity).
+    if backend_prefix == "onnx" {
+      // Distributed selfplay (contribute) uploads training data, which must never contain
+      // FP16-overflow NaN rows, so always apply the scale8 workaround regardless of onnxSkipScale8.
+      if setup_for == SETUP_FOR_DISTRIBUTED && cfg.contains("onnxSkipScale8") && cfg.get_bool("onnxSkipScale8")? {
+        cfg.override_key("onnxSkipScale8", "false");
+        log::info!(
+          "{}",
+          "WARNING: onnxSkipScale8 = true is not allowed for contribute (distributed selfplay); \
+forcing it to false so FP16-overflow NaNs cannot poison contributed training data."
+        );
+      }
+    }
 
     //Automatically flag keys that are for other backends as used so that we don't warn about unused keys
     //for those options
@@ -312,9 +416,12 @@ impl Setup {
         }
       }
 
+      //ROCm defaults to NHWC inputs like CUDA: its compute layout is NHWC in the default FP16 path
+      //(transformers always, convnets on the archs where NHWC is faster), and unlike cuDNN, MIOpen
+      //cannot consume mismatched input/compute layouts for free - it costs a device transpose.
       // PORT NOTE: "burn" added to the NCHW backends (the burn graph is NCHW, katago-nn-burn backend.rs).
       let mut inputs_use_nhwc: bool =
-        if backend_prefix == "opencl" || backend_prefix == "trt" || backend_prefix == "metal" || backend_prefix == "burn" { false } else { true };
+        if backend_prefix == "opencl" || backend_prefix == "trt" || backend_prefix == "metal" || backend_prefix == "onnx" || backend_prefix == "burn" { false } else { true };
       if cfg.contains(&format!("{backend_prefix}InputsUseNHWC{idx_str}")) {
         inputs_use_nhwc = cfg.get_bool(&format!("{backend_prefix}InputsUseNHWC{idx_str}"))?;
       } else if cfg.contains(&format!("inputsUseNHWC{idx_str}")) {
@@ -392,14 +499,12 @@ impl Setup {
 
       let home_data_dir_override: String = Setup::load_home_data_dir_override(cfg)?;
 
-      let mut open_cl_tuner_file: String = String::new();
-      if cfg.contains("openclTunerFile") {
-        open_cl_tuner_file = cfg.get_string("openclTunerFile")?;
-      }
-      let mut open_cl_re_tune_per_board_size: bool = false;
-      if cfg.contains("openclReTunePerBoardSize") {
-        open_cl_re_tune_per_board_size = cfg.get_bool("openclReTunePerBoardSize")?;
-      }
+      // Backend-specific options (e.g. openclTunerFile, cudaDisableGraphSDPA) are read directly by the
+      // relevant compute backend off of cfg (see createComputeContext). Because they follow the backend
+      // prefix convention, the getBackendPrefixes() loop above already marks them used for the backends
+      // that don't read them, so no explicit mark-used is needed here.
+      // PORT NOTE (v1.18.2 nn-layer sync): the openclTunerFile / openclReTunePerBoardSize / useNHWC reads
+      // were removed with the NNEvaluator constructor arguments they fed, as upstream v1.18.2 did.
 
       let mut use_fp16_mode: enabled_t = enabled_t::Auto;
       if cfg.contains(&format!("{backend_prefix}UseFP16-{idx_str}")) {
@@ -412,17 +517,6 @@ impl Setup {
         use_fp16_mode = cfg.get_enabled("useFP16")?;
       }
 
-      let mut use_nhwc_mode: enabled_t = enabled_t::Auto;
-      if cfg.contains(&format!("{backend_prefix}UseNHWC{idx_str}")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("{backend_prefix}UseNHWC{idx_str}"))?;
-      } else if cfg.contains(&format!("useNHWC{idx_str}")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("useNHWC{idx_str}"))?;
-      } else if cfg.contains(&format!("{backend_prefix}UseNHWC")) {
-        use_nhwc_mode = cfg.get_enabled(&format!("{backend_prefix}UseNHWC"))?;
-      } else if cfg.contains("useNHWC") {
-        use_nhwc_mode = cfg.get_enabled("useNHWC")?;
-      }
-
       let mut forced_symmetry: i32 = -1;
       if setup_for != SETUP_FOR_DISTRIBUTED && cfg.contains("nnForcedSymmetry") {
         forced_symmetry = cfg.get_int("nnForcedSymmetry", 0, SymmetryHelpers::NUM_SYMMETRIES - 1)?;
@@ -430,7 +524,7 @@ impl Setup {
 
       log::info!(
         "{}",
-        "After dedups: nnModelFile".to_string() + &idx_str + " = " + nn_model_file + " useFP16 " + &use_fp16_mode.to_string() + " useNHWC " + &use_nhwc_mode.to_string()
+        "After dedups: nnModelFile".to_string() + &idx_str + " = " + nn_model_file + " useFP16 " + &use_fp16_mode.to_string()
       );
 
       let nn_cache_size_power_of_two: i32 = if cfg.contains("nnCacheSizePowerOfTwo") {
@@ -439,6 +533,8 @@ impl Setup {
         20
       } else if setup_for == SETUP_FOR_BENCHMARK {
         20
+      } else if setup_for == SETUP_FOR_BENCHMARKNN {
+        16
       } else if setup_for == SETUP_FOR_DISTRIBUTED {
         19
       } else if setup_for == SETUP_FOR_MATCH {
@@ -455,6 +551,8 @@ impl Setup {
         16
       } else if setup_for == SETUP_FOR_BENCHMARK {
         16
+      } else if setup_for == SETUP_FOR_BENCHMARKNN {
+        12
       } else if setup_for == SETUP_FOR_DISTRIBUTED {
         16
       } else if setup_for == SETUP_FOR_MATCH {
@@ -465,14 +563,50 @@ impl Setup {
         cfg.get_int("nnMutexPoolSizePowerOfTwo", -1, 24)?
       };
 
-      // PORT NOTE: the `#ifndef USE_EIGEN_BACKEND` branch.
+      // Turn what the caller knows (maxBatchSizeRequest) into a batch size the way this backend wants
+      // it (NeuralNet::getBatchPolicy), rather than having every call site bake in a formula that is
+      // only right for GPU backends.
+      // PORT NOTE (D6): `NeuralNet::getBatchPolicy` / `getNumEffectiveDevices` of the linked backend -> the host's.
+      let batch_policy: BatchPolicy = host.get_batch_policy(cfg);
+
       let nn_max_batch_size: i32;
-      if setup_for == SETUP_FOR_BENCHMARK || setup_for == SETUP_FOR_DISTRIBUTED {
-        nn_max_batch_size = default_max_batch_size;
-      } else if default_max_batch_size > 0 {
-        nn_max_batch_size = if cfg.contains("nnMaxBatchSize") { cfg.get_int("nnMaxBatchSize", 1, 65536)? } else { default_max_batch_size };
-      } else {
+      if max_batch_size_request.kind == MaxBatchSizeRequest::EXPLICIT_SIZE {
+        // The caller already has an exact batch size in hand (a benchmark or test tool's own number),
+        // so no policy transform applies - not even CpuLocal's fixed size, since these tools exist
+        // precisely to measure or exercise a specific batch size.
+        nn_max_batch_size = max_batch_size_request.size;
+        if nn_max_batch_size <= 0 || nn_max_batch_size > 65536 {
+          return Err(KataError::StringError("Invalid explicit max batch size: ".to_string() + &Global::int_to_string(nn_max_batch_size)));
+        }
+      } else if batch_policy == BatchPolicy::CpuLocal {
+        // Batching doesn't help this backend (see BatchPolicy::CpuLocal), so fix a small size that
+        // saves memory, ignoring both the request and anything the user specified for GPUs.
+        nn_max_batch_size = 2;
+        cfg.mark_all_keys_used_with_prefix("nnMaxBatchSize");
+      } else if max_batch_size_request.kind == MaxBatchSizeRequest::REQUIRE_FROM_CONFIG {
+        // No default to fall back on, so the config has to say. Callers using this always pass a
+        // setupFor that does not force the request, so there is nothing to force here.
         nn_max_batch_size = cfg.get_int("nnMaxBatchSize", 1, 65536)?;
+      } else {
+        let derived: i32;
+        if batch_policy == BatchPolicy::FixedShape {
+          // Every batch gets padded up to this size, so overshooting wastes real arithmetic on every
+          // evaluation. Server threads sharing a device share its concurrency, hence dividing by the
+          // number of distinct devices rather than by the thread count.
+          let num_devices: i32 = host.get_num_effective_devices(cfg, &gpu_idx_by_server_thread);
+          derived = Setup::compute_fixed_shape_max_batch_size(expected_concurrent_evals, num_devices);
+        } else if max_batch_size_request.kind == MaxBatchSizeRequest::FROM_CONCURRENCY_STRICT {
+          // The caller means exactly the concurrency it gave.
+          derived = std::cmp::max(1, expected_concurrent_evals);
+        } else {
+          // Any batch size is fine here and larger ones amortize per-call overhead, so round up and
+          // keep a floor.
+          derived = std::cmp::max(8, ((expected_concurrent_evals + 3) / 4) * 4);
+        }
+
+        let force_request: bool =
+          setup_for == SETUP_FOR_BENCHMARK || setup_for == SETUP_FOR_BENCHMARKNN || setup_for == SETUP_FOR_DISTRIBUTED;
+        nn_max_batch_size = if !force_request && cfg.contains("nnMaxBatchSize") { cfg.get_int("nnMaxBatchSize", 1, 65536)? } else { derived };
       }
 
       let default_symmetry: i32 = if forced_symmetry >= 0 { forced_symmetry } else { 0 };
@@ -502,27 +636,41 @@ impl Setup {
         nn_cache_size_power_of_two,
         nn_mutex_pool_size_power_of_two,
         debug_skip_neural_net,
-        &open_cl_tuner_file,
         &home_data_dir_override,
-        open_cl_re_tune_per_board_size,
         use_fp16_mode,
-        use_nhwc_mode,
         num_nn_server_threads_per_model,
         &gpu_idx_by_server_thread,
         &nn_rand_seed,
         if forced_symmetry >= 0 { false } else { nn_randomize },
         default_symmetry,
+        cfg,
         backend,
         host.spawner(),
         model_bytes,
       )?);
 
-      nn_eval.spawn_server_threads().await?;
+      // benchmarkPureForward drives compute handles itself, without server threads.
+      if setup_for != SETUP_FOR_BENCHMARKNN {
+        nn_eval.spawn_server_threads().await?;
+      }
 
       nn_evals.push(nn_eval);
     }
 
     Ok(nn_evals)
+  }
+
+  /// upstream: Setup::computeFixedShapeMaxBatchSize (setup.cpp)
+  // The default nnMaxBatchSize for backends whose BatchPolicy is FixedShape: half of the evals one
+  // device sees at a time, rounded up, so that two batches can be in flight per device. Exposed so
+  // that the benchmark can compute the same per-thread-count batch sizes this policy would pick.
+  pub fn compute_fixed_shape_max_batch_size(expected_concurrent_evals: i32, num_devices: i32) -> i32 {
+    let num_devices: i32 = std::cmp::max(1, num_devices);
+    let per_device: i32 = (expected_concurrent_evals + num_devices - 1) / num_devices;
+    // Floor of 2 rather than 1: batch size 1 makes OpenVINO's NPU inference produce nonfinite
+    // policy outputs (a provider bug, observed with OpenVINO 2026.2.1), and a 2-row batch costs
+    // low-thread-count configurations only a little on the other providers.
+    std::cmp::max(2, (per_device + 1) / 2)
   }
 
   // upstream: Setup::computeDefaultEigenBackendThreads (setup.cpp)
@@ -1075,6 +1223,20 @@ impl Setup {
         params.fill_dame_before_pass = cfg.get_bool("fillDameBeforePass")?;
       } else {
         params.fill_dame_before_pass = false;
+      }
+      if cfg.contains(&format!("alwaysComputePassAliveUnderSuicideRules{idx_str}")) {
+        params.always_compute_pass_alive_under_suicide_rules = cfg.get_enabled(&format!("alwaysComputePassAliveUnderSuicideRules{idx_str}"))?;
+      } else if cfg.contains("alwaysComputePassAliveUnderSuicideRules") {
+        params.always_compute_pass_alive_under_suicide_rules = cfg.get_enabled("alwaysComputePassAliveUnderSuicideRules")?;
+      } else {
+        params.always_compute_pass_alive_under_suicide_rules = enabled_t::Auto;
+      }
+      if cfg.contains(&format!("excludeTerritoryAdjacentToAtari{idx_str}")) {
+        params.exclude_territory_adjacent_to_atari = cfg.get_enabled(&format!("excludeTerritoryAdjacentToAtari{idx_str}"))?;
+      } else if cfg.contains("excludeTerritoryAdjacentToAtari") {
+        params.exclude_territory_adjacent_to_atari = cfg.get_enabled("excludeTerritoryAdjacentToAtari")?;
+      } else {
+        params.exclude_territory_adjacent_to_atari = enabled_t::Auto;
       }
       //Controlled by GTP directly, not used in any other mode
       params.avoid_myt_dagger_hack_pla = C_EMPTY;

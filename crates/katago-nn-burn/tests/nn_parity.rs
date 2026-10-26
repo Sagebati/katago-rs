@@ -1,6 +1,6 @@
 //! NN tier (M2): the ported `NNEvaluator` (katago-core) over the burn backend (`BurnNeuralNet`)
 //! vs upstream's NNEvaluator over the Eigen fp32 backend, on the positions of
-//! fixtures/upstream-v1.16.5/nn (oracle: fixtures/upstream-v1.16.5/nn/oracle/nneval_eigen.cpp,
+//! fixtures/upstream-v1.18.2/nn (oracle: fixtures/upstream-v1.18.2/nn/oracle/nneval_eigen.cpp,
 //! cross-checked against `katago gtp` + `kata-raw-nn`). Not a port of upstream code.
 //!
 //! Every eval of a net is issued from 8 virtual threads at once, so the server batches them
@@ -27,6 +27,7 @@ use burn::prelude::*;
 use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::hash::Hash128;
 use katago_core::core::rand::Rand;
 use katago_core::game::board::Board;
@@ -57,7 +58,7 @@ fn grace_for(backend_name: &str) -> Duration {
 }
 
 fn fixture_path(name: &str) -> String {
-  format!("{}/../../fixtures/upstream-v1.16.5/nn/{}", env!("CARGO_MANIFEST_DIR"), name)
+  format!("{}/../../fixtures/upstream-v1.18.2/nn/{}", env!("CARGO_MANIFEST_DIR"), name)
 }
 
 fn parse_positions() -> Vec<Pos> {
@@ -242,15 +243,13 @@ fn run_net_with<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file:
       0,
       false,
       "",
-      "",
-      false,
       use_fp16,
-      enabled_t::Auto,
       1,
       &[-1],
       "paritySeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       std::fs::read(bpk).unwrap(),
@@ -363,15 +362,13 @@ fn nn_parity_b6c96_rand() {
       0,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       cfg[1],
       cfg[2] == "1",
       cfg[3].parse().unwrap(),
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(),
@@ -701,16 +698,23 @@ fn backend_rejects_unsupported_layouts() {
   let desc = backend.get_model_desc(&*model);
   assert_eq!((desc.model_version, desc.num_policy_channels, desc.num_score_value_channels), (8, 1, 4));
   assert!(backend.load_model_file("b6", Vec::new(), "abc").is_err());
-  let ctx = |x: i32, y: i32, fp16: enabled_t, nhwc: enabled_t| backend.create_compute_context(&[-1], x, y, "", "", false, fp16, nhwc, &*model).is_ok();
-  assert!(ctx(19, 19, enabled_t::False, enabled_t::Auto));
-  assert!(ctx(19, 19, enabled_t::Auto, enabled_t::False));
-  assert!(!ctx(9, 9, enabled_t::False, enabled_t::Auto));
-  assert!(!ctx(19, 19, enabled_t::True, enabled_t::Auto));
-  assert!(!ctx(19, 19, enabled_t::False, enabled_t::True));
-  let context = backend
-    .create_compute_context(&[-1], 19, 19, "", "", false, enabled_t::False, enabled_t::Auto, &*model)
-    .unwrap();
+  // v1.18 ModelDesc fields: a pre-v17 export has no prefer* / arch keys (absent reads as false / 0, as upstream's ONNX
+  // loader), and its arch summary is present (an ONNX export has no layers to walk).
+  assert!(!desc.prefer_pass_alive_under_suicide_rules && !desc.prefer_exclude_territory_adjacent_to_atari);
+  assert!(desc.arch_summary.present && !desc.has_any_transformer_blocks());
+  let mut cfg = katago_core::core::config_parser::ConfigParser::new(false, true);
+  assert_eq!(backend.get_num_effective_devices(&mut cfg, &[-1, -1]), 1);
+  assert_eq!(backend.get_num_effective_devices(&mut cfg, &[0, 1, 0]), 2);
+  assert_eq!(backend.get_batch_policy(&mut cfg), katago_core::neuralnet::nninterface::BatchPolicy::Dynamic);
+  assert_eq!(backend.get_runtime_backend_detail(&mut cfg), "");
+  let mut ctx = |x: i32, y: i32, fp16: enabled_t| backend.create_compute_context(&[-1], x, y, "", fp16, &*model, &mut cfg).is_ok();
+  assert!(ctx(19, 19, enabled_t::False));
+  assert!(ctx(19, 19, enabled_t::Auto));
+  assert!(!ctx(9, 9, enabled_t::False));
+  assert!(!ctx(19, 19, enabled_t::True));
+  let context = backend.create_compute_context(&[-1], 19, 19, "", enabled_t::False, &*model, &mut cfg).unwrap();
   assert!(backend.create_compute_handle(&*context, &*model, 4, false, true, -1, 0).is_err());
   let handle = backend.create_compute_handle(&*context, &*model, 4, false, false, -1, 0).unwrap();
   assert!(!backend.is_using_fp16(&*handle));
+  assert!(!backend.set_is_warmup(&*handle, true));
 }

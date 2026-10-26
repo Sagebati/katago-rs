@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchexplorehelpers.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchexplorehelpers.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE: playout-path helpers take &self (PORTING.md §3/§11). `SearchThread* thread` is
 // nullable (searchresults.cpp passes NULL outside search): `Option<&mut SearchThread>`.

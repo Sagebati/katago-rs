@@ -1,9 +1,9 @@
-//! Replays upstream cpp/tests/testscore.cpp @ v1.16.5 (Tests::runScoreTests). It prints to cout
+//! Replays upstream cpp/tests/testscore.cpp @ v1.18.2 (Tests::runScoreTests). It prints to cout
 //! during `katago runoutputtests`, so the oracle is its part of upstream
 //! cpp/tests/results/runOutputTests.txt
-//! (fixtures/upstream-v1.16.5/unit/runoutputtests/score-and-utility-tests.expected0.txt, extracted
+//! (fixtures/upstream-v1.18.2/unit/runoutputtests/score-and-utility-tests.expected0.txt, extracted
 //! by tools/extract_runoutputtests.py); the boards are the testscore.cpp raw blocks
-//! (fixtures/upstream-v1.16.5/unit/testscore/, inputs only).
+//! (fixtures/upstream-v1.18.2/unit/testscore/, inputs only).
 //! ScoreValue uses atan/tan (port::math::{atan, tan}: platform libm, <= 1 ulp from glibc on wasm,
 //! DECISIONS.md D13); the printed precision (6 significant digits, "%.3f") hides that.
 
@@ -20,6 +20,7 @@ use common::init;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::ScoreValue;
 use katago_core::port::cpp::cpp_max;
@@ -100,7 +101,7 @@ fn run_score_tests() {
     if let Some(k) = komi {
       rules.komi = *k;
     }
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
     hist.end_and_score_game_now(&board);
     print_score_stats(&mut out, &board, &hist);
     cout += name;

@@ -1,5 +1,5 @@
 //! search/subtreevaluebiastable against the unmodified upstream SubtreeValueBiasTable
-//! (fixtures/upstream-v1.16.5/unit/oracle/subtreevaluebiastable.txt, from oracle/subtreevaluebiastable.cpp):
+//! (fixtures/upstream-v1.18.2/unit/oracle/subtreevaluebiastable.txt, from oracle/subtreevaluebiastable.cpp):
 //! the file-static zobrist tables and LocalPatternHasher (observed through the keys get() stores), the
 //! shard choice, shared entries, BTreeMap order (Hash128 order) and clearUnusedSynchronous, on random
 //! boards and hand-made ko positions. Not a port of upstream code. Keep in the same order as the oracle.

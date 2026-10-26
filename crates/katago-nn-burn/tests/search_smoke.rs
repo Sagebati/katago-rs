@@ -1,6 +1,6 @@
 //! Real-net search smoke test: the ported `Search` (katago_core) over the ported `NNEvaluator` and the burn
 //! `flex` backend (net g170-b6c96) vs the unmodified upstream Search over the Eigen fp32 NNEvaluator on the same
-//! net. Oracle: fixtures/upstream-v1.16.5/search/oracle/search_eigen.cpp -> search_eigen_b6c96.txt (each CASE line
+//! net. Oracle: fixtures/upstream-v1.18.2/search/oracle/search_eigen.cpp -> search_eigen_b6c96.txt (each CASE line
 //! holds everything needed to rebuild the search; the lines after it are the upstream result). Not a port of
 //! upstream code.
 //!

@@ -1,6 +1,6 @@
 //! port::math::{sin, cos} (CORE-MATH's correctly rounded cr_sincos, math/sincos.rs) against the
 //! C cr_sincos, itself checked against MPFR: replays
-//! fixtures/upstream-v1.16.5/unit/oracle/math_sincos.txt, made by math_sincos.cpp next to it,
+//! fixtures/upstream-v1.18.2/unit/oracle/math_sincos.txt, made by math_sincos.cpp next to it,
 //! line by line and bit-exact. Runs natively and on wasm32 (`just test-wasm`), where the std
 //! `f64::sin` / `f64::cos` are not glibc's. Natively it also checks that the float casts of
 //! sgfmetadata.cpp fillMetadataRow's `(float)cos(x)` / `(float)sin(x)` agree with the host glibc

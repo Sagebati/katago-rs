@@ -1,7 +1,7 @@
 //! Shared helpers for the real-net search test transcriptions (testsearchv9.rs, testsearchv8.rs): test-local
 //! copies of upstream cpp/tests/testsearchcommon.cpp (TestSearchCommon), a test-local CompactSgf subset, the
 //! cout/Logger capture, the burn `startNNEval`, and the section comparator used against the Eigen reruns
-//! (fixtures/upstream-v1.16.5/unit/testsearchv{8,9}/*.expected0.txt). Not a port of upstream code.
+//! (fixtures/upstream-v1.18.2/unit/testsearchv{8,9}/*.expected0.txt). Not a port of upstream code.
 //!
 //! Output capture. Upstream's Logger (logToStdout, logTime false) writes `": " + message + endl` to cout; the
 //! expected texts contain those lines. The port logs through the `log` crate, so `CoutLogger` appends the same
@@ -46,11 +46,13 @@ use burn::prelude::*;
 use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::Global;
 use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::desc::ModelDesc;
@@ -58,6 +60,7 @@ use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
 use katago_core::neuralnet::nninputs::ScoreValue;
+use katago_core::neuralnet::nninterface::BatchPolicy;
 use katago_core::neuralnet::nninterface::ComputeContext;
 use katago_core::neuralnet::nninterface::ComputeHandle;
 use katago_core::neuralnet::nninterface::InputBuffers;
@@ -261,6 +264,15 @@ impl NeuralNet for PaddedNet {
   fn print_devices(&self) {
     self.inner.print_devices()
   }
+  fn get_runtime_backend_detail(&self, cfg: &mut ConfigParser) -> String {
+    self.inner.get_runtime_backend_detail(cfg)
+  }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> BatchPolicy {
+    self.inner.get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    self.inner.get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
   fn load_model_file(&self, file: &str, model_bytes: Vec<u8>, expected_sha256: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     self.inner.load_model_file(file, model_bytes, expected_sha256)
   }
@@ -272,23 +284,19 @@ impl NeuralNet for PaddedNet {
     gpu_idxs: &[i32],
     nn_x_len: i32,
     nn_y_len: i32,
-    open_cl_tuner_file: &str,
     home_data_dir_override: &str,
-    open_cl_re_tune_per_board_size: bool,
     use_fp16_mode: enabled_t,
-    use_nhwc_mode: enabled_t,
     loaded_model: &dyn LoadedModel,
+    cfg: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     let inner = self.inner.create_compute_context(
       gpu_idxs,
       Net::POS_LEN,
       Net::POS_LEN,
-      open_cl_tuner_file,
       home_data_dir_override,
-      open_cl_re_tune_per_board_size,
       use_fp16_mode,
-      use_nhwc_mode,
       loaded_model,
+      cfg,
     )?;
     Ok(Box::new(PaddedContext { inner, nn_x_len, nn_y_len }))
   }
@@ -311,6 +319,10 @@ impl NeuralNet for PaddedNet {
   fn is_using_fp16(&self, compute_handle: &dyn ComputeHandle) -> bool {
     let h = compute_handle.as_any().downcast_ref::<PaddedHandle>().expect("PaddedHandle");
     self.inner.is_using_fp16(&*h.inner)
+  }
+  fn set_is_warmup(&self, compute_handle: &dyn ComputeHandle, is_warmup: bool) -> bool {
+    let h = compute_handle.as_any().downcast_ref::<PaddedHandle>().expect("PaddedHandle");
+    self.inner.set_is_warmup(&*h.inner, is_warmup)
   }
   fn create_input_buffers(&self, loaded_model: &dyn LoadedModel, max_batch_size: i32, _nn_x_len: i32, _nn_y_len: i32) -> Box<dyn InputBuffers> {
     self.inner.create_input_buffers(loaded_model, max_batch_size, Net::POS_LEN, Net::POS_LEN)
@@ -633,15 +645,22 @@ pub fn run_bot_on_sgf(ctx: &mut Ctx, bot: &mut AsyncBot, sgf_str: &str, default_
   let mut next_pla: Player = P_BLACK;
   let mut hist = Box::new(BoardHistory::new());
   let initial_rules = sgf.get_rules_or_fail_allow_unspecified(default_rules);
-  sgf.setup_board_and_hist_assume_legal(&initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx as i64);
+  sgf.setup_board_and_hist_assume_legal(
+    &initial_rules,
+    &mut board,
+    &mut next_pla,
+    &mut hist,
+    turn_idx as i64,
+    &Search::resolve_history_modes(&bot.get_search().search_params, Some(&*bot.get_search().nn_evaluator)),
+  );
   hist.set_komi(override_komi);
   run_bot_on_position(ctx, bot, &board, next_pla, &hist, opts);
 }
 
 /// upstream: TestSearchCommon::startNNEval (testsearchcommon.cpp) — test-local copy
-/// PORT NOTE: `Logger&` dropped (log crate). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useNHWC /
-/// useFP16 = true, which upstream's regen.sh passes to the Eigen build (`true true false`, Eigen rejects NCHW);
-/// the outputs do not depend on them, so callers pass `false` for all three. `spawnServerThreads()` is async and
+/// PORT NOTE: `Logger&` dropped (log crate). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useFP16 = true
+/// and ignores the `cudaUseNHWC` key useNHWC becomes, which upstream's regen.sh passes to the Eigen build (`true true
+/// false`, Eigen rejects NCHW); the outputs do not depend on them, so callers pass `false` for all three. `spawnServerThreads()` is async and
 /// driven to completion; the `sleep_for(0.1)` ordering hack is not needed (one OS thread, deterministic).
 pub fn start_nn_eval(
   ctx: &mut Ctx,
@@ -661,10 +680,14 @@ pub fn start_nn_eval(
   let nn_cache_size_power_of_two = 16;
   let nn_mutex_pool_size_power_of_two = 12;
   //bool debugSkipNeuralNet = false;
-  let open_cl_re_tune_per_board_size = false;
   let model_name = model_file;
-  let open_cl_tuner_file = "";
   let home_data_dir_override = "";
+  let mut cfg = ConfigParser::new(false, true);
+  //NHWC layout is no longer a generic NNEvaluator option; only the CUDA backend reads it (off cfg).
+  //Route the test's useNHWC param into a cudaUseNHWC override so it still drives the CUDA layout.
+  cfg.override_key("cudaUseNHWC", if use_nhwc { "true" } else { "false" });
+  //The ONNX backend requires an explicit provider choice in real configs, so tests set cpu.
+  cfg.override_key("onnxProvider", "cpu");
   let num_nn_server_threads_per_model = 1;
   let mut nn_randomize = false;
   let nn_rand_seed = "runSearchTestsRandSeed".to_string() + seed;
@@ -688,16 +711,14 @@ pub fn start_nn_eval(
     nn_cache_size_power_of_two,
     nn_mutex_pool_size_power_of_two,
     debug_skip_neural_net,
-    open_cl_tuner_file,
     home_data_dir_override,
-    open_cl_re_tune_per_board_size,
     if use_fp16 { enabled_t::True } else { enabled_t::False },
-    if use_nhwc { enabled_t::True } else { enabled_t::False },
     num_nn_server_threads_per_model,
     &gpu_idx_by_server_thread,
     &nn_rand_seed,
     nn_randomize,
     default_symmetry,
+    &mut cfg,
     if nn_x_len == Net::POS_LEN && nn_y_len == Net::POS_LEN { ctx.backend.clone() } else { ctx.padded_backend.clone() },
     ctx.spawner.clone(),
     model_bytes(),
@@ -767,9 +788,9 @@ pub fn parse_board_input(stem: &str, slug: &str, k: usize, x_size: i32, y_size: 
   Board::parse_board(x_size, y_size, &s, '\n').unwrap()
 }
 
-/// `fixtures/upstream-v1.16.5/unit/<stem>/<file>`
+/// `fixtures/upstream-v1.18.2/unit/<stem>/<file>`
 pub fn fixture(stem: &str, file: &str) -> String {
-  let p = format!("{}/../../fixtures/upstream-v1.16.5/unit/{}/{}", env!("CARGO_MANIFEST_DIR"), stem, file);
+  let p = format!("{}/../../fixtures/upstream-v1.18.2/unit/{}/{}", env!("CARGO_MANIFEST_DIR"), stem, file);
   std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("missing fixture {}: {}", p, e))
 }
 
@@ -948,7 +969,7 @@ impl CompactSgf {
   }
 
   /// upstream: CompactSgf::setupInitialBoardAndHist (sgf.cpp) — test-local copy
-  pub fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory) {
+  pub fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory, modes: &BoardHistoryModes) {
     // getPLSpecifiedColor
     let pl_player: Color = match self.root.get("PL").map(|v| v[0].to_lowercase()) {
       Some(s) if s == "b" || s == "black" => C_BLACK,
@@ -982,7 +1003,7 @@ impl CompactSgf {
     *board = Board::new_x_y(self.x_size, self.y_size).unwrap();
     let suc = board.set_stones_fail_if_no_libs(&self.placements);
     assert!(suc, "setupInitialBoardAndHist: initial board position contains invalid stones or zero-liberty stones");
-    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0);
+    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, modes);
     if hist.initial_turn_number < board.num_stones_on_board() as i64 {
       hist.initial_turn_number = board.num_stones_on_board() as i64;
     }
@@ -1004,8 +1025,16 @@ impl CompactSgf {
   }
 
   /// upstream: CompactSgf::setupBoardAndHistAssumeLegal (sgf.cpp) — test-local copy
-  pub fn setup_board_and_hist_assume_legal(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory, turn_idx: i64) {
-    self.setup_initial_board_and_hist(initial_rules, board, next_pla, hist);
+  pub fn setup_board_and_hist_assume_legal(
+    &self,
+    initial_rules: &Rules,
+    board: &mut Board,
+    next_pla: &mut Player,
+    hist: &mut BoardHistory,
+    turn_idx: i64,
+    modes: &BoardHistoryModes,
+  ) {
+    self.setup_initial_board_and_hist(initial_rules, board, next_pla, hist, modes);
     self.play_moves_assume_legal(board, next_pla, hist, turn_idx);
   }
 }

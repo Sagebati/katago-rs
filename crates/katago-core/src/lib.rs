@@ -1,4 +1,4 @@
-//! katago-core: the 1:1 port of KataGo's `cpp/` tree (upstream v1.16.5).
+//! katago-core: the 1:1 port of KataGo's `cpp/` tree (upstream v1.18.2).
 //!
 //! Module layout mirrors `upstream/KataGo/cpp/` (see port-manifest.toml); `port/` holds the
 //! helpers that have no upstream file (docs/PORTING.md appendix).

@@ -1,5 +1,5 @@
 //! search/localpattern against the unmodified upstream LocalPatternHasher
-//! (fixtures/upstream-v1.16.5/unit/oracle/localpattern.txt, from oracle/localpattern.cpp): init's RNG
+//! (fixtures/upstream-v1.18.2/unit/oracle/localpattern.txt, from oracle/localpattern.cpp): init's RNG
 //! stream and tables, getHash, and getHashWithSym over every symmetry and color flip, on random boards.
 //! Not a port of upstream code. Keep in the same order as the oracle.
 

@@ -1,5 +1,5 @@
 //! Differential fuzz regression oracle for game/boardhistory against the real C++
-//! (fixtures/upstream-v1.16.5/unit/oracle/boardhistory_fuzz.cpp). Mirrors boardhistory_fuzz.cpp line
+//! (fixtures/upstream-v1.18.2/unit/oracle/boardhistory_fuzz.cpp). Mirrors boardhistory_fuzz.cpp line
 //! for line: same splitmix stream, same calls in the same order, same output text.
 //!   boardhistory_fuzz_hashes.txt  one FNV-1a 64 of each game's full trace (seed0 = 1)
 //!   boardhistory_fuzz_trace.txt   full traces of 40 games (seed0 = 7), compared exactly
@@ -212,6 +212,20 @@ fn dump(out: &mut String, hist: &BoardHistory, board: &Board, table: Option<&KoH
   s += &format!(",{}", hs(BoardHistory::get_situation_rules_and_ko_hash(board, hist, np, 1.0)));
   s += &format!(" h2{}", hx(BoardHistory::get_situation_and_simple_ko_hash(board, np)));
   s += &format!(" h3{}", hx(BoardHistory::get_situation_and_simple_ko_and_prev_pos_hash(board, hist, np)));
+  // v1.18.2: the history's modes (kept by copy, assignment, clear() and copyToInitial()), suicideLegalForPassAlive,
+  // and getSituationRulesAndKoHash with each explicit BoardHistoryModes.
+  s += &format!(
+    " hm{}{}{}",
+    b(hist.modes.always_compute_pass_alive_under_suicide_rules),
+    b(hist.modes.exclude_territory_adjacent_to_atari),
+    b(hist.suicide_legal_for_pass_alive())
+  );
+  for m in 0..4 {
+    s += &format!(
+      ",{}",
+      hs(BoardHistory::get_situation_rules_and_ko_hash_modes(board, hist, np, 0.5, &BoardHistoryModes::new_full((m & 1) != 0, (m & 2) != 0)))
+    );
+  }
   s += " rb";
   for k in 0..BoardHistory::NUM_RECENT_BOARDS {
     s += &format!(",{}", hs(hist.get_recent_board(k).pos_hash));
@@ -386,7 +400,10 @@ fn run_game(out: &mut String, g: i32, seed0: u64) {
     }
   }
 
-  let mut hist = BoardHistory::new_full(&board, pla, &rules, e_phase);
+  // BoardHistoryModes (v1.18.2): half the games keep the legacy BoardHistoryModes(), the others draw both flags.
+  let md = rng.rnd(8);
+  let modes = if md < 4 { BoardHistoryModes::new_full((md & 1) != 0, (md & 2) != 0) } else { BoardHistoryModes::new() };
+  let mut hist = BoardHistory::new_full(&board, pla, &rules, e_phase, &modes);
   let o1 = rng.rnd(3);
   if o1 == 0 {
     let tn = rng.rnd(50);
@@ -424,12 +441,14 @@ fn run_game(out: &mut String, g: i32, seed0: u64) {
 
   *out += &format!("G {} {} {} {} {} ", g, xs, ys, pla, e_phase);
   *out += &format!(
-    "{} {} t{} pp{} pm{}{}\n",
+    "{} {} t{} pp{} pm{} md{}{}{}\n",
     rules,
     rules.to_json_string(),
     b(table_on),
     pass_prob,
     prevent_mode,
+    b(modes.always_compute_pass_alive_under_suicide_rules),
+    b(modes.exclude_territory_adjacent_to_atari),
     st(&board)
   );
   dump(out, &hist, &board, if table_on { Some(&table_store) } else { None }, "init");
@@ -544,6 +563,21 @@ fn run_game(out: &mut String, g: i32, seed0: u64) {
         ff(copy.white_bonus_score),
         area_str(&board, &ar2)
       );
+      // v1.18.2: scoring and endGameIfAllPassAlive under each BoardHistoryModes (setModes on a copy).
+      let mut em = String::from("ESCM");
+      for m in 0..4 {
+        let mut cm = hist.clone();
+        cm.set_modes(&BoardHistoryModes::new_full((m & 1) != 0, (m & 2) != 0));
+        let mut ar3 = [0 as Color; Board::MAX_ARR_SIZE as usize];
+        cm.end_and_score_game_now_area(&board, &mut ar3);
+        em += &format!(" {},{},{}", ff(cm.final_white_minus_black_score), cm.winner, area_str(&board, &ar3));
+        let mut cp = hist.clone();
+        cp.set_modes(&BoardHistoryModes::new_full((m & 1) != 0, (m & 2) != 0));
+        cp.end_game_if_all_pass_alive(&board);
+        em += &format!(" pa{},{},{}", b(cp.is_game_finished), ff(cp.final_white_minus_black_score), cp.winner);
+      }
+      *out += &em;
+      *out += "\n";
     }
     let x6 = rng.rnd(25);
     if x6 == 0 {
@@ -603,6 +637,13 @@ fn run_game(out: &mut String, g: i32, seed0: u64) {
         dump(out, &hist, &board, None, &format!("clear{}", ne));
       }
     }
+    // setModes (v1.18.2): changes hashing and later scoring, never re-adjudicates.
+    let x10 = rng.rnd(70);
+    if x10 == 0 {
+      let m2 = rng.rnd(4);
+      hist.set_modes(&BoardHistoryModes::new_full((m2 & 1) != 0, (m2 & 2) != 0));
+      dump(out, &hist, &board, if table_on { Some(&table_store) } else { None }, &format!("modes{}", m2));
+    }
   }
   dump(out, &hist, &board, if table_on { Some(&table_store) } else { None }, "end");
 }
@@ -645,7 +686,7 @@ fn komi_edge(out: &mut String) {
       board.set_stone(Location::get_loc(2, 2, 9), C_BLACK);
       board.set_stone(Location::get_loc(6, 6, 9), C_WHITE);
     }
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules_list[ri], 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules_list[ri], 0, &BoardHistoryModes::new());
     for kb in EDGE_KOMI_BITS {
       let k = f32::from_bits(kb);
       hist.set_komi(k);

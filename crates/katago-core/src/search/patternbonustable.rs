@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/patternbonustable.cpp, cpp/search/patternbonustable.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/patternbonustable.cpp, cpp/search/patternbonustable.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Not ported (file IO and SGF loading: core does no IO, dataio/sgf is not ported, M8; see the
 // manifest notes): PatternBonusTable::avoidRepeatedSgfMoves and
@@ -181,7 +181,8 @@ impl PatternBonusTable {
   pub fn add_bonus_for_game_moves_only_pla(&mut self, game: &BoardHistory, bonus: f64, only_pla: Player) {
     let mut hashes_this_game: BTreeSet<Hash128> = BTreeSet::new();
     let mut board: Board = game.initial_board.clone();
-    let mut hist: Box<BoardHistory> = Box::new(BoardHistory::new_full(&board, game.initial_pla, &game.rules, game.initial_encore_phase));
+    //Replay under the same BoardHistoryModes as the history we're replaying.
+    let mut hist: Box<BoardHistory> = Box::new(BoardHistory::new_full(&board, game.initial_pla, &game.rules, game.initial_encore_phase, &game.modes));
     for i in 0..game.move_history.len() {
       let pla: Player = game.move_history[i].pla;
       let loc: Loc = game.move_history[i].loc;

@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/neuralnet/nneval.cpp, cpp/neuralnet/nneval.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/neuralnet/nneval.cpp, cpp/neuralnet/nneval.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE (PORTING.md §11, DECISIONS.md D6/D8): server threads become `serve` tasks spawned on
 // the host's local executor through an injected `Rc<dyn Spawner>`; `ThreadSafeQueue` becomes
@@ -8,8 +8,13 @@
 // `spawnServerThreads` and `serve` are async. The `NeuralNet::` backend functions are reached
 // through an injected `Rc<dyn NeuralNet>` (nninterface.rs). The `Logger*` is replaced by the log
 // crate (ctor param and getLogger dropped).
-// Not ported: NNEvaluator::getTrunkSpatialConvDepth (needs the layer descs, which are not ported:
-// see desc.rs; nothing outside nneval.cpp calls it).
+// Not ported: NNEvalBenchmarkResult and NNEvaluator::benchmarkPureForward (upstream times one OS
+// thread per server thread, each with its own compute handle, released together by a spin barrier
+// and timed with steady_clock: with virtual threads on one OS thread the "concurrent" iterations
+// would interleave at awaits and the wall-clock figures would not mean what upstream's do; its only
+// caller is the benchmarknn command, which is not ported; katago-rs benchmarks forward passes with
+// `just bench`). maybeWarmupComputeHandle's `#if defined(USE_CUDA_BACKEND)` branch (our backend is
+// not CUDA, so upstream's non-CUDA no-op branch is the ported one).
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -17,6 +22,7 @@ use std::collections::BTreeSet;
 use std::rc::Rc;
 
 use crate::core::commontypes::enabled_t;
+use crate::core::config_parser::ConfigParser;
 use crate::core::global::Global;
 use crate::core::global::KataError;
 use crate::core::hash::Hash128;
@@ -116,7 +122,6 @@ pub struct NNEvaluator {
   pub(crate) policy_size: i32,
   pub inputs_use_nhwc: bool,
   pub(crate) using_fp16_mode: enabled_t,
-  pub(crate) using_nhwc_mode: enabled_t,
   pub num_threads: Cell<i32>,
   pub gpu_idx_by_server_thread: RefCell<Vec<i32>>,
   pub rand_seed: String,
@@ -141,10 +146,13 @@ pub struct NNEvaluator {
   pub(crate) server_threads_exited: WakerList,
 
   pub(crate) max_batch_size: i32,
+  // NeuralNet::getNumEffectiveDevices at construction, see getNumGpus()
+  pub(crate) num_effective_devices: i32,
 
   //Counters for statistics
   pub(crate) m_num_rows_processed: Cell<u64>,
   pub(crate) m_num_batches_processed: Cell<u64>,
+  pub(crate) m_num_cache_hits: Cell<u64>,
 
   //Everything in this section is protected under bufferMutex--------------------------------------------
   // PORT NOTE: bufferMutex removed (single-threaded).
@@ -165,8 +173,8 @@ pub struct NNEvaluator {
   //Randomization settings for symmetries
   pub(crate) current_do_randomize: Cell<bool>,
   pub(crate) current_default_symmetry: Cell<i32>,
-  //Modifiable batch size smaller than maxBatchSize
-  pub(crate) current_batch_size: Cell<i32>,
+  // See setMaxRowsToSendPerBatch
+  pub(crate) max_rows_to_send_per_batch: Cell<i32>,
 
   //Queued up requests
   pub(crate) query_queue: AsyncQueue<Rc<NNResultBuf>>,
@@ -220,7 +228,8 @@ impl NNServerBuf {
 
 impl NNEvaluator {
   /// upstream: NNEvaluator::NNEvaluator (nneval.cpp)
-  /// PORT NOTE: `Logger* logger` dropped (log crate). New trailing params (OWNERSHIP.tsv, D6):
+  /// PORT NOTE: `Logger* logger` dropped (log crate); `ConfigParser& cfg` -> `&mut ConfigParser`
+  /// (consulted by the backend, not stored, as upstream). New trailing params (OWNERSHIP.tsv, D6):
   /// `backend` (the NeuralNet:: functions), `spawner` (spawnServerThreads), and `model_bytes`, the
   /// contents of `modelFileName`, which the backend loads instead of opening the file (no file IO
   /// in core). Throws -> Result.
@@ -236,16 +245,15 @@ impl NNEvaluator {
     nn_cache_size_power_of_two: i32,
     nn_mutex_pool_size_powerof_two: i32,
     debug_skip_neural_net: bool,
-    open_cl_tuner_file: &str,
     home_data_dir_override: &str,
-    open_cl_re_tune_per_board_size: bool,
     use_fp16_mode: enabled_t,
-    use_nhwc_mode: enabled_t,
     num_threads: i32,
     gpu_idx_by_server_thread: &[i32],
     rand_seed: &str,
     do_randomize: bool,
     default_symmetry: i32,
+    // Consulted by the compute backend for its own custom options; not stored.
+    cfg: &mut ConfigParser,
     backend: Rc<dyn NeuralNet>,
     spawner: Rc<dyn Spawner>,
     model_bytes: Vec<u8>,
@@ -259,7 +267,6 @@ impl NNEvaluator {
       policy_size: NNPos::get_policy_size(nn_x_len, nn_y_len),
       inputs_use_nhwc,
       using_fp16_mode: use_fp16_mode,
-      using_nhwc_mode: use_nhwc_mode,
       num_threads: Cell::new(num_threads),
       gpu_idx_by_server_thread: RefCell::new(gpu_idx_by_server_thread.to_vec()),
       rand_seed: rand_seed.to_string(),
@@ -277,8 +284,10 @@ impl NNEvaluator {
       num_server_threads_alive: Cell::new(0),
       server_threads_exited: WakerList::new(),
       max_batch_size,
+      num_effective_devices: backend.get_num_effective_devices(cfg, gpu_idx_by_server_thread),
       m_num_rows_processed: Cell::new(0),
       m_num_batches_processed: Cell::new(0),
+      m_num_cache_hits: Cell::new(0),
       is_killed: Cell::new(false),
       num_server_threads_starting_up: Cell::new(0),
       main_thread_waiting_for_spawn: WakerList::new(),
@@ -289,7 +298,7 @@ impl NNEvaluator {
       waiting_for_finish: WakerList::new(),
       current_do_randomize: Cell::new(do_randomize),
       current_default_symmetry: Cell::new(default_symmetry),
-      current_batch_size: Cell::new(max_batch_size),
+      max_rows_to_send_per_batch: Cell::new(max_batch_size),
       query_queue: AsyncQueue::new(),
       backend,
       spawner,
@@ -332,19 +341,20 @@ impl NNEvaluator {
         s.model_version = desc.model_version;
         s.inputs_version = NNModelVersion::get_inputs_version(s.model_version)?;
         s.num_input_meta_channels = desc.num_input_meta_channels;
-        s.post_process_params = desc.post_process_params;
       }
       s.compute_context = Some(s.backend.create_compute_context(
         &gpu_idxs,
         s.nn_x_len,
         s.nn_y_len,
-        open_cl_tuner_file,
         home_data_dir_override,
-        open_cl_re_tune_per_board_size,
         s.using_fp16_mode,
-        s.using_nhwc_mode,
         &*loaded_model,
+        cfg,
       )?);
+      // Snapshot postProcessParams only after createComputeContext: backends may apply
+      // config-dependent transforms to the model desc there (e.g. the ONNX backend's
+      // scale8 workaround multiplies outputScaleMultiplier by 8).
+      s.post_process_params = s.backend.get_model_desc(&*loaded_model).post_process_params;
       s.loaded_model = Some(loaded_model);
     } else {
       drop(model_bytes);
@@ -402,16 +412,21 @@ impl NNEvaluator {
   pub fn get_max_batch_size(&self) -> i32 {
     self.max_batch_size
   }
-  /// upstream: NNEvaluator::getCurrentBatchSize (nneval.cpp)
-  pub fn get_current_batch_size(&self) -> i32 {
-    self.current_batch_size.get() /*acquire*/
+  /// upstream: NNEvaluator::getMaxRowsToSendPerBatch (nneval.cpp)
+  // An additional cap, at most maxBatchSize, on how many queued queries the server threads will
+  // actually send in each batch. On fixed-shape backends lowering this below maxBatchSize only
+  // wastes padding rows, since the batch still runs maxBatchSize rows of compute. To genuinely
+  // run smaller batches there, recreate the NNEvaluator with a smaller maxBatchSize, as the
+  // benchmark does.
+  pub fn get_max_rows_to_send_per_batch(&self) -> i32 {
+    self.max_rows_to_send_per_batch.get() /*acquire*/
   }
-  /// upstream: NNEvaluator::setCurrentBatchSize (nneval.cpp)
-  pub fn set_current_batch_size(&self, batch_size: i32) -> Result<(), KataError> {
-    if batch_size <= 0 || batch_size > self.max_batch_size {
-      return Err(KataError::StringError("Invalid setting for batch size".to_string()));
+  /// upstream: NNEvaluator::setMaxRowsToSendPerBatch (nneval.cpp)
+  pub fn set_max_rows_to_send_per_batch(&self, max_rows: i32) -> Result<(), KataError> {
+    if max_rows <= 0 || max_rows > self.max_batch_size {
+      return Err(KataError::StringError("Invalid setting for max rows to send per batch".to_string()));
     }
-    self.current_batch_size.set(batch_size) /*release*/;
+    self.max_rows_to_send_per_batch.set(max_rows) /*release*/;
     Ok(())
   }
   /// upstream: NNEvaluator::requiresSGFMetadata (nneval.cpp)
@@ -420,18 +435,18 @@ impl NNEvaluator {
   }
 
   /// upstream: NNEvaluator::getNumGpus (nneval.cpp)
-  /// PORT NOTE: `#ifdef USE_EIGEN_BACKEND` is not defined for our backend: the generic branch.
   pub fn get_num_gpus(&self) -> i32 {
-    let mut gpu_idxs: BTreeSet<i32> = BTreeSet::new();
-    let g = self.gpu_idx_by_server_thread.borrow();
-    for i in 0..g.len() {
-      gpu_idxs.insert(g[i]);
-    }
-    gpu_idxs.len() as i32
+    self.num_effective_devices
   }
   /// upstream: NNEvaluator::getNumServerThreads (nneval.cpp)
   pub fn get_num_server_threads(&self) -> i32 {
     self.gpu_idx_by_server_thread.borrow().len() as i32
+  }
+  /// upstream: NNEvaluator::getGpuIdxByServerThread (nneval.cpp)
+  /// PORT NOTE: returns a copy (the field is a RefCell, written by setNumThreads) instead of a const ref.
+  // One entry per server thread, in thread order, -1 meaning the backend's default device.
+  pub fn get_gpu_idx_by_server_thread(&self) -> Vec<i32> {
+    self.gpu_idx_by_server_thread.borrow().clone()
   }
   /// upstream: NNEvaluator::getGpuIdxs (nneval.cpp)
   /// PORT NOTE: the non-Eigen branch, as getNumGpus.
@@ -452,26 +467,70 @@ impl NNEvaluator {
   pub fn get_nny_len(&self) -> i32 {
     self.nn_y_len
   }
+  /// upstream: NNEvaluator::getRequireExactNNLen (nneval.cpp)
+  pub fn get_require_exact_nn_len(&self) -> bool {
+    self.require_exact_nn_len
+  }
   /// upstream: NNEvaluator::getModelVersion (nneval.cpp)
   pub fn get_model_version(&self) -> i32 {
     self.model_version
   }
-  // upstream: NNEvaluator::getTrunkSpatialConvDepth (nneval.cpp)
-  // Not ported: needs ModelDesc's layer descs (desc.rs); no caller outside nneval.cpp.
+  /// upstream: NNEvaluator::getTrunkSpatialConvDepth (nneval.cpp)
+  /// PORT NOTE: upstream dereferences a NULL loadedModel (debugSkipNeuralNet): UB; here a panic.
+  /// The value is the ModelDesc's archSummary (desc.rs).
+  pub fn get_trunk_spatial_conv_depth(&self) -> f64 {
+    self.backend.get_model_desc(&**self.loaded_model.as_ref().expect("upstream UB: getModelDesc(NULL)")).get_trunk_spatial_conv_depth()
+  }
+
+  /// upstream: NNEvaluator::getNumModelParameters (nneval.cpp)
+  /// PORT NOTE: NULL loadedModel as getTrunkSpatialConvDepth.
+  pub fn get_num_model_parameters(&self) -> i64 {
+    self.backend.get_model_desc(&**self.loaded_model.as_ref().expect("upstream UB: getModelDesc(NULL)")).get_num_parameters()
+  }
+
+  /// upstream: NNEvaluator::modelHasAnyTransformerBlocks (nneval.cpp)
+  /// PORT NOTE: NULL loadedModel as getTrunkSpatialConvDepth.
+  pub fn model_has_any_transformer_blocks(&self) -> bool {
+    self.backend.get_model_desc(&**self.loaded_model.as_ref().expect("upstream UB: getModelDesc(NULL)")).has_any_transformer_blocks()
+  }
+
+  /// upstream: NNEvaluator::modelHasAnyNestedBottleneckBlocks (nneval.cpp)
+  /// PORT NOTE: NULL loadedModel as getTrunkSpatialConvDepth.
+  pub fn model_has_any_nested_bottleneck_blocks(&self) -> bool {
+    self.backend.get_model_desc(&**self.loaded_model.as_ref().expect("upstream UB: getModelDesc(NULL)")).has_any_nested_bottleneck_blocks()
+  }
 
   /// upstream: NNEvaluator::getUsingFP16Mode (nneval.cpp)
   pub fn get_using_fp16_mode(&self) -> enabled_t {
     self.using_fp16_mode
   }
-  /// upstream: NNEvaluator::getUsingNHWCMode (nneval.cpp)
-  pub fn get_using_nhwc_mode(&self) -> enabled_t {
-    self.using_nhwc_mode
-  }
 
   /// upstream: NNEvaluator::supportsShorttermError (nneval.cpp)
-  //Check if the loaded neural net supports shorttermError fields
+  // Check if the loaded neural net supports shorttermError fields
   pub fn supports_shortterm_error(&self) -> bool {
     self.model_version >= 9
+  }
+
+  /// upstream: NNEvaluator::modelPreferPassAliveUnderSuicideRules (nneval.cpp)
+  // Whether the loaded model declares that it expects pass-alive area input features to be
+  // computed as if multi-stone suicide were always legal, regardless of the actual suicide rule.
+  // False if there is no loaded model (e.g. debugSkipNeuralNet).
+  pub fn model_prefer_pass_alive_under_suicide_rules(&self) -> bool {
+    match &self.loaded_model {
+      None => false,
+      Some(loaded_model) => self.backend.get_model_desc(&**loaded_model).prefer_pass_alive_under_suicide_rules,
+    }
+  }
+
+  /// upstream: NNEvaluator::modelPreferExcludeTerritoryAdjacentToAtari (nneval.cpp)
+  // Whether the loaded model declares that it expects territory scoring with TaxRule NONE to
+  // exclude empty points adjacent to chains in atari (rules version 3), both for adjudication and
+  // for its territory input features. False if there is no loaded model (e.g. debugSkipNeuralNet).
+  pub fn model_prefer_exclude_territory_adjacent_to_atari(&self) -> bool {
+    match &self.loaded_model {
+      None => false,
+      Some(loaded_model) => self.backend.get_model_desc(&**loaded_model).prefer_exclude_territory_adjacent_to_atari,
+    }
   }
 
   /// upstream: NNEvaluator::getDoRandomize (nneval.cpp)
@@ -516,11 +575,16 @@ impl NNEvaluator {
   pub fn average_processed_batch_size(&self) -> f64 {
     self.num_rows_processed() as f64 / self.num_batches_processed() as f64
   }
+  /// upstream: NNEvaluator::numCacheHits (nneval.cpp)
+  pub fn num_cache_hits(&self) -> u64 {
+    self.m_num_cache_hits.get() /*relaxed*/
+  }
 
   /// upstream: NNEvaluator::clearStats (nneval.cpp)
   pub fn clear_stats(&self) {
     self.m_num_rows_processed.set(0);
     self.m_num_batches_processed.set(0);
+    self.m_num_cache_hits.set(0);
   }
 
   /// upstream: NNEvaluator::clearCache (nneval.cpp)
@@ -638,11 +702,106 @@ impl NNEvaluator {
     }
   }
 
+  /// upstream: NNEvaluator::fillRowBufs (nneval.cpp)
+  /// PORT NOTE: Result: getNumSpatialFeatures/getNumGlobalFeatures throw, and the unported
+  /// fillRowV3..V6 are an error (see below).
+  // Fill buf.row{Spatial,Global,Meta}Buf from a position. Shared by evaluate() and warmup.
+  pub(crate) fn fill_row_bufs(
+    &self,
+    board: &Board,
+    history: &BoardHistory,
+    next_player: Player,
+    sgf_meta: Option<&SGFMetadata>,
+    nn_input_params: &MiscNNInputParams,
+    buf: &NNResultBuf,
+  ) -> Result<(), KataError> {
+    let row_spatial_len: i32 = NNModelVersion::get_num_spatial_features(self.model_version)? * self.nn_x_len * self.nn_y_len;
+    {
+      let mut v = buf.row_spatial_buf.borrow_mut();
+      if v.len() < row_spatial_len as usize {
+        v.resize(row_spatial_len as usize, 0.0);
+      }
+    }
+    let row_global_len: i32 = NNModelVersion::get_num_global_features(self.model_version)?;
+    {
+      let mut v = buf.row_global_buf.borrow_mut();
+      if v.len() < row_global_len as usize {
+        v.resize(row_global_len as usize, 0.0);
+      }
+    }
+    let row_meta_len: i32 = self.num_input_meta_channels;
+    {
+      let mut v = buf.row_meta_buf.borrow_mut();
+      if v.len() < row_meta_len as usize {
+        v.resize(row_meta_len as usize, 0.0);
+      }
+    }
+
+    const _: () = assert!(NNModelVersion::latestInputsVersionImplemented == 7);
+    if self.inputs_version == 7 {
+      NNInputs::fill_row_v7(
+        board,
+        history,
+        next_player,
+        nn_input_params,
+        self.nn_x_len,
+        self.nn_y_len,
+        self.inputs_use_nhwc,
+        &mut buf.row_spatial_buf.borrow_mut(),
+        &mut buf.row_global_buf.borrow_mut(),
+      );
+    } else {
+      // TODO(port): fillRowV3..V6 are not ported (port-manifest.toml nninputs notes: input
+      // versions of pre-v8 nets); upstream dispatches inputsVersion 3..6 to them here.
+      return Err(KataError::StringError(
+        "NNEvaluator: inputs version ".to_string() + &Global::int_to_string(self.inputs_version) + " (fillRowV3..V6) is not ported",
+      ));
+    }
+
+    if row_meta_len > 0 {
+      match sgf_meta {
+        None => Global::fatal_error(&("SGFMetadata is required for ".to_string() + &self.model_name + " but was not provided")),
+        Some(sgf_meta) => {
+          if !sgf_meta.initialized {
+            Global::fatal_error(
+              &("SGFMetadata is required for ".to_string()
+                + &self.model_name
+                + " but was not initialized. Did you specify humanSLProfile=... in katago's config or via overrides?"),
+            );
+          }
+          SGFMetadata::fill_metadata_row(Some(sgf_meta), &mut buf.row_meta_buf.borrow_mut(), next_player, board.x_size * board.y_size);
+          buf.has_row_meta.set(true);
+        }
+      }
+    } else {
+      buf.has_row_meta.set(false);
+    }
+    Ok(())
+  }
+
+  /// upstream: NNEvaluator::maybeWarmupComputeHandle (nneval.cpp)
+  /// PORT NOTE: the `#if !defined(USE_CUDA_BACKEND)` branch: our backend is not CUDA, so after the
+  /// early-return checks this is a no-op, as upstream on every non-CUDA backend. The CUDA branch
+  /// (per-batch-size forward passes on an empty board for transformer nets) is not ported.
+  // Run a forward pass on this freshly-created handle for each batch size 1 to maxBatchSize, with an
+  // empty board. This pre-compiles any lazily-built backend graphs (e.g. cuDNN SDPA execution plans)
+  // so the first real searches aren't stalled. No-op unless this is a transformer model on a backend
+  // where warmup matters, and unless warmup is enabled.
+  // gpuHandle may be NULL (neural-net-less), in which case this is a no-op.
+  pub(crate) fn maybe_warmup_compute_handle(&self, gpu_handle: Option<&dyn ComputeHandle>, server_thread_idx: i32) {
+    if gpu_handle.is_none() || self.debug_skip_neural_net || self.loaded_model.is_none() {
+      return;
+    }
+    // Warmup currently only matters on CUDA, where cuDNN lazily compiles an SDPA execution plan per
+    // batch size on first use. Other backends: nothing to warm up for now.
+    let _ = server_thread_idx;
+  }
+
   /// upstream: NNEvaluator::serve (nneval.cpp)
   /// PORT NOTE: async task body (PORTING.md §11); `waitPopUpToN` is awaited and returns whatever is
   /// queued when the task is polled. `NeuralNet::getOutput` is awaited.
-  //Helper, for internal use only
-  pub async fn serve(self: Rc<Self>, buf: &mut NNServerBuf, rand: &mut Rand, gpu_idx_for_this_thread: i32, server_thread_idx: i32) -> Result<(), KataError> {
+  // Helper, for internal use only
+  pub async fn serve(self: Rc<Self>, rand: &mut Rand, gpu_idx_for_this_thread: i32, server_thread_idx: i32) -> Result<(), KataError> {
     let mut num_batches_handled_this_thread: i64 = 0;
     let mut num_rows_handled_this_thread: i64 = 0;
 
@@ -657,7 +816,16 @@ impl NNEvaluator {
         gpu_idx_for_this_thread,
         server_thread_idx,
       )?);
+
+      // Warm up lazily-compiled backend graphs before reporting this thread as started.
+      self.maybe_warmup_compute_handle(gpu_handle.as_deref(), server_thread_idx);
     }
+
+    // Allocate input buffers only after createComputeHandle, which binds this thread to its GPU.
+    // On the CUDA backend the pinned host allocation in the buffers initializes a context on the
+    // thread's current device, so doing it before the GPU binding would leave a stray context
+    // (and some wasted VRAM) on GPU 0 even when only other GPUs are configured.
+    let mut buf: NNServerBuf = NNServerBuf::new(&self, self.loaded_model.as_deref());
 
     {
       // PORT NOTE: lock removed (single-threaded)
@@ -679,7 +847,7 @@ impl NNEvaluator {
 
     loop {
       result_bufs.clear();
-      let desired_batch_size: i32 = std::cmp::min(self.max_batch_size, self.current_batch_size.get() /*acquire*/);
+      let desired_batch_size: i32 = std::cmp::min(self.max_batch_size, self.max_rows_to_send_per_batch.get() /*acquire*/);
       let got_anything: bool = self.query_queue.wait_pop_up_to_n(&mut result_bufs, desired_batch_size as usize).await;
       //Queue being closed is a signal that we're done.
       if !got_anything {
@@ -820,6 +988,7 @@ impl NNEvaluator {
 
     // NeuralNet::freeComputeHandle(gpuHandle)
     drop(gpu_handle);
+    // PORT NOTE: `buf` (NNServerBuf) is a stack local upstream, destroyed at the end of serve.
     log::info!(
       "{}",
       "GPU ".to_string()
@@ -963,6 +1132,7 @@ impl NNEvaluator {
       if !skip_cache && nn_cache_table.get(nn_hash, &mut buf.result.borrow_mut()) {
         let missing_owner_map: bool = buf.result.borrow().as_ref().expect("get() returned true").white_owner_map.is_none();
         if !(include_owner_map && missing_owner_map) {
+          cpp::cell_fetch_add(&self.m_num_cache_hits, 1u64) /*relaxed*/;
           buf.has_result.set(true);
           return Ok(());
         } else {
@@ -978,67 +1148,7 @@ impl NNEvaluator {
     buf.board_y_size_for_server.set(board.y_size);
 
     if !self.debug_skip_neural_net {
-      let row_spatial_len: i32 = NNModelVersion::get_num_spatial_features(self.model_version)? * self.nn_x_len * self.nn_y_len;
-      {
-        let mut v = buf.row_spatial_buf.borrow_mut();
-        if v.len() < row_spatial_len as usize {
-          v.resize(row_spatial_len as usize, 0.0);
-        }
-      }
-      let row_global_len: i32 = NNModelVersion::get_num_global_features(self.model_version)?;
-      {
-        let mut v = buf.row_global_buf.borrow_mut();
-        if v.len() < row_global_len as usize {
-          v.resize(row_global_len as usize, 0.0);
-        }
-      }
-      let row_meta_len: i32 = self.num_input_meta_channels;
-      {
-        let mut v = buf.row_meta_buf.borrow_mut();
-        if v.len() < row_meta_len as usize {
-          v.resize(row_meta_len as usize, 0.0);
-        }
-      }
-
-      const _: () = assert!(NNModelVersion::latestInputsVersionImplemented == 7);
-      if self.inputs_version == 7 {
-        NNInputs::fill_row_v7(
-          board,
-          history,
-          next_player,
-          &nn_input_params,
-          self.nn_x_len,
-          self.nn_y_len,
-          self.inputs_use_nhwc,
-          &mut buf.row_spatial_buf.borrow_mut(),
-          &mut buf.row_global_buf.borrow_mut(),
-        );
-      } else {
-        // TODO(port): fillRowV3..V6 are not ported (port-manifest.toml nninputs notes: input
-        // versions of pre-v8 nets); upstream dispatches inputsVersion 3..6 to them here.
-        return Err(KataError::StringError(
-          "NNEvaluator: inputs version ".to_string() + &Global::int_to_string(self.inputs_version) + " (fillRowV3..V6) is not ported",
-        ));
-      }
-
-      if row_meta_len > 0 {
-        match sgf_meta {
-          None => Global::fatal_error(&("SGFMetadata is required for ".to_string() + &self.model_name + " but was not provided")),
-          Some(sgf_meta) => {
-            if !sgf_meta.initialized {
-              Global::fatal_error(
-                &("SGFMetadata is required for ".to_string()
-                  + &self.model_name
-                  + " but was not initialized. Did you specify humanSLProfile=... in katago's config or via overrides?"),
-              );
-            }
-            SGFMetadata::fill_metadata_row(Some(sgf_meta), &mut buf.row_meta_buf.borrow_mut(), next_player, board.x_size * board.y_size);
-            buf.has_row_meta.set(true);
-          }
-        }
-      } else {
-        buf.has_row_meta.set(false);
-      }
+      self.fill_row_bufs(board, history, next_player, sgf_meta, &nn_input_params, buf)?;
     }
 
     buf.symmetry.set(nn_input_params.symmetry);
@@ -1443,24 +1553,28 @@ fn try_abbreviate_step_string(input: &str, buf: &mut String) -> bool {
 }
 
 /// upstream: serveEvals (nneval.cpp) static
-/// PORT NOTE: the thread entry point becomes the spawned task. `loadedModel` comes from `nn_eval`.
-/// Upstream lets an exception escape the thread (terminate); here it is a fatal error (panic).
-/// The end of the task decrements `num_server_threads_alive` and notifies `server_threads_exited`
-/// (stands in for join(), see killServerThreads / spawnServerThreads, D8).
+/// PORT NOTE: the thread entry point becomes the spawned task. Upstream logs the error (logger and
+/// cerr, both -> log) and rethrows out of the thread (terminate); here the rethrow is a fatal error
+/// (panic). `catch(...)` for non-std exceptions has no counterpart (errors are KataError). The end
+/// of the task decrements `num_server_threads_alive` and notifies `server_threads_exited` (stands in
+/// for join(), see killServerThreads / spawnServerThreads, D8).
 async fn serve_evals(rand_seed_this_thread: String, nn_eval: Rc<NNEvaluator>, gpu_idx_for_this_thread: i32, server_thread_idx: i32) {
-  let mut buf: NNServerBuf = NNServerBuf::new(&nn_eval, nn_eval.loaded_model.as_deref());
   let mut rand: Rand = Rand::new_seed(&rand_seed_this_thread);
 
-  //Used to have a try catch around this but actually we're in big trouble if this raises an exception
-  //and causes possibly the only nnEval thread to die, so actually go ahead and let the exception escape to
-  //toplevel for easier debugging
+  // We're in big trouble if this raises an exception (e.g. out of GPU memory) and causes possibly
+  // the only nnEval thread to die, so let the exception escape and terminate the process. But log
+  // and print the error first, since on some platforms an exception escaping a thread aborts
+  // without printing anything. cerr is used unconditionally rather than only when there is no
+  // logger, since the logger may be temporarily disabled (e.g. the benchmark suppresses logging
+  // while respawning server threads).
   let alive_ref: Rc<NNEvaluator> = nn_eval.clone();
-  let res = nn_eval.serve(&mut buf, &mut rand, gpu_idx_for_this_thread, server_thread_idx).await;
-  drop(buf);
+  let res = nn_eval.serve(&mut rand, gpu_idx_for_this_thread, server_thread_idx).await;
   alive_ref.num_server_threads_alive.set(alive_ref.num_server_threads_alive.get() - 1);
   alive_ref.server_threads_exited.notify_all();
   if let Err(e) = res {
-    Global::fatal_error(&("NNEvaluator server thread: ".to_string() + e.what()));
+    log::info!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
+    log::error!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
+    Global::fatal_error(&("ERROR: NN server thread failed: ".to_string() + e.what()));
   }
 }
 

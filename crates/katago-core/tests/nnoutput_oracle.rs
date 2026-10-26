@@ -1,5 +1,5 @@
 //! NNOutput (neuralnet/nninputs.rs) against the unmodified upstream NNOutput:
-//! fixtures/upstream-v1.16.5/unit/oracle/nnoutput.cpp (which documents the format) prints NNOutputs
+//! fixtures/upstream-v1.18.2/unit/oracle/nnoutput.cpp (which documents the format) prints NNOutputs
 //! (o lines), their debugPrint text (incl. NaN, infinities and values whose (int)round(x*1000) is
 //! out of int range) and the averaging constructor's results (avg + r lines: owner maps, the
 //! legality-mismatch fallback, policyOptimismUsed averaging). This test parses the o lines, replays

@@ -1,7 +1,7 @@
 //! Real-net search TOLERANCE study: the ported `Search` over the ported `NNEvaluator` and the burn `flex` backend
 //! vs the unmodified upstream Search over the Eigen fp32 NNEvaluator on the same net, on 160 searches (g170-b6c96)
 //! and 32 searches (g170e-b10c128) at 400-1000 visits over varied positions and SearchParams. Oracle:
-//! fixtures/upstream-v1.16.5/search/oracle/search_tolerance.cpp -> search_tolerance_{b6c96,b10c128}.txt (each CASE
+//! fixtures/upstream-v1.18.2/search/oracle/search_tolerance.cpp -> search_tolerance_{b6c96,b10c128}.txt (each CASE
 //! line holds everything needed to rebuild the search; the lines after it are the upstream result). Not a port of
 //! upstream code. A larger sibling of search_smoke.rs (same helpers and fixture format).
 //!

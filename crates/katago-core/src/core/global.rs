@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/core/global.cpp, cpp/core/global.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/core/global.cpp, cpp/core/global.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Not ported (port-manifest.toml notes): getDateString (declared, never defined upstream),
 // pauseForKey (console IO).

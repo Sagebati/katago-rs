@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/neuralnet/sgfmetadata.cpp, cpp/neuralnet/sgfmetadata.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/neuralnet/sgfmetadata.cpp, cpp/neuralnet/sgfmetadata.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use std::sync::OnceLock;
 
@@ -428,6 +428,14 @@ impl SGFMetadata {
     }
 
     Err(KataError::StringError("Unknown human SL network profile: ".to_string() + human_sl_profile_name))
+  }
+
+  /// upstream: SGFMetadata::makeDummyWarmupProfile (sgfmetadata.cpp)
+  // An arbitrary valid, initialized profile usable for things like neural net warmup, where the
+  // metadata content is irrelevant (outputs are discarded) but the model still requires a profile.
+  pub fn make_dummy_warmup_profile() -> SGFMetadata {
+    // Any valid initialized profile works; reuse a recent modern-pro profile.
+    make_modern_pro_profile(&SimpleDate::new_y_m_d(2020, 1, 1).expect("upstream: cannot throw for constant input"))
   }
 }
 

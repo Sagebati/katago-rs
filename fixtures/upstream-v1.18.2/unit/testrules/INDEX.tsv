@@ -1,0 +1,105 @@
+file	line	test	role
+area-rules.input0.txt	122	Area rules	input
+area-rules.expected0.txt	166	Area rules	expected
+territory-rules.input0.txt	179	Territory rules	input
+territory-rules.expected0.txt	258	Territory rules	expected
+territory-rules.input1.txt	297	Territory rules	input
+simple-ko-rules.expected0.txt	372	Simple ko rules	expected
+positional-ko-rules.expected0.txt	451	Positional ko rules	expected
+situational-ko-rules.expected0.txt	527	Situational ko rules	expected
+spight-ko-rules.expected0.txt	627	Spight ko rules	expected
+spight-ko-rules.input0.txt	657	Spight ko rules	input
+suicide-ko-testing.expected0.txt	710	Suicide ko testing	expected
+eternal-life.input0.txt	766	Eternal life	input
+eternal-life.expected0.txt	793	Eternal life	expected
+triple-ko-simple.input0.txt	804	Triple ko simple	input
+triple-ko-simple.expected0.txt	836	Triple ko simple	expected
+triple-ko-superko.input0.txt	847	Triple ko superko	input
+triple-ko-superko.expected0.txt	869	Triple ko superko	expected
+triple-ko-encore.input0.txt	878	Triple ko encore	input
+triple-ko-encore.expected0.txt	906	Triple ko encore	expected
+encore-own-throwin-that-temporarily-breaks-the-ko-shape-should-not-clear-the-ko-recap-block.input0.txt	925	Encore - own throwin that temporarily breaks the ko shape should not clear the ko recap block	input
+encore-own-throwin-that-temporarily-breaks-the-ko-shape-should-not-clear-the-ko-recap-block.expected0.txt	953	Encore - own throwin that temporarily breaks the ko shape should not clear the ko recap block	expected
+encore-ko-recap-block-does-not-stop-non-ko-capture.input0.txt	993	Encore - ko recap block does not stop non-ko-capture	input
+encore-ko-recap-block-does-not-stop-non-ko-capture.expected0.txt	1024	Encore - ko recap block does not stop non-ko-capture	expected
+encore-once-only-rule-doesn-t-prevent-the-opponent-moving-there-filling-ko.input0.txt	1074	Encore - once only rule doesn't prevent the opponent moving there (filling ko)	input
+encore-once-only-rule-doesn-t-prevent-the-opponent-moving-there-filling-ko.expected0.txt	1130	Encore - once only rule doesn't prevent the opponent moving there (filling ko)	expected
+area-scoring-in-the-main-phase.input0.txt	1224	Area scoring in the main phase	input
+area-scoring-in-the-main-phase.expected0.txt	1258	Area scoring in the main phase	expected
+territory-scoring-in-the-main-phase.input0.txt	1293	Territory scoring in the main phase	input
+territory-scoring-in-the-main-phase.expected0.txt	1327	Territory scoring in the main phase	expected
+territory-scoring-in-encore-1.input0.txt	1362	Territory scoring in encore 1	input
+territory-scoring-in-encore-1.expected0.txt	1398	Territory scoring in encore 1	expected
+territory-scoring-in-encore-2.input0.txt	1434	Territory scoring in encore 2	input
+territory-scoring-in-encore-2.expected0.txt	1472	Territory scoring in encore 2	expected
+fill-seki-liberties-in-main-phase.input0.txt	1508	Fill seki liberties in main phase	input
+fill-seki-liberties-in-main-phase.expected0.txt	1542	Fill seki liberties in main phase	expected
+fill-seki-liberties-in-encore-2.input0.txt	1578	Fill seki liberties in encore 2	input
+fill-seki-liberties-in-encore-2.expected0.txt	1616	Fill seki liberties in encore 2	expected
+fill-seki-liberties-in-main-phase-v3-excludeterritoryadjacenttoatari.input0.txt	1651	Fill seki liberties in main phase (v3 excludeTerritoryAdjacentToAtari)	input
+fill-seki-liberties-in-main-phase-v3-excludeterritoryadjacenttoatari.expected0.txt	1683	Fill seki liberties in main phase (v3 excludeTerritoryAdjacentToAtari)	expected
+fill-seki-liberties-in-encore-2-v3-excludeterritoryadjacenttoatari.input0.txt	1698	Fill seki liberties in encore 2 (v3 excludeTerritoryAdjacentToAtari)	input
+fill-seki-liberties-in-encore-2-v3-excludeterritoryadjacenttoatari.expected0.txt	1734	Fill seki liberties in encore 2 (v3 excludeTerritoryAdjacentToAtari)	expected
+area-scoring-with-button.input0.txt	1752	Area scoring with button	input
+area-scoring-with-button.expected0.txt	1790	Area scoring with button	expected
+pass-for-ko.input0.txt	1816	Pass for ko	input
+pass-for-ko.expected0.txt	1928	Pass for ko	expected
+two-step-ko-in-encore.input0.txt	1970	Two step ko in encore	input
+two-step-ko-in-encore.expected0.txt	2023	Two step ko in encore	expected
+throw-in-that-destroys-the-ko-momentarily-does-not-clear-ko-recap-block.input0.txt	2094	Throw in that destroys the ko momentarily does not clear ko recap block	input
+throw-in-that-destroys-the-ko-momentarily-does-not-clear-ko-recap-block.expected0.txt	2121	Throw in that destroys the ko momentarily does not clear ko recap block	expected
+various-komis.input0.txt	2139	Various komis	input
+various-komis.expected0.txt	2174	Various komis	expected
+grouptaxsekiscoring.input0.txt	2193	GroupTaxSekiScoring	input
+grouptaxsekiscoring.expected0.txt	2276	GroupTaxSekiScoring	expected
+grouptaxsekiscoring2.input0.txt	2307	GroupTaxSekiScoring2	input
+grouptaxsekiscoring2.expected0.txt	2390	GroupTaxSekiScoring2	expected
+preventencore.input0.txt	2421	PreventEncore	input
+preventencore.expected0.txt	2463	PreventEncore	expected
+stress-test-on-tiny-boards.input0.txt	2715	Stress test on tiny boards	input
+stress-test-on-tiny-boards.expected0.txt	2731	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected1.txt	2877	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.input1.txt	2937	Stress test on tiny boards	input
+stress-test-on-tiny-boards.input2.txt	2940	Stress test on tiny boards	input
+stress-test-on-tiny-boards.expected2.txt	2951	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected3.txt	3132	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected4.txt	3184	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected5.txt	3227	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected6.txt	3276	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected7.txt	3307	Stress test on tiny boards	expected
+stress-test-on-tiny-boards.expected8.txt	3337	Stress test on tiny boards	expected
+board-history-clearing-directly-to-the-encore.input0.txt	3378	Board history clearing directly to the encore	input
+board-history-clearing-directly-to-the-encore.expected0.txt	3449	Board history clearing directly to the encore	expected
+board-history-clearing-directly-to-the-encore.expected1.txt	3483	Board history clearing directly to the encore	expected
+test-case-failing-in-search-before.input0.txt	3514	Test case failing in search before	input
+test-case-failing-in-search-before.expected0.txt	3543	Test case failing in search before	expected
+test-basic-game.expected0.txt	3573	Test basic game	expected
+sending-two-returning-one-initial-pass-without-button-simple.input0.txt	3636	Sending two returning one initial pass WITHOUT button, simple	input
+sending-two-returning-one-initial-pass-without-button-simple.expected0.txt	3663	Sending two returning one initial pass WITHOUT button, simple	expected
+sending-two-returning-one-initial-pass-with-button-simple.input0.txt	3675	Sending two returning one initial pass WITH button, simple	input
+sending-two-returning-one-initial-pass-with-button-simple.expected0.txt	3708	Sending two returning one initial pass WITH button, simple	expected
+sending-two-returning-one-no-initial-pass-without-button-ssk.input0.txt	3720	Sending two returning one NO initial pass WITHOUT button, SSK	input
+sending-two-returning-one-no-initial-pass-without-button-ssk.expected0.txt	3744	Sending two returning one NO initial pass WITHOUT button, SSK	expected
+sending-two-returning-one-no-initial-pass-with-button-ssk.input0.txt	3753	Sending two returning one NO initial pass WITH button, SSK	input
+sending-two-returning-one-no-initial-pass-with-button-ssk.expected0.txt	3784	Sending two returning one NO initial pass WITH button, SSK	expected
+sending-two-returning-one-initial-pass-with-button-ssk.input0.txt	3794	Sending two returning one initial pass WITH button, SSK	input
+sending-two-returning-one-initial-pass-with-button-ssk.expected0.txt	3820	Sending two returning one initial pass WITH button, SSK	expected
+double-ko-death-1a.input0.txt	3829	Double ko death 1a	input
+double-ko-death-1a.expected0.txt	3866	Double ko death 1a	expected
+double-ko-death-1b.input0.txt	3944	Double ko death 1b	input
+double-ko-death-1b.expected0.txt	3981	Double ko death 1b	expected
+double-ko-death-1c.input0.txt	4059	Double ko death 1c	input
+double-ko-death-1c.expected0.txt	4108	Double ko death 1c	expected
+double-ko-death-2a.input0.txt	4218	Double ko death 2a	input
+double-ko-death-2a.expected0.txt	4263	Double ko death 2a	expected
+double-ko-death-2b.input0.txt	4391	Double ko death 2b	input
+double-ko-death-2b.expected0.txt	4464	Double ko death 2b	expected
+double-ko-death-2c.input0.txt	4729	Double ko death 2c	input
+double-ko-death-2c.expected0.txt	4770	Double ko death 2c	expected
+double-ko-death-2d.input0.txt	4868	Double ko death 2d	input
+double-ko-death-2d.expected0.txt	4921	Double ko death 2d	expected
+double-ko-death-2e.input0.txt	5095	Double ko death 2e	input
+double-ko-death-2e.expected0.txt	5135	Double ko death 2e	expected
+double-ko-death-2f.input0.txt	5227	Double ko death 2f	input
+double-ko-death-2f.expected0.txt	5267	Double ko death 2f	expected
+rules-parsing-bug.expected0.txt	5502	Rules parsing bug	expected

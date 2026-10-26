@@ -1,4 +1,4 @@
-//! Shared by search_smoke.rs and search_tolerance.rs: the oracle fixture format (fixtures/upstream-v1.16.5/search/
+//! Shared by search_smoke.rs and search_tolerance.rs: the oracle fixture format (fixtures/upstream-v1.18.2/search/
 //! oracle/search_*.txt: each CASE line holds everything needed to rebuild a search, the lines after it are the
 //! upstream Eigen result), running a case through the port's Search over the burn `flex` NNEvaluator, and comparing
 //! the two results. Net-agnostic; each test binary keeps its own tolerances, assertions and report. Not a port of
@@ -14,10 +14,12 @@ use burn::prelude::*;
 use futures::executor::LocalPool;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::game::board::Board;
 use katago_core::game::board::Loc;
 use katago_core::game::board::Location;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::port::executor::Spawner;
@@ -74,7 +76,7 @@ pub struct Case {
 }
 
 fn fixture_path(file: &str) -> String {
-  format!("{}/../../fixtures/upstream-v1.16.5/search/oracle/{file}", env!("CARGO_MANIFEST_DIR"))
+  format!("{}/../../fixtures/upstream-v1.18.2/search/oracle/{file}", env!("CARGO_MANIFEST_DIR"))
 }
 
 pub fn parse_cases(file: &str) -> Vec<Case> {
@@ -199,7 +201,7 @@ pub fn set_param_base(p: &mut SearchParams, k: &str, v: &str) {
 /// `set_param` applies one fixture `key=value` to the params (`set_param_base`, or a wrapper with more keys).
 pub fn run_search(pool: &mut LocalPool, nn_eval: &Rc<NNEvaluator>, c: &Case, set_param: fn(&mut SearchParams, &str, &str)) -> SearchResult {
   let mut board = Board::new_x_y(c.xs, c.ys).unwrap();
-  let mut hist = Box::new(BoardHistory::new_full(&board, c.ipla, &c.rules, 0));
+  let mut hist = Box::new(BoardHistory::new_full(&board, c.ipla, &c.rules, 0, &BoardHistoryModes::new()));
   for &(loc, pla) in &c.moves {
     assert!(hist.is_legal(&board, loc, pla), "case {}: illegal move {loc}", c.idx);
     hist.make_board_move_assume_legal(&mut board, loc, pla, None, false);
@@ -401,15 +403,13 @@ pub fn new_nn_eval<N: Network + 'static>(name: &str, bpk: &str) -> (LocalPool, R
       12,
       false,
       "",
-      "",
-      false,
       enabled_t::False,
-      enabled_t::Auto,
       1,
       &[-1],
       "searchEigenSeed",
       false,
       0,
+      &mut ConfigParser::new(false, true),
       backend,
       spawner,
       std::fs::read(bpk).unwrap(),

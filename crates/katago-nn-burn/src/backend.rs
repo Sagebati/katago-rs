@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/neuralnet/eigenbackend.cpp (NeuralNet:: glue only), following cpp/neuralnet/nninterface.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/neuralnet/eigenbackend.cpp (NeuralNet:: glue only), following cpp/neuralnet/nninterface.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // The `NeuralNet` trait of katago-core (nninterface.rs, DECISIONS.md D6) implemented over a
 // burn-onnx-generated network. Mirrors eigenbackend.cpp's LoadedModel / ComputeContext /
@@ -8,7 +8,7 @@
 //
 // Divergences from eigenbackend.cpp (each also marked PORT NOTE below):
 // - The generated graph is NCHW with a fixed 19x19 (posLen) spatial size; Eigen is NHWC with
-//   nnXLen x nnYLen. So createComputeContext rejects nnXLen/nnYLen != posLen and fp16/NHWC modes,
+//   nnXLen x nnYLen. So createComputeContext rejects nnXLen/nnYLen != posLen and fp16 on the CPU,
 //   and createComputeHandle rejects inputsUseNHWC = true (Eigen rejects false). Smaller boards
 //   are evaluated through the on-board mask (input channel 0), as with gtpForceMaxNNSize.
 // - The ONNX policy output is [N, P, HW+1] with the pass logit last in each channel, where Eigen
@@ -27,12 +27,14 @@
 #![allow(clippy::needless_bool, clippy::needless_range_loop)]
 
 use std::any::Any;
+use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
 use burn::prelude::*;
 
 use katago_core::core::commontypes::enabled_t;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::Global;
 use katago_core::core::global::KataError;
 use katago_core::neuralnet::desc::ModelDesc;
@@ -215,6 +217,26 @@ impl nninterface::InputBuffers for BurnInputBuffers {
   }
 }
 
+/// upstream: NeuralNet::getBatchPolicy (eigenbackend.cpp)
+/// PORT NOTE: Dynamic, as upstream's GPU backends, not Eigen's CpuLocal: one serve task runs whole
+/// batches through burn (GPU or flex), there are no per-core server threads to parallelize over.
+/// A free fn (upstream's is a static of the linked backend): the hosts' `NNEvaluatorHost::get_batch_policy`
+/// answers with it before any model is loaded (Setup::initializeNNEvaluators, D6).
+pub fn get_batch_policy(cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+  let _ = cfg;
+  nninterface::BatchPolicy::Dynamic
+}
+
+/// upstream: NeuralNet::getNumEffectiveDevices (eigenbackend.cpp)
+/// PORT NOTE: the GPU backends' body (cudaandrocmbackend.inc, openclbackend.cpp), not Eigen's constant
+/// 1: devices are selected by gpu index (NNEvaluator::getNumGpus was the distinct-index count before
+/// v1.18 for every non-Eigen backend). A free fn, as `get_batch_policy`.
+pub fn get_num_effective_devices(cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+  let _ = cfg;
+  let distinct_devices: BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+  std::cmp::max(1, distinct_devices.len() as i32)
+}
+
 fn downcast_model(loaded_model: &dyn nninterface::LoadedModel) -> &BurnLoadedModel {
   loaded_model.as_any().downcast_ref::<BurnLoadedModel>().expect("LoadedModel created by BurnNeuralNet")
 }
@@ -233,6 +255,22 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
   /// upstream: NeuralNet::printDevices (eigenbackend.cpp)
   fn print_devices(&self) {}
 
+  /// upstream: NeuralNet::getRuntimeBackendDetail (eigenbackend.cpp)
+  fn get_runtime_backend_detail(&self, cfg: &mut ConfigParser) -> String {
+    let _ = cfg;
+    String::new()
+  }
+
+  /// upstream: NeuralNet::getBatchPolicy (eigenbackend.cpp)
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+    get_batch_policy(cfg)
+  }
+
+  /// upstream: NeuralNet::getNumEffectiveDevices (eigenbackend.cpp)
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
+
   /// upstream: NeuralNet::loadModelFile (eigenbackend.cpp)
   /// PORT NOTE: `model_bytes` are the network's `.bpk` weights; the ModelDesc is N's (build.rs,
   /// ONNX metadata). The `.bin.gz` sha256 cannot be checked against `.bpk` bytes.
@@ -244,6 +282,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       ));
     }
     let model_desc = N::model_desc();
+    ModelDesc::check_name_valid(&model_desc.name)?;
     if model_desc.model_version > NNModelVersion::latestModelVersionImplemented {
       return Err(KataError::StringError(
         "This neural net requires a newer KataGo version. Model version: ".to_string() + &Global::int_to_string(model_desc.model_version),
@@ -263,22 +302,17 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     gpu_idxs: &[i32],
     nn_x_len: i32,
     nn_y_len: i32,
-    open_cl_tuner_file: &str,
     home_data_dir_override: &str,
-    open_cl_re_tune_per_board_size: bool,
     use_fp16_mode: enabled_t,
-    use_nhwc_mode: enabled_t,
     loaded_model: &dyn nninterface::LoadedModel,
+    cfg: &mut ConfigParser,
   ) -> Result<Box<dyn nninterface::ComputeContext>, KataError> {
     let _ = gpu_idxs;
-    let _ = open_cl_tuner_file;
     let _ = home_data_dir_override;
-    let _ = open_cl_re_tune_per_board_size;
     let _ = loaded_model;
+    let _ = cfg;
 
     let use_fp16: bool = if use_fp16_mode == enabled_t::True { true } else { false };
-    // PORT NOTE: the generated graph is NCHW: Auto means NCHW here (Eigen: Auto means NHWC).
-    let use_nhwc: bool = if use_nhwc_mode == enabled_t::True { true } else { false };
 
     // PORT NOTE: useFP16 = true runs this context's 3x3 convs in f16 (wino/) on GPU devices; Auto stays f32 (the
     // Eigen parity tier), unless the process default is f16 (`wino::set_half`, katago-web's `precision`). On the
@@ -295,9 +329,6 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     }
     #[cfg(feature = "gpu-kernels")]
     let use_fp16: bool = use_fp16 || (crate::wino::default_half() && !crate::is_cpu(&self.device));
-    if use_nhwc {
-      return Err(KataError::StringError("Burn backend: useNHWC = true not supported".to_string()));
-    }
     // PORT NOTE: the generated graph has a fixed spatial size (bin2onnx --pos-len).
     if nn_x_len != N::POS_LEN || nn_y_len != N::POS_LEN {
       return Err(KataError::StringError(
@@ -325,7 +356,11 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       "{}",
       "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model version " + &Global::int_to_string(loaded_model.model_desc.model_version)
     );
-    log::info!("{}", "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model name: " + &loaded_model.model_desc.name);
+    log::info!(
+      "{}",
+      "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model name: " + &loaded_model.model_desc.name
+        + " (" + &loaded_model.model_desc.get_short_info_string() + ")"
+    );
 
     let _ = require_exact_nn_len; //We don't bother with mask optimizations if we know exact sizes right now.
     let _ = gpu_idx_for_this_thread; //Doesn't matter
@@ -351,6 +386,13 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       num_score_value_channels: m.num_score_value_channels,
       num_ownership_channels: m.num_ownership_channels,
     }))
+  }
+
+  /// upstream: NeuralNet::setIsWarmup (eigenbackend.cpp)
+  fn set_is_warmup(&self, compute_handle: &dyn nninterface::ComputeHandle, is_warmup: bool) -> bool {
+    let _ = compute_handle;
+    let _ = is_warmup;
+    false
   }
 
   /// upstream: NeuralNet::isUsingFP16 (eigenbackend.cpp)

@@ -1,5 +1,5 @@
 //! NNEvaluator (neuralnet/nneval.rs) against the unmodified upstream NNEvaluator with
-//! debugSkipNeuralNet = true: fixtures/upstream-v1.16.5/unit/oracle/nneval_skipnn.cpp prints an op
+//! debugSkipNeuralNet = true: fixtures/upstream-v1.18.2/unit/oracle/nneval_skipnn.cpp prints an op
 //! stream (E/P/V/A) and the results (R/D/S lines); this test replays every op through the port on a
 //! futures LocalPool and must print the same bytes. This checks evaluate()'s post-processing
 //! (expf/exp/ln/tanhf, temperature, passing hacks, dagger ban, masking), the NN cache incl. the
@@ -22,11 +22,14 @@ use common::fixture;
 use common::init;
 use common::run_or_stall_panic;
 use futures::executor::LocalPool;
+use katago_core::neuralnet::nninterface::BatchPolicy;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -99,6 +102,19 @@ impl NeuralNet for NoBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     panic!("debugSkipNeuralNet: no model is loaded")
   }
@@ -107,15 +123,7 @@ impl NeuralNet for NoBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     panic!("debugSkipNeuralNet")
   }
@@ -157,7 +165,7 @@ fn parse_pos(f: &[&str]) -> Box<Pos> {
   let i = |k: usize| -> i32 { f[k].parse().unwrap() };
   let rules = Rules::new_full(i(3), i(4), i(5), i(6) != 0, i(7) != 0, i(8), i(9) != 0, f32::from_bits(hex_u32(f[10])));
   let mut board = Board::new_x_y(i(1), i(2)).unwrap();
-  let mut hist = BoardHistory::new_full(&board, i(11) as Player, &rules, 0);
+  let mut hist = BoardHistory::new_full(&board, i(11) as Player, &rules, 0, &BoardHistoryModes::new());
   let n = i(12) as usize;
   for m in 0..n {
     let loc = i(13 + 2 * m) as Loc;
@@ -225,15 +233,13 @@ fn run_oracle() {
           3,
           true,
           "",
-          "",
-          false,
-          enabled_t::False,
           enabled_t::False,
           1,
           &[-1],
           f[4],
           f[5] == "1",
           0,
+          &mut ConfigParser::new(false, true),
           backend.clone(),
           spawner.clone(),
           Vec::new(),
@@ -342,6 +348,19 @@ impl NeuralNet for FakeBackend {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn print_devices(&self) {}
+  fn get_runtime_backend_detail(&self, _: &mut ConfigParser) -> String {
+    String::new()
+  }
+  fn get_batch_policy(&self, _: &mut ConfigParser) -> BatchPolicy {
+    BatchPolicy::Dynamic
+  }
+  fn get_num_effective_devices(&self, _: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    let distinct_devices: std::collections::BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+    std::cmp::max(1, distinct_devices.len() as i32)
+  }
+  fn set_is_warmup(&self, _: &dyn ComputeHandle, _: bool) -> bool {
+    false
+  }
   fn load_model_file(&self, _: &str, _: Vec<u8>, _: &str) -> Result<Box<dyn LoadedModel>, KataError> {
     let mut desc = ModelDesc::new();
     desc.name = "fake".to_string();
@@ -359,15 +378,7 @@ impl NeuralNet for FakeBackend {
   }
   fn create_compute_context(
     &self,
-    _: &[i32],
-    _: i32,
-    _: i32,
-    _: &str,
-    _: &str,
-    _: bool,
-    _: enabled_t,
-    _: enabled_t,
-    _: &dyn LoadedModel,
+    _: &[i32], _: i32, _: i32, _: &str, _: enabled_t, _: &dyn LoadedModel, _: &mut ConfigParser,
   ) -> Result<Box<dyn ComputeContext>, KataError> {
     Ok(Box::new(Unit))
   }
@@ -423,8 +434,28 @@ impl NeuralNet for FakeBackend {
 fn fake_eval(backend: Rc<FakeBackend>, spawner: Rc<dyn Spawner>, max_batch: i32) -> Rc<NNEvaluator> {
   Rc::new(
     NNEvaluator::new(
-      "fake", "fake.bin.gz", "", max_batch, 19, 19, false, false, -1, 0, false, "", "", false, enabled_t::False, enabled_t::False, 1, &[-1], "seed", false, 0,
-      backend, spawner, Vec::new(),
+      "fake",
+      "fake.bin.gz",
+      "",
+      max_batch,
+      19,
+      19,
+      false,
+      false,
+      -1,
+      0,
+      false,
+      "",
+      enabled_t::False,
+      1,
+      &[-1],
+      "seed",
+      false,
+      0,
+      &mut ConfigParser::new(false, true),
+      backend,
+      spawner,
+      Vec::new(),
     )
     .unwrap(),
   )
@@ -435,7 +466,7 @@ fn positions() -> Vec<Pos> {
   for k in 0..6 {
     let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5 - k as f32);
     let mut board = Board::new_x_y(19, 19).unwrap();
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
     for m in 0..(2 * k + 1) {
       let loc = Location::get_loc(3 + m, 3 + k, 19);
       let pla = hist.presumed_next_move_pla;
