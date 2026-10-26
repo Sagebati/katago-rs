@@ -16,6 +16,7 @@
 //! glibc's (the payload's `accuracy` would otherwise differ in the last bit). Not a port of upstream KataGo code.
 
 pub mod annotate;
+pub mod collect;
 pub mod error;
 pub mod katago;
 mod math;
@@ -24,6 +25,7 @@ pub mod review;
 pub mod sgf;
 
 pub use annotate::{GameAnalysis, PAYLOAD_VERSION, assemble, turns_to_refine};
+pub use collect::{Fed, TurnCollector};
 pub use error::{AnnotateError, AnnotateResult};
 pub use katago::{AnalysisQuery, ResponseLine, TurnResponse};
 pub use options::AnnotateOptions;

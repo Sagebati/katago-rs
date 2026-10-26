@@ -8,13 +8,14 @@
 //! native reference the browser review is compared with (packages/katago-web/test, docs/M6-report.md).
 
 use std::cell::RefCell;
-use std::future::Future;
 use std::io::{BufRead as _, BufReader, Write as _};
-use std::pin::pin;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
-use std::task::{Context, Poll, Waker};
 
-use katago_annotate::{AnalysisQuery, AnnotateError, AnnotateOptions, AnnotateResult, Analyzer, Pass, ResponseLine, TurnResponse};
+use katago_annotate::{AnalysisQuery, AnnotateError, AnnotateOptions, AnnotateResult, Analyzer, Fed, Pass, TurnCollector, TurnResponse};
+
+#[path = "../tests/support/mod.rs"]
+mod support;
+use support::block_on;
 
 struct Subprocess {
     stdin: RefCell<ChildStdin>,
@@ -34,33 +35,22 @@ impl Analyzer for Subprocess {
         let io = |e: std::io::Error| AnnotateError::Inference(e.to_string());
         writeln!(self.stdin.borrow_mut(), "{}", serde_json::to_string(&query).unwrap()).map_err(io)?;
         self.stdin.borrow_mut().flush().map_err(io)?;
-        let mut got = Vec::with_capacity(expected);
+        let mut collector = TurnCollector::new(id, expected);
         let mut line = String::new();
-        while got.len() < expected {
+        while !collector.is_done() {
             line.clear();
             if self.stdout.borrow_mut().read_line(&mut line).map_err(io)? == 0 {
                 return Err(AnnotateError::Inference("the engine exited".to_owned()));
             }
-            match ResponseLine::parse(line.trim_end()) {
-                ResponseLine::Turn { id: got_id, turn } if got_id == id => {
-                    got.push(*turn);
-                    eprintln!("{} {}/{expected} (turn {})", pass.as_str(), got.len(), got.last().unwrap().turn_number);
+            match collector.feed(line.trim_end())? {
+                Fed::Turn => {
+                    let turns = collector.turns();
+                    eprintln!("{} {}/{expected} (turn {})", pass.as_str(), turns.len(), turns.last().unwrap().turn_number);
                 }
-                ResponseLine::Error { error, .. } => return Err(AnnotateError::Inference(format!("katago: {error}"))),
                 other => eprintln!("ignored: {other:?}"),
             }
         }
-        Ok(got)
-    }
-}
-
-fn block_on<F: Future>(fut: F) -> F::Output {
-    let mut fut = pin!(fut);
-    let mut cx = Context::from_waker(Waker::noop());
-    loop {
-        if let Poll::Ready(out) = fut.as_mut().poll(&mut cx) {
-            return out;
-        }
+        Ok(collector.into_turns())
     }
 }
 
@@ -73,9 +63,7 @@ fn main() {
         s if s.trim_start().starts_with('{') => s.to_owned(),
         path => std::fs::read_to_string(path).unwrap(),
     };
-    let mut options: serde_json::Value = serde_json::from_str(&options_text).unwrap();
-    let human_profile = options.as_object_mut().unwrap().remove("humanProfile").and_then(|v| v.as_str().map(str::to_owned));
-    let options: AnnotateOptions = serde_json::from_value(options).unwrap();
+    let (options, human_profile) = AnnotateOptions::from_json_with_profile(serde_json::from_str(&options_text).unwrap()).unwrap();
 
     let mut child: Child = Command::new(&args[sep + 1])
         .args(&args[sep + 2..])

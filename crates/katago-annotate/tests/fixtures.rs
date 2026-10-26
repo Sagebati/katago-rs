@@ -6,12 +6,9 @@
 
 use std::cell::Cell;
 use std::collections::BTreeMap;
-use std::future::Future;
 use std::io::Read as _;
-use std::pin::pin;
-use std::task::{Context, Poll, Waker};
 
-use katago_annotate::{AnalysisQuery, AnnotateOptions, AnnotateResult, Analyzer, Pass, ResponseLine, TurnResponse};
+use katago_annotate::{AnalysisQuery, AnnotateOptions, AnnotateResult, Analyzer, Fed, Pass, TurnCollector, TurnResponse};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -54,16 +51,8 @@ fn gunzip(bytes: &[u8]) -> String {
     out
 }
 
-/// The futures here never wait (the replay answers at once).
-fn block_on<F: Future>(fut: F) -> F::Output {
-    let mut fut = pin!(fut);
-    let mut cx = Context::from_waker(Waker::noop());
-    loop {
-        if let Poll::Ready(out) = fut.as_mut().poll(&mut cx) {
-            return out;
-        }
-    }
-}
+mod support;
+use support::block_on;
 
 /// The engine of a recorded case: checks each query against the recorded line (ids numbered as katago-ws's
 /// KataGo client numbers them: q0, q1, ...) and answers with the recorded response lines of that id.
@@ -81,13 +70,13 @@ impl Analyzer for Replay {
         self.passes.borrow_mut().push(pass);
         query.id = format!("q{k}");
         assert_eq!(serde_json::to_string(&query).unwrap(), self.queries[k], "query line {k}");
-        Ok(self.responses[&query.id]
-            .iter()
-            .map(|line| match ResponseLine::parse(line) {
-                ResponseLine::Turn { turn, .. } => *turn,
-                other => panic!("not a turn: {other:?}"),
-            })
-            .collect())
+        let lines = &self.responses[&query.id];
+        let mut collector = TurnCollector::new(query.id.clone(), lines.len());
+        for line in lines {
+            let fed = collector.feed(line)?;
+            assert!(matches!(fed, Fed::Turn), "not a turn of {}: {fed:?}", query.id);
+        }
+        Ok(collector.into_turns())
     }
 }
 
