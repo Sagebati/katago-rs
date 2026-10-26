@@ -1,5 +1,5 @@
 // NN-tier oracle (M2): runs the UNMODIFIED upstream NNEvaluator + Eigen backend (fp32 CPU) of
-// KataGo v1.16.5 on fixed positions and records every NNOutput field bit-exactly.
+// KataGo v1.18.2 on fixed positions and records every NNOutput field bit-exactly.
 // The Rust consumer is crates/katago-nn-burn/tests/nn_parity.rs (ported NNEvaluator + burn backend).
 //
 // Modes:
@@ -52,7 +52,7 @@
 //
 // NNEvaluator settings: nnXLen = nnYLen = 19, requireExactNNLen false, inputsUseNHWC true (the
 // Eigen backend requires it), nnCacheSizePowerOfTwo -1 (no cache) and skipCache, fp16 False,
-// NHWC Auto, 1 server thread (gpuIdx -1), doRandomize false, defaultSymmetry 0, includeOwnerMap.
+// 1 server thread (gpuIdx -1), doRandomize false, defaultSymmetry 0, includeOwnerMap.
 //
 // Build (from the repo root, after `just katago-eigen`; links the Release objects of the Eigen
 // reference build, i.e. the exact code of build/eigen/katago; upstream untouched):
@@ -85,6 +85,7 @@
 #include <string>
 #include <vector>
 
+#include "core/config_parser.h"
 #include "core/global.h"
 #include "core/test.h"
 #include "game/board.h"
@@ -143,7 +144,7 @@ static void replay(const PosSpec& p, Board& board, BoardHistory& hist) {
     bool suc = board.setStone(Location::getLoc(m.x, m.y, p.xs), (Color)m.pla);
     testAssert(suc);
   }
-  hist = BoardHistory(board, (Player)p.initialPla, p.rules, p.encorePhase);
+  hist = BoardHistory(board, (Player)p.initialPla, p.rules, p.encorePhase, BoardHistoryModes());
   hist.setAssumeMultipleStartingBlackMovesAreHandicap(p.amh != 0);
   for(const MoveSpec& m: p.moves) {
     Loc loc = m.x == -1 ? Board::PASS_LOC : Location::getLoc(m.x, m.y, p.xs);
@@ -197,7 +198,7 @@ static PosSpec start(int id, int xs, int ys, const Rules& rules, Board& board, B
   PosSpec p;
   p.id = id; p.xs = xs; p.ys = ys; p.rules = rules; p.encorePhase = 0; p.initialPla = P_BLACK; p.amh = 0;
   board = Board(xs, ys);
-  hist = BoardHistory(board, P_BLACK, rules, 0);
+  hist = BoardHistory(board, P_BLACK, rules, 0, BoardHistoryModes());
   return p;
 }
 
@@ -584,10 +585,11 @@ static int runEval(const string& modelFile, const string& posFile, const string&
   for(const string& l: readLines(evalFile)) es.push_back(parseEval(l));
 
   vector<int> gpuIdxs = {-1};
+  ConfigParser nnCfg;  // v1.18.2: NNEvaluator takes the config for backend options (the Eigen backend reads none)
   NNEvaluator* nnEval = new NNEvaluator(
     "oracle", modelFile, "", NULL,
-    16, 19, 19, false, true, -1, 0, false, "", "", false,
-    enabled_t::False, enabled_t::Auto, 1, gpuIdxs, "oracleSeed", false, 0
+    16, 19, 19, false, true, -1, 0, false, "",
+    enabled_t::False, 1, gpuIdxs, "oracleSeed", false, 0, nnCfg
   );
   nnEval->spawnServerThreads();
 
@@ -652,10 +654,11 @@ static int runEvalRand(const string& modelFile, const string& posFile, const str
   testAssert(tag == "config" && !cfg.fail());
 
   vector<int> gpuIdxs = {-1};
+  ConfigParser nnCfg;  // v1.18.2: NNEvaluator takes the config for backend options (the Eigen backend reads none)
   NNEvaluator* nnEval = new NNEvaluator(
     "oracle", modelFile, "", NULL,
-    16, 19, 19, false, true, -1, 0, false, "", "", false,
-    enabled_t::False, enabled_t::Auto, 1, gpuIdxs, seed, doRandomize != 0, defaultSymmetry
+    16, 19, 19, false, true, -1, 0, false, "",
+    enabled_t::False, 1, gpuIdxs, seed, doRandomize != 0, defaultSymmetry, nnCfg
   );
   nnEval->spawnServerThreads();
 

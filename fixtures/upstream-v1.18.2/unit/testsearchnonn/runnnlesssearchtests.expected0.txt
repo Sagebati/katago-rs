@@ -2892,6 +2892,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3001,6 +3003,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3110,6 +3114,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 1
 enableMorePassingHacks: 1
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3219,6 +3225,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0.04
 enablePassingHacks: 1
 enableMorePassingHacks: 1
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3328,6 +3336,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3437,6 +3447,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3546,6 +3558,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3655,6 +3669,8 @@ avoidMYTDaggerHackPla: 0
 wideRootNoise: 0
 enablePassingHacks: 0
 enableMorePassingHacks: 0
+alwaysComputePassAliveUnderSuicideRules: auto
+excludeTerritoryAdjacentToAtari: auto
 playoutDoublingAdvantage: 0
 playoutDoublingAdvantagePla: 0
 avoidRepeatedPatternUtility: 0
@@ -3701,6 +3717,17 @@ humanSLOppExploreProbWeightful: 0
 humanSLChosenMoveProp: 0
 humanSLChosenMoveIgnorePass: 0
 humanSLChosenMovePiklLambda: 1e+09
+
+===================================================================
+Eval cache keys depend on search params
+===================================================================
+: Initializing neural net buffer to be size 7 * 7 allowing smaller boards
+Equal params hash equal: 1
+Differing params hash differ: 1
+After search A: A-slot populated, B-slot empty: 1
+After search B: B-slot populated, A-slot unchanged, distinct slots: 1
+After search A2 (identical to A): reuses A's slot: 1
+: GPU 0 finishing, processed 0 rows 0 batches
 
 ===================================================================
 Board size distribution

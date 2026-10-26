@@ -170,6 +170,9 @@ static Loc searchAndReport(Search* search, Player pla, bool fullJson) {
   return first;
 }
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 int main() {
   Board::initHash();
   ScoreValue::initTables();
@@ -191,7 +194,7 @@ int main() {
     Rules rules = Rules::parseRules(ruleName);
     rules.komi = pick(komis);
     Board board(xs, ys);
-    BoardHistory hist(board, P_BLACK, rules, 0);
+    BoardHistory hist(board, P_BLACK, rules, 0, BoardHistoryModes());
     vector<pair<Loc, Player>> moves;
     int numMoves = rnd(xs * ys * 2 / 3 + 1);
     for(int m = 0; m < numMoves && !hist.isGameFinished; m++) {
@@ -254,15 +257,17 @@ int main() {
     Logger logger(nullptr, false, false, false, false);
     logger.addOStream(O);
     NNEvaluator* nnEval = new NNEvaluator(
-      "search_humansl", "search_humansl", "", NULL, 16, 19, 19, false, true, 16, 12, true, "", "", false,
-      enabled_t::False, enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + to_string(idx), false, 0
+      "search_humansl", "search_humansl", "", NULL, 16, 19, 19, false, true, 16, 12, true, "",
+      enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + to_string(idx), false, 0,
+      nnEvalCfg
     );
     nnEval->spawnServerThreads();
     NNEvaluator* humanEval = NULL;
     if(human) {
       humanEval = new NNEvaluator(
-        "search_humansl_human", "search_humansl_human", "", NULL, 16, 19, 19, false, true, 16, 12, true, "", "", false,
-        enabled_t::False, enabled_t::False, 1, {0}, "humanSLRandSeed" + to_string(idx), false, 0
+        "search_humansl_human", "search_humansl_human", "", NULL, 16, 19, 19, false, true, 16, 12, true, "",
+        enabled_t::False, 1, {0}, "humanSLRandSeed" + to_string(idx), false, 0,
+        nnEvalCfg
       );
       humanEval->spawnServerThreads();
     }

@@ -1,5 +1,5 @@
 // Differential fuzz oracle for game/board (Board, Location), adopted from the pilot board
-// review. Links against the unmodified upstream sources of KataGo v1.16.5.
+// review. Links against the unmodified upstream sources of KataGo v1.18.2.
 // The Rust mirror is crates/katago-core/tests/board_fuzz_oracle.rs: keep the two line for line.
 // Usage: board_fuzz games <numGames> <seed0>   full trace of every game (stdout)
 //        board_fuzz hashes <numGames> <seed0>  one line per game: "H <g> <bytes> <fnv1a64 hex>"
@@ -11,7 +11,7 @@
 //     $U/core/timer.cpp $U/core/bsearch.cpp $U/game/board.cpp -lpthread
 //   cd fixtures/upstream-v1.18.2/unit/oracle
 //   /tmp/board_fuzz hashes 800 1 > board_fuzz_hashes.txt
-//   /tmp/board_fuzz games 6 7 > board_fuzz_trace.txt
+//   /tmp/board_fuzz games 10 7 > board_fuzz_trace.txt
 //   /tmp/board_fuzz loc > board_fuzz_loc.txt
 // Generated with g++ 16.2.1 / glibc on x86_64 Linux.
 #include <cstdio>
@@ -49,6 +49,11 @@ static uint64_t fold(const Board& b) {
 }
 static string st(const Board& b) { return " F" + I((long long)(fold(b) >> 1)) + " ko" + I(b.ko_loc); }
 
+static string cons(const Board& b) {
+  try { b.checkConsistency(); return "ok"; }
+  catch(const StringError& e) { return string("ERR ") + e.what(); }
+}
+
 static string areaStr(const Board& b, const Color* r) {
   string s;
   for(int y = 0; y < b.y_size; y++) for(int x = 0; x < b.x_size; x++) s += (char)('0' + r[Location::getLoc(x,y,b.x_size)]);
@@ -63,9 +68,10 @@ static void analyze(Board& b, bool sui, int tag) {
     b.calculateArea(area, m&1, (m>>1)&1, (m>>2)&1, (m>>3)&1);
     P("CA " + I(m) + " " + areaStr(b, area) + "\n");
   }
-  for(int m = 0; m < 8; m++) {
+  // m < 8: excludeTerritoryAdjacentToAtari = false (the v1.16.5 behavior); m >= 8: the v1.18.2 rules-v3 mode.
+  for(int m = 0; m < 16; m++) {
     int cnt = -999;
-    b.calculateIndependentLifeArea(area, cnt, m&1, (m>>1)&1, (m>>2)&1);
+    b.calculateIndependentLifeArea(area, cnt, m&1, (m>>1)&1, (m>>3)&1, (m>>2)&1);
     P("IL " + I(m) + " " + I(cnt) + " " + areaStr(b, area) + "\n");
   }
   Color pa[Board::MAX_ARR_SIZE];
@@ -190,6 +196,45 @@ static void runGame(int g, uint64_t seed0) {
         P("S " + I(which) + " " + I(l) + " " + I(c) + " " + I(ok) + st(b) + "\n");
       }
       analyze(b, sui, -3);
+    }
+    // regenChainsFromColors on a copy, then setStonesTolerant (v1.18.2): random placements, including
+    // off-board / wall / out-of-range locations and invalid colors (ignored), duplicates (last one wins),
+    // and dense fills that leave zero-liberty groups to be removed simultaneously.
+    {
+      Board rg = b;
+      rg.regenChainsFromColors();
+      P("RG" + st(rg) + " " + cons(rg) + "\n");
+      int nt = rnd(4) + 1;
+      for(int k = 0; k < nt; k++) {
+        int np = rnd(area + 4);
+        vector<Move> pl;
+        string ps;
+        for(int j = 0; j < np; j++) {
+          int kind = rnd(12);
+          Loc l;
+          if(kind == 0) {
+            int z = rnd(Board::MAX_ARR_SIZE + 40);
+            l = (Loc)(z - 20);
+          }
+          else {
+            int lx = rnd(xs); int ly = rnd(ys); l = Location::getLoc(lx, ly, xs);
+          }
+          int cc = rnd(8);
+          Color c;
+          if(cc <= 2) c = C_BLACK;
+          else if(cc <= 5) c = C_WHITE;
+          else if(cc == 6) c = C_EMPTY;
+          else {
+            int bad = rnd(3);
+            c = bad == 0 ? (Color)-1 : bad == 1 ? C_WALL : (Color)4;
+          }
+          pl.push_back(Move(l, c));
+          ps += I(l) + ":" + I(c) + ",";
+        }
+        int nr = b.setStonesTolerant(pl);
+        P("T " + I(np) + " " + ps + " " + I(nr) + st(b) + " " + cons(b) + "\n");
+      }
+      analyze(b, sui, -4);
     }
   }
 }

@@ -122,7 +122,7 @@ static Search* makeSearch(NNEvaluator* e, Logger* logger, int pos, int maxVisits
   Rules rules = Rules::parseRules("japanese");
   rules.komi = 6.5f;
   Board board(SZ, SZ);
-  BoardHistory hist(board, P_BLACK, rules, 0);
+  BoardHistory hist(board, P_BLACK, rules, 0, BoardHistoryModes());
   auto play = [&](int x, int y, Player pla) { hist.makeBoardMoveAssumeLegal(board, Location::getLoc(x, y, SZ), pla, NULL); };
   if(pos == 1) play(2, 2, P_BLACK);
   if(pos == 2) { play(1, 1, P_BLACK); play(3, 3, P_WHITE); play(3, 1, P_BLACK); play(1, 3, P_WHITE); }
@@ -252,12 +252,16 @@ static void applyGate(Search* s, int gate) {
   s->mirroringPla = gate == 3 ? P_BLACK : C_EMPTY;
 }
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 int main() {
   Board::initHash();
   ScoreValue::initTables();
   NNEvaluator* e = new NNEvaluator(
-    "search_nonn", "search_nonn", "", NULL, 16, 19, 19, false, true, 16, 12, true, "", "", false,
-    enabled_t::False, enabled_t::False, 1, {0}, "runSearchTestsRandSeedrev", false, 0
+    "search_nonn", "search_nonn", "", NULL, 16, 19, 19, false, true, 16, 12, true, "",
+    enabled_t::False, 1, {0}, "runSearchTestsRandSeedrev", false, 0,
+    nnEvalCfg
   );
   e->spawnServerThreads();
   Logger logger(nullptr, false, false, false, false);

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Regenerates the Eigen (CPU, fp32) analysis goldens: the primary M3 oracle (docs/DECISIONS.md D9).
-# Mirrors the `katago analysis` invocations of upstream/KataGo/cpp/runcmdtests.sh (v1.16.5) literally: the
+# Mirrors the `katago analysis` invocations of upstream/KataGo/cpp/runcmdtests.sh (v1.18.2) literally: the
 # commands run from a scratch directory whose configs/ and tests/ are symlinks to upstream/KataGo/cpp/{configs,tests}
 # (and models/b18c384nbt-humanv0.bin.gz -> $HUMAN_MODEL), so the command lines, the model names echoed by
 # `query_models` and every override are byte-for-byte upstream's. Only logFile moves to the scratch directory.

@@ -280,10 +280,14 @@ static string caseLine(const Case& c) {
   return s;
 }
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 static NNEvaluator* newNNEval(const Case& c) {
   NNEvaluator* e = new NNEvaluator(
-    "search_nonn", "search_nonn", "", NULL, 16, c.nnX, c.nnY, false, true, 16, 12, true, "", "", false,
-    enabled_t::False, enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + c.nnSeed, false, 0
+    "search_nonn", "search_nonn", "", NULL, 16, c.nnX, c.nnY, false, true, 16, 12, true, "",
+    enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + c.nnSeed, false, 0,
+    nnEvalCfg
   );
   e->spawnServerThreads();
   return e;
@@ -394,7 +398,7 @@ static void runCase(Case& c) {
   Search* search = new Search(params, nnEval, &logger, c.sseed);
   {
     Board board(c.xs, c.ys);
-    BoardHistory hist(board, c.ipla, c.rules, 0);
+    BoardHistory hist(board, c.ipla, c.rules, 0, BoardHistoryModes());
     for(const auto& m : c.moves)
       hist.makeBoardMoveAssumeLegal(board, m.first, m.second, NULL);
     hist.setInitialTurnNumber(c.iturn);
@@ -489,7 +493,7 @@ int main() {
     {
       // Random legal game, no passes: 0..~area moves
       Board board(c.xs, c.ys);
-      BoardHistory hist(board, c.ipla, c.rules, 0);
+      BoardHistory hist(board, c.ipla, c.rules, 0, BoardHistoryModes());
       int area = c.xs * c.ys;
       int nm = prob(0.15) ? 0 : (prob(0.5) ? rnd(area / 3 + 1) : rnd(area + 1));
       for(int m = 0; m < nm; m++) {

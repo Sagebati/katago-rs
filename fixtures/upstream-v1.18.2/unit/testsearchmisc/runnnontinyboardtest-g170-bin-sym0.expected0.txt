@@ -1,6 +1,6 @@
 : Initializing neural net buffer to be size 6 * 6 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 HASH: 53602E4395E2B2B556BA45566880843F
    A B C D E
  5 . . . . .

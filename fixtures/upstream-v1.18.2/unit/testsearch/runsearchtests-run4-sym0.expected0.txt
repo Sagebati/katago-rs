@@ -1,7 +1,7 @@
 Running search tests
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 3
-: Eigen (CPU) backend thread 0: Model name: s67105280-d24430742-b6c96
+: Eigen (CPU) backend thread 0: Model name: s67105280-d24430742-b6c96 (convnet, 1112612 params)
 GAME 1 ==========================================================================
 (An ordinary pro game)
 

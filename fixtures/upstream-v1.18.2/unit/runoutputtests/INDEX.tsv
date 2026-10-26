@@ -36,5 +36,6 @@ nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected20.txt	17511	
 nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected21.txt	17606	NN Inputs history scoring past end of game or end of phase	expected
 nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected22.txt	17700	NN Inputs history scoring past end of game or end of phase	expected
 nn-inputs-history-scoring-past-end-of-game-or-end-of-phase.expected23.txt	17794	NN Inputs history scoring past end of game or end of phase	expected
-score-and-utility-tests.expected0.txt	22883	Score and utility tests	expected
-nn-symmetry-tests.expected0.txt	23421	NN symmetry tests	expected
+nn-inputs-area-feature-exclude-territory-adjacent-to-atari.expected0.txt	18410	NN Inputs Area Feature exclude territory adjacent to atari	expected
+score-and-utility-tests.expected0.txt	25106	Score and utility tests	expected
+nn-symmetry-tests.expected0.txt	25644	NN symmetry tests	expected

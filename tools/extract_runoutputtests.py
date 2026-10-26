@@ -16,7 +16,7 @@ runOutputTests.txt is the cout of `katago runoutputtests`; its first part (up to
 test for input versions 3..7. The port only has fillRowV7, so only these chunks are extracted:
   - every "VERSION 7" line and the lines after it, up to the next "VERSION " line, section header
     (65 dashes), "rules " line, SGF line ("(;..."), "Passing hack condition" line or the end of
-    the NN-inputs part;
+    the NN-inputs part, or "Running ..." line (v1.18.2 prints one before each NN-inputs test function);
     in "NN Inputs history scoring past end of game or end of phase" the chunk also starts with the
     two lines printed before "VERSION 7" ("rules ...", "enablePassingHacks ...");
   - the whole "Passing hack condition based on as-is scoring" block (fillRowV7 only), through "Ok".
@@ -45,7 +45,7 @@ def main(src, outdir):
 
     def is_boundary(l):
         return (l.startswith('VERSION ') or l == DASHES or l.startswith('rules ') or l.startswith(PASSING_HACK)
-                or l.startswith('(;'))
+                or l.startswith('(;') or l.startswith('Running '))
 
     section = None
     counters = {}

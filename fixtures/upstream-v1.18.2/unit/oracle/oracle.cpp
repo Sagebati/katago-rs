@@ -1,5 +1,5 @@
 // Oracle generator for the katago-rs pilot (core/hash, core/rand, game/rules, game/board,
-// port::fmt, port::nlohmann). Links against the unmodified upstream sources of KataGo v1.16.5.
+// port::fmt, port::nlohmann). Links against the unmodified upstream sources of KataGo v1.18.2.
 // Usage: oracle <mode>   with mode in: rand hash board rules printf nlohmann
 // Build (from the repo root, output outside the repo; upstream untouched; asserts on):
 //   U=upstream/KataGo/cpp; g++ -std=c++17 -O1 -g -I$U -o /tmp/oracle oracle.cpp \

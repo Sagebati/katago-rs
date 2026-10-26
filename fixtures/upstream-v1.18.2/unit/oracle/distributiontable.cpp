@@ -1,5 +1,5 @@
 // Oracle for search/distributiontable (DistributionTable: table construction, getPdfCdf/getPdf/getCdf).
-// Links against the unmodified upstream sources of KataGo v1.16.5. The Rust mirror is
+// Links against the unmodified upstream sources of KataGo v1.18.2. The Rust mirror is
 // crates/katago-core/tests/distributiontable.rs: keep the two in the same order.
 // The pdf/cdf functions are not FancyMath's t-distribution (core/fancymath is ported separately): they use
 // only + - * / sqrt (exact everywhere) and, for the last table, exp (glibc; port::math::exp matches it, D14).

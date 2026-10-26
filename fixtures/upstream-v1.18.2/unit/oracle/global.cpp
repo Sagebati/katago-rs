@@ -1,5 +1,5 @@
 // Oracle for the rest of core/global (the functions the pilot left out). Links against the
-// unmodified upstream sources of KataGo v1.16.5.
+// unmodified upstream sources of KataGo v1.18.2.
 // The Rust mirror is crates/katago-core/tests/global.rs: keep the two in the same order.
 // Build (from the repo root, output outside the repo; upstream untouched; asserts on):
 //   U=upstream/KataGo/cpp; g++ -std=c++17 -O1 -I$U -o /tmp/global_oracle \

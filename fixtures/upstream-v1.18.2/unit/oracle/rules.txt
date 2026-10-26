@@ -132,26 +132,26 @@ INPUT [french]
  tryParseRules 1 koSITUATIONALscoreAREAtaxNONEsui0whbN-1fpok1komi7.5
 INPUT [nz]
  parseRules ok
-  toString koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7.5
+  toString koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7
   toStringNoKomi koSITUATIONALscoreAREAtaxNONEsui1fpok1
-  toJsonString {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","komi":7.5,"scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
+  toJsonString {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","komi":7.0,"scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
   toJsonStringNoKomi {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
   toJsonStringNoKomiMaybeOmitStuff {"friendlyPassOk":true,"ko":"SITUATIONAL","scoring":"AREA","suicide":true,"tax":"NONE"}
   toStringNoKomiMaybeNice NewZealand
-  gameResultWillBeInteger 0
+  gameResultWillBeInteger 1
  parseRulesWithoutKomi ok koSITUATIONALscoreAREAtaxNONEsui1fpok1komi6
- tryParseRules 1 koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7.5
+ tryParseRules 1 koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7
 INPUT [new zealand]
  parseRules ok
-  toString koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7.5
+  toString koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7
   toStringNoKomi koSITUATIONALscoreAREAtaxNONEsui1fpok1
-  toJsonString {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","komi":7.5,"scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
+  toJsonString {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","komi":7.0,"scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
   toJsonStringNoKomi {"friendlyPassOk":true,"hasButton":false,"ko":"SITUATIONAL","scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
   toJsonStringNoKomiMaybeOmitStuff {"friendlyPassOk":true,"ko":"SITUATIONAL","scoring":"AREA","suicide":true,"tax":"NONE"}
   toStringNoKomiMaybeNice NewZealand
-  gameResultWillBeInteger 0
+  gameResultWillBeInteger 1
  parseRulesWithoutKomi ok koSITUATIONALscoreAREAtaxNONEsui1fpok1komi6
- tryParseRules 1 koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7.5
+ tryParseRules 1 koSITUATIONALscoreAREAtaxNONEsui1fpok1komi7
 INPUT [tromp-taylor]
  parseRules ok
   toString koPOSITIONALscoreAREAtaxNONEsui1komi7.5
@@ -383,9 +383,16 @@ INPUT [{"komi":7.25}]
  parseRulesWithoutKomi ERR Unknown rules option: komi
  tryParseRules 0 koPOSITIONALscoreAREAtaxNONEsui1komi7.5
 INPUT [{"komi":200}]
- parseRules ERR Komi value is not a half-integer or is too extreme
+ parseRules ok
+  toString koPOSITIONALscoreAREAtaxNONEsui1komi200
+  toStringNoKomi koPOSITIONALscoreAREAtaxNONEsui1
+  toJsonString {"friendlyPassOk":false,"hasButton":false,"ko":"POSITIONAL","komi":200.0,"scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
+  toJsonStringNoKomi {"friendlyPassOk":false,"hasButton":false,"ko":"POSITIONAL","scoring":"AREA","suicide":true,"tax":"NONE","whiteHandicapBonus":"0"}
+  toJsonStringNoKomiMaybeOmitStuff {"ko":"POSITIONAL","scoring":"AREA","suicide":true,"tax":"NONE"}
+  toStringNoKomiMaybeNice TrompTaylor
+  gameResultWillBeInteger 1
  parseRulesWithoutKomi ERR Unknown rules option: komi
- tryParseRules 0 koPOSITIONALscoreAREAtaxNONEsui1komi7.5
+ tryParseRules 1 koPOSITIONALscoreAREAtaxNONEsui1komi200
 INPUT [{"komi":-150}]
  parseRules ok
   toString koPOSITIONALscoreAREAtaxNONEsui1komi-150

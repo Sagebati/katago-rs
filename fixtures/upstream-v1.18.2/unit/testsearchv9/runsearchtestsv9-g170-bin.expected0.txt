@@ -1,7 +1,7 @@
 Running v9 search tests
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 Flying dagger fight with V2 params and much variety ==========================================================================
 
 MoveNum: 15 HASH: 62596E92E691CB8B98438D8728C97A2A

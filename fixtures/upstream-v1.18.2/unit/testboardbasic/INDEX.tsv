@@ -47,5 +47,5 @@ simplerepetitionboundopen.expected0.txt	1685	simpleRepetitionBoundOpen	expected
 simplerepetitionbound.input0.txt	1752	simpleRepetitionBound	input
 simplerepetitionbound.expected0.txt	1830	simpleRepetitionBound	expected
 runboardundotest.expected0.txt	1957	runBoardUndoTest	expected
-runboardstresstest.expected0.txt	2217	runBoardStressTest	expected
-runboardreplaytest.input0.txt	2431	runBoardReplayTest	input
+runboardstresstest.expected0.txt	2227	runBoardStressTest	expected
+runboardreplaytest.input0.txt	2441	runBoardReplayTest	input

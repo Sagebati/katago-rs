@@ -1,5 +1,5 @@
 // Differential fuzz oracle for game/boardhistory (BoardHistory, KoHashTable, GraphHash). Links against the
-// unmodified upstream sources of KataGo v1.16.5.
+// unmodified upstream sources of KataGo v1.18.2.
 // The Rust mirror is crates/katago-core/tests/boardhistory_fuzz_oracle.rs: keep the two line for line.
 // Every random draw is its own statement (no two rnd() calls in one expression: GCC argument order).
 // Usage: boardhistory_fuzz games <numGames> <seed0>   full trace of every game (stdout)
@@ -151,6 +151,11 @@ static void dump(const BoardHistory& hist, const Board& board, const KoHashTable
   s += "," + HS(BoardHistory::getSituationRulesAndKoHash(board, hist, np, 1.0));
   s += " h2" + HX(BoardHistory::getSituationAndSimpleKoHash(board, np));
   s += " h3" + HX(BoardHistory::getSituationAndSimpleKoAndPrevPosHash(board, hist, np));
+  // v1.18.2: the history's modes (kept by copy, assignment, clear() and copyToInitial()), suicideLegalForPassAlive,
+  // and getSituationRulesAndKoHash with each explicit BoardHistoryModes.
+  s += " hm" + B(hist.modes.alwaysComputePassAliveUnderSuicideRules) + B(hist.modes.excludeTerritoryAdjacentToAtari) + B(hist.suicideLegalForPassAlive());
+  for(int m = 0; m < 4; m++)
+    s += "," + HS(BoardHistory::getSituationRulesAndKoHash(board, hist, np, 0.5, BoardHistoryModes((m & 1) != 0, (m & 2) != 0)));
   s += " rb";
   for(int k = 0; k < BoardHistory::NUM_RECENT_BOARDS; k++)
     s += "," + HS(hist.getRecentBoard(k).pos_hash);
@@ -257,7 +262,10 @@ static void runGame(int g, uint64_t seed0) {
     }
   }
 
-  BoardHistory hist(board, pla, rules, ePhase);
+  // BoardHistoryModes (v1.18.2): half the games keep the legacy BoardHistoryModes(), the others draw both flags.
+  int md = rnd(8);
+  BoardHistoryModes modes = md < 4 ? BoardHistoryModes((md & 1) != 0, (md & 2) != 0) : BoardHistoryModes();
+  BoardHistory hist(board, pla, rules, ePhase, modes);
   int o1 = rnd(3);
   if(o1 == 0) {
     int tn = rnd(50);
@@ -292,7 +300,7 @@ static void runGame(int g, uint64_t seed0) {
 
   P("G " + I(g) + " " + I(xs) + " " + I(ys) + " " + I(pla) + " " + I(ePhase) + " ");
   ostringstream rs; rs << rules;
-  P(rs.str() + " " + rules.toJsonString() + " t" + I(table != NULL) + " pp" + I(passProb) + " pm" + I(preventMode) + st(board) + "\n");
+  P(rs.str() + " " + rules.toJsonString() + " t" + I(table != NULL) + " pp" + I(passProb) + " pm" + I(preventMode) + " md" + B(modes.alwaysComputePassAliveUnderSuicideRules) + B(modes.excludeTerritoryAdjacentToAtari) + st(board) + "\n");
   dump(hist, board, table, "init");
 
   bool lastWasPass = false;
@@ -391,6 +399,20 @@ static void runGame(int g, uint64_t seed0) {
       Color ar2[Board::MAX_ARR_SIZE];
       copy.endAndScoreGameNow(board, ar2);
       P("ESC " + FF(copy.finalWhiteMinusBlackScore) + " " + I(copy.winner) + " " + B(copy.hasButton) + " " + FF(copy.whiteBonusScore) + " " + areaStr(board, ar2) + "\n");
+      // v1.18.2: scoring and endGameIfAllPassAlive under each BoardHistoryModes (setModes on a copy).
+      string em = "ESCM";
+      for(int m = 0; m < 4; m++) {
+        BoardHistory cm(hist);
+        cm.setModes(BoardHistoryModes((m & 1) != 0, (m & 2) != 0));
+        Color ar3[Board::MAX_ARR_SIZE];
+        cm.endAndScoreGameNow(board, ar3);
+        em += " " + FF(cm.finalWhiteMinusBlackScore) + "," + I(cm.winner) + "," + areaStr(board, ar3);
+        BoardHistory cp(hist);
+        cp.setModes(BoardHistoryModes((m & 1) != 0, (m & 2) != 0));
+        cp.endGameIfAllPassAlive(board);
+        em += " pa" + B(cp.isGameFinished) + "," + FF(cp.finalWhiteMinusBlackScore) + "," + I(cp.winner);
+      }
+      P(em + "\n");
     }
     int x6 = rnd(25);
     if(x6 == 0) {
@@ -445,6 +467,13 @@ static void runGame(int g, uint64_t seed0) {
         dump(hist, board, table, "clear" + I(ne));
       }
     }
+    // setModes (v1.18.2): changes hashing and later scoring, never re-adjudicates.
+    int x10 = rnd(70);
+    if(x10 == 0) {
+      int m2 = rnd(4);
+      hist.setModes(BoardHistoryModes((m2 & 1) != 0, (m2 & 2) != 0));
+      dump(hist, board, table, "modes" + I(m2));
+    }
   }
   dump(hist, board, table, "end");
 }
@@ -488,7 +517,7 @@ static void komiEdge() {
       board.setStone(Location::getLoc(2,2,9), C_BLACK);
       board.setStone(Location::getLoc(6,6,9), C_WHITE);
     }
-    BoardHistory hist(board, P_BLACK, rulesList[ri], 0);
+    BoardHistory hist(board, P_BLACK, rulesList[ri], 0, BoardHistoryModes());
     for(size_t ki = 0; ki < sizeof(EDGE_KOMI_BITS)/sizeof(EDGE_KOMI_BITS[0]); ki++) {
       float k; memcpy(&k, &EDGE_KOMI_BITS[ki], 4);
       hist.setKomi(k);

@@ -1,13 +1,13 @@
 Running search tests introduced after v8 nets
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : Initializing neural net buffer to be size 9 * 9 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : Initializing neural net buffer to be size 9 * 9 exactly
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST EXACT (NO MASKING) VS MASKED 9x9 ==========================================================================
 BASIC
 MoveNum: 3 HASH: 51A2E952B6FF793C9B33F3C9C4FAA3F6
@@ -112,10 +112,10 @@ F7  : T -31.02c W -27.10c S  -3.92c ( -1.8 L  -1.7) LCB -381.02c P  2.33% WF   0
 : GPU 0 finishing, processed 191 rows 191 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : Initializing neural net buffer to be size 19 * 19 exactly
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST EXACT (NO MASKING) VS MASKED ==========================================================================
 BASIC
 MoveNum: 11 HASH: 2C25470E65B6D05041FBAA25100A43F4
@@ -228,10 +228,10 @@ M16 : T  -6.27c W  -4.89c S  -1.38c ( -1.2 L  -0.5) LCB -356.27c P  1.12% WF   1
 TEST SYMMETRY AVGING ==========================================================================
 : GPU 0 finishing, processed 198 rows 198 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : GPU 0 finishing, processed 198 rows 198 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 BASIC
 MoveNum: 8 HASH: CD3FB5DC05D00B0870968B214E383553
    A B C D E F G H J K L M N O P Q R S T
@@ -326,18 +326,18 @@ Q15 : T   4.22c W   3.19c S   1.03c ( +1.0 L  +1.7) LCB  354.22c P  1.23% WF   1
 
 : GPU 0 finishing, processed 202 rows 202 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : GPU 0 finishing, processed 202 rows 202 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST NN TEMPERATURE ==========================================================================
 BASELINE
 : GPU 0 finishing, processed 0 rows 0 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : GPU 0 finishing, processed 0 rows 0 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 MoveNum: 8 HASH: EB3485F1C1921D5CD4B08C09B7E45930
    A B C D E F G H J K L M N O P Q R S T
 19 . . . . . . . . . . . . . . . . . . .
@@ -427,10 +427,10 @@ P16 : T  10.56c W   8.73c S   1.83c ( +2.3 L  +2.4) LCB   21.86c P 16.44% WF   9
 TEMP 1.5
 : GPU 0 finishing, processed 185 rows 185 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : GPU 0 finishing, processed 185 rows 185 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 MoveNum: 8 HASH: EB3485F1C1921D5CD4B08C09B7E45930
    A B C D E F G H J K L M N O P Q R S T
 19 . . . . . . . . . . . . . . . . . . .
@@ -528,10 +528,10 @@ S17 : T   6.75c W   5.59c S   1.15c ( +1.7 L  +2.2) LCB  356.75c P  0.82% WF   0
 TEMP 0.5
 : GPU 0 finishing, processed 192 rows 192 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 : GPU 0 finishing, processed 192 rows 192 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 MoveNum: 8 HASH: EB3485F1C1921D5CD4B08C09B7E45930
    A B C D E F G H J K L M N O P Q R S T
 19 . . . . . . . . . . . . . . . . . . .
@@ -610,7 +610,7 @@ O18 N18 : T  -1.45c W  -1.39c S  -0.06c ( -0.3 L  -0.2) LCB   -6.23c P 88.65% WF
 : GPU 0 finishing, processed 192 rows 192 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 ===================================================================
 Testing PDA + pondering, p200 v400
 ===================================================================
@@ -1785,7 +1785,7 @@ H10 : T -39.84c W -39.92c S   0.08c ( -5.4 L  -6.4) LCB  310.16c P  0.83% WF   0
 F3  : T -48.78c W -47.82c S  -0.96c ( -6.4 L  -7.0) LCB  301.22c P  0.72% WF   0.9 PSV       0 N       1  --  F3
 : GPU 0 finishing, processed 5938 rows 5938 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 ===================================================================
 Test real hintloc T16 (with symmetry sampling)
 ===================================================================
@@ -1899,7 +1899,7 @@ Q11 : T 117.63c W  97.62c S  20.01c (+48.2 L +49.6) LCB  467.63c P  0.95% WF   0
 L15 : T 111.37c W  95.70c S  15.66c (+40.5 L +41.6) LCB  461.37c P  0.73% WF   1.0 PSV       1 N       1  --  L15
 : GPU 0 finishing, processed 642 rows 642 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 AntiMirror white ==========================================================================
 MoveNum: 24 HASH: DE09B9F4C165FF4C2FC0A51126B73011
    A B C D E F G H J K L M N O P Q R S T
@@ -2147,7 +2147,7 @@ H10 : T -36.01c W -31.79c S  -4.22c ( -3.0 L  -2.6) LCB -386.01c P  0.01% WF   1
 : GPU 0 finishing, processed 973 rows 973 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST VALUE BIAS ==========================================================================
 BASE
 Just after begun
@@ -3819,7 +3819,7 @@ G4  : T   1.21c W  -2.48c S   3.69c ( -0.1 L  -0.5) LCB  351.21c P  1.58% WF   0
 TEST Hintlocs ==========================================================================
 : GPU 0 finishing, processed 5809 rows 5809 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 ===================================================================
 Test hintloc C1
 ===================================================================
@@ -4388,7 +4388,7 @@ K3  : T   0.28c W  -0.86c S   1.14c ( -0.1 L  +0.1) LCB   74.43c P  2.57% WF   3
 C1  : T  43.81c W  36.43c S   7.38c ( +9.2 L  +9.6) LCB   49.60c P  2.01% WF  32.6 PSV       0 N      55  --  C1 Q17 C3 C4 D2 E3 E2
 : GPU 0 finishing, processed 2011 rows 2011 batches
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 Mix pruning, subtracting, dirichlet noise, value weight exponent =========================================
 ===================================================================
 Base
@@ -7107,7 +7107,7 @@ L4  : T -84.23c W -77.02c S  -7.21c (-23.5 L -21.9) LCB -434.23c P  0.31% WF   1
 : GPU 0 finishing, processed 55432 rows 55432 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST ownership endgame ==========================================================================
 MoveNum: 0 HASH: 1C3E2CFF3462D0A28CEC88C4DAA5C529
    A B C D E F G
@@ -7162,7 +7162,7 @@ B9  : T -45.02c W -35.73c S  -9.29c ( -2.0 L  -1.9) LCB -395.02c P  2.58% WF   0
 : GPU 0 finishing, processed 62 rows 62 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 TEST sampled symmetries ==========================================================================
 ===================================================================
 Repeatedly run bot with 8 root symmetries sampled, should be deterministic (except for scoreUtility due to dynamic score centering)
@@ -7369,7 +7369,7 @@ WL samples
 : GPU 0 finishing, processed 1028 rows 1028 batches
 : Initializing neural net buffer to be size 19 * 19 allowing smaller boards
 : Eigen (CPU) backend thread 0: Model version 8
-: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732
+: Eigen (CPU) backend thread 0: Model name: g170-b6c96-s175395328-d26788732 (convnet, 1027911 params)
 Multithreaded search test =========================================
 Chosen move: E2
 Winloss near 0.05: 1

@@ -1,6 +1,6 @@
-C latestModelVersionImplemented 16
+C latestModelVersionImplemented 17
 C latestInputsVersionImplemented 7
-C defaultModelVersion 16
+C defaultModelVersion 17
 C oldestModelVersionImplemented 3
 C oldestInputsVersionImplemented 3
 C ACTIVATION_IDENTITY 0
@@ -64,9 +64,9 @@ V getNumGlobalFeatures 15 19
 V getInputsVersion 16 7
 V getNumSpatialFeatures 16 22
 V getNumGlobalFeatures 16 19
-V getInputsVersion 17 ERR NNModelVersion: Model version not currently implemented or supported: 17
-V getNumSpatialFeatures 17 ERR NNModelVersion: Model version not currently implemented or supported: 17
-V getNumGlobalFeatures 17 ERR NNModelVersion: Model version not currently implemented or supported: 17
+V getInputsVersion 17 7
+V getNumSpatialFeatures 17 22
+V getNumGlobalFeatures 17 19
 V getInputsVersion 18 ERR NNModelVersion: Model version not currently implemented or supported: 18
 V getNumSpatialFeatures 18 ERR NNModelVersion: Model version not currently implemented or supported: 18
 V getNumGlobalFeatures 18 ERR NNModelVersion: Model version not currently implemented or supported: 18

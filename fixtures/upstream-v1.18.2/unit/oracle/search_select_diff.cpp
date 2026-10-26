@@ -95,12 +95,16 @@ static Rand gen("search_select_diff_20261022");
 static double uni(double a, double b) { return a + (b - a) * gen.nextDouble(); }
 template<typename T, size_t N> static T pick(const T (&a)[N]) { return a[gen.nextUInt((uint32_t)N)]; }
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 int main() {
   Board::initHash();
   ScoreValue::initTables();
   NNEvaluator* e = new NNEvaluator(
-    "search_nonn", "search_nonn", "", NULL, 16, 19, 19, false, true, 16, 12, true, "", "", false,
-    enabled_t::False, enabled_t::False, 1, {0}, "runSearchTestsRandSeedrev", false, 0
+    "search_nonn", "search_nonn", "", NULL, 16, 19, 19, false, true, 16, 12, true, "",
+    enabled_t::False, 1, {0}, "runSearchTestsRandSeedrev", false, 0,
+    nnEvalCfg
   );
   e->spawnServerThreads();
   Logger logger(nullptr, false, false, false, false);
@@ -354,7 +358,7 @@ int main() {
       Rules rules = Rules::parseRules("japanese");
       rules.komi = 6.5f;
       Board board(5, 5);
-      BoardHistory hist(board, P_BLACK, rules, 0);
+      BoardHistory hist(board, P_BLACK, rules, 0, BoardHistoryModes());
       if(pos == 1) hist.makeBoardMoveAssumeLegal(board, Location::getLoc(2, 2, 5), P_BLACK, NULL);
       Player pla = hist.presumedNextMovePla;
       q->setPosition(pla, board, hist);

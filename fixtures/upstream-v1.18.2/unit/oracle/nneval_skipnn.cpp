@@ -79,7 +79,7 @@ static Pos makeGame(int xs, int ys, int maxMoves, string& line) {
   rules.komi = komis[rnd(8)];
   Player initialPla = rnd(5) == 0 ? P_WHITE : P_BLACK;
   Board board(xs, ys);
-  BoardHistory hist(board, initialPla, rules, 0);
+  BoardHistory hist(board, initialPla, rules, 0, BoardHistoryModes());
   vector<pair<Loc,Player>> moves;
   int numMoves = rnd(maxMoves + 1);
   for(int m = 0; m < numMoves && !hist.isGameFinished; m++) {
@@ -114,7 +114,7 @@ static Pos makeDagger(string& line) {
   Rules rules = Rules::getTrompTaylorish();
   rules.komi = 7.5f;
   Board board(19, 19);
-  BoardHistory hist(board, P_BLACK, rules, 0);
+  BoardHistory hist(board, P_BLACK, rules, 0, BoardHistoryModes());
   int xy[][2] = {{3,2},{2,2},{3,3},{2,3},{2,5},{1,5},{15,15},{16,3}};
   vector<pair<Loc,Player>> moves;
   for(int i = 0; i < 8; i++) {
@@ -187,11 +187,15 @@ static void printParams(char kind, const Params& r) {
          (unsigned long long)dbits(r.p.policyOptimism), r.p.maxHistory, (int)r.skipCache, (int)r.includeOwnerMap);
 }
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 static NNEvaluator* newEval(int nnLen, int cachePow, const string& seed, bool doRandomize) {
   printf("E %d %d %d %s %d\n", nnLen, nnLen, cachePow, seed.c_str(), (int)doRandomize);
   NNEvaluator* e = new NNEvaluator(
     "skipnn", "skipnn.bin.gz", "", NULL, 8, nnLen, nnLen, false, false, cachePow, 3, true,
-    "", "", false, enabled_t::False, enabled_t::False, 1, {-1}, seed, doRandomize, 0
+    "", enabled_t::False, 1, {-1}, seed, doRandomize, 0,
+    nnEvalCfg
   );
   e->spawnServerThreads();
   return e;

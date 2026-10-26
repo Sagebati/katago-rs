@@ -237,7 +237,8 @@ int main(int argc, const char* argv[]) {
       for(int sf = 0; sf < 6; sf++) for(int variant = 0; variant < 4; variant++) {
         ConfigParser* cfg = NULL;
         if(!mk(cfg)) continue;
-        int defaultMaxBatchSize = (variant & 1) ? 16 : -1;
+        // v1.18.2: the int defaultMaxBatchSize (-1 / 16) became a MaxBatchSizeRequest; 16 -> explicitSize(16), -1 -> fromConcurrency()
+        Setup::MaxBatchSizeRequest defaultMaxBatchSize = (variant & 1) ? Setup::MaxBatchSizeRequest::explicitSize(16) : Setup::MaxBatchSizeRequest::fromConcurrency();
         bool disableFP16 = (variant & 2) != 0;
         int nModels = (variant == 3) ? 1 : 2;
         printf("N %d %d\n", sf, variant);
@@ -255,10 +256,10 @@ int main(int argc, const char* argv[]) {
           for(size_t i = 0; i < evals.size(); i++) {
             NNEvaluator* e = evals[i];
             NNCacheTable* c = e->*get(R_cache());
-            bprintf(blk, "E %d name=%s file=%s maxBatch=%d curBatch=%d x=%d y=%d exact=%d nhwc=%d fp16=%s nhwcMode=%s threads=%d",
-                   (int)i, e->getModelName().c_str(), e->getModelFileName().c_str(), e->getMaxBatchSize(), e->getCurrentBatchSize(),
+            bprintf(blk, "E %d name=%s file=%s maxBatch=%d curBatch=%d x=%d y=%d exact=%d nhwc=%d fp16=%s threads=%d",
+                   (int)i, e->getModelName().c_str(), e->getModelFileName().c_str(), e->getMaxBatchSize(), e->getMaxRowsToSendPerBatch(),
                    e->getNNXLen(), e->getNNYLen(), (int)(e->*get(R_requireExact())), (int)(e->*get(R_inputsNHWC())),
-                   e->getUsingFP16Mode().toString().c_str(), e->getUsingNHWCMode().toString().c_str(), e->*get(R_numThreads()));
+                   e->getUsingFP16Mode().toString().c_str(), e->*get(R_numThreads()));
             bprintf(blk, " gpus=");
             for(int g: e->*get(R_gpuIdx())) bprintf(blk, "%d,", g);
             bprintf(blk, " seed=%s skip=%d rand=%d sym=%d cache=%lld internal=%s ver=%d\n",

@@ -1,6 +1,6 @@
 // Oracle for search/timecontrols (all four time-control kinds, getTime, roundUpTimeLimitIfNeeded,
 // toDebugString, the factories and their errors). Links against the unmodified upstream sources of
-// KataGo v1.16.5. The Rust mirror is crates/katago-core/tests/timecontrols.rs.
+// KataGo v1.18.2. The Rust mirror is crates/katago-core/tests/timecontrols.rs.
 //
 // Three outputs, written into the directory given as argv[1]:
 //   timecontrols_testtime.txt  stdout of the UNMODIFIED upstream Tests::runTimeControlsTests() (tests/testtime.cpp):
@@ -261,9 +261,9 @@ int main(int argc, char** argv) {
   // 2) fixed sequence
   {
     Board b9 = makeBoard(9, 9, 0);
-    BoardHistory h9(b9, P_BLACK, rules, 0);
+    BoardHistory h9(b9, P_BLACK, rules, 0, BoardHistoryModes());
     Board b19 = makeBoard(19, 19, 150);
-    BoardHistory h19(b19, P_BLACK, rules, 0);
+    BoardHistory h19(b19, P_BLACK, rules, 0, BoardHistoryModes());
 
     res << "constants " << bits(TimeControls::UNLIMITED_TIME_THRESHOLD) << " " << bits(TimeControls::MAX_USER_INPUT_TIME) << " "
         << bits(TimeControls::UNLIMITED_TIME_DEFAULT) << " " << bits(TimeControls::UNLIMITED_TIME_DEFAULT_LARGE) << "\n";
@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
       cases << xs << " " << ys << " " << n << " " << bits(lag) << " " << fields(tc) << "\n";
 
       Board board = makeBoard(xs, ys, n);
-      BoardHistory hist(board, P_BLACK, rules, 0);
+      BoardHistory hist(board, P_BLACK, rules, 0, BoardHistoryModes());
       res << "case " << i << " " << evaluate(tc, board, hist, lag) << "\n";
     }
   }

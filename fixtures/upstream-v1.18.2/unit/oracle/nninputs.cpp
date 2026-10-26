@@ -1,5 +1,5 @@
 // Features oracle for neuralnet/nninputs (M2: NN input features must be bit-exact). Links against the
-// unmodified upstream sources of KataGo v1.16.5. The Rust mirror is
+// unmodified upstream sources of KataGo v1.18.2. The Rust mirror is
 // crates/katago-core/tests/nninputs_oracle.rs (it only reads the files below; it does not regenerate).
 // Every random draw is its own statement (no two rnd() calls in one expression: GCC argument order).
 //
@@ -269,7 +269,7 @@ static void randomGame(int g) {
     }
     if(setupKind == 0 && p.setup.size() > 1) p.initialPla = P_WHITE;
   }
-  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), p.encore);
+  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), p.encore, BoardHistoryModes());
   if(setupKind == 2 && p.initialPla == P_BLACK) {
     p.amh = 1;
     hist.setAssumeMultipleStartingBlackMovesAreHandicap(true);
@@ -384,7 +384,7 @@ static void encoreKoFight(int encore, bool swap, int extraCols) {
     testAssert(board.setStone(loc, (Color)c));
     p.setup.push_back(MoveSpec{q[0], q[1], c, 0});
   }
-  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), p.encore);
+  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), p.encore, BoardHistoryModes());
   const int mv[][3] = {{2,1,1},{1,1,2},{-1,-1,1},{1,1,2},{2,1,1},{-1,-1,2}};
   for(const auto& q : mv) {
     int pla = q[2] == 1 ? C : O;
@@ -474,7 +474,7 @@ static void sgfPositions(const string& path, int gameIdx) {
   for(auto& s : g.ab) { if(s.first < 0 || s.first >= p.xs || s.second < 0 || s.second >= p.ys) continue; board.setStone(Location::getLoc(s.first, s.second, p.xs), P_BLACK); p.setup.push_back(MoveSpec{s.first, s.second, P_BLACK, 0}); }
   for(auto& s : g.aw) { if(s.first < 0 || s.first >= p.xs || s.second < 0 || s.second >= p.ys) continue; board.setStone(Location::getLoc(s.first, s.second, p.xs), P_WHITE); p.setup.push_back(MoveSpec{s.first, s.second, P_WHITE, 0}); }
   p.initialPla = g.moves.size() > 0 ? g.moves[0].pla : P_BLACK;
-  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), 0);
+  BoardHistory hist(board, (Player)p.initialPla, rulesOf(p), 0, BoardHistoryModes());
   int n = (int)g.moves.size();
   int numSnaps = 8 + rnd(6);
   vector<int> snaps;
@@ -516,7 +516,7 @@ static PosSpec parsePos(const string& line, int& id) {
 static void replay(const PosSpec& p, Board& board, BoardHistory& hist) {
   board = Board(p.xs, p.ys);
   for(const MoveSpec& m : p.setup) board.setStone(Location::getLoc(m.x, m.y, p.xs), (Color)m.pla);
-  hist = BoardHistory(board, (Player)p.initialPla, rulesOf(p), p.encore);
+  hist = BoardHistory(board, (Player)p.initialPla, rulesOf(p), p.encore, BoardHistoryModes());
   hist.setAssumeMultipleStartingBlackMovesAreHandicap(p.amh != 0);
   for(const MoveSpec& m : p.moves)
     hist.makeBoardMoveAssumeLegal(board, locOf(m, p.xs), (Player)m.pla, NULL, m.pe != 0);
@@ -685,7 +685,7 @@ int main(int argc, char** argv) {
     const HistSpec& q = hs[k];
     sv << "hist " << k << " " << q.xs << " " << q.ys << " " << q.ko << " " << q.sc << " " << q.tax << " " << q.whb << " " << FX(q.komi) << "\n";
     Board b(q.xs, q.ys);
-    BoardHistory h(b, P_BLACK, Rules(q.ko, q.sc, q.tax, false, false, q.whb, false, q.komi), 0);
+    BoardHistory h(b, P_BLACK, Rules(q.ko, q.sc, q.tax, false, false, q.whb, false, q.komi), 0, BoardHistoryModes());
     for(double score : {-30.5, -7.0, 0.0, 0.5, 3.0, 12.5, 200.0}) {
       for(double draw : {0.5, 0.0, 1.0}) {
         sv << "whiteScoreDrawAdjust " << k << " " << DX(score) << " " << DX(draw) << " " << DX(ScoreValue::whiteScoreDrawAdjust(score, draw, h)) << "\n";

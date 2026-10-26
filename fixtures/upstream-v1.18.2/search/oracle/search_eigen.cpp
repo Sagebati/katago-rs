@@ -10,7 +10,7 @@
 //
 // Settings: nnXLen = nnYLen = 19 (every board size runs on the 19x19 net input, masked), maxBatchSize 16,
 // nnCacheSizePowerOfTwo 16 (mutex pool 12), defaultSymmetry 0, doRandomize false (deterministic NN),
-// requireExactNNLen false, inputsUseNHWC true, fp16 False, NHWC Auto, 1 server thread. One evaluator for
+// requireExactNNLen false, inputsUseNHWC true, fp16 False, 1 server thread. One evaluator for
 // all cases (a cache hit returns the stored output unchanged, so sharing changes no result and saves time;
 // the Rust side shares one too). SearchParams: base SearchParams() (base=0) or forTestsV1() (base=1), plus
 // the per-case overrides, with numThreads = 1 and chosenMoveTemperature = chosenMoveTemperatureEarly = 0
@@ -56,6 +56,7 @@
 #include <string>
 #include <vector>
 #include <gnu/libc-version.h>
+#include "core/config_parser.h"
 #include "core/global.h"
 #include "core/logger.h"
 #include "core/test.h"
@@ -117,7 +118,7 @@ struct PosBuilder {
     p.rules = Rules::parseRules(rulesName);
     p.rules.komi = komi;
     board = Board(xs, ys);
-    hist = BoardHistory(board, P_BLACK, p.rules, 0);
+    hist = BoardHistory(board, P_BLACK, p.rules, 0, BoardHistoryModes());
   }
   void play(int x, int y, Player pla) {
     Loc loc = Location::getLoc(x, y, p.xs);
@@ -171,7 +172,7 @@ static Position loadRealPosition(const string& positionsFile, int id, const stri
   p.name = name; p.xs = xs; p.ys = ys;
   p.rules = Rules(ko, sc, tax, suic != 0, button != 0, whb, fpok != 0, komi);
   Board board(xs, ys);
-  BoardHistory hist(board, P_BLACK, p.rules, 0);
+  BoardHistory hist(board, P_BLACK, p.rules, 0, BoardHistoryModes());
   for(size_t i = 0; i < nMoves; i++) {
     int x, y, pla, pe;
     ls >> x >> y >> pla >> pe;
@@ -217,7 +218,7 @@ static string caseLine(int idx, const Position& p, const CaseSpec& c, Player pla
 
 static void runSearch(int idx, const Position& p, const CaseSpec& c, NNEvaluator* nnEval, Logger* logger) {
   Board board(p.xs, p.ys);
-  BoardHistory hist(board, P_BLACK, p.rules, 0);
+  BoardHistory hist(board, P_BLACK, p.rules, 0, BoardHistoryModes());
   for(const auto& m : p.moves)
     hist.makeBoardMoveAssumeLegal(board, m.first, m.second, NULL);
   Player pla = hist.presumedNextMovePla;
@@ -341,9 +342,10 @@ int main(int argc, char** argv) {
   Logger logger(nullptr, false, false, false, false);
   logger.addOStream(cerr);
   vector<int> gpuIdxs = {-1};
+  ConfigParser nnCfg;  // v1.18.2: NNEvaluator takes the config for backend options (the Eigen backend reads none)
   NNEvaluator* nnEval = new NNEvaluator(
-    "search_eigen", modelFile, "", &logger, 16, 19, 19, false, true, 16, 12, false, "", "", false,
-    enabled_t::False, enabled_t::Auto, 1, gpuIdxs, "searchEigenSeed", false, 0
+    "search_eigen", modelFile, "", &logger, 16, 19, 19, false, true, 16, 12, false, "",
+    enabled_t::False, 1, gpuIdxs, "searchEigenSeed", false, 0, nnCfg
   );
   nnEval->spawnServerThreads();
   for(size_t i = 0; i < cases.size(); i++) {

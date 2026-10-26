@@ -1,5 +1,5 @@
 // Oracle for crates/katago-core/src/core/fancymath.rs: every FancyMath function of the
-// unmodified upstream KataGo v1.16.5 (cpp/core/fancymath.cpp, the object file of the reference
+// unmodified upstream KataGo v1.18.2 (cpp/core/fancymath.cpp, the object file of the reference
 // Eigen build) on fixed and pseudo-random inputs. tests/fancymath.rs regenerates the same inputs
 // and compares bit for bit.
 // Build and run (from the repo root, after `just katago-eigen`; -ffp-contract=off so the input

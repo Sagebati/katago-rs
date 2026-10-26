@@ -536,7 +536,7 @@ struct Runner {
     const string& name = t[0];
     if(name == "P") {
       Board board(c.xs, c.ys);
-      BoardHistory hist(board, c.initialPla, c.rules, 0);
+      BoardHistory hist(board, c.initialPla, c.rules, 0, BoardHistoryModes());
       if(hcAssume) hist.setAssumeMultipleStartingBlackMovesAreHandicap(true);
       if(hcOverride >= 0) hist.setOverrideNumHandicapStones(hcOverride);
       for(const auto& m : c.moves)
@@ -723,7 +723,7 @@ struct Runner {
       // PB:<0 setExternalPatternBonusTable|1 setCopyOfExternalPatternBonusTable>:<shards, 0 = default>:<bonus>:<onlyPla>:<number of case moves replayed, -1 = all>
       // A table filled by addBonusForGameMoves(case moves prefix, bonus, onlyPla) is handed to the search.
       Board board(c.xs, c.ys);
-      BoardHistory hist(board, c.initialPla, c.rules, 0);
+      BoardHistory hist(board, c.initialPla, c.rules, 0, BoardHistoryModes());
       int n = atoi(t[5].c_str());
       for(size_t i = 0; i < c.moves.size() && (n < 0 || (int)i < n); i++)
         hist.makeBoardMoveAssumeLegal(board, c.moves[i].first, c.moves[i].second, NULL);
@@ -878,10 +878,14 @@ struct Runner {
 //-------------------------------------------------------------------------------------------------
 // Running a case
 
+// v1.18.2 NNEvaluator takes a ConfigParser (consulted by the backend only; unused with debugSkipNeuralNet): empty, as testsearchcommon.cpp does
+static ConfigParser nnEvalCfg;
+
 static NNEvaluator* newNNEval(const Case& c) {
   NNEvaluator* e = new NNEvaluator(
-    "search_nonn", "search_nonn", "", NULL, 16, c.nnX, c.nnY, false, true, 16, 12, true, "", "", false,
-    enabled_t::False, enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + c.nnSeed, false, 0
+    "search_nonn", "search_nonn", "", NULL, 16, c.nnX, c.nnY, false, true, 16, 12, true, "",
+    enabled_t::False, 1, {0}, "runSearchTestsRandSeed" + c.nnSeed, false, 0,
+    nnEvalCfg
   );
   e->spawnServerThreads();
   return e;
@@ -970,7 +974,7 @@ struct Pos {
   vector<pair<Loc, Player>> moves;
   Board board;
   BoardHistory hist;
-  Pos(int xs, int ys, const Rules& rules, Player ipla) : board(xs, ys), hist(board, ipla, rules, 0) {}
+  Pos(int xs, int ys, const Rules& rules, Player ipla) : board(xs, ys), hist(board, ipla, rules, 0, BoardHistoryModes()) {}
   bool play(Loc loc, Player pla) {
     if(hist.isGameFinished) return false;
     if(!hist.isLegal(board, loc, pla)) return false;

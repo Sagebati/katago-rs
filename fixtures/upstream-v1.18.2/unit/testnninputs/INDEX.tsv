@@ -2,3 +2,5 @@ file	line	test	role
 nn-inputs-v3v4v6-area-komi.input0.txt	433	NN Inputs V3V4V6 Area Komi	input
 nn-inputs-v6-area-feature-and-komi.input0.txt	777	NN Inputs V6 Area Feature and Komi	input
 nn-inputs-selfkomi-handicap-white-bonus.input0.txt	1176	NN Inputs SelfKomi Handicap White Bonus	input
+nn-inputs-area-feature-exclude-territory-adjacent-to-atari.input0.txt	1517	NN Inputs Area Feature exclude territory adjacent to atari	input
+nn-inputs-area-feature-exclude-territory-adjacent-to-atari.input1.txt	1623	NN Inputs Area Feature exclude territory adjacent to atari	input
