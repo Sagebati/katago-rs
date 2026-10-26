@@ -1418,6 +1418,9 @@ impl NNInputs {
           &mut white_minus_black_independent_life_region_count,
           keep_territories,
           keep_stones,
+          // TODO(v1.18.2 sync): upstream passes nnInputParams.getExcludeTerritoryAdjacentToAtari(hist)
+          false,
+          // TODO(v1.18.2 sync): upstream passes nnInputParams.getSuicideLegalForPassAlive(hist)
           hist.rules.multi_stone_suicide_legal,
         );
         if hist.rules.tax_rule == Rules::TAX_ALL {

@@ -23,6 +23,7 @@ use katago_core::core::global::Global;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::SymmetryHelpers;
 use katago_core::port::fmt::cpp_ostream_f64;
@@ -231,7 +232,7 @@ fn print_marked_sym_dup_area(out: &mut String, board: &Board, is_sym_dup_loc: &[
 
 /// upstream: the `computeAndPrintMarkedSymDupArea` lambda in Tests::runBoardSymmetryTests
 fn compute_and_print_marked_sym_dup_area(out: &mut String, board: &Board, pla: Player, only_symmetries: Option<&[i32]>) {
-  let hist = BoardHistory::new_full(board, pla, &Rules::get_tromp_taylorish(), 0);
+  let hist = BoardHistory::new_full(board, pla, &Rules::get_tromp_taylorish(), 0, &BoardHistoryModes::new_full(false, false));
   let mut is_sym_dup_loc: [bool; Board::MAX_ARR_SIZE as usize] = [false; Board::MAX_ARR_SIZE as usize];
   let mut valid_symmetries: Vec<i32> = Vec::new();
   let avoid_moves: Vec<i32> = Vec::new();

@@ -66,6 +66,7 @@ use crate::game::board::C_EMPTY;
 use crate::game::board::P_BLACK;
 use crate::game::board::P_WHITE;
 use crate::game::boardhistory::BoardHistory;
+use crate::game::boardhistory::BoardHistoryModes;
 use crate::game::rules::Rules;
 use crate::neuralnet::nneval::NNEvaluator;
 use crate::neuralnet::nninputs::NNPos;
@@ -1186,10 +1187,10 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
 
   if json_contains(&input, "komi") {
     let mut komi: f64 = 0.0;
-    // static_assert(Rules::MIN_USER_KOMI == -150.0f, "");
-    // static_assert(Rules::MAX_USER_KOMI == 150.0f, "");
-    const _: () = assert!(Rules::MIN_USER_KOMI == -150.0f32 && Rules::MAX_USER_KOMI == 150.0f32);
-    let msg: &str = "Must be a integer or half-integer from -150.0 to 150.0";
+    // static_assert(Rules::MIN_USER_KOMI == -400.0f, "");
+    // static_assert(Rules::MAX_USER_KOMI == 400.0f, "");
+    const _: () = assert!(Rules::MIN_USER_KOMI == -400.0f32 && Rules::MAX_USER_KOMI == 400.0f32);
+    let msg: &str = "Must be a integer or half-integer from -400.0 to 400.0";
     let suc: bool = parse_double(ctx, &rbase_id, &input, "komi", &mut komi, Rules::MIN_USER_KOMI as f64, Rules::MAX_USER_KOMI as f64, msg);
     if !suc {
       return Ok(());
@@ -1473,7 +1474,9 @@ pub fn handle_request_line(ctx: &Rc<AnalysisContext>, line: &[u8]) -> Result<(),
   }
 
   let mut next_pla: Player = initial_player;
-  let mut hist: BoardHistory = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  // TODO(v1.18.2 sync): upstream passes Search::resolveHistoryModes(rbase.params, nnEval) (with its
+  // "Keep this request's history consistent with the BoardHistoryModes..." comment).
+  let mut hist: BoardHistory = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new());
   hist.set_assume_multiple_starting_black_moves_are_handicap(ctx.assume_multiple_starting_black_moves_are_handicap);
 
   if ctx.warn_unused_fields {

@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/game/boardhistory.cpp, cpp/game/boardhistory.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/game/boardhistory.cpp, cpp/game/boardhistory.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use crate::core::global::KataError;
 use crate::core::hash::Hash;
@@ -25,6 +25,57 @@ impl EncoreKoCapture {
   /// upstream: BoardHistory::EncoreKoCapture::EncoreKoCapture (boardhistory.h)
   pub fn new(pos_hash_before_move: Hash128, move_loc: Loc, move_pla: Player) -> EncoreKoCapture {
     EncoreKoCapture { pos_hash_before_move, move_loc, move_pla }
+  }
+}
+
+/// upstream: BoardHistoryModes (boardhistory.h)
+//Bundles the flags that control how certain computations are performed.
+//These exist to support migrations of KataGo's rules implementation - each mode selects between a
+//legacy behavior (false) and a new behavior (true), with neural nets declaring which behavior they
+//were trained with.
+//They are PRESERVED by BoardHistory::clear() - they apply to the whole session of usage of a history
+//object rather than being per-game state.
+//Use BoardHistoryModes() for plain all-legacy behavior, or an appropriately resolved value
+//(e.g. from Search::resolveHistoryModes or a governing history/book/game).
+#[derive(Clone, Copy, Debug)]
+pub struct BoardHistoryModes {
+  //If true, all computations of pass-alive area (for game-ending, final scoring, and nn features)
+  //are performed as if multi-stone suicide were legal, regardless of rules.multiStoneSuicideLegal.
+  //Actual move legality is NOT affected.
+  pub always_compute_pass_alive_under_suicide_rules: bool,
+
+  //If true, under territory scoring with TaxRule NONE, empty points adjacent to any chain in atari
+  //(e.g. unfilled ko mouths in seki) do not count as territory, per rules version 3, avoiding pass
+  //fights over kos in seki. If false, such points count as under rules version 2. Also applies to
+  //nn featurization of the territory. No effect under any other scoring/tax rules combination.
+  pub exclude_territory_adjacent_to_atari: bool,
+}
+
+impl BoardHistoryModes {
+  /// upstream: BoardHistoryModes::BoardHistoryModes (boardhistory.cpp)
+  pub fn new() -> BoardHistoryModes {
+    BoardHistoryModes {
+      always_compute_pass_alive_under_suicide_rules: false,
+      exclude_territory_adjacent_to_atari: false,
+    }
+  }
+
+  /// upstream: BoardHistoryModes::BoardHistoryModes (boardhistory.cpp)
+  // PORT NOTE: (bool alwaysPassAliveSuicide, bool excludeTerritoryAdjAtari) -> new_full (PORTING.md Appendix B).
+  pub fn new_full(always_pass_alive_suicide: bool, exclude_territory_adj_atari: bool) -> BoardHistoryModes {
+    BoardHistoryModes {
+      always_compute_pass_alive_under_suicide_rules: always_pass_alive_suicide,
+      exclude_territory_adjacent_to_atari: exclude_territory_adj_atari,
+    }
+  }
+}
+
+/// upstream: BoardHistoryModes::operator==, BoardHistoryModes::operator!= (boardhistory.cpp)
+/// PORT NOTE: `!=` is upstream's `!(*this == other)`, which is PartialEq's default `ne`.
+impl PartialEq for BoardHistoryModes {
+  fn eq(&self, other: &BoardHistoryModes) -> bool {
+    self.always_compute_pass_alive_under_suicide_rules == other.always_compute_pass_alive_under_suicide_rules
+      && self.exclude_territory_adjacent_to_atari == other.exclude_territory_adjacent_to_atari
   }
 }
 
@@ -58,6 +109,11 @@ pub struct BoardHistory {
   pub assume_multiple_starting_black_moves_are_handicap: bool,
   pub white_has_moved: bool,
   pub override_num_handicap_stones: i32,
+
+  //Modes controlling how derived computations are performed (see BoardHistoryModes).
+  //Deliberately preserved by clear() - these are modes applying to the whole session of usage of
+  //this history object rather than per-game state, set only via setModes.
+  pub modes: BoardHistoryModes,
 
   pub recent_boards: [Board; BoardHistory::NUM_RECENT_BOARDS as usize],
   pub current_recent_board_idx: i32,
@@ -163,6 +219,7 @@ impl BoardHistory {
       assume_multiple_starting_black_moves_are_handicap: false,
       white_has_moved: false,
       override_num_handicap_stones: -1,
+      modes: BoardHistoryModes::new(),
       recent_boards: std::array::from_fn(|_| Board::new()),
       current_recent_board_idx: 0,
       presumed_next_move_pla: P_BLACK,
@@ -198,7 +255,10 @@ impl BoardHistory {
   }
 
   /// upstream: BoardHistory::BoardHistory (boardhistory.cpp)
-  pub fn new_full(board: &Board, pla: Player, r: &Rules, e_phase: i32) -> BoardHistory {
+  //The modes argument is deliberately required, so that every construction site makes an explicit
+  //choice of the BoardHistoryModes. Pass BoardHistoryModes() for plain all-legacy behavior,
+  //or an appropriately resolved value (e.g. from Search::resolveHistoryModes or a governing history/book/game).
+  pub fn new_full(board: &Board, pla: Player, r: &Rules, e_phase: i32, modes_: &BoardHistoryModes) -> BoardHistory {
     let mut s = BoardHistory {
       rules: *r,
       move_history: Vec::new(),
@@ -213,6 +273,7 @@ impl BoardHistory {
       assume_multiple_starting_black_moves_are_handicap: false,
       white_has_moved: false,
       override_num_handicap_stones: -1,
+      modes: *modes_,
       recent_boards: std::array::from_fn(|_| Board::new()),
       current_recent_board_idx: 0,
       presumed_next_move_pla: pla,
@@ -272,6 +333,7 @@ impl BoardHistory {
     self.assume_multiple_starting_black_moves_are_handicap = false;
     self.white_has_moved = false;
     self.override_num_handicap_stones = -1;
+    //Deliberately does NOT reset modes - see boardhistory.h.
 
     //This makes it so that if we ask for recent boards with a lookback beyond what we have a history for,
     //we simply return copies of the starting board.
@@ -351,7 +413,7 @@ impl BoardHistory {
   //Returns a copy of this board history rewound to the initial board, pla, etc, with other fields
   //(such as setInitialTurnNumber, setAssumeMultipleStartingBlackMovesAreHandicap) set identically.
   pub fn copy_to_initial(&self) -> BoardHistory {
-    let mut hist = BoardHistory::new_full(&self.initial_board, self.initial_pla, &self.rules, self.initial_encore_phase);
+    let mut hist = BoardHistory::new_full(&self.initial_board, self.initial_pla, &self.rules, self.initial_encore_phase, &self.modes);
     hist.set_initial_turn_number(self.initial_turn_number);
     hist.set_assume_multiple_starting_black_moves_are_handicap(self.assume_multiple_starting_black_moves_are_handicap);
     hist.set_override_num_handicap_stones(self.override_num_handicap_stones);
@@ -376,6 +438,21 @@ impl BoardHistory {
   pub fn set_override_num_handicap_stones(&mut self, n: i32) {
     self.override_num_handicap_stones = n;
     self.white_handicap_bonus_score = self.compute_white_handicap_bonus() as f32;
+  }
+
+  /// upstream: BoardHistory::setModes (boardhistory.cpp)
+  //Set the BoardHistoryModes. Does not re-adjudicate a game that is already ended and scored.
+  //Changes the result of getSituationRulesAndKoHash - callers responsible for invalidating
+  //anything cached based on that hash (e.g. clearing search).
+  pub fn set_modes(&mut self, modes_: &BoardHistoryModes) {
+    self.modes = *modes_;
+  }
+
+  /// upstream: BoardHistory::suicideLegalForPassAlive (boardhistory.cpp)
+  //The suicide legality that should be passed to Board::calculateArea and calculateIndependentLifeArea
+  //for all pass-alive area computations, taking modes.alwaysComputePassAliveUnderSuicideRules into account.
+  pub fn suicide_legal_for_pass_alive(&self) -> bool {
+    self.rules.multi_stone_suicide_legal || self.modes.always_compute_pass_alive_under_suicide_rules
   }
 }
 
@@ -626,7 +703,7 @@ impl BoardHistory {
       let non_pass_alive_stones = true;
       let safe_big_territories = true;
       let unsafe_big_territories = true;
-      board.calculate_area(area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, self.rules.multi_stone_suicide_legal);
+      board.calculate_area(area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, self.suicide_legal_for_pass_alive());
     } else if self.rules.tax_rule == Rules::TAX_SEKI || self.rules.tax_rule == Rules::TAX_ALL {
       let keep_territories = false;
       let keep_stones = true;
@@ -636,7 +713,8 @@ impl BoardHistory {
         &mut white_minus_black_independent_life_region_count,
         keep_territories,
         keep_stones,
-        self.rules.multi_stone_suicide_legal,
+        self.modes.exclude_territory_adjacent_to_atari,
+        self.suicide_legal_for_pass_alive(),
       );
       if self.rules.tax_rule == Rules::TAX_ALL {
         score -= 2 * white_minus_black_independent_life_region_count;
@@ -681,7 +759,8 @@ impl BoardHistory {
       &mut white_minus_black_independent_life_region_count,
       keep_territories,
       keep_stones,
-      self.rules.multi_stone_suicide_legal,
+      self.modes.exclude_territory_adjacent_to_atari,
+      self.suicide_legal_for_pass_alive(),
     );
 
     for y in 0..board.y_size {
@@ -774,7 +853,7 @@ impl BoardHistory {
     let safe_big_territories = false;
     let unsafe_big_territories = false;
     let mut area: [Color; Board::MAX_ARR_SIZE as usize] = [0; Board::MAX_ARR_SIZE as usize];
-    board.calculate_area(&mut area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, self.rules.multi_stone_suicide_legal);
+    board.calculate_area(&mut area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, self.suicide_legal_for_pass_alive());
 
     for y in 0..board.y_size {
       for x in 0..board.x_size {
@@ -1348,6 +1427,16 @@ impl BoardHistory {
   /// upstream: BoardHistory::getSituationRulesAndKoHash (boardhistory.cpp)
   //Compute a hash that takes into account the full situation, the rules, discretized komi, and any immediate ko prohibitions.
   pub fn get_situation_rules_and_ko_hash(board: &Board, hist: &BoardHistory, next_player: Player, draw_equivalent_wins_for_white: f64) -> Hash128 {
+    BoardHistory::get_situation_rules_and_ko_hash_modes(board, hist, next_player, draw_equivalent_wins_for_white, &hist.modes)
+  }
+
+  /// upstream: BoardHistory::getSituationRulesAndKoHash (boardhistory.cpp)
+  //Same, but hashing as if hist.modes had the given value, for callers
+  //(e.g. nn featurization with a per-query override) that use a different value than the history's own.
+  pub fn get_situation_rules_and_ko_hash_modes(
+    board: &Board, hist: &BoardHistory, next_player: Player, draw_equivalent_wins_for_white: f64,
+    modes: &BoardHistoryModes
+  ) -> Hash128 {
     let x_size: i32 = board.x_size;
     let y_size: i32 = board.y_size;
     let statics = Board::statics();
@@ -1421,6 +1510,20 @@ impl BoardHistory {
       hash ^= Rules::ZOBRIST_FRIENDLY_PASS_OK_HASH;
     }
 
+    //Fold in whether pass-alive computations are being performed as if suicide were legal, when that
+    //differs from what the suicide rule alone would give. When the rules already have suicide legal
+    //the flag is a no-op, and we deliberately don't fold it then, so that caches can be shared.
+    if modes.always_compute_pass_alive_under_suicide_rules && !hist.rules.multi_stone_suicide_legal {
+      hash ^= Rules::ZOBRIST_PASS_ALIVE_UNDER_SUICIDE_HASH;
+    }
+
+    //Fold in whether territory scoring excludes points adjacent to atari, but only under the rules
+    //where the flag has any effect (territory scoring with no seki tax), so that caches can be shared
+    //between the modes under all other rules.
+    if modes.exclude_territory_adjacent_to_atari && hist.rules.scoring_rule == Rules::SCORING_TERRITORY && hist.rules.tax_rule == Rules::TAX_NONE {
+      hash ^= Rules::ZOBRIST_EXCLUDE_TERRITORY_ADJ_ATARI_HASH;
+    }
+
     hash
   }
 }
@@ -1442,6 +1545,7 @@ impl Clone for BoardHistory {
       assume_multiple_starting_black_moves_are_handicap: self.assume_multiple_starting_black_moves_are_handicap,
       white_has_moved: self.white_has_moved,
       override_num_handicap_stones: self.override_num_handicap_stones,
+      modes: self.modes,
       recent_boards: self.recent_boards.clone(),
       current_recent_board_idx: self.current_recent_board_idx,
       presumed_next_move_pla: self.presumed_next_move_pla,

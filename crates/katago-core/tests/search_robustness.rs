@@ -26,6 +26,7 @@ use katago_core::core::commontypes::enabled_t;
 use katago_core::core::global::KataError;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -236,7 +237,7 @@ fn held_root_rc_across_root_filtering_collapse_and_regrowth() {
   params.max_visits = 400;
   let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5);
   let board = Board::new_x_y(5, 5).expect("5x5");
-  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
   let mut search = Box::new(Search::new(&params, e.clone(), "held"));
   search.set_position(P_BLACK, &board, &hist).expect("setPosition");
   run_or_stall_panic(&mut pool, "search 1", search.run_whole_search(P_BLACK)).expect("search 1");
@@ -305,7 +306,7 @@ fn run_whole_search_error_discards_the_tree() {
     params.use_graph_search = graph;
     let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5);
     let board = Board::new_x_y(9, 9).expect("9x9");
-    let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
     let mut search = Box::new(Search::new(&params, e.clone(), &format!("err{k}")));
     search.set_position(P_BLACK, &board, &hist).expect("setPosition");
 

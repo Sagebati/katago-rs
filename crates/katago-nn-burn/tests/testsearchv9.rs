@@ -30,6 +30,7 @@ use std::time::Instant;
 use common_search::*;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
@@ -157,7 +158,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let board = board_input(0, 13, 13);
     let next_pla = P_WHITE;
     let rules = Rules::parse_rules("Chinese").unwrap();
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     {
       let mut params = SearchParams::for_tests_v2();
@@ -200,7 +201,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       ("Japanese", true, "Conservative pass true jp rules"),
     ] {
       let rules = Rules::parse_rules(rules_str).unwrap();
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       let mut params = SearchParams::for_tests_v2();
       params.max_visits = 75;
@@ -228,7 +229,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     for conservative_pass in [false, true] {
       let mut rules = Rules::parse_rules("Japanese").unwrap();
       rules.ko_rule = Rules::KO_SPIGHT;
-      let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
       play(&mut hist, &mut board, "G3", P_BLACK);
       play(&mut hist, &mut board, "G1", P_WHITE);
       play(&mut hist, &mut board, "G2", P_BLACK);
@@ -256,7 +257,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let next_pla = P_WHITE;
     let rules = Rules::get_tromp_taylorish();
     let board = board_input(3, 9, 9);
-    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
     let mut avoid_move_until_by_loc: Vec<i32> = vec![0; Board::MAX_ARR_SIZE as usize];
     avoid_move_until_by_loc[loc_of("D5", &board) as usize] = 1;
@@ -311,7 +312,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       coutln!("{}", label);
       let mut rules = Rules::parse_rules("Chinese").unwrap();
       rules.friendly_pass_ok = friendly_pass_ok;
-      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+      let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       let mut params = SearchParams::for_tests_v2();
       params.max_visits = 50;
@@ -333,7 +334,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut board = board_input(5, 8, 8);
     let mut next_pla = P_WHITE;
     let rules = Rules::parse_rules("Chinese").unwrap();
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
     play(&mut hist, &mut board, "E5", P_WHITE);
     next_pla = get_opp(next_pla);
 
@@ -350,7 +351,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut board = board_input(6, 8, 5);
     let mut next_pla = P_WHITE;
     let rules = Rules::parse_rules("Japanese").unwrap();
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
     play(&mut hist, &mut board, "E4", P_WHITE);
     next_pla = get_opp(next_pla);
 
@@ -368,7 +369,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
     let mut next_pla = P_BLACK;
     let mut rules = Rules::parse_rules("Japanese").unwrap();
     rules.komi = -4.0;
-    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+    let mut hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
     play(&mut hist, &mut board, "A1", P_BLACK);
     play(&mut hist, &mut board, "B2", P_WHITE);
     play(&mut hist, &mut board, "C3", P_BLACK);
@@ -390,7 +391,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       let mut rules = Rules::parse_rules("Chinese").unwrap();
       rules.friendly_pass_ok = false;
       rules.komi = 5.5;
-      let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0));
+      let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)));
       play(&mut hist, &mut board, "E5", P_BLACK);
       let next_pla = P_WHITE;
 
@@ -417,7 +418,7 @@ fn run_v9_positions(ctx: &mut Ctx, nn_eval: &Rc<NNEvaluator>) {
       let mut rules = Rules::parse_rules("Chinese").unwrap();
       rules.friendly_pass_ok = false;
       rules.komi = 7.5;
-      let mut hist = Box::new(BoardHistory::new_full(&board, start_pla, &rules, 0));
+      let mut hist = Box::new(BoardHistory::new_full(&board, start_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
       play(&mut hist, &mut board, "pass", start_pla);
       let next_pla = get_opp(start_pla);

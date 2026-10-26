@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/game/rules.cpp, cpp/game/rules.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/game/rules.cpp, cpp/game/rules.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use std::collections::BTreeSet;
 
@@ -57,8 +57,8 @@ impl Rules {
 
   /// upstream: Rules::MIN_USER_KOMI, Rules::MAX_USER_KOMI (rules.h)
   //Min and max acceptable komi in various places involving user input validation
-  pub const MIN_USER_KOMI: f32 = -150.0f32;
-  pub const MAX_USER_KOMI: f32 = 150.0f32;
+  pub const MIN_USER_KOMI: f32 = -400.0f32;
+  pub const MAX_USER_KOMI: f32 = 400.0f32;
 
   /// upstream: Rules::Rules (rules.cpp)
   pub fn new() -> Rules {
@@ -484,6 +484,14 @@ impl Rules {
   /// upstream: Rules::ZOBRIST_FRIENDLY_PASS_OK_HASH (rules.cpp)
   pub const ZOBRIST_FRIENDLY_PASS_OK_HASH: Hash128 = //Based on sha256 hash of Rules::ZOBRIST_FRIENDLY_PASS_OK_HASH
     Hash128::new(0x0113655998ef0a25, 0x99c9d04ecd964874);
+
+  /// upstream: Rules::ZOBRIST_PASS_ALIVE_UNDER_SUICIDE_HASH (rules.cpp)
+  pub const ZOBRIST_PASS_ALIVE_UNDER_SUICIDE_HASH: Hash128 = //Based on sha256 hash of Rules::ZOBRIST_PASS_ALIVE_UNDER_SUICIDE_HASH
+    Hash128::new(0x3094018861134017, 0x706330a293e266aa);
+
+  /// upstream: Rules::ZOBRIST_EXCLUDE_TERRITORY_ADJ_ATARI_HASH (rules.cpp)
+  pub const ZOBRIST_EXCLUDE_TERRITORY_ADJ_ATARI_HASH: Hash128 = //Based on sha256 hash of Rules::ZOBRIST_EXCLUDE_TERRITORY_ADJ_ATARI_HASH
+    Hash128::new(0x02755c10129903ce, 0x786bb096ee2f483d);
 }
 
 /// upstream: Rules::operator==, Rules::operator!= (rules.cpp)
@@ -625,7 +633,7 @@ fn parse_rules_helper(s_orig: &str, allow_komi: bool) -> Result<Rules, KataError
     rules.has_button = false;
     rules.white_handicap_bonus_rule = Rules::WHB_ZERO;
     rules.friendly_pass_ok = true;
-    rules.komi = 7.5f64 as f32;
+    rules.komi = 7.0f64 as f32;
   } else if lowercased == "tromp-taylor" || lowercased == "tromp_taylor" || lowercased == "tromp taylor" || lowercased == "tromptaylor" {
     rules.scoring_rule = Rules::SCORING_AREA;
     rules.ko_rule = Rules::KO_POSITIONAL;

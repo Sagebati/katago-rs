@@ -28,6 +28,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -269,7 +270,7 @@ fn field<'a>(line: &'a str, key: &str) -> &'a str {
 }
 
 fn boxed_history(board: &Board, pla: Player, rules: &Rules) -> Box<BoardHistory> {
-  Box::new(BoardHistory::new_full(board, pla, rules, 0))
+  Box::new(BoardHistory::new_full(board, pla, rules, 0, &BoardHistoryModes::new()))
 }
 
 fn run_case(line: &str) -> String {

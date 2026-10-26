@@ -25,6 +25,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -101,7 +102,7 @@ fn make_bot(env: &Env, p: &SearchParams) -> AsyncBot {
   let mut bot = AsyncBot::new(p, env.nn_eval.clone(), "asyncbotseed");
   let board = Board::new_x_y(9, 9).unwrap();
   let rules = Rules::get_tromp_taylorish();
-  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+  let hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
   bot.set_position(P_BLACK, &board, &hist).unwrap();
   bot.set_always_include_owner_map(true);
   bot

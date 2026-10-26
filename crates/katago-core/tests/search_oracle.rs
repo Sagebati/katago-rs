@@ -50,6 +50,7 @@ use katago_core::core::hash::Hash128;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -802,7 +803,7 @@ struct Runner<'a> {
 }
 
 fn boxed_history(board: &Board, pla: Player, rules: &Rules) -> Box<BoardHistory> {
-  Box::new(BoardHistory::new_full(board, pla, rules, 0))
+  Box::new(BoardHistory::new_full(board, pla, rules, 0, &BoardHistoryModes::new()))
 }
 
 impl<'a> Runner<'a> {

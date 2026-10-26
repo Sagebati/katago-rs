@@ -51,6 +51,7 @@ use katago_core::core::rand::Rand;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -548,7 +549,7 @@ fn basic_search_and_chosen_move_randomization(ctx: &mut Ctx) {
 
   let board = parse_board_input(0, 9, 9);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   run_whole_search(ctx, &mut search, next_pla);
@@ -616,7 +617,7 @@ fn preservation_of_search_tree_across_moves(ctx: &mut Ctx) {
 
   let board = parse_board_input(1, 7, 7);
   let mut next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   {
     //--------------------------------------
@@ -706,7 +707,7 @@ fn pruning_of_search_tree_across_moves_due_to_root_restrictions(ctx: &mut Ctx) {
   let mut board = parse_board_input(2, 7, 7);
   let mut next_pla = P_BLACK;
   let rules = Rules::get_tromp_taylorish();
-  let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
   play(&mut hist, &mut board, "B5", next_pla);
   next_pla = get_opp(next_pla);
   play(&mut hist, &mut board, "pass", next_pla);
@@ -834,7 +835,7 @@ fn search_tree_update_near_terminal_positions(ctx: &mut Ctx) {
   let next_pla = P_WHITE;
   let mut rules = Rules::get_tromp_taylorish();
   rules.multi_stone_suicide_legal = false;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   {
     coutln!("First with no pruning");
@@ -878,7 +879,7 @@ fn root_symmetry_pruning_empty_board(ctx: &mut Ctx) {
 
   let board = parse_board_input(4, 9, 9);
   let mut next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   run_whole_search(ctx, &mut search, next_pla);
@@ -938,7 +939,7 @@ fn root_symmetry_pruning_asymmetry_board(ctx: &mut Ctx) {
 
   let board = parse_board_input(5, 9, 9);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   run_whole_search(ctx, &mut search, next_pla);
@@ -963,7 +964,7 @@ fn root_symmetry_pruning_diagonal_flips_empty_board(ctx: &mut Ctx) {
 
   let board = parse_board_input(6, 9, 9);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   search.set_root_symmetry_pruning_only(&[0, 3, 4, 7]);
@@ -989,7 +990,7 @@ fn root_symmetry_pruning_diagonal_flips_one_diagonal(ctx: &mut Ctx) {
 
   let board = parse_board_input(7, 9, 9);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   search.set_root_symmetry_pruning_only(&[0, 3, 4, 7]);
@@ -1020,7 +1021,7 @@ fn avoid_moves_section(ctx: &mut Ctx, input_idx: usize, root_symmetry_pruning: b
   let avoid_move_until_by_loc = avoid_black_stones_setup(&mut board);
 
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   search.set_root_symmetry_pruning_only(&[0, 3, 4, 7]);
@@ -1084,7 +1085,7 @@ fn non_square_board_search(ctx: &mut Ctx) {
 
   let board = parse_board_input(11, 7, 17);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   run_whole_search(ctx, &mut search, next_pla);
@@ -1169,7 +1170,7 @@ fn search_tolerates_moving_past_game_end(ctx: &mut Ctx) {
 
   let mut board = parse_board_input(12, 7, 7);
   let mut next_pla = P_WHITE;
-  let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   set_position(&mut search, next_pla, &board, &hist);
   set_position(&mut search2, next_pla, &board, &hist);
@@ -1285,7 +1286,7 @@ fn integrity_of_value_bias(ctx: &mut Ctx) {
   let rules = Rules::get_tromp_taylorish();
   let board = parse_board_input(13, 7, 7);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1309,7 +1310,7 @@ fn value_bias_with_ko(ctx: &mut Ctx) {
   let rules = Rules::parse_rules("japanese").unwrap();
   let board = parse_board_input(14, 14, 14);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1333,7 +1334,7 @@ fn analysis_json_section(ctx: &mut Ctx) {
   let rules = Rules::get_tromp_taylorish();
   let board = parse_board_input(15, 7, 7);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1384,7 +1385,7 @@ fn analysis_json_moves_ownership(ctx: &mut Ctx, root_symmetry_pruning: bool, inp
   let rules = Rules::get_tromp_taylorish();
   let board = parse_board_input(input_idx, 7, 7);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1440,7 +1441,7 @@ fn analysis_json_2(ctx: &mut Ctx) {
   let rules = Rules::get_tromp_taylorish();
   let board = parse_board_input(18, 9, 6);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1558,7 +1559,7 @@ fn search_results_at_0_1_2_visits_and_terminal_position(ctx: &mut Ctx) {
   let rules = Rules::get_tromp_taylorish();
   let board = parse_board_input(19, 7, 7);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let _options = PrintTreeOptions::new().max_depth(1);
 
@@ -1695,7 +1696,7 @@ fn coherence_of_search_tree_recursive_walking(ctx: &mut Ctx) {
 
   let board = parse_board_input(20, 7, 7);
   let mut next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   {
     //--------------------------------------
@@ -1783,7 +1784,7 @@ fn avoiding_of_all_or_almost_all_moves(ctx: &mut Ctx) {
     avoid_move_until_by_loc[Board::PASS_LOC as usize] = 3;
 
     let mut next_pla = P_WHITE;
-    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     set_position(&mut search, next_pla, &board, &hist);
     search.set_avoid_move_until_by_loc(&avoid_move_until_by_loc, &avoid_move_until_by_loc);
@@ -1837,7 +1838,7 @@ fn avoiding_of_all_or_almost_all_moves(ctx: &mut Ctx) {
     avoid_move_until_by_loc[Board::PASS_LOC as usize] = 3;
 
     let next_pla = P_WHITE;
-    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     set_position(&mut search, next_pla, &board, &hist);
     search.set_avoid_move_until_by_loc(&avoid_move_until_by_loc, &avoid_move_until_by_loc);
@@ -1871,7 +1872,7 @@ fn avoiding_of_all_or_almost_all_moves(ctx: &mut Ctx) {
     avoid_move_until_by_loc[Board::PASS_LOC as usize] = 10;
 
     let next_pla = P_WHITE;
-    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     set_position(&mut search, next_pla, &board, &hist);
     search.set_avoid_move_until_by_loc(&avoid_move_until_by_loc, &[]);
@@ -1903,7 +1904,7 @@ fn graph_search_section(ctx: &mut Ctx, input_idx: usize, rules: Rules, next_pla:
   params.chosen_move_temperature = 0.0;
   let mut search = new_search(&params, &nn_eval, "autoSearchRandSeed");
   let board = parse_board_input(input_idx, 7, 7);
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1943,7 +1944,7 @@ fn fpu_section(ctx: &mut Ctx, input_idx: usize, by_visited_policy: bool, pow: f6
   let rules = Rules::parse_rules("japanese").unwrap();
   let board = parse_board_input(input_idx, 7, 7);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let options = PrintTreeOptions::new().max_depth(1);
 
@@ -1987,7 +1988,7 @@ fn policy_optimism_with_tree_reuse_section(ctx: &mut Ctx, input_idx: usize, root
   let rules = Rules::parse_rules("japanese").unwrap();
   let board = parse_board_input(input_idx, 5, 5);
   let mut next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
   let options = PrintTreeOptions::new().max_depth(1);
 
   set_position(&mut search, next_pla, &board, &hist);
@@ -2056,7 +2057,7 @@ fn zero_node_search(ctx: &mut Ctx) {
   let rules = Rules::parse_rules("japanese").unwrap();
   let board = parse_board_input(31, 13, 6);
   let next_pla = P_BLACK;
-  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
   let options = PrintTreeOptions::new().max_depth(1);
 
   set_position(&mut search, next_pla, &board, &hist);

@@ -25,6 +25,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::hash::Hash128;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -106,7 +107,7 @@ fn make_search(pool: &mut LocalPool, nn_eval: Rc<NNEvaluator>, pos: i32, max_vis
   let mut rules = Rules::parse_rules("japanese").expect("japanese");
   rules.komi = 6.5;
   let mut board = Board::new_x_y(SZ, SZ).expect("5x5");
-  let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0));
+  let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new()));
   let mut play = |x: i32, y: i32, pla: Player| {
     hist.make_board_move_assume_legal(&mut board, Location::get_loc(x, y, SZ), pla, None, false);
   };

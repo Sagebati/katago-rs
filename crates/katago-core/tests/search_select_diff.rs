@@ -27,6 +27,7 @@ use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
@@ -213,7 +214,7 @@ fn q_search(pool: &mut LocalPool, nn_eval: Rc<NNEvaluator>, pos: i32) -> (Box<Se
   let mut rules = Rules::parse_rules("japanese").expect("japanese");
   rules.komi = 6.5;
   let mut board = Board::new_x_y(5, 5).expect("5x5");
-  let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0));
+  let mut hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new()));
   if pos == 1 {
     hist.make_board_move_assume_legal(&mut board, Location::get_loc(2, 2, 5), P_BLACK, None, false);
   }

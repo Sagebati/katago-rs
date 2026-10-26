@@ -24,6 +24,7 @@ use common::fixture;
 use common::init;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::*;
 
@@ -118,7 +119,7 @@ fn replay(p: &PosSpec) -> Box<(Board, BoardHistory)> {
   for m in &p.setup {
     board.set_stone(Location::get_loc(m.x, m.y, p.xs), m.pla);
   }
-  let mut hist = BoardHistory::new_full(&board, p.initial_pla, &p.rules, p.encore);
+  let mut hist = BoardHistory::new_full(&board, p.initial_pla, &p.rules, p.encore, &BoardHistoryModes::new());
   hist.set_assume_multiple_starting_black_moves_are_handicap(p.amh);
   for m in &p.moves {
     hist.make_board_move_assume_legal(&mut board, loc_of(m, p.xs), m.pla, None, m.pe);
@@ -334,7 +335,7 @@ fn run_scorevalue() {
       "hist" => {
         let b = Board::new_x_y(i(2), i(3)).unwrap();
         let rules = Rules::new_full(i(4), i(5), i(6), false, false, i(7), false, hexf(t[8]));
-        hists.insert(i(1), Box::new(BoardHistory::new_full(&b, P_BLACK, &rules, 0)));
+        hists.insert(i(1), Box::new(BoardHistory::new_full(&b, P_BLACK, &rules, 0, &BoardHistoryModes::new())));
         continue;
       }
       "whiteWinsOfWinner" => (ScoreValue::white_wins_of_winner(i(1) as i8, d(2)), d(3), true),

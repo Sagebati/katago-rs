@@ -26,6 +26,7 @@ use std::rc::Rc;
 use common_search::*;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::nneval::NNResultBuf;
@@ -44,7 +45,7 @@ fn run_nn_on_tiny_board() {
 
   let next_pla: Player = P_WHITE;
   let rules = Rules::get_tromp_taylorish();
-  let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0));
+  let hist = Box::new(BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false)));
 
   //Logger logger(nullptr, logToStdout=true, logToStderr=false, logTime=false): the Logger's lines go to the
   //captured stdout through common_search's logger.

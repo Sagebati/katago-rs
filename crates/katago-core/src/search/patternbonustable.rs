@@ -181,7 +181,8 @@ impl PatternBonusTable {
   pub fn add_bonus_for_game_moves_only_pla(&mut self, game: &BoardHistory, bonus: f64, only_pla: Player) {
     let mut hashes_this_game: BTreeSet<Hash128> = BTreeSet::new();
     let mut board: Board = game.initial_board.clone();
-    let mut hist: Box<BoardHistory> = Box::new(BoardHistory::new_full(&board, game.initial_pla, &game.rules, game.initial_encore_phase));
+    //Replay under the same BoardHistoryModes as the history we're replaying.
+    let mut hist: Box<BoardHistory> = Box::new(BoardHistory::new_full(&board, game.initial_pla, &game.rules, game.initial_encore_phase, &game.modes));
     for i in 0..game.move_history.len() {
       let pla: Player = game.move_history[i].pla;
       let loc: Loc = game.move_history[i].loc;

@@ -529,7 +529,8 @@ Implementers don't edit `port/`: a missing helper is `TODO(port): needs port::<n
 | `Rules::Rules(int kRule, int sRule, int tRule, bool suic, bool button, int whbRule, bool pOk, float km)` | `Rules::new_full` |
 | `Location::toStringMach(Loc, const Board&)` | `Location::to_string_mach_b` (rule 3 result, kept) |
 | `TestCommon::expect(const char*, std::ostringstream&, …)` | `TestCommon::expect_string` |
-| `BoardHistory::BoardHistory(const Board&, Player, const Rules&, int encorePhase)` | `BoardHistory::new_full` |
+| `BoardHistory::BoardHistory(const Board&, Player, const Rules&, int encorePhase, const BoardHistoryModes&)` (v1.18.2 added the required modes) | `BoardHistory::new_full` |
+| `BoardHistoryModes::BoardHistoryModes(bool alwaysComputePassAliveUnderSuicideRules, bool excludeTerritoryAdjacentToAtari)` | `BoardHistoryModes::new_full` |
 | `Global::mapGet(const std::map<std::string,V>&, const char*)` (specialisation with its own message) | `Global::map_get_str` |
 | `Global::contains(const std::vector<A>&, const A&)` / `(const std::set<A>&, …)` / `(const std::map<A,B>&, …)` | `contains_vector` / `contains_set` / `contains_map` |
 | `Global::concat(const char*, int len)` / `concat(const std::set<std::string>&, …)` | `concat_len` / `concat_set` |

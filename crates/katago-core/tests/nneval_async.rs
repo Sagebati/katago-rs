@@ -24,6 +24,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -257,7 +258,7 @@ fn positions(n: usize) -> Vec<Pos> {
     let (xs, ys) = sizes[k % sizes.len()];
     let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5 - k as f32);
     let mut board = Board::new_x_y(xs, ys).unwrap();
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
     let nmoves = 3 + rand.next_uint_n(25);
     for _ in 0..nmoves {
       let pla = hist.presumed_next_move_pla;

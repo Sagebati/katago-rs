@@ -20,6 +20,7 @@ use common::init;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::ScoreValue;
 use katago_core::port::cpp::cpp_max;
@@ -100,7 +101,7 @@ fn run_score_tests() {
     if let Some(k) = komi {
       rules.komi = *k;
     }
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
     hist.end_and_score_game_now(&board);
     print_score_stats(&mut out, &board, &hist);
     cout += name;

@@ -1,4 +1,4 @@
-//! Replays upstream cpp/tests/testboardbasic.cpp @ v1.16.5 against the extracted
+//! Replays upstream cpp/tests/testboardbasic.cpp @ v1.18.2 against the extracted
 //! expected blocks in fixtures/upstream-v1.18.2/unit/testboardbasic/.
 //!
 //! Tests::runBoardReplayTest uses a test-local copy of PlayUtils::chooseRandomLegalMove
@@ -22,6 +22,7 @@ use katago_core::core::rand::Rand;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::graphhash::GraphHash;
 use katago_core::game::rules::Rules;
 use katago_core::strprintf;
@@ -559,7 +560,7 @@ fn board_handicap_test() {
     let mut board = Board::new_x_y(19, 19).unwrap();
     let next_pla: Player = P_BLACK;
     let rules = Rules::parse_rules("chinese").unwrap();
-    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     testAssert!(hist.compute_num_handicap_stones() == 0);
     testAssert!(hist.compute_white_handicap_bonus() == 0);
@@ -585,7 +586,7 @@ fn board_handicap_test() {
     let mut board = Board::new_x_y(19, 19).unwrap();
     let next_pla: Player = P_BLACK;
     let rules = Rules::parse_rules("chinese").unwrap();
-    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     hist.set_assume_multiple_starting_black_moves_are_handicap(true);
     testAssert!(hist.compute_num_handicap_stones() == 0);
@@ -608,7 +609,7 @@ fn board_handicap_test() {
     let mut board = Board::new_x_y(19, 19).unwrap();
     let next_pla: Player = P_BLACK;
     let rules = Rules::parse_rules("aga").unwrap();
-    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     hist.set_assume_multiple_starting_black_moves_are_handicap(true);
     testAssert!(hist.compute_num_handicap_stones() == 0);
@@ -631,7 +632,7 @@ fn board_handicap_test() {
     let mut board = Board::new_x_y(19, 19).unwrap();
     let next_pla: Player = P_BLACK;
     let rules = Rules::parse_rules("aga").unwrap();
-    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     hist.set_assume_multiple_starting_black_moves_are_handicap(true);
     testAssert!(hist.compute_num_handicap_stones() == 0);
@@ -668,7 +669,7 @@ fn board_handicap_test() {
     let mut board = Board::new_x_y(19, 19).unwrap();
     let next_pla: Player = P_BLACK;
     let rules = Rules::parse_rules("chinese").unwrap();
-    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     hist.set_assume_multiple_starting_black_moves_are_handicap(true);
     testAssert!(hist.compute_num_handicap_stones() == 0);
@@ -766,6 +767,17 @@ fn board_stress_test() {
       for i in 0..numBoards {
         testAssert!(is_legal[i] == suc[i]);
         boards[i].check_consistency().unwrap();
+
+        //Periodically validate that regenerating all chain bookkeeping purely from colors[] reproduces a
+        //consistent board with identical stones (and, via checkConsistency, identical pos_hash/liberties).
+        if n % 15 == 0 {
+          let mut regen: Board = boards[i].clone();
+          regen.regen_chains_from_colors();
+          for loc in 0..Board::MAX_ARR_SIZE as Loc {
+            testAssert!(regen.colors[loc as usize] == boards[i].colors[loc as usize]);
+          }
+          regen.check_consistency().unwrap();
+        }
 
         let board: &Board = &boards[i];
         let copy: &Board = &copies[i];
@@ -1176,7 +1188,7 @@ fn board_replay_test() {
     if rand.next_bool(0.2) {
       rules.tax_rule = if rand.next_bool(0.5) { Rules::TAX_SEKI } else if rand.next_bool(0.5) { Rules::TAX_NONE } else { Rules::TAX_ALL };
     }
-    let mut hist = BoardHistory::new_full(&board, pla, &rules, initial_encore_phase);
+    let mut hist = BoardHistory::new_full(&board, pla, &rules, initial_encore_phase, &BoardHistoryModes::new_full(false, false));
     hist.set_initial_turn_number(rand.next_int_a_b(0, 40) as i64);
     hist.set_assume_multiple_starting_black_moves_are_handicap(rand.next_bool(0.5));
 
@@ -1189,7 +1201,7 @@ fn board_replay_test() {
     let pass_prob: f64 = rand.next_double_a_b(0.05, 0.80);
     let num_steps: i32 = rand.next_int_a_b(6, 15);
     for _i in 0..num_steps {
-      let tmp_hist = BoardHistory::new_full(&board, pla, &rules, hist.encore_phase);
+      let tmp_hist = BoardHistory::new_full(&board, pla, &rules, hist.encore_phase, &hist.modes);
       let mut move_loc: Loc;
       if rand.next_bool(pass_prob) {
         move_loc = Board::PASS_LOC;

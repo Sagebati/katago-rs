@@ -27,6 +27,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::desc::ModelDesc;
 use katago_core::neuralnet::nneval::NNEvaluator;
@@ -157,7 +158,7 @@ fn parse_pos(f: &[&str]) -> Box<Pos> {
   let i = |k: usize| -> i32 { f[k].parse().unwrap() };
   let rules = Rules::new_full(i(3), i(4), i(5), i(6) != 0, i(7) != 0, i(8), i(9) != 0, f32::from_bits(hex_u32(f[10])));
   let mut board = Board::new_x_y(i(1), i(2)).unwrap();
-  let mut hist = BoardHistory::new_full(&board, i(11) as Player, &rules, 0);
+  let mut hist = BoardHistory::new_full(&board, i(11) as Player, &rules, 0, &BoardHistoryModes::new());
   let n = i(12) as usize;
   for m in 0..n {
     let loc = i(13 + 2 * m) as Loc;
@@ -435,7 +436,7 @@ fn positions() -> Vec<Pos> {
   for k in 0..6 {
     let rules = Rules::new_full(Rules::KO_POSITIONAL, Rules::SCORING_AREA, Rules::TAX_NONE, true, false, 0, false, 7.5 - k as f32);
     let mut board = Board::new_x_y(19, 19).unwrap();
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new());
     for m in 0..(2 * k + 1) {
       let loc = Location::get_loc(3 + m, 3 + k, 19);
       let pla = hist.presumed_next_move_pla;

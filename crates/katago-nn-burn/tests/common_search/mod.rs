@@ -51,6 +51,7 @@ use katago_core::core::global::KataError;
 use katago_core::core::timer::set_clock;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::neuralnet::desc::ModelDesc;
@@ -982,7 +983,9 @@ impl CompactSgf {
     *board = Board::new_x_y(self.x_size, self.y_size).unwrap();
     let suc = board.set_stones_fail_if_no_libs(&self.placements);
     assert!(suc, "setupInitialBoardAndHist: initial board position contains invalid stones or zero-liberty stones");
-    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0);
+    // TODO(v1.18.2 sync): upstream setupInitialBoardAndHist takes a `const BoardHistoryModes& modes` parameter
+    // (callers pass it through) and passes `modes` here.
+    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, &BoardHistoryModes::new());
     if hist.initial_turn_number < board.num_stones_on_board() as i64 {
       hist.initial_turn_number = board.num_stones_on_board() as i64;
     }

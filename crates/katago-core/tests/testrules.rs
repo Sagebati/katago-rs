@@ -1,4 +1,4 @@
-//! Replays upstream cpp/tests/testrules.cpp @ v1.16.5 (Tests::runRulesTests) against
+//! Replays upstream cpp/tests/testrules.cpp @ v1.18.2 (Tests::runRulesTests) against
 //! fixtures/upstream-v1.18.2/unit/testrules/. Each upstream `{ const char* name = ...; }` block is
 //! one #[test] (the blocks share nothing but `out`, which every `expect` clears), in upstream order.
 //! Board inputs are copied verbatim from the C++ (`R"%%(...)%%"` → `r"..."`); expected blocks are
@@ -248,7 +248,7 @@ fn area_rules() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = true;
     rules.tax_rule = Rules::TAX_NONE;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(1, 1, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(2, 2, board.x_size), P_WHITE);
@@ -305,7 +305,7 @@ fn territory_rules() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = true;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(1, 1, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(2, 2, board.x_size), P_WHITE);
@@ -405,7 +405,7 @@ oooo.o
       let mut board = base_board.clone();
       let mut rules = base_rules;
       rules.ko_rule = Rules::KO_SIMPLE;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Location::get_loc(5, 1, board.x_size), P_BLACK);
       out += "After black ko capture:\n";
@@ -494,7 +494,7 @@ oooo.o
       let mut board = base_board.clone();
       let mut rules = base_rules;
       rules.ko_rule = Rules::KO_POSITIONAL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Location::get_loc(5, 1, board.x_size), P_BLACK);
       out += "After black ko capture:\n";
@@ -586,7 +586,7 @@ oooo.o
       let mut board = base_board.clone();
       let mut rules = base_rules;
       rules.ko_rule = Rules::KO_SITUATIONAL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Location::get_loc(5, 1, board.x_size), P_BLACK);
       out += "After black ko capture:\n";
@@ -672,7 +672,7 @@ oooo.o
       testAssert!(suc);
       let mut rules = base_rules;
       rules.ko_rule = Rules::KO_SPIGHT;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Location::get_loc(5, 1, board.x_size), P_BLACK);
       out += "After black ko capture:\n";
@@ -783,7 +783,7 @@ xx....
       let mut board = base_board.clone();
       let mut rules = base_rules;
       rules.ko_rule = ko_rules_to_test[i];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Location::get_loc(4, 0, board.x_size), P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -839,7 +839,7 @@ xoooxxoo
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(2, 4, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(4, 4, board.x_size), P_WHITE);
@@ -880,7 +880,7 @@ ooooooo
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(3, 1, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(1, 2, board.x_size), P_WHITE);
@@ -925,7 +925,7 @@ ooooooo
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(3, 1, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(1, 2, board.x_size), P_WHITE);
@@ -960,7 +960,7 @@ ooooooo
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -1001,7 +1001,7 @@ fn encore_own_throwin_that_temporarily_breaks_the_ko_shape_should_not_clear_the_
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1042,7 +1042,7 @@ fn encore_ko_recap_block_does_not_stop_non_ko_capture() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1086,7 +1086,7 @@ fn encore_once_only_rule_doesn_t_prevent_the_opponent_moving_there_filling_ko() 
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1159,7 +1159,7 @@ x.oxxxx
       rules.komi = 0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(5, 3, board.x_size), P_BLACK);
@@ -1209,7 +1209,7 @@ x.oxxxx
       rules.komi = 0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(5, 3, board.x_size), P_BLACK);
@@ -1259,7 +1259,7 @@ x.oxxxx
       rules.komi = 0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(5, 3, board.x_size), P_BLACK);
@@ -1311,7 +1311,7 @@ x.oxxxx
       rules.komi = 0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(5, 3, board.x_size), P_BLACK);
@@ -1365,7 +1365,7 @@ o.xoo.x
       rules.komi = -0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(6, 5, board.x_size), P_WHITE);
@@ -1415,7 +1415,7 @@ o.xoo.x
       rules.komi = -0.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_tax_rule];
-      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1439,6 +1439,102 @@ o.xoo.x
       out.push('\n');
     }
     expect(name, &mut out, "fill-seki-liberties-in-encore-2.expected0.txt");
+    cases.ran();
+  }
+}
+}
+
+//Same as the two "Fill seki liberties" tests above but with excludeTerritoryAdjacentToAtari on
+//(rules version 3 scoring) - only TAX_NONE differs from those tests, so only it is run.
+wasm_test! {
+fn fill_seki_liberties_in_main_phase_v3() {
+  init();
+  let mut cases = Cases::new("testrules::fill_seki_liberties_in_main_phase_v3");
+  let mut out = String::new();
+  {
+    let name = "Fill seki liberties in main phase (v3 excludeTerritoryAdjacentToAtari)";
+    let mut board = parse(7, 7, r"
+...oxx.
+oooox.x
+xxxxoxx
+o.xoooo
+.oxox.o
+oxxo.x.
+o.xoo.x
+");
+    let mut rules = Rules::new();
+    rules.ko_rule = Rules::KO_POSITIONAL;
+    rules.scoring_rule = Rules::SCORING_TERRITORY;
+    rules.komi = -0.5f32;
+    rules.multi_stone_suicide_legal = false;
+    rules.tax_rule = Rules::TAX_NONE;
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, true));
+
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(6, 5, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(5, 6, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(0, 4, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(6, 0, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(1, 0, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(4, 5, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(5, 4, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    expect(name, &mut out, "fill-seki-liberties-in-main-phase-v3-excludeterritoryadjacenttoatari.expected0.txt");
+    cases.ran();
+  }
+}
+}
+
+wasm_test! {
+fn fill_seki_liberties_in_encore_2_v3() {
+  init();
+  let mut cases = Cases::new("testrules::fill_seki_liberties_in_encore_2_v3");
+  let mut out = String::new();
+  {
+    let name = "Fill seki liberties in encore 2 (v3 excludeTerritoryAdjacentToAtari)";
+    let mut board = parse(7, 7, r"
+...oxx.
+oooox.x
+xxxxoxx
+o.xoooo
+.oxox.o
+oxxo.x.
+o.xoo.x
+");
+    let mut rules = Rules::new();
+    rules.ko_rule = Rules::KO_POSITIONAL;
+    rules.scoring_rule = Rules::SCORING_TERRITORY;
+    rules.komi = -0.5f32;
+    rules.multi_stone_suicide_legal = false;
+    rules.tax_rule = Rules::TAX_NONE;
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, true));
+
+    mmal!(hist, board, Board::PASS_LOC, P_WHITE);
+    mmal!(hist, board, Board::PASS_LOC, P_BLACK);
+    mmal!(hist, board, Board::PASS_LOC, P_WHITE);
+    mmal!(hist, board, Board::PASS_LOC, P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(6, 5, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(5, 6, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(0, 4, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(6, 0, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(1, 0, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(4, 5, board.x_size), P_BLACK);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    mmal!(hist, board, Location::get_loc(5, 4, board.x_size), P_WHITE);
+    writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
+    expect(name, &mut out, "fill-seki-liberties-in-encore-2-v3-excludeterritoryadjacenttoatari.expected0.txt");
     cases.ran();
   }
 }
@@ -1470,7 +1566,7 @@ fn area_scoring_with_button() {
       rules.multi_stone_suicide_legal = false;
       rules.komi = 2.5f32;
       rules.has_button = button_rule[which_rule];
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       writeln!(out, "Score: {}", ds(final_score_if_game_ended_now(&hist, &board))).unwrap();
       mmal!(hist, board, Location::get_loc(3, 4, board.x_size), P_BLACK);
@@ -1522,7 +1618,7 @@ fn pass_for_ko() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
     let mut hasha: Hash128;
     let hashb: Hash128;
     let mut hashc: Hash128;
@@ -1645,7 +1741,7 @@ ooo....
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = true;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1711,7 +1807,7 @@ oo.....
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = true;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -1752,7 +1848,7 @@ xxxxxxx
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -1805,7 +1901,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_NONE;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1814,7 +1910,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_SEKI;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1823,7 +1919,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_ALL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1832,7 +1928,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_NONE;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1845,7 +1941,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_SEKI;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1858,7 +1954,7 @@ xxxo...oo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_ALL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1901,7 +1997,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_NONE;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1910,7 +2006,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_SEKI;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1919,7 +2015,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_AREA;
       rules.tax_rule = Rules::TAX_ALL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       testAssert!(hist.is_game_finished == true);
@@ -1928,7 +2024,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_NONE;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1941,7 +2037,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_SEKI;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1954,7 +2050,7 @@ xxxoxxxoo
     {
       rules.scoring_rule = Rules::SCORING_TERRITORY;
       rules.tax_rule = Rules::TAX_ALL;
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -1991,7 +2087,7 @@ xxo
     rules.tax_rule = Rules::TAX_NONE;
 
     {
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE);
       hist.print_debug_info(&mut out, &board);
@@ -2010,7 +2106,7 @@ xxo
     {
       out.push_str("-----------------------\n");
       out.push_str("Preventing encore\n");
-      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
       mmal!(hist, board, Board::PASS_LOC, P_BLACK, pe = true);
       mmal!(hist, board, Board::PASS_LOC, P_WHITE, pe = true);
       hist.print_debug_info(&mut out, &board);
@@ -2116,9 +2212,9 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.tax_rule = Rules::TAX_SEKI;
     rules.multi_stone_suicide_legal = false;
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
     rules.multi_stone_suicide_legal = true;
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
 
     expect(name, &mut out, "stress-test-on-tiny-boards.expected0.txt");
     cases.ran();
@@ -2128,11 +2224,11 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, false);
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, false);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, false);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, false);
     rules.multi_stone_suicide_legal = true;
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, false);
-    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0), P_BLACK, false);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, false);
+    stress_test(&mut out, &mut base_rand, empty_board22.clone(), BoardHistory::new_full(&empty_board22, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, false);
 
     expect(name, &mut out, "stress-test-on-tiny-boards.expected1.txt");
     cases.ran();
@@ -2149,7 +2245,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    stress_test(&mut out, &mut base_rand, ko_board71.clone(), BoardHistory::new_full(&ko_board71, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board71.clone(), BoardHistory::new_full(&ko_board71, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
 
     expect(name, &mut out, "stress-test-on-tiny-boards.expected2.txt");
     cases.ran();
@@ -2159,7 +2255,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
     expect(name, &mut out, "stress-test-on-tiny-boards.expected3.txt");
     cases.ran();
 
@@ -2168,7 +2264,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
     expect(name, &mut out, "stress-test-on-tiny-boards.expected4.txt");
     cases.ran();
 
@@ -2178,7 +2274,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
 
     expect(name, &mut out, "stress-test-on-tiny-boards.expected5.txt");
     cases.ran();
@@ -2188,7 +2284,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
     expect(name, &mut out, "stress-test-on-tiny-boards.expected6.txt");
     cases.ran();
 
@@ -2197,7 +2293,7 @@ fn stress_test_on_tiny_boards() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_NONE;
-    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0), P_BLACK, true);
+    stress_test(&mut out, &mut base_rand, ko_board41.clone(), BoardHistory::new_full(&ko_board41, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, true);
     expect(name, &mut out, "stress-test-on-tiny-boards.expected7.txt");
     cases.ran();
 
@@ -2208,7 +2304,7 @@ fn stress_test_on_tiny_boards() {
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
     base_rand.init_seed("123");
-    stress_test(&mut out, &mut base_rand, ko_board71.clone(), BoardHistory::new_full(&ko_board71, P_BLACK, &rules, 0), P_BLACK, false);
+    stress_test(&mut out, &mut base_rand, ko_board71.clone(), BoardHistory::new_full(&ko_board71, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false)), P_BLACK, false);
     expect(name, &mut out, "stress-test-on-tiny-boards.expected8.txt");
     cases.ran();
   }
@@ -2293,8 +2389,8 @@ fn board_history_clearing_directly_to_the_encore() {
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = true;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
-    let mut hist2 = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
+    let mut hist2 = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     let mut copy = board.clone();
     mmal!(hist, copy, Board::PASS_LOC, P_BLACK);
@@ -2344,7 +2440,7 @@ XXXOO.OOO
     rules.komi = 0.5f32;
     rules.multi_stone_suicide_legal = false;
     rules.tax_rule = Rules::TAX_SEKI;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2392,7 +2488,7 @@ xoxx.
     rules.multi_stone_suicide_legal = false;
     rules.komi = 0.0f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(2, 2, board.x_size), P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2433,7 +2529,7 @@ xoxx.
     rules.multi_stone_suicide_legal = false;
     rules.komi = 0.5f32;
     rules.has_button = true;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(2, 2, board.x_size), P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2480,7 +2576,7 @@ xoxx.
     rules.multi_stone_suicide_legal = false;
     rules.komi = 0.0f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(4, 3, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(4, 5, board.x_size), P_WHITE);
@@ -2518,7 +2614,7 @@ xoxx.
     rules.multi_stone_suicide_legal = false;
     rules.komi = 0.5f32;
     rules.has_button = true;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(4, 3, board.x_size), P_BLACK);
     mmal!(hist, board, Location::get_loc(4, 5, board.x_size), P_WHITE);
@@ -2563,7 +2659,7 @@ xoxx.
     rules.multi_stone_suicide_legal = false;
     rules.komi = 0.5f32;
     rules.has_button = true;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Location::get_loc(2, 2, board.x_size), P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2608,7 +2704,7 @@ fn double_ko_death_1a() {
     rules.multi_stone_suicide_legal = false;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -2659,7 +2755,7 @@ fn double_ko_death_1b() {
     rules.multi_stone_suicide_legal = false;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -2710,7 +2806,7 @@ fn double_ko_death_1c() {
     rules.multi_stone_suicide_legal = false;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
@@ -2773,7 +2869,7 @@ fn double_ko_death_2a() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2832,7 +2928,7 @@ fn double_ko_death_2b() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2919,7 +3015,7 @@ fn double_ko_death_2c() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -2974,7 +3070,7 @@ fn double_ko_death_2d() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -3041,7 +3137,7 @@ fn double_ko_death_2e() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -3095,7 +3191,7 @@ fn double_ko_death_2f() {
     rules.multi_stone_suicide_legal = true;
     rules.komi = 6.5f32;
     rules.has_button = false;
-    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     mmal!(hist, board, Board::PASS_LOC, P_BLACK);
     mmal!(hist, board, Board::PASS_LOC, P_WHITE);
@@ -3158,9 +3254,9 @@ fn brute_force_testing_of_ko_hash_table() {
       for j in 0..rules.len() {
         let mut next_pla: Player = P_BLACK;
         let mut board = boards[i].clone();
-        let mut hist = BoardHistory::new_full(&board, next_pla, &rules[j], 0);
+        let mut hist = BoardHistory::new_full(&board, next_pla, &rules[j], 0, &BoardHistoryModes::new_full(false, false));
         let mut board2 = boards[i].clone();
-        let mut hist2 = BoardHistory::new_full(&board2, next_pla, &rules[j], 0);
+        let mut hist2 = BoardHistory::new_full(&board2, next_pla, &rules[j], 0, &BoardHistoryModes::new_full(false, false));
         let mut table = KoHashTable::new();
 
         let mut rand = Rand::new_seed_u64(base_rand.next_uint64());

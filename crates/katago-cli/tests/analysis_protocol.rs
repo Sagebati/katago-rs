@@ -58,7 +58,7 @@ fn protocol_actions_and_errors() {
     r#"{"error":"Could not parse board location: Z99","field":"moves","id":"b3"}"#,
     r#"{"error":"Could not parse player: Q","field":"moves","id":"b4"}"#,
     r#"{"error":"Could not parse rules: nonsense","field":"rules","id":"b5"}"#,
-    r#"{"error":"Must be a integer or half-integer from -150.0 to 150.0","field":"komi","id":"b6"}"#,
+    r#"{"error":"Must be a integer or half-integer from -400.0 to 400.0","field":"komi","id":"b6"}"#,
     r#"{"error":"Invalid turn number: 1","field":"analyzeTurns","id":"b7"}"#,
     r#"{"error":"Illegal move 1: C3","field":"moves","id":"b8"}"#,
     r#"{"error":"Could not set settings: The config for this command cannot have numBots > 0","field":"overrideSettings","id":"b9"}"#,

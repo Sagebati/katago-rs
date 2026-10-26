@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/core/config_parser.cpp, cpp/core/config_parser.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/core/config_parser.cpp, cpp/core/config_parser.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Divergences (port-manifest.toml notes, PORTING.md §13 "IO-skipped"):
 // - core does no file IO. Every place where upstream opens an `ifstream` (`FileUtils::open` in
@@ -702,6 +702,16 @@ impl ConfigParser {
   pub fn contains_any(&self, possible_keys: &[String]) -> bool {
     for key in possible_keys.iter() {
       if self.contains(key) {
+        return true;
+      }
+    }
+    false
+  }
+
+  /// upstream: ConfigParser::containsAnyKeyContaining (config_parser.cpp)
+  pub fn contains_any_key_containing(&self, substring: &str) -> bool {
+    for (k, _v) in self.key_values.iter() {
+      if k.contains(substring) {
         return true;
       }
     }

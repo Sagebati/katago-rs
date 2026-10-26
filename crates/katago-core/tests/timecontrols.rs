@@ -82,7 +82,7 @@ fn make_board(xs: i32, ys: i32, n: i32) -> Board {
 /// temporary of a Board/BoardHistory (4.7 KB / 34 KB) gets its own slot (PORTING.md §13 "wasm stack").
 fn boxed_history(board: Board) -> (Box<Board>, Box<BoardHistory>) {
   let board = Box::new(board);
-  let hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &Rules::new(), 0));
+  let hist = Box::new(BoardHistory::new_full(&board, P_BLACK, &Rules::new(), 0, &BoardHistoryModes::new()));
   (board, hist)
 }
 

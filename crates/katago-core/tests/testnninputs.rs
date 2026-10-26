@@ -28,6 +28,7 @@ use katago_core::core::hash::Hash128;
 use katago_core::core::test::TestCommon;
 use katago_core::game::board::*;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nninputs::MiscNNInputParams;
 use katago_core::neuralnet::nninputs::NNInputs;
@@ -356,7 +357,9 @@ impl CompactSgf {
     *board = Board::new_x_y(self.x_size, self.y_size).unwrap();
     let suc = board.set_stones_fail_if_no_libs(&self.placements);
     assert!(suc, "setupInitialBoardAndHist: initial board position contains invalid stones or zero-liberty stones");
-    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0);
+    // TODO(v1.18.2 sync): upstream setupInitialBoardAndHist takes a `const BoardHistoryModes& modes` parameter and
+    // passes it here; every testnninputs.cpp caller passes BoardHistoryModes(false,false).
+    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, &BoardHistoryModes::new_full(false, false));
     if hist.initial_turn_number < board.num_stones_on_board() as i64 {
       hist.initial_turn_number = board.num_stones_on_board() as i64;
     }
@@ -466,7 +469,7 @@ fn nn_inputs_area_komi() {
   let mut next_pla: Player = P_BLACK;
   let mut initial_rules = Rules::get_tromp_taylorish();
   initial_rules.komi = 2.0;
-  let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0);
+  let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let nn_x_len = 7;
   let nn_y_len = 7;
@@ -546,7 +549,7 @@ fn nn_inputs_rules() {
       for c in 0..NNInputs::NUM_FEATURES_GLOBAL_V7 {
         for j in 0..24 {
           testAssert!(i + j < rules.len());
-          let hist = BoardHistory::new_full(&board, next_pla, &rules[i + j], 0);
+          let hist = BoardHistory::new_full(&board, next_pla, &rules[i + j], 0, &BoardHistoryModes::new_full(false, false));
           let inputs_use_nhwc = true;
           let mut hash = Hash128::default();
           let nn_input_params = params(draw_equivalent_wins_for_white);
@@ -701,7 +704,7 @@ fn nn_inputs_area_feature_and_komi() {
       rules.komi = 6.5f32;
       rules.multi_stone_suicide_legal = false;
       rules.tax_rule = tax_rules[which_rules];
-      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+      let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
       let mut run = |board: &Board, hist: &BoardHistory, inputs_use_nhwc: bool| -> String {
         let mut out = String::new();
@@ -788,7 +791,7 @@ fn nn_inputs_pass_history() {
   let mut board = Board::new_x_y(9, 1).unwrap();
   let mut next_pla: Player = P_BLACK;
   let initial_rules = Rules::get_simple_territory();
-  let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0);
+  let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0, &BoardHistoryModes::new_full(false, false));
 
   let mut run = |board: &Board, hist: &BoardHistory, next_pla: Player, inputs_use_nhwc: bool| -> String {
     let mut out = String::new();
@@ -863,7 +866,7 @@ fn nn_inputs_self_komi_handicap_white_bonus() {
     let mut board = Board::new_x_y(size, size).unwrap();
     let next_pla: Player = P_BLACK;
     let initial_rules = rules[i];
-    let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0);
+    let mut hist = BoardHistory::new_full(&board, next_pla, &initial_rules, 0, &BoardHistoryModes::new_full(false, false));
     cout += "----------------------------------------\n";
     cout += "Black makes 3 moves in a row\n";
     if i >= 3 {
@@ -1098,7 +1101,7 @@ fn passing_hack_condition_based_on_as_is_scoring() {
     cout += "---------------------------------------------------\n";
     cout += &format!("{}\n", rules.to_string());
     let mut board = orig_board.clone();
-    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0);
+    let mut hist = BoardHistory::new_full(&board, P_WHITE, &rules, 0, &BoardHistoryModes::new_full(false, false));
 
     test_scoring(&mut cout, &board, &hist, false);
     // Moves alternate W, B, W, ... starting with white.

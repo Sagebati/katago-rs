@@ -18,6 +18,7 @@ use katago_core::game::board::Board;
 use katago_core::game::board::Loc;
 use katago_core::game::board::Location;
 use katago_core::game::boardhistory::BoardHistory;
+use katago_core::game::boardhistory::BoardHistoryModes;
 use katago_core::game::rules::Rules;
 use katago_core::neuralnet::nneval::NNEvaluator;
 use katago_core::port::executor::Spawner;
@@ -199,7 +200,7 @@ pub fn set_param_base(p: &mut SearchParams, k: &str, v: &str) {
 /// `set_param` applies one fixture `key=value` to the params (`set_param_base`, or a wrapper with more keys).
 pub fn run_search(pool: &mut LocalPool, nn_eval: &Rc<NNEvaluator>, c: &Case, set_param: fn(&mut SearchParams, &str, &str)) -> SearchResult {
   let mut board = Board::new_x_y(c.xs, c.ys).unwrap();
-  let mut hist = Box::new(BoardHistory::new_full(&board, c.ipla, &c.rules, 0));
+  let mut hist = Box::new(BoardHistory::new_full(&board, c.ipla, &c.rules, 0, &BoardHistoryModes::new()));
   for &(loc, pla) in &c.moves {
     assert!(hist.is_legal(&board, loc, pla), "case {}: illegal move {loc}", c.idx);
     hist.make_board_move_assume_legal(&mut board, loc, pla, None, false);
