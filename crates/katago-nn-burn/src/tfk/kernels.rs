@@ -12,8 +12,8 @@ pub(crate) const LIN_T: usize = 16;
 
 /// `out[m, n] = sum_k x[m, k] * w[k, n] (+ bias[n])` for row-major `x` `[m_size, k_size]`, `w` `[k_size, n_size]` and
 /// `out` `[m_size, n_size]`: burn's `Linear` (weight `[d_input, d_output]`) on the `[N * S, C]` tokens. Same blocking
-/// as the NCHW 1x1 GEMM (`conv1x1_gemm`), with the A tile read along k (the token-major layout) and every edge
-/// bounds-checked.
+/// as the NCHW 1x1 GEMM (`conv1x1_gemm`), with the A tile read along k (the token-major layout), the next K step
+/// prefetched into registers during the current one, and every edge bounds-checked.
 #[cube(launch)]
 pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F], m_size: u32, n_size: u32, k_size: u32, #[comptime] has_bias: bool) {
   let m0 = CUBE_POS_X as usize * 64;
@@ -35,29 +35,52 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
   }
   let mut a_reg = Array::<F>::new(4usize);
   let mut b_reg = Array::<F>::new(4usize);
+  // The next K step's tiles, loaded from global memory while the current one is multiplied.
+  let mut a_next = Array::<F>::new(4usize);
+  let mut b_next = Array::<F>::new(4usize);
+  // This thread's elements of the tiles: A 64 rows x 16 k read along k, B 16 k x 64 n read along n.
+  let mm = tid / 16;
+  let ka = tid % 16;
+  let kb = tid / 64;
+  let nn = tid % 64;
+
+  #[unroll]
+  for r in 0..4usize {
+    let mut v = F::new(0.0f32);
+    if m0 + mm + 16 * r < m_size && ka < k_size {
+      v = x[(m0 + mm + 16 * r) * k_size + ka];
+    }
+    a_next[r] = v;
+    let mut u = F::new(0.0f32);
+    if n0 + nn < n_size && kb + 4 * r < k_size {
+      u = w[(kb + 4 * r) * n_size + n0 + nn];
+    }
+    b_next[r] = u;
+  }
 
   for k0 in range_stepped(0usize, k_size, 16usize) {
     #[unroll]
     for r in 0..4usize {
-      let idx = tid + 256 * r;
-      // A: 64 rows x 16 k, read along k (16 consecutive floats per row), stored k-major.
-      let mm = idx / 16;
-      let ka = idx % 16;
-      let mut v = F::new(0.0f32);
-      if m0 + mm < m_size && k0 + ka < k_size {
-        v = x[(m0 + mm) * k_size + k0 + ka];
-      }
-      a_s[ka * 65 + mm] = v;
-      // B: 16 k x 64 n, read along n.
-      let kb = idx / 64;
-      let nn = idx % 64;
-      let mut u = F::new(0.0f32);
-      if n0 + nn < n_size && k0 + kb < k_size {
-        u = w[(k0 + kb) * n_size + n0 + nn];
-      }
-      b_s[idx] = u;
+      a_s[ka * 65 + mm + 16 * r] = a_next[r];
+      b_s[(kb + 4 * r) * 64 + nn] = b_next[r];
     }
     sync_cube();
+    let k1 = k0 + 16;
+    if k1 < k_size {
+      #[unroll]
+      for r in 0..4usize {
+        let mut v = F::new(0.0f32);
+        if m0 + mm + 16 * r < m_size && k1 + ka < k_size {
+          v = x[(m0 + mm + 16 * r) * k_size + k1 + ka];
+        }
+        a_next[r] = v;
+        let mut u = F::new(0.0f32);
+        if n0 + nn < n_size && k1 + kb + 4 * r < k_size {
+          u = w[(k1 + kb + 4 * r) * n_size + n0 + nn];
+        }
+        b_next[r] = u;
+      }
+    }
     #[unroll]
     for kk in 0..16usize {
       #[unroll]
