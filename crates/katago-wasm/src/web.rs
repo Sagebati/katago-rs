@@ -359,11 +359,14 @@ impl NeuralNet for StatsNeuralNet {
   }
 }
 
-/// Setup's NNEvaluatorHost: one network with its weights handed over by the worker.
+/// Setup's NNEvaluatorHost: the network, and the human SL network when one is given, with their weights handed
+/// over by the worker.
 struct WebNNHost {
   device: Device,
   net: NetId,
   bpk: RefCell<Option<Vec<u8>>>,
+  /// The human SL network (`-human-model`): its `-human-model` name, network and weights.
+  human: RefCell<Option<(String, NetId, Vec<u8>)>>,
   stats: Rc<NnStats>,
   /// Batch-shape buckets (WebGPU), also warmed up before the first batch; empty on the CPU.
   batch_buckets: Vec<i32>,
@@ -385,12 +388,19 @@ impl NNEvaluatorHost for WebNNHost {
   fn global_initialize(&self) {}
   fn global_cleanup(&self) {}
   fn load_model(&self, _nn_model_name: &str, nn_model_file: &str) -> Result<(Rc<dyn NeuralNet>, Vec<u8>), KataError> {
-    let bytes = self.bpk.borrow_mut().take().ok_or_else(|| {
-      KataError::StringError(format!(
-        "Error loading or parsing model file {nn_model_file}: katago-wasm loads one network per engine (no human-SL model, no second evaluator)"
-      ))
-    })?;
-    let inner = self.net.neural_net(self.device.clone(), self.batch_buckets.clone()).expect("a compiled-in network (Engine::create checks)");
+    let human = self.human.borrow().as_ref().is_some_and(|(file, _, _)| file == nn_model_file);
+    let (net, bytes) = if human {
+      let (_, net, bytes) = self.human.borrow_mut().take().expect("checked above");
+      (net, bytes)
+    } else {
+      let bytes = self.bpk.borrow_mut().take().ok_or_else(|| {
+        KataError::StringError(format!(
+          "Error loading or parsing model file {nn_model_file}: katago-wasm loads the network and at most one human SL network per engine"
+        ))
+      })?;
+      (self.net, bytes)
+    };
+    let inner = net.neural_net(self.device.clone(), self.batch_buckets.clone()).expect("a compiled-in network (Engine::create checks)");
     Ok((
       Rc::new(StatsNeuralNet {
         inner,
@@ -506,6 +516,8 @@ pub struct Engine {
   reviews: Rc<RefCell<std::collections::HashMap<String, Rc<review::ReviewState>>>>,
   backend: Backend,
   network: String,
+  /// The human SL network loaded beside `network`, if any.
+  human_network: Option<String>,
   config_text: String,
   stats: Rc<NnStats>,
   finished: Promise,
@@ -517,6 +529,8 @@ impl Engine {
   /// - `backend`: "webgpu" | "cpu" (required; the worker resolves "auto");
   /// - `network`: one of [`crate::compiled_networks`] (required); `model` are its `.bpk` weights;
   /// - `expectedSha256`: if given, `model` must hash to it (lowercase hex) or creation fails;
+  /// - `humanNetwork`: the human SL network (b18c384nbt-humanv0) whose weights are `human_model`, loaded as
+  ///   `-human-model` (queries and reviews may then use a `humanSLProfile`);
   /// - `modelFile`: the `-model` name the engine reports (default: the network name);
   /// - `config`: a full config text replacing analysis_example.cfg (then the browser defaults are not applied);
   /// - `overrides`: "key=value, ..." string(s), as `-override-config`;
@@ -526,7 +540,7 @@ impl Engine {
   /// `on_line(line)` receives every response line; `on_log(kind, text)` the log ("error" | "warn" | "info")
   /// and stderr ("stderr"). The model is loaded asynchronously after this returns: the first response
   /// (e.g. to a `query_version` action) arrives once the engine is ready.
-  pub async fn create(options: JsValue, model: Vec<u8>, on_line: Function, on_log: Function) -> Result<Engine, JsError> {
+  pub async fn create(options: JsValue, model: Vec<u8>, on_line: Function, on_log: Function, human_model: Option<Vec<u8>>) -> Result<Engine, JsError> {
     install_globals();
     let backend_name = get_string(&options, "backend")?.ok_or_else(|| JsError::new("option backend is required (webgpu | cpu)"))?;
     let backend = Backend::parse(&backend_name).ok_or_else(|| JsError::new(&format!("unknown backend {backend_name} (webgpu | cpu)")))?;
@@ -541,6 +555,19 @@ impl Engine {
       }
     }
     let model_file = get_string(&options, "modelFile")?.unwrap_or_else(|| network.clone());
+    let human_network = get_string(&options, "humanNetwork")?;
+    let human = match (human_network, human_model) {
+      (None, None) => None,
+      (Some(name), Some(bytes)) => {
+        let net = NetId::from_name(&name)
+          .filter(|net| net.is_compiled())
+          .ok_or_else(|| JsError::new(&format!("human network {name} is not compiled in (this build has: {})", crate::compiled_networks().join(", "))))?;
+        Some((name, net, bytes))
+      }
+      _ => return Err(JsError::new("option humanNetwork and the human model's weights go together")),
+    };
+    let human_model_file = human.as_ref().map(|(name, _, _)| name.clone()).unwrap_or_default();
+    let human_network = human.as_ref().map(|(name, _, _)| name.clone());
     let base = get_string(&options, "config")?;
     let overrides = get_overrides(&options)?;
     let analysis_threads: Option<i32> = match get(&options, "analysisThreads")? {
@@ -570,12 +597,12 @@ impl Engine {
     let (tx, rx) = mpsc::unbounded::<Vec<Vec<u8>>>();
     let stats = Rc::new(NnStats::default());
     let (finished, resolve, reject) = deferred();
-    let nn_host = WebNNHost { device, net, bpk: RefCell::new(Some(model)), stats: stats.clone(), batch_buckets };
+    let nn_host = WebNNHost { device, net, bpk: RefCell::new(Some(model)), human: RefCell::new(human), stats: stats.clone(), batch_buckets };
     let router = review::Router::default();
     let output_router = router.clone();
     let args = AnalysisArgs {
       model_file,
-      human_model_file: String::new(),
+      human_model_file,
       num_analysis_threads_cmdline_specified: analysis_threads.is_some(),
       num_analysis_threads_cmdline: analysis_threads.unwrap_or(0),
       quit_without_waiting,
@@ -611,7 +638,7 @@ impl Engine {
         }
       }
     });
-    Ok(Engine { input: RefCell::new(Some(tx)), router, reviews: Default::default(), backend, network, config_text, stats, finished })
+    Ok(Engine { input: RefCell::new(Some(tx)), router, reviews: Default::default(), backend, network, human_network, config_text, stats, finished })
   }
 
   /// "webgpu" | "cpu"
@@ -650,13 +677,14 @@ impl Engine {
   /// - `options`: katago-ws's analysis settings in camelCase (`maxVisits` 100, `screenVisits` 0 = one pass,
   ///   `refineWinrateDelta` 0.03, `refineScoreDelta` 1, `topK` 10, `analysisPvLen` 15, `includeOwnership`,
   ///   `includeOwnershipStdev`, `includePolicy` (all true), `defaultKomi` 7.5, `defaultBoardSize` 19) and
-  ///   `humanProfile` (dropped with a warning: no human SL model in the browser);
+  ///   `humanProfile` (the human policy of that profile when the engine has a human SL network, `humanNetwork`;
+  ///   dropped with a warning otherwise);
   /// - `on_progress({pass, passes, turnNumber, done, total, analysed})` after each analysed turn.
   ///
   /// Rejects on a bad game or options, an engine error, or [`Engine::cancel_review`] ("review cancelled").
   #[wasm_bindgen(js_name = reviewGame)]
   pub fn review_game(&self, review_id: String, game: JsValue, options: JsValue, on_progress: Function) -> Result<Promise, JsError> {
-    let (game, opts, human_profile) = review::read_args(&game, &options, &self.network)?;
+    let (game, opts, human_profile) = review::read_args(&game, &options, &self.network, self.human_network.as_deref())?;
     let input = self.input.borrow().clone().ok_or_else(|| JsError::new("input is closed"))?;
     if self.reviews.borrow().contains_key(&review_id) {
       return Err(JsError::new(&format!("review {review_id} is already running")));

@@ -203,6 +203,11 @@ web-test *args="":
 web-test-b18 *args="":
     node {{web_pkg}}/test/run.mjs --only b18 {{args}}
 
+# The human SL network as `humanModel` in the browser: reviewGame with a humanProfile against the native run with
+# `-human-model`, and the network left out on the CPU. Needs a build with it: `just web-build -F net-b18c384nbt-humanv0`.
+web-test-human *args="":
+    node {{web_pkg}}/test/run.mjs --only human {{args}}
+
 # Unit tests of the katago-web client against a fake worker (no wasm, no browser). `just web-build` first.
 web-test-client:
     node --test {{web_pkg}}/test/client.test.mjs

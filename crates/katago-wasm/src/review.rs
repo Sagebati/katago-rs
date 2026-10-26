@@ -184,7 +184,12 @@ pub(crate) enum ReviewInput {
 
 /// Reads `reviewGame`'s arguments: the game (SGF text, or an object of KataGo query fields) and the options
 /// (AnnotateOptions in camelCase, plus `humanProfile`). Returns the options with the engine's identity set.
-pub(crate) fn read_args(input: &JsValue, options: &JsValue, network: &str) -> Result<(ReviewInput, AnnotateOptions, Option<String>), JsError> {
+pub(crate) fn read_args(
+  input: &JsValue,
+  options: &JsValue,
+  network: &str,
+  human_network: Option<&str>,
+) -> Result<(ReviewInput, AnnotateOptions, Option<String>), JsError> {
   let input = if let Some(sgf) = input.as_string() {
     ReviewInput::Sgf(sgf)
   } else if input.is_object() {
@@ -211,11 +216,12 @@ pub(crate) fn read_args(input: &JsValue, options: &JsValue, network: &str) -> Re
     }
   }
   let mut opts: AnnotateOptions = serde_json::from_value(opts_json).map_err(|e| JsError::new(&format!("reviewGame: bad options: {e}")))?;
-  // What produced the payload (docs/M6-report.md): this engine, the KataGo version it follows, its network.
-  // No human SL model in the browser: a humanProfile is dropped with a warning, as katago-ws does.
+  // What produced the payload (docs/M6-report.md): this engine, the KataGo version it follows, its network, and
+  // the human SL network when the engine loaded one (`humanModel`): a humanProfile then gets the human policy.
+  // Without one, a humanProfile is dropped with a warning, as katago-ws does.
   opts.engine_name = "katago-rs-wasm".to_owned();
   opts.engine_version = Some(katago_core::command::analysis::KATAGO_VERSION.to_owned());
   opts.model = network.to_owned();
-  opts.human_model = String::new();
+  opts.human_model = human_network.unwrap_or_default().to_owned();
   Ok((input, opts, human_profile))
 }

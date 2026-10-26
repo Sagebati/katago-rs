@@ -98,14 +98,22 @@ export function validatePayload(p, expect = {}) {
   grid("ownership", -100, 100, e.ownership);
   grid("ownership_stdev", 0, 100, e.ownership_stdev);
   grid("policy", 0, 255, e.policy);
-  need(p.human_policy === undefined && p.human_profile === undefined && e.human_model === undefined, "human fields without a human model");
+  if (expect.humanProfile) {
+    // A human SL network was loaded (`humanModel`): the profile's policy at every turn, its prior per move.
+    need(p.human_profile === expect.humanProfile, `human_profile ${p.human_profile}`);
+    if (expect.humanModel) need(e.human_model === expect.humanModel, `engine.human_model ${e.human_model}`);
+    grid("human_policy", 0, 255, true);
+    p.moves.forEach((m, i) => need(prob(m.human_prior) && m.top_moves.every((c) => prob(c.human_prior)), `moves[${i}] human priors`));
+  } else {
+    need(p.human_policy === undefined && p.human_profile === undefined && e.human_model === undefined, "human fields without a human model");
+  }
   return bad;
 }
 
 const FLOATS = {
   value: ["winrate", "best_winrate", "winrate_loss", "mean_winrate_loss"],
   score: ["score_lead", "score_loss", "mean_score_loss"],
-  prior: ["prior"],
+  prior: ["prior", "human_prior"],
   accuracy: ["accuracy"],
 };
 const KIND = Object.fromEntries(Object.entries(FLOATS).flatMap(([k, keys]) => keys.map((x) => [x, k])));
@@ -138,8 +146,8 @@ export function comparePayloads(a, b, tol) {
         }
         const kind = KIND[k];
         if (kind && typeof x[k] === "number" && typeof y[k] === "number") dev(kind, Math.abs(x[k] - y[k]), `${path}.${k}`);
-        else if (["ownership", "ownership_stdev", "policy"].includes(k) && path === "") {
-          const g = k === "policy" ? "policyGrid" : "grid";
+        else if (["ownership", "ownership_stdev", "policy", "human_policy"].includes(k) && path === "") {
+          const g = k === "policy" || k === "human_policy" ? "policyGrid" : "grid";
           if (!Array.isArray(x[k]) || !Array.isArray(y[k]) || x[k].length !== y[k].length) structure.push(`.${k}: turns`);
           else x[k].forEach((t, i) => t.forEach((c, j) => dev(g, Math.abs(c - y[k][i][j]), `.${k}[${i}][${j}]`)));
         } else walk(x[k], y[k], `${path}.${k}`);

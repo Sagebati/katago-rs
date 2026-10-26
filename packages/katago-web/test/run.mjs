@@ -1,7 +1,7 @@
 // Browser tests of katago-web (`just web-test`): a static server for the built package, the upstream query
 // files / config and the goldens, and Playwright driving headless system Chromium.
 //
-//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback,review,b18]
+//   node packages/katago-web/test/run.mjs [--only goldens,cache,kernels,terminate,partials,throughput,fallback,review,b18,human]
 //        [--backends webgpu,cpu] [--goldens basic,symmetry] [--json out.json] [--headed] [--profile dir]
 //
 // `review` (M6, full-game review): reviewGame against the native run of the same deterministic search and against
@@ -10,6 +10,9 @@
 // target/web-test-profile), so after the first run the WebGPU kernels come from the kernel cache.
 // `b18` (M7, kata1-b18c384nbt; not in the default set, `just web-test-b18`): the Eigen b18 goldens, the 105 MB
 // weights cache, the CPU guard, adapter limits, throughput, terminate.
+// `human` (the human SL network as `humanModel`; not in the default set, `just web-test-human`, needs a build with
+// net-b18c384nbt-humanv0): reviewGame with a humanProfile against the native run of the same deterministic search, and
+// the human network left out on the CPU.
 //
 // Env: PLAYWRIGHT (path of the playwright package; default: the sibling ../baduk_review checkout's sai-frontend), CHROMIUM
 // (default /usr/bin/chromium). WebGPU on Linux needs --enable-unsafe-webgpu --enable-features=Vulkan
@@ -535,6 +538,52 @@ if (only.includes("b18")) {
     results.b18.slowCpu = slow;
     check("b18: allowSlowCpu runs it on the CPU", slow.ready.backend === "cpu" && slow.ready.network === B18 && slow.visits >= 4, `ready in ${slow.ready.timings.totalMs.toFixed(0)} ms (weights ${slow.ready.modelSource}, engine start ${slow.ready.timings.engineStartMs.toFixed(0)} ms), ${slow.visits} visits in ${slow.ms.toFixed(0)} ms = ${((slow.rows * 1000) / slow.ms).toFixed(2)} evals/s`);
     for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
+    await context.close();
+  } finally {
+    await noGpu.close();
+  }
+}
+
+if (only.includes("human")) {
+  const HUMAN = "b18c384nbt-humanv0";
+  const nine = fixture("hand-9x9");
+  const native = JSON.parse(readFileSync(join(FIX, "browser/hand-9x9.b6c96-human-deterministic.json"), "utf8"));
+  const expect = { boardSize: 9, moves: nine.moves, maxVisits: 50, engineName: "katago-rs-wasm", model: "g170-b6c96" };
+  // The human policy comes with includePolicy (fixtures/katago-annotate/browser/README.md).
+  const humanOptions = { ...nine.options, includePolicy: true };
+  if (backends.includes("webgpu")) {
+    const browser = await chromium.launch({ executablePath: CHROMIUM, headless: !headed, args: WEBGPU_ARGS });
+    try {
+      const { context, page } = await openPage(browser);
+      // The deterministic search of the native reference, with the human SL network beside g170-b6c96.
+      const r = await call(page, "review", { backend: "webgpu", network: "g170-b6c96", humanNetwork: HUMAN, configUrl: "/upstream/configs/analysis_example.cfg", overrides: [DETERMINISTIC], warmupVisits: 0, reviews: [{ game: nine.sgf, options: humanOptions }] });
+      const rv = r.reviews[0];
+      check("human: humanModel is loaded on WebGPU", r.ready.humanNetwork === HUMAN, `ready.humanNetwork ${r.ready.humanNetwork}`);
+      if (!rv.json) check("human: review with rank_5k", false, rv.error);
+      else {
+        const p = JSON.parse(rv.json);
+        const bad = validatePayload(p, { ...expect, humanProfile: "rank_5k", humanModel: HUMAN });
+        check("human: payload has the profile's human policy", bad.length === 0, bad.slice(0, 5).join("; ") || `human_policy ${p.human_policy.length} turns, engine ${JSON.stringify(p.engine)}`);
+        const c = comparePayloads(native, p, { value: 1e-4, score: 2e-3, prior: 1e-4, accuracy: 5e-2, grid: 1, policyGrid: 2 });
+        check("human: matches the native run (katago-rs, -human-model)", c.structure.length === 0 && c.over.length === 0, `${c.structure.length} structural, ${c.over.length} over tolerance (${[...c.structure, ...c.over].slice(0, 4).join("; ")}); max dev ${JSON.stringify(c.maxDev)}`);
+      }
+      for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
+      await context.close();
+    } finally {
+      await browser.close();
+    }
+  }
+  // No WebGPU: the human network (b18-sized) is not loaded, nor fetched, and the profile is dropped as before.
+  const noGpu = await chromium.launch({ executablePath: CHROMIUM, headless: !headed, args: ["--disable-gpu", "--disable-features=WebGPU"] });
+  try {
+    const { context, page } = await openPage(noGpu);
+    const before = requestLog.filter((p) => p.includes(HUMAN)).length;
+    const r = await call(page, "review", { backend: "cpu", network: "g170-b6c96", humanNetwork: HUMAN, configUrl: "/upstream/configs/analysis_example.cfg", overrides: [DETERMINISTIC], warmupVisits: 0, reviews: [{ game: nine.sgf, options: humanOptions }] });
+    const fetched = requestLog.filter((p) => p.includes(HUMAN)).length - before;
+    check("human: not loaded on the CPU (nor fetched)", r.ready.humanNetwork === undefined && fetched === 0, `ready.humanNetwork ${r.ready.humanNetwork}, ${fetched} download(s)`);
+    const rv = r.reviews[0];
+    const bad = rv.json ? validatePayload(JSON.parse(rv.json), expect) : [rv.error];
+    check("human: without it the profile is dropped", bad.length === 0, bad.slice(0, 5).join("; "));
     await context.close();
   } finally {
     await noGpu.close();

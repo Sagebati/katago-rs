@@ -27,6 +27,11 @@ export interface EngineInitOptions {
    * the CPU with an error naming `cpuModel`, unless this is true. Default false. Ignored when `cpuModel` is given
    * (that replaces the net on the CPU) or the engine runs on WebGPU. */
   allowSlowCpu?: boolean;
+  /** The human SL network (b18c384nbt-humanv0, compiled in), loaded beside `model` as `-human-model`: queries may
+   * then set `overrideSettings.humanSLProfile` with `includeHumanPolicy`, and `reviewGame`'s `humanProfile` gets the
+   * human policy (else it is dropped with a warning). Its network is evaluated once per position. b18-sized: loaded
+   * on WebGPU only, unless `allowSlowCpu` (`ready.humanNetwork` says whether it was). */
+  humanModel?: ModelSpec;
   backend?: BackendChoice;
   /** A full config text replacing upstream's analysis_example.cfg (the browser defaults are then not applied). */
   config?: string;
@@ -63,6 +68,8 @@ export interface ReadyInfo {
   network: string;
   /** The `model` that was asked for, when `cpuModel` replaced it (the engine runs on the CPU). */
   requestedNetwork?: string;
+  /** The human SL network loaded beside `network` (`humanModel`), if any. */
+  humanNetwork?: string;
   /** KataGo version the port follows and its git hash (query_version). */
   version: string;
   gitHash: string;
