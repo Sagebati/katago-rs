@@ -452,7 +452,7 @@ Known divergences are listed with reasons in the test, which fails when one disa
 
 **Random-game generators** for oracles include out-of-turn (board-legal) moves, odd×even board sizes, finished games where pass dominates, and hand-built encore ko fights: plain legal play never reaches those states.
 
-**Feature sets.** katago-nn-burn's default features include all four nets (b6c96, b10c128, b18c384nbt, and the human-SL net b18c384nbt-humanv0, M8); wasm test builds use `--no-default-features -F flex,net-b6c96`.
+**Feature sets.** katago-nn-burn's default features include all four convolutional nets (b6c96, b10c128, b18c384nbt, and the human-SL net b18c384nbt-humanv0, M8); the transformer nets (`net-b10c384h6nbttflrs`, `net-b10c512h8nbt3tflrs-fson-silu-rsnh`, `net-tf3-b11c768`) are opt-in everywhere (katago-nn-burn, katago-cli, katago-wasm: big weights, long release builds), so their tests run with the feature named (`just nn-parity -F net-...`, `just analysis-goldens -F net-b10c384h6nbttflrs`). wasm test builds use `--no-default-features -F flex,net-b6c96`.
 
 **wasm stack.** Debug wasm has a 1 MiB stack, and in debug every temporary of a `BoardHistory` (~34 KB) or `Board` (~4.7 KB) gets its own slot, so boxing at the call site isn't enough: build boxed values in a small helper fn (`boxed_history` in `tests/timecontrols.rs`), and init statics from a small frame. Test macros from `tests/common` are invoked as `crate::report!`.
 

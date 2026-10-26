@@ -21,6 +21,10 @@ net-b6c96 = ["katago-nn-burn/net-b6c96"]
 net-b10c128 = ["katago-nn-burn/net-b10c128"]
 net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
 net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
+# The transformer nets (not default: big weights, long release builds).
+net-b10c384h6nbttflrs = ["katago-nn-burn/net-b10c384h6nbttflrs"]
+net-b10c512h8nbt3tflrs-fson-silu-rsnh = ["katago-nn-burn/net-b10c512h8nbt3tflrs-fson-silu-rsnh"]
+net-tf3-b11c768 = ["katago-nn-burn/net-tf3-b11c768"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }

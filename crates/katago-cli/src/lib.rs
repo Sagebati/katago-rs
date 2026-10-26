@@ -17,10 +17,12 @@
 //! - stdin lines and stdout / stderr writes -> [`stdin_lines`], [`write_stdout_line`], [`write_stderr`] ([`stdio`]).
 //!
 //! Model files: there is no runtime `.bin.gz` loader. `-model` names one of the networks compiled into
-//! katago-nn-burn (`g170-b6c96`, `g170e-b10c128`, `kata1-b18c384nbt`, and the human-SL net
-//! `b18c384nbt-humanv0` for `-human-model` or `-model`), matched on the file name (with or
-//! without directories and `.bin.gz` / `.txt.gz` / `.onnx` / `.bpk`, and the full internal name such as
-//! `g170-b6c96-s175395328-d26788732`; a symlink is also matched by its target's name). The weights are the
+//! katago-nn-burn (`g170-b6c96`, `g170e-b10c128`, `kata1-b18c384nbt`, the human-SL net
+//! `b18c384nbt-humanv0` for `-human-model` or `-model`, and the transformer nets `b10c384h6nbttflrs`,
+//! `b10c512h8nbt3tflrs-fson-silu-rsnh` and `kata1-tf3-b11c768`, features `net-*`), matched on the file name (with
+//! or without directories and `.bin.gz` / `.txt.gz` / `.onnx` / `.bpk`, and the full internal name such as
+//! `g170-b6c96-s175395328-d26788732` or `kata1-tf3-b11c768-s11003M-d5973M-7gres`; a symlink is also matched by its
+//! target's name). The weights are the
 //! `.bpk` generated at build time (`katago_nn_burn::<net>::BPK_PATH`) unless `-model` is itself a `.bpk`
 //! file, which is then read. Any other network is an error (upstream: an unloadable model file).
 //! Not a port of upstream code (idiomatic Rust at the API edge, PORTING.md §1).

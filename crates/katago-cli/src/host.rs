@@ -21,11 +21,14 @@ fn resolve_net_by_name(model_file: &str) -> Option<Net> {
   let stem = [".bin.gz", ".txt.gz", ".onnx", ".bpk", ".gz", ".bin"]
     .iter()
     .fold(base.to_string(), |s, ext| s.strip_suffix(ext).map(str::to_string).unwrap_or(s));
-  let candidates: [(Net, &str); 4] = [
+  let candidates: [(Net, &str); 7] = [
     (Net::B6c96, "g170-b6c96-s175395328-d26788732"),
     (Net::B10c128, "g170e-b10c128-s1141046784-d204142634"),
     (Net::B18c384nbt, "kata1-b18c384nbt"),
     (Net::B18c384nbtHumanv0, "b18c384nbt-humanv0"),
+    (Net::B10c384h6nbttflrs, "b10c384h6nbttflrs"),
+    (Net::B10c512h8nbt3tflrsFsonSiluRsnh, "b10c512h8nbt3tflrs-fson-silu-rsnh-swa"),
+    (Net::Tf3B11c768, "kata1-tf3-b11c768-s11003M-d5973M-7gres"),
   ];
   for (net, full) in candidates {
     if stem == net.name() || stem == full || stem.starts_with(&(net.name().to_string() + "-")) && full.starts_with(&stem) {
@@ -53,7 +56,7 @@ pub fn resolve_net(model_file: &str) -> Result<Net, KataError> {
     )));
   }
   Err(KataError::StringError(format!(
-    "Error loading or parsing model file {model_file}: katago-rs has no runtime .bin.gz loader; -model must name a network compiled into katago-nn-burn (g170-b6c96, g170e-b10c128, kata1-b18c384nbt, b18c384nbt-humanv0)"
+    "Error loading or parsing model file {model_file}: katago-rs has no runtime .bin.gz loader; -model must name a network compiled into katago-nn-burn (g170-b6c96, g170e-b10c128, kata1-b18c384nbt, b18c384nbt-humanv0, b10c384h6nbttflrs, b10c512h8nbt3tflrs-fson-silu-rsnh, kata1-tf3-b11c768)"
   )))
 }
 
@@ -123,5 +126,32 @@ impl NNEvaluatorHost for BurnHost {
   }
   fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
     katago_nn_burn::backend::get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// `-model` names, compiled in or not: the short name, the file name with directories and extensions, and the
+  /// net's full internal name.
+  #[test]
+  fn resolve_net_by_name_knows_every_net() {
+    let cases = [
+      ("tests/models/g170-b6c96-s175395328-d26788732.bin.gz", Net::B6c96),
+      ("g170e-b10c128", Net::B10c128),
+      ("models/kata1-b18c384nbt.bin.gz", Net::B18c384nbt),
+      ("b18c384nbt-humanv0.bpk", Net::B18c384nbtHumanv0),
+      ("models/b10c384h6nbttflrs.bin.gz", Net::B10c384h6nbttflrs),
+      ("b10c512h8nbt3tflrs-fson-silu-rsnh.onnx", Net::B10c512h8nbt3tflrsFsonSiluRsnh),
+      ("b10c512h8nbt3tflrs-fson-silu-rsnh-swa.bin.gz", Net::B10c512h8nbt3tflrsFsonSiluRsnh),
+      ("kata1-tf3-b11c768", Net::Tf3B11c768),
+      ("/nets/kata1-tf3-b11c768-s11003M-d5973M-7gres.bin.gz", Net::Tf3B11c768),
+    ];
+    for (file, net) in cases {
+      assert_eq!(resolve_net_by_name(file), Some(net), "{file}");
+    }
+    assert_eq!(resolve_net_by_name("b11c768h12nbt3tflrs-fson-silu.bin.gz"), None);
+    assert_eq!(resolve_net_by_name("kata1-tf3-b11c768-s1M.bin.gz"), None);
   }
 }

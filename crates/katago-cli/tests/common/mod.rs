@@ -185,8 +185,9 @@ fn run_analysis_inner(
 /// - "score" keys (any key containing `score`/`Score`/`lead`/`Lead`): |a - b| <= SCORE_TOL, the NN tier's
 ///   score tolerance of PORTING.md §13 (≤5e-4 score lead/mean: the score heads are scaled by ~20, so their
 ///   accumulation-order noise is ~20× the value heads');
-/// - weight keys (`weight`, `edgeWeight`, `playSelectionValue`, which scale with visits): |a - b| <=
-///   WEIGHT_REL_TOL * max(1, |gold|);
+/// - weight keys (`weight`, `edgeWeight`, `playSelectionValue`, which scale with visits; and `rawVarTimeLeft`, the
+///   value head's output times varianceTimeMultiplier = 40, tens of turns: its NN noise scales with it, as
+///   nn_parity's varTimeLeft): |a - b| <= WEIGHT_REL_TOL * max(1, |gold|);
 /// - probability keys (`prior`, `policy` entries, `humanPrior`): |a - b| <= min(VALUE_TOL, POLICY_REL_TOL * |gold|)
 ///   (at least 1e-9): absolute 1e-5 above 1e-2, relative 1e-3 below, so a tiny prior cannot drift by
 ///   several times its own size;
@@ -196,6 +197,22 @@ pub const VALUE_TOL: f64 = 1e-5;
 pub const SCORE_TOL: f64 = 5e-4;
 pub const WEIGHT_REL_TOL: f64 = 1e-5;
 pub const POLICY_REL_TOL: f64 = 1e-3;
+
+/// The float tolerances of [`compare_with`]; [`TOL`] is the policy above.
+#[derive(Clone, Copy, Debug)]
+pub struct Tolerances {
+  pub value: f64,
+  pub score: f64,
+  pub weight_rel: f64,
+  pub policy_rel: f64,
+}
+
+pub const TOL: Tolerances = Tolerances {
+  value: VALUE_TOL,
+  score: SCORE_TOL,
+  weight_rel: WEIGHT_REL_TOL,
+  policy_rel: POLICY_REL_TOL,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tok {
@@ -288,7 +305,7 @@ fn same_float_class(a: &str, b: &str) -> bool {
 fn tol_class(key: &str) -> &'static str {
   if key.contains("score") || key.contains("Score") || key.contains("lead") || key.contains("Lead") {
     "score"
-  } else if key == "weight" || key == "edgeWeight" || key == "playSelectionValue" {
+  } else if key == "weight" || key == "edgeWeight" || key == "playSelectionValue" || key == "rawVarTimeLeft" {
     "weight"
   } else if key == "prior" || key == "policy" || key == "humanPrior" || key == "humanPolicy" {
     "policy"
@@ -325,6 +342,11 @@ impl Comparison {
 
 /// Compares one line with its golden line; Err is the first violation.
 pub fn compare_line(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>) -> Result<(), String> {
+  compare_line_with(g, o, max_dev, &TOL)
+}
+
+/// [`compare_line`] with other float tolerances.
+pub fn compare_line_with(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>, tol: &Tolerances) -> Result<(), String> {
   if g == o {
     return Ok(());
   }
@@ -350,10 +372,10 @@ pub fn compare_line(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>) -> Re
             *e = d;
           }
           match tol_class(&key) {
-            "score" => d <= SCORE_TOL,
-            "weight" => d <= WEIGHT_REL_TOL * x.abs().max(1.0),
-            "policy" => d <= (POLICY_REL_TOL * x.abs()).clamp(1e-9, VALUE_TOL),
-            _ => d <= VALUE_TOL,
+            "score" => d <= tol.score,
+            "weight" => d <= tol.weight_rel * x.abs().max(1.0),
+            "policy" => d <= (tol.policy_rel * x.abs()).clamp(1e-9, tol.value),
+            _ => d <= tol.value,
           }
         } else {
           false
@@ -370,6 +392,11 @@ pub fn compare_line(g: &str, o: &str, max_dev: &mut BTreeMap<String, f64>) -> Re
 
 /// Compares `got` with `gold` line by line under the policy above.
 pub fn compare(gold: &[String], got: &[String]) -> Comparison {
+  compare_with(gold, got, &TOL)
+}
+
+/// [`compare`] with other float tolerances.
+pub fn compare_with(gold: &[String], got: &[String], tol: &Tolerances) -> Comparison {
   let mut c = Comparison {
     num_lines: gold.len(),
     byte_identical: gold == got,
@@ -380,7 +407,7 @@ pub fn compare(gold: &[String], got: &[String]) -> Comparison {
     return c;
   }
   for (ln, (g, o)) in gold.iter().zip(got.iter()).enumerate() {
-    if let Err(e) = compare_line(g, o, &mut c.max_dev) {
+    if let Err(e) = compare_line_with(g, o, &mut c.max_dev, tol) {
       c.divergence = Some(format!("line {}, {e}", ln + 1));
       return c;
     }
@@ -439,11 +466,16 @@ pub fn normalize_max_batch_size(line: &str) -> String {
 }
 
 pub fn check_golden(name: &str, query_file: &str, model: &str, extra: &str) -> Comparison {
+  check_golden_with(name, query_file, model, extra, &TOL)
+}
+
+/// [`check_golden`] with other float tolerances.
+pub fn check_golden_with(name: &str, query_file: &str, model: &str, extra: &str, tol: &Tolerances) -> Comparison {
   let gold = read_golden(name);
   assert!(!gold.is_empty(), "{name}: empty golden");
   let t0 = std::time::Instant::now();
   let got = run_analysis(query_file, model, extra);
-  let c = compare(&gold, &got);
+  let c = compare_with(&gold, &got, tol);
   eprintln!(
     "analysis golden {name}: {} lines, {} ({:.1} s)",
     c.num_lines,

@@ -2,7 +2,10 @@
 //! reads its batches (random inputs: the speed does not depend on them).
 //!
 //! cargo run --release -p katago-nn-burn --example bench -F <wgpu-fixed|rocm> -- <flex|wgpu|rocm> \
-//!     <b6|b10|b18|human> [f16|f32] [batches...]
+//!     <b6|b10|b18|human|b10c384tf|b10c512tf|tf3> [f16|f32] [batches...]
+//!
+//! The transformer nets need their feature too (`-F net-b10c384h6nbttflrs`, `net-b10c512h8nbt3tflrs-fson-silu-rsnh`,
+//! `net-tf3-b11c768`).
 //!
 //! `just bench` runs it. `wgpu-fixed` is the browser's kernel set (no autotune); `-F wgpu` adds burn's
 //! autotune. Batches default to 1 8 16 32 64.

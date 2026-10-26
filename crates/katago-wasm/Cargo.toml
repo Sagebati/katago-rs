@@ -22,6 +22,10 @@ net-b18c384nbt = ["katago-nn-burn/net-b18c384nbt"]
 # The human-SL net as the engine's (only) network, with humanSLProfile set in the config or per query
 # (no `-human-model` second evaluator in the browser host). GPU-only in practice, as b18c384nbt; 107 MB.
 net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
+# The two smaller transformer nets (attention blocks), GPU-only in practice like b18c384nbt: b10c384h6nbttflrs (model
+# v15; 47.8 MB .bpk, f32 weights plus its RoPE tables), b10c512h8nbt3tflrs-fson-silu-rsnh (v17; 125.3 MB).
+net-b10c384h6nbttflrs = ["katago-nn-burn/net-b10c384h6nbttflrs"]
+net-b10c512h8nbt3tflrs-fson-silu-rsnh = ["katago-nn-burn/net-b10c512h8nbt3tflrs-fson-silu-rsnh"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }

@@ -24,7 +24,8 @@ parity backend="flex" net="b10":
     cargo run --release -p katago-nn-burn --example parity {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}}
 
 # Native forward-pass throughput, evals/s with one readback per batch (backend: flex | wgpu | rocm; net: b6 | b10 |
-# b18 | human; precision: f32 | f16, GPU only). README "Benchmarks".
+# b18 | human; precision: f32 | f16, GPU only). README "Benchmarks". The transformer nets (b10c384tf | b10c512tf | tf3)
+# need their feature: `cargo run --release -p katago-nn-burn --example bench -F wgpu-fixed,net-b10c384h6nbttflrs -- wgpu b10c384tf`.
 bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
     cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
 
@@ -103,7 +104,8 @@ test-gpu *flags="":
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.18.2/nn).
 # Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
-# b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
+# b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`. The transformer nets need their features:
+# `just nn-parity -F wgpu,net-b10c384h6nbttflrs,net-b10c512h8nbt3tflrs-fson-silu-rsnh,net-tf3-b11c768` (~10 min).
 nn-parity *flags="":
     cargo nextest run --release -p katago-nn-burn --test nn_parity --success-output final {{flags}}
 
@@ -116,6 +118,7 @@ search-smoke *flags="":
 # Analysis goldens (M3, D9): cpp/tests/analysis/*.txt through the ported analysis engine (katago-cli, burn flex,
 # g170-b6c96) vs our Eigen reruns fixtures/upstream-v1.18.2/analysis/*.stdout (structure exact, floats within
 # the comparator's tolerances), plus the protocol tests and the katago-rs binary end to end. Release.
+# `-F net-b10c384h6nbttflrs` adds the transformer-net goldens (~2 min).
 analysis-goldens *flags="":
     cargo nextest run --release -p katago-cli --success-output final {{flags}}
 
@@ -181,7 +184,7 @@ web-build *features="":
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
     entries=()
-    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0; do
+    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0 b10c384h6nbttflrs b10c512h8nbt3tflrs-fson-silu-rsnh; do
         bpk="$nn_out/model/$net.bpk"
         [ -f "$bpk" ] || continue
         sha="$(sha256sum "$bpk" | cut -d' ' -f1)"

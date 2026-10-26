@@ -68,7 +68,7 @@ function sameFloatClass(a, b) {
 
 function tolClass(key) {
   if (key.includes("score") || key.includes("Score") || key.includes("lead") || key.includes("Lead")) return "score";
-  if (key === "weight" || key === "edgeWeight" || key === "playSelectionValue") return "weight";
+  if (key === "weight" || key === "edgeWeight" || key === "playSelectionValue" || key === "rawVarTimeLeft") return "weight";
   if (key === "prior" || key === "policy" || key === "humanPrior" || key === "humanPolicy") return "policy";
   return "value";
 }

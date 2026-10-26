@@ -38,8 +38,8 @@ const KERNEL_CACHE_NAME = "katago-web-kernels-v1";
 const INTERNAL = "__kgw_";
 
 /** Networks that are not usable on the wasm CPU (docs/M7-report.md: b18c384nbt and the b18 human-SL net run ~1 eval/s there, 100 visits
- * take about two minutes): refused on the CPU unless `allowSlowCpu` or replaced by `cpuModel`. */
-const GPU_ONLY_NETWORKS = new Set(["kata1-b18c384nbt", "b18c384nbt-humanv0"]);
+ * take about two minutes; the transformer nets are no faster): refused on the CPU unless `allowSlowCpu` or replaced by `cpuModel`. */
+const GPU_ONLY_NETWORKS = new Set(["kata1-b18c384nbt", "b18c384nbt-humanv0", "b10c384h6nbttflrs", "b10c512h8nbt3tflrs-fson-silu-rsnh"]);
 
 /** The network to run on the CPU: `cpuModel` when given, else `model` if it is practical there (or `allowSlowCpu`). */
 class CpuRefused extends Error {}

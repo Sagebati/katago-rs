@@ -29,6 +29,10 @@ Status:
   1x1 GEMM, f16 (default with `shader-f16`) and fused batch-norm/mish prologues in cubecl. b18c384nbt forward passes
   at 2.5x native KataGo OpenCL FP16 on an RX 6800 XT (1137 vs 457 evals/s at batch 32); a 400-visit b18 search in
   Chromium runs at 461-550 visits/s. Current numbers: [Benchmarks](#benchmarks).
+- Transformer nets (model v15/v17, attention + RMSNorm blocks): b10c384h6nbttflrs, b10c512h8nbt3tflrs-fson-silu-rsnh and
+  the main-run kata1-tf3-b11c768 (opt-in `net-*` features of katago-nn-burn, katago-cli and, for the two smaller ones,
+  katago-wasm), checked against Eigen v1.18.2 on flex, wgpu and rocm (`just nn-parity -F net-...`) and through the
+  analysis engine (`just analysis-goldens -F net-b10c384h6nbttflrs`). Not yet tuned: no fused attention kernels.
 - Not ported: loading the SGF files of the avoid-repeated-moves pattern tables (`avoidSgfPatternDirs`, file IO);
   the keys are read and an error is raised if one is fully configured. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 
