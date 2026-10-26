@@ -32,6 +32,9 @@ pub fn wino_filter_shape(weight: &Shape) -> Shape {
   Shape::new([TILE_POINTS * round_up(weight[1], GEMM_K) * round_up(weight[0], GEMM_N)])
 }
 
+// The fused convs take every tensor (and flag) as its own argument: the extension macro routes each tensor through
+// Fusion, so they cannot be grouped in a struct.
+#[allow(clippy::too_many_arguments)]
 #[backend_extension(Cube, Fusion)]
 pub trait ConvOps: Backend {
   /// Stride-1 "same" 3x3 convolution, no bias. `filter` is [`transform_filter_3x3`]'s output for `oc` output
