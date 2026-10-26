@@ -136,6 +136,5 @@ just parity flex
 
 ## License
 
-MIT ([LICENSE](LICENSE)). Ported code derives from [KataGo](https://github.com/lightvector/KataGo) (MIT,
-© David J Wu and contributors): [LICENSE-KATAGO](LICENSE-KATAGO). Networks are licensed separately by their
-publishers.
+KataGo's licence ([LICENSE](LICENSE), MIT, © David J Wu and contributors): the port derives from
+[KataGo](https://github.com/lightvector/KataGo). Networks are licensed separately by their publishers.

@@ -3,3 +3,5 @@ __pycache__/
 /models/
 /target/
 /build/
+# KataGo writes its GTP logs where it runs (`just bench-upstream`).
+/gtp_logs/
