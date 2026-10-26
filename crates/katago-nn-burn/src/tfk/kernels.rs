@@ -4,8 +4,11 @@
 use burn_cubecl::cubecl;
 use burn_cubecl::cubecl::prelude::*;
 
-/// GEMM block of [`linear_gemm`]: `LIN_M` rows x `LIN_N` output features per cube (16 inputs per shared-memory step),
-/// `LIN_T` x `LIN_T` threads each computing 4 x 4 outputs.
+/// GEMM block of [`linear_gemm`]: `16 * tm` rows (`tm` [`LIN_TM`]) x `LIN_N` output features per cube (16 inputs per
+/// shared-memory step), `LIN_T` x `LIN_T` threads each computing `tm` x 4 outputs. [`linear_gemm_v`]: `LIN_M` rows.
+pub(crate) const LIN_TM: usize = 8;
+/// Rows from which [`linear_gemm`] takes `tm` = [`LIN_TM`] (4 below): about 6 boards.
+pub(crate) const LIN_TM_ROWS: usize = 2048;
 pub(crate) const LIN_M: usize = 64;
 pub(crate) const LIN_N: usize = 64;
 pub(crate) const LIN_T: usize = 16;
@@ -15,8 +18,20 @@ pub(crate) const LIN_T: usize = 16;
 /// as the NCHW 1x1 GEMM (`conv1x1_gemm`), with the A tile read along k (the token-major layout), the next K step
 /// prefetched into registers during the current one, and every edge bounds-checked.
 #[cube(launch)]
-pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F], m_size: u32, n_size: u32, k_size: u32, #[comptime] has_bias: bool) {
-  let m0 = CUBE_POS_X as usize * 64;
+pub(crate) fn linear_gemm<F: Float>(
+  x: &[F],
+  w: &[F],
+  bias: &[F],
+  out: &mut [F],
+  m_size: u32,
+  n_size: u32,
+  k_size: u32,
+  #[comptime] has_bias: bool,
+  #[comptime] tm: usize,
+) {
+  // Rows per cube: 16 threads x `tm` rows each.
+  let bm = 16 * tm;
+  let m0 = CUBE_POS_X as usize * bm;
   let n0 = CUBE_POS_Y as usize * 64;
   let tx = UNIT_POS_X as usize;
   let ty = UNIT_POS_Y as usize;
@@ -25,32 +40,36 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
   let n_size = n_size as usize;
   let k_size = k_size as usize;
 
-  // A is stored k-major with rows of 65: the transposing stores of 16 consecutive k would hit one bank with 64.
-  let mut a_s = Shared::<[F]>::new_slice(16usize * 65usize);
+  // A is stored k-major with rows of bm + 1: the transposing stores of 16 consecutive k would hit one bank otherwise.
+  let a_row = bm + 1;
+  let mut a_s = Shared::<[F]>::new_slice(16usize * (16usize * tm + 1usize));
   let mut b_s = Shared::<[F]>::new_slice(16usize * 64usize);
-  let mut acc = Array::<F>::new(16usize);
+  let mut acc = Array::<F>::new(4usize * tm);
   #[unroll]
-  for i in 0..16usize {
+  for i in 0..4 * tm {
     acc[i] = F::new(0.0f32);
   }
-  let mut a_reg = Array::<F>::new(4usize);
+  let mut a_reg = Array::<F>::new(tm);
   let mut b_reg = Array::<F>::new(4usize);
   // The next K step's tiles, loaded from global memory while the current one is multiplied.
-  let mut a_next = Array::<F>::new(4usize);
+  let mut a_next = Array::<F>::new(tm);
   let mut b_next = Array::<F>::new(4usize);
-  // This thread's elements of the tiles: A 64 rows x 16 k read along k, B 16 k x 64 n read along n.
+  // This thread's elements of the tiles: A bm rows x 16 k read along k, B 16 k x 64 n read along n.
   let mm = tid / 16;
   let ka = tid % 16;
   let kb = tid / 64;
   let nn = tid % 64;
 
   #[unroll]
-  for r in 0..4usize {
+  for r in 0..tm {
     let mut v = F::new(0.0f32);
     if m0 + mm + 16 * r < m_size && ka < k_size {
       v = x[(m0 + mm + 16 * r) * k_size + ka];
     }
     a_next[r] = v;
+  }
+  #[unroll]
+  for r in 0..4usize {
     let mut u = F::new(0.0f32);
     if n0 + nn < n_size && kb + 4 * r < k_size {
       u = w[(kb + 4 * r) * n_size + n0 + nn];
@@ -60,20 +79,26 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
 
   for k0 in range_stepped(0usize, k_size, 16usize) {
     #[unroll]
+    for r in 0..tm {
+      a_s[ka * a_row + mm + 16 * r] = a_next[r];
+    }
+    #[unroll]
     for r in 0..4usize {
-      a_s[ka * 65 + mm + 16 * r] = a_next[r];
       b_s[(kb + 4 * r) * 64 + nn] = b_next[r];
     }
     sync_cube();
     let k1 = k0 + 16;
     if k1 < k_size {
       #[unroll]
-      for r in 0..4usize {
+      for r in 0..tm {
         let mut v = F::new(0.0f32);
         if m0 + mm + 16 * r < m_size && k1 + ka < k_size {
           v = x[(m0 + mm + 16 * r) * k_size + k1 + ka];
         }
         a_next[r] = v;
+      }
+      #[unroll]
+      for r in 0..4usize {
         let mut u = F::new(0.0f32);
         if n0 + nn < n_size && k1 + kb + 4 * r < k_size {
           u = w[(k1 + kb + 4 * r) * n_size + n0 + nn];
@@ -84,12 +109,15 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
     #[unroll]
     for kk in 0..16usize {
       #[unroll]
+      for i in 0..tm {
+        a_reg[i] = a_s[kk * a_row + ty + 16 * i];
+      }
+      #[unroll]
       for i in 0..4usize {
-        a_reg[i] = a_s[kk * 65 + ty + 16 * i];
         b_reg[i] = b_s[kk * 64 + tx + 16 * i];
       }
       #[unroll]
-      for j in 0..4usize {
+      for j in 0..tm {
         #[unroll]
         for i in 0..4usize {
           acc[j * 4 + i] += a_reg[j] * b_reg[i];
@@ -100,7 +128,7 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
   }
 
   #[unroll]
-  for j in 0..4usize {
+  for j in 0..tm {
     #[unroll]
     for i in 0..4usize {
       let m = m0 + ty + 16 * j;

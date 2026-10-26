@@ -125,13 +125,15 @@ impl TfOps for CubeBackend {
       return out;
     }
     assert_eq!(w.dtype, x.dtype, "tf_linear: x {:?}, w {:?}", x.dtype, w.dtype);
+    // 8 rows per thread from a few boards on (more work per shared-memory read), 4 below (enough workgroups).
+    let tm = if m >= LIN_TM_ROWS { LIN_TM } else { 4 };
     macro_rules! launch {
       ($f:ty) => {
         // SAFETY: contiguous buffers of the lengths given; the kernel bounds-checks every edge.
         unsafe {
           linear_gemm::launch::<$f>(
             &x.client,
-            CubeCount::Static(m.div_ceil(LIN_M) as u32, n.div_ceil(LIN_N) as u32, 1),
+            CubeCount::Static(m.div_ceil(16 * tm) as u32, n.div_ceil(LIN_N) as u32, 1),
             CubeDim::new_2d(LIN_T as u32, LIN_T as u32),
             BufferArg::from_raw_parts(x.handle.clone(), len(&x)),
             BufferArg::from_raw_parts(w.handle.clone(), len(&w)),
@@ -141,6 +143,7 @@ impl TfOps for CubeBackend {
             n as u32,
             k as u32,
             has_bias,
+            tm,
           )
         }
       };
