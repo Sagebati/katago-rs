@@ -12,7 +12,7 @@ Every case runs as its own process, exactly:
 
 with COMMON below (deterministic: one analysis thread, one search thread, nnRandomize=false,
 forDeterministicTesting). Each case runs REPS times (MULTI_REPS for multi-line cases, whose output order
-races upstream); every distinct outcome is kept as a variant (the test accepts any of them).
+races upstream; ORDER_REPS for the order corpus); every distinct outcome is kept as a variant (the test accepts any of them).
 
 Recorded per variant: stdout lines, the exit status (as Python's returncode: -6 = SIGABRT), and the
 stderr lines that the test compares (KEEP_STDERR below; the rest is backend-specific log text).
@@ -52,6 +52,8 @@ COMMON = ("logDir=, logTimeStamp=false, numAnalysisThreads=1, numSearchThreadsPe
           "nnRandSeed=analysisTest, forDeterministicTesting=true, maxVisits=8, rootSymmetryPruning=false")
 REPS = 2
 MULTI_REPS = 5
+# the order corpus is all races: sample it harder so rare upstream outcomes are recorded too
+ORDER_REPS = 40
 # stderr lines compared by the test (same regex there)
 KEEP_STDERR = re.compile(r"^(terminate called|  what\(\)|: ERROR|ERROR|: WARNING|WARNING|: Warning|Warning|PARSE ERROR|             |Brief USAGE|For complete USAGE|   analysis|KataGo v|Started, ready|Error)")
 
@@ -93,8 +95,8 @@ def run(case):
     return {"stdout": out, "rc": p.returncode, "stderr": err}
 
 
-def do_case(case):
-    reps = MULTI_REPS if len(case["lines"]) > 1 else REPS
+def do_case(case, multi_reps=MULTI_REPS):
+    reps = multi_reps if len(case["lines"]) > 1 else REPS
     variants = []
     for _ in range(reps):
         v = run(case)
@@ -112,7 +114,7 @@ def main():
     for name in names:
         cases = json.load(open(HERE + "/corpus/" + name + ".json"))
         with cf.ThreadPoolExecutor(jobs) as ex:
-            recs = list(ex.map(do_case, cases))
+            recs = list(ex.map(lambda c: do_case(c, ORDER_REPS if name == "order" else MULTI_REPS), cases))
         with open(HERE + "/expected/" + name + ".jsonl", "w") as f:
             for r in recs:
                 f.write(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n")

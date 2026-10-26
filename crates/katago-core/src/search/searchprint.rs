@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchprint.h, cpp/search/searchprint.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchprint.h, cpp/search/searchprint.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // searchprint.cpp only includes searchprint.h: everything is the header's inline code.
 // PORT NOTE (PORTING.md Appendix B): the fields keep upstream's trailing underscore (`max_depth_`),

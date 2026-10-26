@@ -9,10 +9,11 @@
 //! "The nn cache cannot mix results across featurization modes" (a debugSkipNeuralNet NNEvaluator, as upstream's
 //! TestSearchCommon::startNNEval) and "NN input features 18/19 ..." (fillRowV7 with the mode).
 //!
-//! Not ported here: "Search maintains the invariant ..." (TODO(v1.18.2 sync): needs Search::
-//! resolveExcludeTerritoryAdjacentToAtari, SearchParams::excludeTerritoryAdjacentToAtari and the search/ re-sync;
-//! NNEvaluator::modelPreferExcludeTerritoryAdjacentToAtari is ported), "Books record the BoardHistoryModes ..."
-//! (book/, not ported).
+//! The search/ part: "Search maintains the invariant that its root history's modes always match what its params
+//! and nnEval resolve to" (Search::resolveExcludeTerritoryAdjacentToAtari and the setters re-stamping the root
+//! history's modes, with a debugSkipNeuralNet NNEvaluator).
+//!
+//! Not ported here: "Books record the BoardHistoryModes ..." (book/ is [[ignored]] in port-manifest.toml).
 
 // Test code keeps the shapes of upstream's tests (PORTING.md §11b).
 #![allow(clippy::needless_range_loop, clippy::redundant_clone)]
@@ -37,7 +38,10 @@ use katago_core::neuralnet::nninputs::MiscNNInputParams;
 use katago_core::neuralnet::nninputs::NNInputs;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
+use katago_core::core::commontypes::enabled_t;
 use katago_core::port::executor::Spawner;
+use katago_core::search::search::Search;
+use katago_core::search::searchparams::SearchParams;
 use katago_core::testAssert;
 
 fn parse(x: i32, y: i32, s: &str) -> Board {
@@ -208,10 +212,57 @@ fn exclude_territory_atari_mode_game_tests() {
     cases.ran();
   }
 
-  // TODO(v1.18.2 sync): "Search maintains the invariant that its root history's modes always match what its
-  // params and nnEval resolve to" (needs Search::resolveExcludeTerritoryAdjacentToAtari, SearchParams::
-  // excludeTerritoryAdjacentToAtari, Search::setPosition/setParams/setParamsNoClearing re-stamping the root
-  // history's modes). "Books record the BoardHistoryModes ..." is not ported (book/).
+  //Search maintains the invariant that its root history's modes always match what its params
+  //and nnEval resolve to, regardless of the history set into it.
+  {
+    let mut pool = LocalPool::new();
+    let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
+    let nn_eval = start_nn_eval(
+      &mut pool, &spawner, "", "excludeTerritoryAtariModeTest", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
+      0, true, false, false, true, false
+    );
+    //With no loaded model, auto resolves to false
+    testAssert!(!nn_eval.model_prefer_exclude_territory_adjacent_to_atari());
+
+    let params = SearchParams::for_tests_v2();
+    testAssert!(params.exclude_territory_adjacent_to_atari == enabled_t::Auto);
+
+    {
+      let mut search = Box::new(Search::new(&params, nn_eval.clone(), "excludeTerritoryAtariStampTestSeed"));
+      testAssert!(!search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+      testAssert!(!Search::resolve_exclude_territory_adjacent_to_atari(&params, Some(&nn_eval)));
+
+      //Setting a history with the flag on gets re-stamped to the search's own resolution
+      let hist_flagged = BoardHistory::new_full(&board, P_BLACK, &terr_no_tax_rules, 0, &modes(false, true));
+      search.set_position(P_BLACK, &board, &hist_flagged).unwrap();
+      testAssert!(!search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+
+      //Forcing the param stamps the flag on, even though the last set position had it off
+      let mut params_on = params.clone();
+      params_on.exclude_territory_adjacent_to_atari = enabled_t::True;
+      testAssert!(Search::resolve_exclude_territory_adjacent_to_atari(&params_on, Some(&nn_eval)));
+      search.set_params(&params_on);
+      testAssert!(search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+
+      //And even the no-clearing param setter keeps the invariant
+      search.set_params_no_clearing(&params);
+      testAssert!(!search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+      search.set_params_no_clearing(&params_on);
+      testAssert!(search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+
+      //setPlayerAndClearHistory and setKomiIfNew preserve it too
+      search.set_player_and_clear_history(P_WHITE).unwrap();
+      testAssert!(search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+      search.set_komi_if_new(5.5f32);
+      testAssert!(search.get_root_hist().modes.exclude_territory_adjacent_to_atari);
+    }
+
+    nn_eval.kill_server_threads();
+    pool.run_until_stalled();
+    cases.ran();
+  }
+
+  //Books record the BoardHistoryModes ...: not ported (book/ is [[ignored]]).
 
   //The nn cache cannot mix results across featurization modes: under territory scoring with
   //TaxRule NONE the two modes hash differently (distinct cache entries), and under other rules
@@ -223,10 +274,6 @@ fn exclude_territory_atari_mode_game_tests() {
       &mut pool, &spawner, "", "excludeTerritoryAtariCacheTest", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
       0, true, false, false, true, false
     );
-    // PORT NOTE: this assert is the first check of upstream's "Search maintains the invariant ..." section (its own
-    // startNNEval, same arguments), the only part of it that needs no Search.
-    //With no loaded model, auto resolves to false
-    testAssert!(!nn_eval.model_prefer_exclude_territory_adjacent_to_atari());
 
     let no_override = MiscNNInputParams::new();
     let mut force_on = MiscNNInputParams::new();

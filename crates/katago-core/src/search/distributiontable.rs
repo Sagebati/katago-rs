@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/distributiontable.cpp, cpp/search/distributiontable.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/distributiontable.cpp, cpp/search/distributiontable.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use crate::port::cpp::static_cast_i32_f64;
 

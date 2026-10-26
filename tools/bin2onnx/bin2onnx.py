@@ -891,6 +891,114 @@ class ModelDesc:
         return self.value_head.v_ownership_conv.out_channels
 
 
+# ---------------------------------------------------------------------------
+# Architecture summary (desc.cpp getNumParameters / getSpatialConvDepth / hasAnyNestedBottleneckBlocks), written to
+# the ONNX metadata as upstream's onnxmodelbuilder.cpp writes katago.info.arch.*: ModelDesc::getShortInfoString
+# ("convnet, N params") and getTrunkSpatialConvDepth read them back (crates/katago-core neuralnet/desc.rs).
+# ---------------------------------------------------------------------------
+
+def _np_size(a: Optional[np.ndarray]) -> int:
+    return 0 if a is None else int(a.size)
+
+
+def num_parameters(d) -> int:
+    """`<X>Desc::getNumParameters()` (desc.cpp) for every layer and block desc; None (an absent optional layer, an
+    empty desc upstream) counts 0."""
+    if d is None:
+        return 0
+    if isinstance(d, ConvLayerDesc):
+        return _np_size(d.weights)
+    if isinstance(d, BatchNormLayerDesc):
+        # Count the learnable scale and bias (gamma/beta); mean and variance are running
+        # statistics rather than learned parameters.
+        return (d.num_channels if d.has_scale else 0) + (d.num_channels if d.has_bias else 0)
+    if isinstance(d, (MatMulLayerDesc, MatBiasLayerDesc)):
+        return _np_size(d.weights)
+    if isinstance(d, ActivationLayerDesc):
+        return 0
+    if isinstance(d, ResidualBlockDesc):
+        return (num_parameters(d.pre_bn) + num_parameters(d.regular_conv) + num_parameters(d.mid_bn)
+                + num_parameters(d.final_conv))
+    if isinstance(d, GlobalPoolingResidualBlockDesc):
+        return (num_parameters(d.pre_bn) + num_parameters(d.regular_conv) + num_parameters(d.gpool_conv)
+                + num_parameters(d.gpool_bn) + num_parameters(d.gpool_to_bias_mul) + num_parameters(d.mid_bn)
+                + num_parameters(d.final_conv))
+    if isinstance(d, NestedBottleneckResidualBlockDesc):
+        n = num_parameters(d.pre_bn) + num_parameters(d.pre_conv)
+        for b in d.blocks:
+            n += num_parameters(b)
+        n += num_parameters(d.post_bn) + num_parameters(d.post_conv)
+        return n
+    if isinstance(d, RMSNormLayerDesc):
+        return _np_size(d.gamma) + _np_size(d.beta)
+    if isinstance(d, TransformerRMSNormDesc):
+        return _np_size(d.weight)
+    if isinstance(d, TransformerAttentionDesc):
+        return (num_parameters(d.pre_ln) + num_parameters(d.q_proj) + num_parameters(d.k_proj)
+                + num_parameters(d.v_proj) + num_parameters(d.out_proj)
+                + _np_size(d.rope_freqs))  # learnable RoPE frequencies, empty for fixed/no RoPE
+    if isinstance(d, TransformerFFNDesc):
+        return (num_parameters(d.pre_ln) + num_parameters(d.linear1)
+                + num_parameters(d.linear_gate)  # empty when not using SwiGLU
+                + num_parameters(d.linear2))
+    if isinstance(d, SGFMetadataEncoderDesc):
+        return (num_parameters(d.mul1) + num_parameters(d.bias1) + num_parameters(d.mul2) + num_parameters(d.bias2)
+                + num_parameters(d.mul3))
+    if isinstance(d, TrunkDesc):
+        n = num_parameters(d.initial_conv) + num_parameters(d.initial_matmul)
+        if d.meta_encoder_version > 0:
+            n += num_parameters(d.sgf_metadata_encoder)
+        for b in d.blocks:
+            n += num_parameters(b)
+        # Whichever trunk tip norm is unused has empty parameter vectors, so summing both is safe.
+        n += num_parameters(d.trunk_tip_bn) + num_parameters(d.trunk_tip_rmsnorm)
+        return n
+    if isinstance(d, PolicyHeadDesc):
+        return (num_parameters(d.p1_conv) + num_parameters(d.g1_conv) + num_parameters(d.g1_bn)
+                + num_parameters(d.gpool_to_bias_mul) + num_parameters(d.p1_bn) + num_parameters(d.p2_conv)
+                + num_parameters(d.gpool_to_pass_mul) + num_parameters(d.gpool_to_pass_bias)
+                + num_parameters(d.gpool_to_pass_mul2))  # empty for older model versions
+    if isinstance(d, ValueHeadDesc):
+        return (num_parameters(d.v1_conv) + num_parameters(d.v1_bn) + num_parameters(d.v2_mul)
+                + num_parameters(d.v2_bias) + num_parameters(d.v3_mul) + num_parameters(d.v3_bias)
+                + num_parameters(d.sv3_mul) + num_parameters(d.sv3_bias) + num_parameters(d.v_ownership_conv))
+    if isinstance(d, ModelDesc):
+        # ModelDesc::getNumParameters (no archSummary: computed from the layers)
+        return num_parameters(d.trunk) + num_parameters(d.policy_head) + num_parameters(d.value_head)
+    raise TypeError(f"num_parameters: unexpected desc {type(d).__name__}")
+
+
+def spatial_conv_depth(d) -> float:
+    """`<X>Desc::getSpatialConvDepth()` (desc.cpp); for a TrunkDesc, ModelDesc::getTrunkSpatialConvDepth."""
+    if isinstance(d, ConvLayerDesc):
+        # 1x1 = 0
+        # 3x3 = 1
+        # 5x5 = 2
+        # ...
+        return (d.conv_y + d.conv_x - 2) / 4.0
+    if isinstance(d, (ResidualBlockDesc, GlobalPoolingResidualBlockDesc)):
+        return spatial_conv_depth(d.regular_conv) + spatial_conv_depth(d.final_conv)
+    if isinstance(d, (NestedBottleneckResidualBlockDesc, TrunkDesc)):
+        depth = 0.0
+        depth += spatial_conv_depth(d.pre_conv if isinstance(d, NestedBottleneckResidualBlockDesc) else d.initial_conv)
+        for b in d.blocks:
+            if isinstance(b, TRANSFORMER_BLOCKS):
+                # Transformer blocks don't technically contribute spatial conv depth but in practice
+                # we count it as 2 for things that want to get a crude idea of model size.
+                depth += 2
+            else:
+                depth += spatial_conv_depth(b)
+        if isinstance(d, NestedBottleneckResidualBlockDesc):
+            depth += spatial_conv_depth(d.post_conv)
+        return depth
+    raise TypeError(f"spatial_conv_depth: unexpected desc {type(d).__name__}")
+
+
+def has_any_nested_bottleneck_blocks(desc: "ModelDesc") -> bool:
+    """ModelDesc::hasAnyNestedBottleneckBlocks (desc.cpp): the trunk's own blocks only."""
+    return any(isinstance(b, NestedBottleneckResidualBlockDesc) for b in desc.trunk.blocks)
+
+
 def check_name_valid(name: str):
     """ModelDesc::checkNameValid (desc.cpp)."""
     _check(0 < len(name) <= 96, f"Model name must be 1..96 chars: {name!r}")
@@ -1483,8 +1591,7 @@ def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -
         "outputs": "policy=raw logits [N,P,HW+1] (last=pass); value=raw win/loss/noresult logits; "
                    "scorevalue=raw misc value outputs; ownership=pre-tanh, player-to-move perspective",
     }
-    # Keys added with model version 17 support. Written only for nets that use v17-era features, so
-    # that older nets' exports stay byte-identical; absent means 0.
+    # Keys added with model version 17 support. Written only for nets that use v17-era features; absent means 0.
     t_has_tf = desc.has_any_transformer_blocks
     if (desc.model_version >= 17 or t_has_tf or t.trunk_norm_kind != TRUNK_NORM_KIND_STANDARD
             or desc.prefer_pass_alive_under_suicide_rules or desc.prefer_exclude_territory_adjacent_to_atari):
@@ -1492,8 +1599,15 @@ def build_onnx(desc: ModelDesc, pos_len: int = 19, max_pool_off_board: float = -
             "preferPassAliveUnderSuicideRules": int(desc.prefer_pass_alive_under_suicide_rules),
             "preferExcludeTerritoryAdjacentToAtari": int(desc.prefer_exclude_territory_adjacent_to_atari),
             "trunkNormKind": t.trunk_norm_kind,
-            "hasAnyTransformerBlocks": int(t_has_tf),
         })
+    # The architecture summary (upstream onnxmodelbuilder.cpp's katago.info.arch.* keys), for every net: an ONNX graph
+    # has no layer structure left to recompute these from.
+    meta.update({
+        "trunkSpatialConvDepth": float(spatial_conv_depth(t)),
+        "numParameters": num_parameters(desc),
+        "hasAnyTransformerBlocks": int(t_has_tf),
+        "hasAnyNestedBottleneckBlocks": int(has_any_nested_bottleneck_blocks(desc)),
+    })
     for k, v in meta.items():
         entry = model.metadata_props.add()
         entry.key = k

@@ -4,7 +4,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use burn::prelude::Device;
+use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
+use katago_core::neuralnet::nninterface::BatchPolicy;
 use katago_core::neuralnet::nninterface::NeuralNet;
 use katago_core::port::executor::Spawner;
 use katago_core::program::setup::NNEvaluatorHost;
@@ -115,5 +117,11 @@ impl NNEvaluatorHost for BurnHost {
   }
   fn spawner(&self) -> Rc<dyn Spawner> {
     self.spawner.clone()
+  }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> BatchPolicy {
+    katago_nn_burn::backend::get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    katago_nn_burn::backend::get_num_effective_devices(cfg, gpu_idx_by_server_thread)
   }
 }

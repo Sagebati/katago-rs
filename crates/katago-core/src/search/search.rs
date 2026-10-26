@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/search.cpp, cpp/search/search.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/search.cpp, cpp/search/search.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 //-------------------------------------------------------------------------------------
 //This file contains the main core logic of the search.
@@ -32,7 +32,9 @@ use crate::game::board::Player;
 use crate::game::board::C_EMPTY;
 use crate::game::board::P_BLACK;
 use crate::game::board::P_WHITE;
+use crate::core::commontypes::enabled_t;
 use crate::game::boardhistory::BoardHistory;
+use crate::game::boardhistory::BoardHistoryModes;
 use crate::game::boardhistory::KoHashTable;
 use crate::game::graphhash::GraphHash;
 use crate::game::rules::Rules;
@@ -167,6 +169,10 @@ pub struct Search {
   pub root_board: Board,
   pub root_history: BoardHistory,
   pub root_graph_hash: Hash128,
+  //Hash of the search params, folded into the eval cache key so that cached search results are not shared
+  //across different params (the eval cache persists across param changes and, in the analysis engine, is
+  //shared across threads that may be running with different params). Recomputed at the start of each search.
+  pub eval_cache_params_hash: Hash128,
   pub root_hint_loc: Loc,
 
   //External user-specified moves that are illegal or that should be nontrivially searched, and the number of turns for which they should
@@ -314,6 +320,8 @@ impl Search {
       root_board: Board::new(),
       root_history: BoardHistory::new(),
       root_graph_hash: Hash128::default(),
+      // PORT NOTE: not in upstream's init list (default-constructed Hash128, zero).
+      eval_cache_params_hash: Hash128::default(),
       root_hint_loc: Board::NULL_LOC,
       avoid_move_until_by_loc_black: Vec::new(),
       avoid_move_until_by_loc_white: Vec::new(),
@@ -383,6 +391,7 @@ impl Search {
     // mutex_pool_num_mutexes initializer above.
 
     s.root_history.clear(&s.root_board, s.root_pla, &Rules::new(), 0);
+    s.apply_history_modes_to_root_history();
     s.root_ko_hash_table.recompute(&s.root_history)?;
     Ok(s)
   }
@@ -419,6 +428,54 @@ impl Search {
     NNPos::loc_to_pos(move_loc, self.root_board.x_size, self.nn_x_len, self.nn_y_len)
   }
 
+  /// upstream: Search::resolveAlwaysComputePassAliveUnderSuicideRules (search.cpp)
+  //Resolve a false/auto/true alwaysComputePassAliveUnderSuicideRules setting against what a neural net
+  //declares that it expects. Auto resolves to the net's declaration (false if nnEval is NULL).
+  pub fn resolve_always_compute_pass_alive_under_suicide_rules(params: &SearchParams, nn_eval: Option<&NNEvaluator>) -> bool {
+    if params.always_compute_pass_alive_under_suicide_rules == enabled_t::True {
+      return true;
+    }
+    if params.always_compute_pass_alive_under_suicide_rules == enabled_t::False {
+      return false;
+    }
+    nn_eval.is_some() && nn_eval.expect("checked is_some").model_prefer_pass_alive_under_suicide_rules()
+  }
+
+  /// upstream: Search::resolveExcludeTerritoryAdjacentToAtari (search.cpp)
+  //Same, for the excludeTerritoryAdjacentToAtari setting.
+  pub fn resolve_exclude_territory_adjacent_to_atari(params: &SearchParams, nn_eval: Option<&NNEvaluator>) -> bool {
+    if params.exclude_territory_adjacent_to_atari == enabled_t::True {
+      return true;
+    }
+    if params.exclude_territory_adjacent_to_atari == enabled_t::False {
+      return false;
+    }
+    nn_eval.is_some() && nn_eval.expect("checked is_some").model_prefer_exclude_territory_adjacent_to_atari()
+  }
+
+  /// upstream: Search::resolveHistoryModes (search.cpp)
+  //Resolve all the BoardHistoryModes settings at once.
+  pub fn resolve_history_modes(params: &SearchParams, nn_eval: Option<&NNEvaluator>) -> BoardHistoryModes {
+    BoardHistoryModes::new_full(
+      Search::resolve_always_compute_pass_alive_under_suicide_rules(params, nn_eval),
+      Search::resolve_exclude_territory_adjacent_to_atari(params, nn_eval),
+    )
+  }
+
+  /// upstream: Search::applyHistoryModesToRootHistory (search.cpp)
+  //Enforce the invariant that rootHistory's modes always match what searchParams and nnEvaluator
+  //resolve to, regardless of any history set into this Search.
+  //Clears search if this changes the modes, since all graph hashes and in-tree adjudication change.
+  //Called by every setter that installs or rebuilds rootHistory or changes params or nnEvaluator.
+  pub(crate) fn apply_history_modes_to_root_history(&mut self) {
+    let m: BoardHistoryModes = Search::resolve_history_modes(&self.search_params, Some(&*self.nn_evaluator));
+    if self.root_history.modes != m {
+      //Changing the modes changes graph hashes and in-tree adjudication, so no search state can be kept.
+      self.clear_search();
+      self.root_history.set_modes(&m);
+    }
+  }
+
   /// upstream: Search::setPosition (search.cpp)
   //Clear all results of search and sets a new position or something else
   /// PORT NOTE: Result because KoHashTable::recompute can throw.
@@ -428,6 +485,7 @@ impl Search {
     self.pla_that_search_is_for = C_EMPTY;
     self.root_board = board.clone();
     self.root_history = history.clone();
+    self.apply_history_modes_to_root_history();
     self.root_ko_hash_table.recompute(&self.root_history)?;
     self.avoid_move_until_by_loc_black.clear();
     self.avoid_move_until_by_loc_white.clear();
@@ -447,6 +505,7 @@ impl Search {
     let encore_phase: i32 = self.root_history.encore_phase;
     self.root_history.clear(&self.root_board, self.root_pla, &rules, encore_phase);
     self.root_history.set_assume_multiple_starting_black_moves_are_handicap(assume_multiple_starting_black_moves_are_handicap);
+    self.apply_history_modes_to_root_history();
 
     self.root_ko_hash_table.recompute(&self.root_history)?;
 
@@ -473,6 +532,7 @@ impl Search {
       self.clear_search();
       self.root_history.set_komi(new_komi);
     }
+    self.apply_history_modes_to_root_history();
   }
 
   /// upstream: Search::setAvoidMoveUntilByLoc (search.cpp)
@@ -521,12 +581,16 @@ impl Search {
   pub fn set_params(&mut self, params: &SearchParams) {
     self.clear_search();
     self.search_params = params.clone();
+    self.apply_history_modes_to_root_history();
   }
 
   /// upstream: Search::setParamsNoClearing (search.cpp)
   //Does not clear search
   pub fn set_params_no_clearing(&mut self, params: &SearchParams) {
     self.search_params = params.clone();
+    //Deliberately overrides the "no clearing" if the resolved pass-alive mode actually changes,
+    //since in that case no search state is valid to keep.
+    self.apply_history_modes_to_root_history();
   }
 
   /// upstream: Search::setExternalPatternBonusTable (search.cpp)
@@ -579,6 +643,7 @@ impl Search {
         return Err(KataError::StringError("Search::setNNEval - humanEval has different nnXLen or nnYLen".to_string()));
       }
     }
+    self.apply_history_modes_to_root_history();
     Ok(())
   }
 
@@ -1063,6 +1128,10 @@ impl Search {
       ));
     }
 
+    //Invariant: every setter that installs or rebuilds rootHistory or changes params/nnEvaluator
+    //re-stamps this flag, so it should always be consistent by the time a search begins.
+    testAssert!(self.root_history.modes == Search::resolve_history_modes(&self.search_params, Some(&*self.nn_evaluator)));
+
     self.root_board.check_consistency()?;
 
     self.num_searches_begun += 1;
@@ -1186,6 +1255,14 @@ impl Search {
       self.root_graph_hash = Hash128::default();
     }
 
+    //Precompute the params hash once per search (params are constant during a search) so it can be cheaply
+    //folded into every eval cache lookup, keeping cached search results from leaking across different params.
+    if self.search_params.use_eval_cache && self.search_params.use_graph_search {
+      self.eval_cache_params_hash = self.search_params.get_hash();
+    } else {
+      self.eval_cache_params_hash = Hash128::default();
+    }
+
     if self.root_node.is_none() {
       //Avoid storing the root node in the nodeTable, guarantee that it never is part of a cycle, allocate it directly.
       //Also force that it is non-terminal.
@@ -1196,7 +1273,7 @@ impl Search {
       self.root_node = Some(self.node_arena.alloc(|idx| SearchNode::new(idx, root_pla, force_non_terminal, mutex_idx, root_graph_hash)));
       if self.search_params.use_eval_cache && self.search_params.use_graph_search && self.eval_cache.is_some() && self.mirroring_pla == C_EMPTY {
         let root_node: Rc<SearchNode> = self.node_arena.get(self.root_node.expect("allocated above"));
-        *root_node.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(root_node.graph_hash);
+        *root_node.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(self.get_eval_cache_key(root_node.graph_hash));
       }
     } else {
       //If the root node has any existing children, then prune things down if there are moves that should not be allowed at the root.
@@ -1318,6 +1395,13 @@ impl Search {
     thread.rand.next_uint() & (self.mutex_pool_num_mutexes - 1)
   }
 
+  /// upstream: Search::getEvalCacheKey (search.h)
+  // Key to look up or store a node in the eval cache so that distinct params never share cached search results.
+  #[inline]
+  pub(crate) fn get_eval_cache_key(&self, graph_hash: Hash128) -> Hash128 {
+    graph_hash ^ self.eval_cache_params_hash
+  }
+
   /// upstream: Search::allocateOrFindNode (search.cpp)
   //Must be called AFTER making the bestChildMoveLoc in the thread board and hist.
   pub(crate) fn allocate_or_find_node(
@@ -1390,7 +1474,7 @@ impl Search {
         }
 
         if self.search_params.use_eval_cache && self.search_params.use_graph_search && self.eval_cache.is_some() && self.mirroring_pla == C_EMPTY {
-          *new_child.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(new_child.graph_hash);
+          *new_child.eval_cache_entry.borrow_mut() = self.eval_cache.as_ref().expect("checked is_some").find(self.get_eval_cache_key(new_child.graph_hash));
         }
 
         if let Some(pattern_bonus_table) = &self.pattern_bonus_table {
@@ -1587,7 +1671,7 @@ impl Search {
         let is_root_node: bool = Some(node.idx) == self.root_node;
         self.eval_cache.as_ref().expect("recursivelyRecordEvalCache needs an evalCache").update(
           &self.node_arena,
-          node.graph_hash,
+          self.get_eval_cache_key(node.graph_hash),
           node,
           self.search_params.eval_cache_min_visits,
           is_root_node,
@@ -1606,7 +1690,7 @@ impl Search {
     let non_pass_alive_stones: bool = false;
     let safe_big_territories: bool = false;
     let unsafe_big_territories: bool = false;
-    let is_multi_stone_suicide_legal: bool = self.root_history.rules.multi_stone_suicide_legal;
+    let is_multi_stone_suicide_legal: bool = self.root_history.suicide_legal_for_pass_alive();
     self.root_board.calculate_area(
       &mut self.root_safe_area[..],
       non_pass_alive_stones,

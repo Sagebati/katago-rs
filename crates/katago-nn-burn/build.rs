@@ -79,8 +79,9 @@ fn write_model_desc(onnx: &str, net: &str) {
       0
     }
   };
-  // Keys added with model version 17 support (tools/bin2onnx/README.md): bin2onnx writes them only for nets that
-  // use v17-era features, so older exports lack them. As upstream's ONNX loader (onnxmodelbuilder.cpp, getBoolOr /
+  // Keys added with model version 17 support (tools/bin2onnx/README.md): bin2onnx writes the prefer* flags only for
+  // nets that use v17-era features, and the arch summary (numParameters, trunkSpatialConvDepth, has*Blocks) for every
+  // net, but exports made before lack them. As upstream's ONNX loader (onnxmodelbuilder.cpp, getBoolOr /
   // getDoubleOr / getInt64Or), an absent key reads as its default: the prefer* flags false (what desc.cpp reads for
   // nets before the v15 header slots), the arch summary 0 / false. The arch summary is always `present`: an ONNX
   // export has no layer structure to walk.

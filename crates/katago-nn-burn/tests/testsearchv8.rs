@@ -1,6 +1,6 @@
 //! Transcription (a test, not a port) of upstream cpp/tests/testsearchv8.cpp `Tests::runSearchTestsV8` and its
 //! sub-functions (runV8TestsSize9, runV8TestsRandomSym, runV8Tests, runMoreV8Tests, runMoreV8Tests2,
-//! runMoreV8TestsRandomizedNNEvals, runV8SearchMultithreadTest) @ v1.16.5, with the TestSearchCommon helpers as
+//! runMoreV8TestsRandomizedNNEvals, runV8SearchMultithreadTest) @ v1.18.2, with the TestSearchCommon helpers as
 //! test-local copies (common_search/mod.rs).
 //!
 //! It replays the same calls in the same order (same params, seeds and printing) through the ported AsyncBot /
@@ -66,12 +66,12 @@ fn new_search(params: &SearchParams, nn_eval: &Rc<NNEvaluator>, seed: &str) -> B
   Box::new(Search::new(params, nn_eval.clone(), seed))
 }
 
-/// `std::unique_ptr<CompactSgf> sgf = CompactSgf::parse(sgfStr); ... sgf->setupBoardAndHistAssumeLegal(initialRules, board, nextPla, hist, turnIdx);`
+/// `std::unique_ptr<CompactSgf> sgf = CompactSgf::parse(sgfStr); ... sgf->setupBoardAndHistAssumeLegal(initialRules, board, nextPla, hist, turnIdx,BoardHistoryModes(false,false));`
 fn setup_from_sgf(sgf: &CompactSgf, initial_rules: &Rules, turn_idx: i64) -> (Board, Player, Box<BoardHistory>) {
   let mut board = Board::new();
   let mut next_pla: Player = P_BLACK;
   let mut hist = Box::new(BoardHistory::new());
-  sgf.setup_board_and_hist_assume_legal(initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx);
+  sgf.setup_board_and_hist_assume_legal(initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx, &BoardHistoryModes::new_full(false, false));
   (board, next_pla, hist)
 }
 

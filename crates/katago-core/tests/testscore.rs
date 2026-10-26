@@ -1,4 +1,4 @@
-//! Replays upstream cpp/tests/testscore.cpp @ v1.16.5 (Tests::runScoreTests). It prints to cout
+//! Replays upstream cpp/tests/testscore.cpp @ v1.18.2 (Tests::runScoreTests). It prints to cout
 //! during `katago runoutputtests`, so the oracle is its part of upstream
 //! cpp/tests/results/runOutputTests.txt
 //! (fixtures/upstream-v1.18.2/unit/runoutputtests/score-and-utility-tests.expected0.txt, extracted

@@ -1,4 +1,4 @@
-// Types of KataGo's JSON analysis protocol (upstream v1.16.5, docs/Analysis_Engine.md and
+// Types of KataGo's JSON analysis protocol (upstream v1.18.2, docs/Analysis_Engine.md and
 // cpp/command/analysis.cpp + cpp/search/searchresults.cpp), which the engine speaks verbatim.
 // Hand-written; field names are upstream's. Consumers should tolerate fields added in the future.
 

@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchnode.cpp, cpp/search/searchnode.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchnode.cpp, cpp/search/searchnode.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE (PORTING.md §4, OWNERSHIP.tsv): nodes live in `port::node_arena::NodeArena` (a field of
 // Search); every stored `SearchNode*` is a `NodeIdx` and `SearchNode` gains a first field `idx`.

@@ -4,7 +4,7 @@ version = "0.0.0"
 edition.workspace = true
 license.workspace = true
 publish = false
-description = "File-by-file port of KataGo's cpp/ (upstream v1.16.5). No burn dependency; wasm-safe."
+description = "File-by-file port of KataGo's cpp/ (upstream v1.18.2). No burn dependency; wasm-safe."
 
 [dependencies]
 log = "0.4"

@@ -1,5 +1,5 @@
 //! Transcription (a test, not a port) of upstream cpp/tests/testsearchnonn.cpp `Tests::runNNLessSearchTests()`
-//! @ v1.16.5, with the helpers it needs from cpp/tests/testsearchcommon.cpp as test-local copies.
+//! @ v1.18.2, with the helpers it needs from cpp/tests/testsearchcommon.cpp as test-local copies.
 //!
 //! The test replays the same calls in the same order (same params, same seeds, same printing) through the
 //! ported search with a `debugSkipNeuralNet` NNEvaluator, builds the whole stdout text, and compares it
@@ -2193,6 +2193,81 @@ fn search_params_for_distributed(_ctx: &mut Ctx) {
 
 
 //------------------------------------------------------------------------------------------------
+fn eval_cache_keys_depend_on_search_params(ctx: &mut Ctx) {
+  let nn_eval = start_nn_eval(ctx, MODEL_FILE, "evalcacheparams", 7, 7, 0, true, false, false, true, false);
+
+  let mut params_a = SearchParams::for_tests_v2(); //useGraphSearch = true
+  params_a.use_eval_cache = true;
+  params_a.eval_cache_min_visits = 5;
+  params_a.max_visits = 60;
+
+  let mut params_b = params_a.clone();
+  params_b.cpuct_exploration = params_a.cpuct_exploration + 0.5;
+
+  let params_a2 = params_a.clone();
+
+  testAssert!(params_a.get_hash() == params_a2.get_hash());
+  testAssert!(params_a.get_hash() != params_b.get_hash());
+  coutln!("Equal params hash equal: {}", (params_a.get_hash() == params_a2.get_hash()) as i32);
+  coutln!("Differing params hash differ: {}", (params_a.get_hash() != params_b.get_hash()) as i32);
+
+  let mut search = new_search(&params_a, &nn_eval, "evalcacheseed");
+  let rules = Rules::parse_rules("chinese").unwrap();
+  let board = parse_board_input(32, 7, 7);
+  let next_pla = P_BLACK;
+  let hist = BoardHistory::new_full(&board, next_pla, &rules, 0, &BoardHistoryModes::new_full(false, false));
+
+  // Search 1: params A.
+  set_position(&mut search, next_pla, &board, &hist);
+  run_whole_search(ctx, &mut search, next_pla);
+  testAssert!(search.eval_cache.is_some());
+  let eval_cache = search.eval_cache.clone().expect("checked above");
+  let root_graph_hash = search.root_graph_hash;
+  let key_a = root_graph_hash ^ params_a.get_hash();
+  let key_b = root_graph_hash ^ params_b.get_hash();
+  let entry_a = eval_cache.find(key_a);
+  testAssert!(entry_a.is_some());
+  testAssert!(eval_cache.find(key_b).is_none());
+  coutln!("After search A: A-slot populated, B-slot empty: {}", (entry_a.is_some() && eval_cache.find(key_b).is_none()) as i32);
+
+  // `find(keyA) == entryA`: the same shared_ptr.
+  let same_entry = |e: Option<Rc<katago_core::search::evalcache::EvalCacheEntry>>| -> bool {
+    match (&e, &entry_a) {
+      (Some(x), Some(y)) => Rc::ptr_eq(x, y),
+      (None, None) => true,
+      _ => false,
+    }
+  };
+
+  // Search 2: params B, same position. The eval cache persists across param changes.
+  search.set_params(&params_b);
+  set_position(&mut search, next_pla, &board, &hist);
+  run_whole_search(ctx, &mut search, next_pla);
+  testAssert!(search.root_graph_hash == root_graph_hash);
+  testAssert!(key_a != key_b);
+  testAssert!(eval_cache.find(key_b).is_some());
+  testAssert!(same_entry(eval_cache.find(key_a)));
+  coutln!(
+    "After search B: B-slot populated, A-slot unchanged, distinct slots: {}",
+    (eval_cache.find(key_b).is_some() && same_entry(eval_cache.find(key_a)) && key_a != key_b) as i32
+  );
+
+  // Search 3: params identical to A. Must reuse the same key/slot as A.
+  search.set_params(&params_a2);
+  set_position(&mut search, next_pla, &board, &hist);
+  run_whole_search(ctx, &mut search, next_pla);
+  testAssert!(search.root_graph_hash == root_graph_hash);
+  let key_a2 = root_graph_hash ^ params_a2.get_hash();
+  testAssert!(key_a2 == key_a);
+  testAssert!(eval_cache.find(key_a2).is_some());
+  coutln!("After search A2 (identical to A): reuses A's slot: {}", (key_a2 == key_a && eval_cache.find(key_a2).is_some()) as i32);
+
+  drop(eval_cache);
+  drop(search);
+  delete_nn_eval(ctx, nn_eval);
+  coutln!();
+}
+
 // Board size distribution: test-local copy of the GameInitializer pieces it uses
 //
 // PORTING.md §13 "test-local copies": program/play.cpp (GameInitializer) and program/playsettings.cpp are
@@ -2849,7 +2924,7 @@ enum Kind {
 
 /// Every header trio of the C++ in order, with the section that produces it. The title is checked against
 /// the expected text, so a typo or a reordering here fails the test instead of misaligning it.
-const SECTIONS: [(&str, Kind); 43] = [
+const SECTIONS: [(&str, Kind); 44] = [
   ("Basic search with debugSkipNeuralNet and chosen move randomization", Kind::Run(basic_search_and_chosen_move_randomization)),
   ("Testing preservation of search tree across moves", Kind::Run(preservation_of_search_tree_across_moves)),
   ("Testing pruning of search tree across moves due to root restrictions", Kind::Run(pruning_of_search_tree_across_moves_due_to_root_restrictions)),
@@ -2904,12 +2979,13 @@ const SECTIONS: [(&str, Kind); 43] = [
   ("SearchParams for Benchmark", Kind::Run(search_params_for_benchmark)),
   ("SearchParams for Other", Kind::Run(search_params_for_other)),
   ("SearchParams for Distributed", Kind::Run(search_params_for_distributed)),
+  ("Eval cache keys depend on search params", Kind::Run(eval_cache_keys_depend_on_search_params)),
   // Its expected text also holds the final "Done" line of runNNLessSearchTests.
   ("Board size distribution", Kind::Run(board_size_distribution)),
 ];
 
 /// Number of sections that are compared (the preamble "Running neuralnetless search tests" plus every `Kind::Run`).
-const NUM_COMPARED: usize = 1 + 43;
+const NUM_COMPARED: usize = 1 + 44;
 const NUM_PENDING: usize = 0;
 
 /// `(title, text)` for every section of the expected stdout: the preamble (title "") and one per header
@@ -3047,19 +3123,25 @@ fn run_nn_less_search_tests() {
 
   //Big stack: Search (~40 KB), BoardHistory (~34 KB) and the recursive playout futures, in a debug build.
   #[cfg(not(target_arch = "wasm32"))]
-  let results = {
+  let joined = {
     let e = expected.clone();
-    std::thread::Builder::new()
-      .name("testsearchnonn".to_string())
-      .stack_size(256 << 20)
-      .spawn(move || run_all(&e))
-      .unwrap()
-      .join()
-      .expect("run_all panicked outside the per-section catch")
+    std::thread::Builder::new().name("testsearchnonn".to_string()).stack_size(256 << 20).spawn(move || run_all(&e)).unwrap().join()
   };
   //Back to the default hook (run_all installed the capturing one) so a failure below prints normally.
   #[cfg(not(target_arch = "wasm32"))]
   let _ = std::panic::take_hook();
+  #[cfg(not(target_arch = "wasm32"))]
+  let results = match joined {
+    Ok(results) => results,
+    Err(payload) => {
+      let msg = payload
+        .downcast_ref::<String>()
+        .cloned()
+        .or_else(|| payload.downcast_ref::<&str>().map(|s| s.to_string()))
+        .unwrap_or_default();
+      panic!("run_all panicked outside the per-section catch: {}", msg)
+    }
+  };
   #[cfg(target_arch = "wasm32")]
   let results = run_all(&expected);
 

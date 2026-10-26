@@ -217,6 +217,26 @@ impl nninterface::InputBuffers for BurnInputBuffers {
   }
 }
 
+/// upstream: NeuralNet::getBatchPolicy (eigenbackend.cpp)
+/// PORT NOTE: Dynamic, as upstream's GPU backends, not Eigen's CpuLocal: one serve task runs whole
+/// batches through burn (GPU or flex), there are no per-core server threads to parallelize over.
+/// A free fn (upstream's is a static of the linked backend): the hosts' `NNEvaluatorHost::get_batch_policy`
+/// answers with it before any model is loaded (Setup::initializeNNEvaluators, D6).
+pub fn get_batch_policy(cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+  let _ = cfg;
+  nninterface::BatchPolicy::Dynamic
+}
+
+/// upstream: NeuralNet::getNumEffectiveDevices (eigenbackend.cpp)
+/// PORT NOTE: the GPU backends' body (cudaandrocmbackend.inc, openclbackend.cpp), not Eigen's constant
+/// 1: devices are selected by gpu index (NNEvaluator::getNumGpus was the distinct-index count before
+/// v1.18 for every non-Eigen backend). A free fn, as `get_batch_policy`.
+pub fn get_num_effective_devices(cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+  let _ = cfg;
+  let distinct_devices: BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
+  std::cmp::max(1, distinct_devices.len() as i32)
+}
+
 fn downcast_model(loaded_model: &dyn nninterface::LoadedModel) -> &BurnLoadedModel {
   loaded_model.as_any().downcast_ref::<BurnLoadedModel>().expect("LoadedModel created by BurnNeuralNet")
 }
@@ -242,21 +262,13 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
   }
 
   /// upstream: NeuralNet::getBatchPolicy (eigenbackend.cpp)
-  /// PORT NOTE: Dynamic, as upstream's GPU backends, not Eigen's CpuLocal: one serve task runs whole
-  /// batches through burn (GPU or flex), there are no per-core server threads to parallelize over.
   fn get_batch_policy(&self, cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
-    let _ = cfg;
-    nninterface::BatchPolicy::Dynamic
+    get_batch_policy(cfg)
   }
 
   /// upstream: NeuralNet::getNumEffectiveDevices (eigenbackend.cpp)
-  /// PORT NOTE: the GPU backends' body (cudaandrocmbackend.inc, openclbackend.cpp), not Eigen's constant
-  /// 1: devices are selected by gpu index (NNEvaluator::getNumGpus was the distinct-index count before
-  /// v1.18 for every non-Eigen backend).
   fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
-    let _ = cfg;
-    let distinct_devices: BTreeSet<i32> = gpu_idx_by_server_thread.iter().copied().collect();
-    std::cmp::max(1, distinct_devices.len() as i32)
+    get_num_effective_devices(cfg, gpu_idx_by_server_thread)
   }
 
   /// upstream: NeuralNet::loadModelFile (eigenbackend.cpp)
@@ -344,7 +356,11 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
       "{}",
       "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model version " + &Global::int_to_string(loaded_model.model_desc.model_version)
     );
-    log::info!("{}", "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model name: " + &loaded_model.model_desc.name);
+    log::info!(
+      "{}",
+      "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model name: " + &loaded_model.model_desc.name
+        + " (" + &loaded_model.model_desc.get_short_info_string() + ")"
+    );
 
     let _ = require_exact_nn_len; //We don't bother with mask optimizations if we know exact sizes right now.
     let _ = gpu_idx_for_this_thread; //Doesn't matter

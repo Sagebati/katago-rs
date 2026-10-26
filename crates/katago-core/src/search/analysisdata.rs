@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/analysisdata.cpp, cpp/search/analysisdata.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/analysisdata.cpp, cpp/search/analysisdata.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use crate::game::board::get_opp;
 use crate::game::board::Board;

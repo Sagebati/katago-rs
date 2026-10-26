@@ -645,7 +645,14 @@ pub fn run_bot_on_sgf(ctx: &mut Ctx, bot: &mut AsyncBot, sgf_str: &str, default_
   let mut next_pla: Player = P_BLACK;
   let mut hist = Box::new(BoardHistory::new());
   let initial_rules = sgf.get_rules_or_fail_allow_unspecified(default_rules);
-  sgf.setup_board_and_hist_assume_legal(&initial_rules, &mut board, &mut next_pla, &mut hist, turn_idx as i64);
+  sgf.setup_board_and_hist_assume_legal(
+    &initial_rules,
+    &mut board,
+    &mut next_pla,
+    &mut hist,
+    turn_idx as i64,
+    &Search::resolve_history_modes(&bot.get_search().search_params, Some(&*bot.get_search().nn_evaluator)),
+  );
   hist.set_komi(override_komi);
   run_bot_on_position(ctx, bot, &board, next_pla, &hist, opts);
 }
@@ -962,7 +969,7 @@ impl CompactSgf {
   }
 
   /// upstream: CompactSgf::setupInitialBoardAndHist (sgf.cpp) — test-local copy
-  pub fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory) {
+  pub fn setup_initial_board_and_hist(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory, modes: &BoardHistoryModes) {
     // getPLSpecifiedColor
     let pl_player: Color = match self.root.get("PL").map(|v| v[0].to_lowercase()) {
       Some(s) if s == "b" || s == "black" => C_BLACK,
@@ -996,9 +1003,7 @@ impl CompactSgf {
     *board = Board::new_x_y(self.x_size, self.y_size).unwrap();
     let suc = board.set_stones_fail_if_no_libs(&self.placements);
     assert!(suc, "setupInitialBoardAndHist: initial board position contains invalid stones or zero-liberty stones");
-    // TODO(v1.18.2 sync): upstream setupInitialBoardAndHist takes a `const BoardHistoryModes& modes` parameter
-    // (callers pass it through) and passes `modes` here.
-    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, &BoardHistoryModes::new());
+    *hist = BoardHistory::new_full(board, *next_pla, initial_rules, 0, modes);
     if hist.initial_turn_number < board.num_stones_on_board() as i64 {
       hist.initial_turn_number = board.num_stones_on_board() as i64;
     }
@@ -1020,8 +1025,16 @@ impl CompactSgf {
   }
 
   /// upstream: CompactSgf::setupBoardAndHistAssumeLegal (sgf.cpp) — test-local copy
-  pub fn setup_board_and_hist_assume_legal(&self, initial_rules: &Rules, board: &mut Board, next_pla: &mut Player, hist: &mut BoardHistory, turn_idx: i64) {
-    self.setup_initial_board_and_hist(initial_rules, board, next_pla, hist);
+  pub fn setup_board_and_hist_assume_legal(
+    &self,
+    initial_rules: &Rules,
+    board: &mut Board,
+    next_pla: &mut Player,
+    hist: &mut BoardHistory,
+    turn_idx: i64,
+    modes: &BoardHistoryModes,
+  ) {
+    self.setup_initial_board_and_hist(initial_rules, board, next_pla, hist, modes);
     self.play_moves_assume_legal(board, next_pla, hist, turn_idx);
   }
 }

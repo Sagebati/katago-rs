@@ -9,10 +9,11 @@
 //! cache cannot mix results across featurization modes" (a debugSkipNeuralNet NNEvaluator, as upstream's
 //! TestSearchCommon::startNNEval).
 //!
-//! Not ported here: "Search maintains the invariant ..." (TODO(v1.18.2 sync): needs Search::
-//! resolveAlwaysComputePassAliveUnderSuicideRules, SearchParams::alwaysComputePassAliveUnderSuicideRules and the
-//! search/ re-sync; NNEvaluator::modelPreferPassAliveUnderSuicideRules is ported), "Books record the
-//! BoardHistoryModes ..." (book/, not ported).
+//! The search/ part: "Search maintains the invariant that its root history's flag always matches what its params
+//! and nnEval resolve to" (Search::resolveAlwaysComputePassAliveUnderSuicideRules and the setters re-stamping the
+//! root history's modes, with a debugSkipNeuralNet NNEvaluator).
+//!
+//! Not ported here: "Books record the BoardHistoryModes ..." (book/ is [[ignored]] in port-manifest.toml).
 
 mod common;
 mod common_skipnn;
@@ -34,7 +35,10 @@ use katago_core::neuralnet::nninputs::MiscNNInputParams;
 use katago_core::neuralnet::nninputs::NNInputs;
 use katago_core::neuralnet::nninputs::NNOutput;
 use katago_core::neuralnet::nninputs::NNPos;
+use katago_core::core::commontypes::enabled_t;
 use katago_core::port::executor::Spawner;
+use katago_core::search::search::Search;
+use katago_core::search::searchparams::SearchParams;
 use katago_core::testAssert;
 
 fn modes(a: bool, b: bool) -> BoardHistoryModes {
@@ -168,10 +172,58 @@ oox.
     cases.ran();
   }
 
-  // TODO(v1.18.2 sync): "Search maintains the invariant that its root history's flag always matches what its
-  // params and nnEval resolve to" (needs Search::resolveAlwaysComputePassAliveUnderSuicideRules, SearchParams::
-  // alwaysComputePassAliveUnderSuicideRules, Search::setPosition/setParams/setParamsNoClearing re-stamping the root
-  // history's modes). "Books record the BoardHistoryModes ..." is not ported (book/).
+  //Search maintains the invariant that its root history's flag always matches what its params
+  //and nnEval resolve to, regardless of the history set into it.
+  {
+    let mut pool = LocalPool::new();
+    let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
+    let nn_eval = start_nn_eval(
+      &mut pool, &spawner, "", "passAliveSuicideModeTest", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
+      0, true, false, false, true, false
+    );
+    //With no loaded model, auto resolves to false
+    testAssert!(!nn_eval.model_prefer_pass_alive_under_suicide_rules());
+
+    let params = SearchParams::for_tests_v2();
+    testAssert!(params.always_compute_pass_alive_under_suicide_rules == enabled_t::Auto);
+
+    {
+      let mut search = Box::new(Search::new(&params, nn_eval.clone(), "passAliveStampTestSeed"));
+      testAssert!(!search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+      testAssert!(!Search::resolve_always_compute_pass_alive_under_suicide_rules(&params, Some(&nn_eval)));
+
+      //Setting a history with the flag on gets re-stamped to the search's own resolution
+      let mut hist_flagged = BoardHistory::new_full(&board, P_BLACK, &rules, 0, &modes(false, false));
+      hist_flagged.set_modes(&modes(true, false));
+      search.set_position(P_BLACK, &board, &hist_flagged).unwrap();
+      testAssert!(!search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+
+      //Forcing the param stamps the flag on, even though the last set position had it off
+      let mut params_on = params.clone();
+      params_on.always_compute_pass_alive_under_suicide_rules = enabled_t::True;
+      testAssert!(Search::resolve_always_compute_pass_alive_under_suicide_rules(&params_on, Some(&nn_eval)));
+      search.set_params(&params_on);
+      testAssert!(search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+
+      //And even the no-clearing param setter keeps the invariant
+      search.set_params_no_clearing(&params);
+      testAssert!(!search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+      search.set_params_no_clearing(&params_on);
+      testAssert!(search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+
+      //setPlayerAndClearHistory and setKomiIfNew preserve it too
+      search.set_player_and_clear_history(P_WHITE).unwrap();
+      testAssert!(search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+      search.set_komi_if_new(5.5f32);
+      testAssert!(search.get_root_hist().modes.always_compute_pass_alive_under_suicide_rules);
+    }
+
+    nn_eval.kill_server_threads();
+    pool.run_until_stalled();
+    cases.ran();
+  }
+
+  //Books record the BoardHistoryModes ...: not ported (book/ is [[ignored]]).
 
   //The nn cache cannot mix results across featurization modes: with suicide-illegal rules the two
   //modes hash differently (distinct cache entries), and with suicide-legal rules the mode is a
@@ -183,10 +235,6 @@ oox.
       &mut pool, &spawner, "", "passAliveSuicideCacheTest", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
       0, true, false, false, true, false
     );
-    // PORT NOTE: this assert is the first check of upstream's "Search maintains the invariant ..." section (its own
-    // startNNEval, same arguments), the only part of it that needs no Search.
-    //With no loaded model, auto resolves to false
-    testAssert!(!nn_eval.model_prefer_pass_alive_under_suicide_rules());
 
     let no_override = MiscNNInputParams::new();
     let mut force_on = MiscNNInputParams::new();

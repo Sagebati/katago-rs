@@ -237,7 +237,7 @@ try {
       const finals = r.responses.filter((x) => !x.isDuringSearch);
       const increasing = partials.every((p, i) => i === 0 || p.visits >= partials[i - 1].visits);
       check(`reportDuringSearchEvery partials arrive [${backend}]`, partials.length >= 2 && finals.length === 1 && increasing && r.responses.every((x) => x.id === "mine" && x.ownership === 361), `${partials.length} partials (visits ${partials.map((p) => p.visits).join(",")}), final ${finals[0]?.visits} visits`);
-      check(`queryVersion / queryModels [${backend}]`, r.version.version === "1.16.5" && r.models.models[0].name === "g170e-b10c128", `${r.version.version} ${r.version.git_hash}, ${r.models.models.map((m) => `${m.name} batch ${m.maxBatchSize}`).join(", ")}`);
+      check(`queryVersion / queryModels [${backend}]`, r.version.version === "1.18.2" && r.models.models[0].name === "g170e-b10c128", `${r.version.version} ${r.version.git_hash}, ${r.models.models.map((m) => `${m.name} batch ${m.maxBatchSize}`).join(", ")}`);
       check(`error response rejects the run [${backend}]`, r.error !== null && r.error.includes("boardXSize"), r.error);
     }
     if (only.includes("terminate")) {
@@ -403,7 +403,7 @@ if (only.includes("review")) {
       }
       const p = JSON.parse(rv.json);
       const bad = validatePayload(p, { boardSize: 9, moves: nine.moves, maxVisits: 50, engineName: "katago-rs-wasm", model: "g170-b6c96" });
-      check(`review: payload valid [${backend}]`, bad.length === 0 && p.engine.version === "1.16.5", bad.slice(0, 5).join("; ") || `engine ${JSON.stringify(p.engine)}`);
+      check(`review: payload valid [${backend}]`, bad.length === 0 && p.engine.version === "1.18.2", bad.slice(0, 5).join("; ") || `engine ${JSON.stringify(p.engine)}`);
       const tiers = { cpu: { value: 1e-5, score: 5e-4, prior: 1e-5, accuracy: 5e-3, grid: 1, policyGrid: 1 }, webgpu: { value: 1e-4, score: 2e-3, prior: 1e-4, accuracy: 5e-2, grid: 1, policyGrid: 2 } };
       const c = comparePayloads(native, p, tiers[r.backend]);
       results.review.at(-1).compare = c;

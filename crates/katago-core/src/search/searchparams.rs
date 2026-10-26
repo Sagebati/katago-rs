@@ -1,12 +1,15 @@
-// Ported from KataGo cpp/search/searchparams.cpp, cpp/search/searchparams.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchparams.cpp, cpp/search/searchparams.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 use serde_json::Map;
 use serde_json::Value;
 
+use crate::core::commontypes::enabled_t;
 use crate::core::global::KataError;
+use crate::core::hash::Hash128;
 use crate::game::board::Player;
 use crate::game::board::PlayerIO;
 use crate::game::board::C_EMPTY;
+use crate::game::board::P_BLACK;
 use crate::neuralnet::sgfmetadata::SGFMetadata;
 use crate::port::fmt::cpp_ostream_f64;
 
@@ -96,6 +99,14 @@ pub struct SearchParams {
   pub wide_root_noise: f64, //Explore at the root more widely
   pub enable_passing_hacks: bool, //Enable some hacks that mitigate rare instances when passing messes up deeper searches.
   pub enable_more_passing_hacks: bool, //Always weightless search passing and non passing moves when a pass would end the phase after a few visits.
+  //Whether to compute pass-alive areas as if multi-stone suicide were always legal regardless of the actual suicide
+  //rule, for game end/scoring within the search tree and for nn input featurization.
+  //Auto = do so if and only if the neural net declares that it expects this. See BoardHistoryModes.
+  pub always_compute_pass_alive_under_suicide_rules: enabled_t,
+  //Whether territory scoring with TaxRule NONE excludes empty points adjacent to chains in atari (rules version 3),
+  //for game end/scoring within the search tree and for nn input featurization.
+  //Auto = do so if and only if the neural net declares that it expects this. See BoardHistoryModes.
+  pub exclude_territory_adjacent_to_atari: enabled_t,
 
   pub playout_doubling_advantage: f64, //Play as if we have this many doublings of playouts vs the opponent
   pub playout_doubling_advantage_pla: Player, //Negate playoutDoublingAdvantage when making a move for the opponent of this player. If empty, opponent of the root player.
@@ -245,6 +256,8 @@ impl SearchParams {
       wide_root_noise: 0.0,
       enable_passing_hacks: false,
       enable_more_passing_hacks: false,
+      always_compute_pass_alive_under_suicide_rules: enabled_t::Auto,
+      exclude_territory_adjacent_to_atari: enabled_t::Auto,
       playout_doubling_advantage: 0.0,
       playout_doubling_advantage_pla: C_EMPTY,
       avoid_repeated_pattern_utility: 0.0,
@@ -376,6 +389,8 @@ impl PartialEq for SearchParams {
     self.wide_root_noise == other.wide_root_noise &&
     self.enable_passing_hacks == other.enable_passing_hacks &&
     self.enable_more_passing_hacks == other.enable_more_passing_hacks &&
+    self.always_compute_pass_alive_under_suicide_rules == other.always_compute_pass_alive_under_suicide_rules &&
+    self.exclude_territory_adjacent_to_atari == other.exclude_territory_adjacent_to_atari &&
 
     self.playout_doubling_advantage == other.playout_doubling_advantage &&
     self.playout_doubling_advantage_pla == other.playout_doubling_advantage_pla &&
@@ -635,6 +650,8 @@ impl SearchParams {
     ret.insert(String::from("wideRootNoise"), Value::from(self.wide_root_noise));
     ret.insert(String::from("enablePassingHacks"), Value::from(self.enable_passing_hacks));
     ret.insert(String::from("enableMorePassingHacks"), Value::from(self.enable_more_passing_hacks));
+    ret.insert(String::from("alwaysComputePassAliveUnderSuicideRules"), Value::from(self.always_compute_pass_alive_under_suicide_rules.to_string()));
+    ret.insert(String::from("excludeTerritoryAdjacentToAtari"), Value::from(self.exclude_territory_adjacent_to_atari.to_string()));
 
     // Special handling in GTP
     ret.insert(String::from("playoutDoublingAdvantage"), Value::from(self.playout_doubling_advantage));
@@ -702,6 +719,39 @@ impl SearchParams {
     ret.insert(String::from("humanSLChosenMovePiklLambda"), Value::from(self.human_sl_chosen_move_pikl_lambda));
 
     Value::Object(ret)
+  }
+
+  /// upstream: SearchParams::getHash (searchparams.cpp)
+  // Hash of all parameters, such that params that compare unequal hash differently (with high probability).
+  pub fn get_hash(&self) -> Hash128 {
+    // Build on changeableParametersToJson, but fold in the parameters it deliberately omits so that this
+    // hash reflects *all* parameters (any of which can affect cached search results). If a new parameter is
+    // added to operator== it should also be reflected here - either it will already flow through
+    // changeableParametersToJson, or it must be added to the supplement below.
+    let mut ret: Value = self.changeable_parameters_to_json();
+    let obj = ret.as_object_mut().expect("changeableParametersToJson returns an object");
+
+    // Parameters omitted from changeableParametersToJson
+    obj.insert(String::from("avoidMYTDaggerHackPla"), Value::from(self.avoid_myt_dagger_hack_pla as i32));
+    obj.insert(String::from("avoidRepeatedPatternUtility"), Value::from(self.avoid_repeated_pattern_utility));
+    obj.insert(String::from("antiMirror"), Value::from(self.anti_mirror));
+    obj.insert(String::from("useEvalCache"), Value::from(self.use_eval_cache));
+    obj.insert(String::from("evalCacheMinVisits"), Value::from(self.eval_cache_min_visits));
+    obj.insert(String::from("nodeTableShardsPowerOfTwo"), Value::from(self.node_table_shards_power_of_two));
+
+    // humanSLProfile's own getHash asserts on an uninitialized profile,
+    // so only call it when initialized (the common no-human-model case leaves it uninitialized).
+    obj.insert(String::from("humanSLProfileInitialized"), Value::from(self.human_sl_profile.initialized));
+    if self.human_sl_profile.initialized {
+      //Use a fixed player. We only need a stable value that distinguishes distinct profiles.
+      let profile_hash: Hash128 = self.human_sl_profile.get_hash(P_BLACK);
+      obj.insert(String::from("humanSLProfileHash0"), Value::from(profile_hash.hash0));
+      obj.insert(String::from("humanSLProfileHash1"), Value::from(profile_hash.hash1));
+    }
+
+    let dumped: String = crate::port::nlohmann::dump(&ret);
+    let hash: [u64; 4] = crate::port::digest::sha2_get256_u64(&dumped);
+    Hash128::new(hash[0], hash[1])
   }
 
   /// upstream: SearchParams::printParams (searchparams.cpp)
@@ -793,6 +843,8 @@ impl SearchParams {
     writeln!(out, "wideRootNoise: {}", cpp_ostream_f64(self.wide_root_noise)).unwrap();
     writeln!(out, "enablePassingHacks: {}", self.enable_passing_hacks as i32).unwrap();
     writeln!(out, "enableMorePassingHacks: {}", self.enable_more_passing_hacks as i32).unwrap();
+    writeln!(out, "alwaysComputePassAliveUnderSuicideRules: {}", self.always_compute_pass_alive_under_suicide_rules.to_string()).unwrap();
+    writeln!(out, "excludeTerritoryAdjacentToAtari: {}", self.exclude_territory_adjacent_to_atari.to_string()).unwrap();
 
     writeln!(out, "playoutDoublingAdvantage: {}", cpp_ostream_f64(self.playout_doubling_advantage)).unwrap();
     log::info!("playoutDoublingAdvantagePla: {}", self.playout_doubling_advantage_pla as i32);

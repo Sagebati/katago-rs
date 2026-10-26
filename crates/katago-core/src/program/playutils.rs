@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/program/playutils.cpp, cpp/program/playutils.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/program/playutils.cpp, cpp/program/playutils.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // M3 subset (port-manifest.toml): getHackedLCBForWinrate (search/searchresults.cpp), printGenmoveLog
 // (command/analysis.cpp), and what the search tests use: getNoiselessParams, computeOwnership,
@@ -367,7 +367,7 @@ impl PlayUtils {
       let non_pass_alive_stones: bool = true;
       let safe_big_territories: bool = true;
       let unsafe_big_territories: bool = true;
-      let is_multi_stone_suicide_legal: bool = hist.rules.multi_stone_suicide_legal;
+      let is_multi_stone_suicide_legal: bool = hist.suicide_legal_for_pass_alive();
       clean_board.calculate_area(&mut area, non_pass_alive_stones, safe_big_territories, unsafe_big_territories, is_multi_stone_suicide_legal);
     }
     const HIGH_OWNERSHIP_THRESHOLD: f64 = 0.75;

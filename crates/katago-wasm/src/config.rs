@@ -9,7 +9,7 @@ use std::rc::Rc;
 use katago_core::core::config_parser::ConfigParser;
 use katago_core::core::global::KataError;
 
-/// upstream `cpp/configs/analysis_example.cfg` (v1.16.5), the base config when the caller gives none.
+/// upstream `cpp/configs/analysis_example.cfg` (v1.18.2), the base config when the caller gives none.
 pub const ANALYSIS_EXAMPLE_CFG: &str = include_str!("../../../upstream/KataGo/cpp/configs/analysis_example.cfg");
 
 /// The NN backend the engine runs on.

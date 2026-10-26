@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/search/searchnnhelpers.cpp @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/search/searchnnhelpers.cpp @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // PORT NOTE (PORTING.md §11): computeRootNNEvaluation, initNodeNNOutput and
 // maybeRecomputeExistingNNOutput are async (they await NNEvaluator::evaluate, the await point of a
@@ -52,6 +52,20 @@ impl Search {
       .nn_evaluator
       .evaluate_sgf_meta(&board, hist, pla, Some(&self.search_params.human_sl_profile), &nn_input_params, nn_result_buf, skip_cache, include_owner_map)
       .await
+  }
+
+  /// upstream: Search::paramsForHumanEvaluator (searchnnhelpers.cpp)
+  //Copy of nnInputParams for querying humanEvaluator, overriding the featurization modes
+  //with the human net's own resolution, which may differ from the modes the search is using.
+  pub(crate) fn params_for_human_evaluator(&self, nn_input_params: &MiscNNInputParams) -> MiscNNInputParams {
+    let mut human_nn_input_params: MiscNNInputParams = nn_input_params.clone();
+    //Featurize for the human net per its own resolution (its own declaration when the params are auto),
+    //which may differ from the modes the search itself is using.
+    human_nn_input_params.pass_alive_suicide_rules_override =
+      if Search::resolve_always_compute_pass_alive_under_suicide_rules(&self.search_params, self.human_evaluator.as_deref()) { 1 } else { 0 };
+    human_nn_input_params.exclude_territory_adj_atari_override =
+      if Search::resolve_exclude_territory_adjacent_to_atari(&self.search_params, self.human_evaluator.as_deref()) { 1 } else { 0 };
+    human_nn_input_params
   }
 
   /// upstream: Search::needsHumanOutputAtRoot (searchnnhelpers.cpp)
@@ -149,7 +163,7 @@ impl Search {
               &thread.history,
               thread.pla,
               Some(&self.search_params.human_sl_profile),
-              &nn_input_params,
+              &self.params_for_human_evaluator(&nn_input_params),
               &nn_result_buf,
               include_owner_map,
               &mut thread.rand,
@@ -181,7 +195,7 @@ impl Search {
             &thread.history,
             thread.pla,
             Some(&self.search_params.human_sl_profile),
-            &nn_input_params,
+            &self.params_for_human_evaluator(&nn_input_params),
             &nn_result_buf,
             skip_cache,
             include_owner_map,

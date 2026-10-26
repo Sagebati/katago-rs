@@ -1,4 +1,4 @@
-//! Replays upstream cpp/tests/testsymmetries.cpp @ v1.16.5 (Tests::runBasicSymmetryTests,
+//! Replays upstream cpp/tests/testsymmetries.cpp @ v1.18.2 (Tests::runBasicSymmetryTests,
 //! Tests::runBoardSymmetryTests, Tests::runSymmetryDifferenceTests) against
 //! fixtures/upstream-v1.18.2/unit/testsymmetries/ (all 7 expected blocks), and
 //! Tests::runNNSymmetryTests (cpp/tests/testnn.cpp), which prints to cout during

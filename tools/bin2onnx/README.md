@@ -59,17 +59,32 @@ older exports lack it and are all version 0), `numPolicyChannels`,
 `trunkNumBlocks`, `trunkNumChannels`, the post-process multipliers, and `outputs`.
 
 Keys added for model version 17, written only for nets that use v17-era features
-(`modelVersion >= 17`, transformer blocks, an RMSNorm trunk tip, or a nonzero flag) so that older
-exports stay byte-identical; **absent means 0**:
+(`modelVersion >= 17`, transformer blocks, an RMSNorm trunk tip, or a nonzero flag); **absent means 0**:
 
 | key | values | meaning (desc.cpp `ModelDesc`) |
 |---|---|---|
 | `preferPassAliveUnderSuicideRules` | 0/1 | featurize pass-alive area (`calculateArea` / `calculateNonDameTouchingArea`) as if multi-stone suicide were legal, whatever the rules say (the suicide global feature and move legality keep the real rule). KataGo's search sets `BoardHistoryModes.alwaysComputePassAliveUnderSuicideRules` from it |
 | `preferExcludeTerritoryAdjacentToAtari` | 0/1 | rules version 3: territory scoring with `TAX_NONE` (adjudication and the encore-phase territory feature) excludes empty points adjacent to the owner's chains in atari (`BoardHistoryModes.excludeTerritoryAdjacentToAtari`) |
 | `trunkNormKind` | 0/1 | 0 = BatchNorm trunk tip, 1 = RMSNorm trunk tip (informational, already in the graph) |
-| `hasAnyTransformerBlocks` | 0/1 | informational |
 
 All four released v17 nets and the test nets have both prefer flags = 0.
+
+The architecture summary, written for every net (upstream's ONNX model builder writes the same values as
+`katago.info.arch.*`, onnxmodelbuilder.cpp: a graph has no layer structure left to recompute them from).
+katago-nn-burn's build.rs puts them in the generated `ModelDesc`'s `archSummary`; absent (exports made before
+these keys) reads as 0 / false:
+
+| key | meaning (desc.cpp) |
+|---|---|
+| `numParameters` | `ModelDesc::getNumParameters`: trunk + policy head + value head, each layer's `getNumParameters` (conv / matmul / matbias weights, BatchNorm scale and bias only when present, RMSNorm gamma + beta, learnable RoPE frequencies, the SGF metadata encoder when `metaEncoderVersion > 0`). In the "Model name: X (convnet, N params)" log line (`getShortInfoString`) |
+| `trunkSpatialConvDepth` | `ModelDesc::getTrunkSpatialConvDepth`: initial conv + blocks, `(convY + convX - 2) / 4` per conv (residual blocks: regular + final conv; nested bottlenecks: pre + inner blocks + post), 2 per transformer block |
+| `hasAnyTransformerBlocks` | 0/1, `ModelDesc::hasAnyTransformerBlocks` (recursive) |
+| `hasAnyNestedBottleneckBlocks` | 0/1, `ModelDesc::hasAnyNestedBottleneckBlocks` (the trunk's own blocks) |
+
+Checked against the v1.18.2 Eigen build's "Model name" line (and upstream's `tests/results` logs) for g170-b6c96
+(1027911), g170e-b10c128 (2994503), kata1-b28c512nbt (72830569), kata1-b40c256 (46651849), b18c384nbt-humanv0
+(26740121), the b6c96 test nets, b10c384h6nbttflrs (10545753), b10c512h8nbt3tflrs-fson-silu-rsnh (28537801) and the
+three transformer test nets in `cpp/tests/models`.
 
 ONNX ops used: `Conv Add Mul Sub Div Sqrt Relu MatMul Reshape Concat Slice
 ReduceSum ReduceMax` (+ `Softplus Tanh` for Mish nets; + `Exp` for SiLU nets; + `Transpose

@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/core/timer.cpp, cpp/core/timer.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/core/timer.cpp, cpp/core/timer.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Divergence (PORTING.md §10, manifest notes): no `std::chrono::steady_clock` / `Instant` in core
 // (they panic on wasm32-unknown-unknown). The clock is injected once at startup with `set_clock`.

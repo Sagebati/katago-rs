@@ -441,6 +441,12 @@ impl NNEvaluatorHost for WebNNHost {
   fn spawner(&self) -> Rc<dyn Spawner> {
     Rc::new(WasmSpawner)
   }
+  fn get_batch_policy(&self, cfg: &mut ConfigParser) -> nninterface::BatchPolicy {
+    katago_nn_burn::backend::get_batch_policy(cfg)
+  }
+  fn get_num_effective_devices(&self, cfg: &mut ConfigParser, gpu_idx_by_server_thread: &[i32]) -> i32 {
+    katago_nn_burn::backend::get_num_effective_devices(cfg, gpu_idx_by_server_thread)
+  }
 }
 
 //------------------------------------------------------------------------------------------------

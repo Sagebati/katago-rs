@@ -1,4 +1,4 @@
-//! Replays upstream cpp/tests/testconfig.cpp @ v1.16.5, Tests::runInlineConfigTests (the part that needs no
+//! Replays upstream cpp/tests/testconfig.cpp @ v1.18.2, Tests::runInlineConfigTests (the part that needs no
 //! file IO), against fixtures/upstream-v1.18.2/unit/testconfig/ (the `R"%%(...)%%"` config texts, extracted
 //! by tools/extract_raw_blocks.py: blocks 0..27 in source order). The assertions are upstream's own
 //! `testAssert`s, in order.

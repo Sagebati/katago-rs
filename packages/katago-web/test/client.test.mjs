@@ -44,7 +44,7 @@ function setup(backend = "auto", extra = {}) {
   return { client, workers };
 }
 
-const READY = { backend: "cpu", network: "g170e-b10c128", version: "1.16.5", gitHash: "x", modelSource: "cache", configText: "", timings: {} };
+const READY = { backend: "cpu", network: "g170e-b10c128", version: "1.18.2", gitHash: "x", modelSource: "cache", configText: "", timings: {} };
 
 test("a WebGPU failure before ready restarts on the CPU", async () => {
   const { client, workers } = setup();

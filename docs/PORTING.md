@@ -1,6 +1,6 @@
 # PORTING.md: the binding guide for porting KataGo to Rust
 
-Applies to upstream **v1.16.5** (`ba938676d7f42d70950b3a535af2466fb642008c`). Every agent that
+Applies to upstream **v1.18.2** (`fd0723fdbc0e9d82cf269c9630af8c27c57c07c4`). Every agent that
 writes or reviews ported code follows this file. Precedence: PORTING.md > OWNERSHIP.tsv >
 CLAUDE.md > your own judgement. When this guide is silent or seems wrong, write
 `// TODO(port): <what is unclear>` at the spot and say so in your report: we fix the guide,
@@ -30,7 +30,7 @@ is used only at the API edges (`katago-wasm`, `katago-cli`), never inside ported
 | Every ported item carries a doc tag, and every file starts with a header line. | see below |
 
 ```rust
-// Ported from KataGo cpp/game/board.cpp, cpp/game/board.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/game/board.cpp, cpp/game/board.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 
 /// upstream: Board::searchIsLadderCaptured (board.cpp)
 pub fn search_is_ladder_captured(&mut self, loc: Loc, defender_first: bool, buf: &mut Vec<Loc>) -> bool {
@@ -82,7 +82,7 @@ They don't read the implementer's summary.
 |---|---|---|
 | `Loc` (`typedef short`) | `pub type Loc = i16;` | Signed, as upstream. **The plan text said u16: wrong, use i16.** Index with `loc as usize`. Do arithmetic in `i32` (C++ promotes): `(loc as i32 + adj) as Loc`. |
 | `Player`, `Color` (`typedef int8_t`) | `pub type Player = i8;` `pub type Color = i8;` | `P_BLACK`, `C_WALL`… are `pub const X: Player`. `getOpp(c)` → `c ^ 3`. |
-| `Spot` | none | Doesn't exist in v1.16.5. Don't invent it. |
+| `Spot` | none | Doesn't exist in v1.18.2. Don't invent it. |
 | `SearchNodeState` (`typedef int`) | `pub type SearchNodeState = i32;` | Every `typedef`/`using` becomes `pub type`. |
 | `bool` `char` | `bool`, and `u8` or `char` | x86-64 `char` is **signed**: `(uint64_t)c` → `c as i8 as u64` (sign-extends, see `Hash::simpleHash`). Character literals used for text → `char`. |
 | `int8_t` `uint8_t` `short` `int` `unsigned` `int64_t` `uint64_t` | `i8` `u8` `i16` `i32` `u32` `i64` `u64` | Width and signedness exact. `long` is 64-bit on the fixture platform, so `i64`. |
@@ -474,7 +474,7 @@ Known divergences are listed with reasons in the test, which fails when one disa
 - Reviewers spot-check one fixture by hand: change one expected byte locally and confirm the
   test fails.
 
-**Injected host services.** Core does no IO and reads no clock. File access that upstream does through `FileUtils` (config `@include`, `initialize(fname)`, `overrideKeys(fname)`) goes through a reader callback the host installs (`ConfigParser::set_include_reader`), which receives the path exactly as `FileUtils::open` would and fails with `FileUtils::open`'s error text when absent (D15). Time comes from `core::timer::set_clock(fn() -> f64)`: seconds as `f64`, first call wins (returns `false` after), and a `ClockTimer` with no clock installed is a fatal error, so hosts and search tests install one first. Timed waits (AsyncBot's `reportDuringSearchEvery` callback loop, upstream `condition_variable::wait_for`) go through `port::executor::set_sleep`, installed the same way (katago-cli: a timer thread; wasm: a `setTimeout` Promise). NN backends, model bytes and the NN server executor reach `Setup::initializeNNEvaluator(s)` through the `NNEvaluatorHost` trait (program/setup.rs); `MainCmds::analysis` gets its argv, input lines, stdout/stderr sinks and that host through `AnalysisHost` (command/analysis.rs).
+**Injected host services.** Core does no IO and reads no clock. File access that upstream does through `FileUtils` (config `@include`, `initialize(fname)`, `overrideKeys(fname)`) goes through a reader callback the host installs (`ConfigParser::set_include_reader`), which receives the path exactly as `FileUtils::open` would and fails with `FileUtils::open`'s error text when absent (D15). Time comes from `core::timer::set_clock(fn() -> f64)`: seconds as `f64`, first call wins (returns `false` after), and a `ClockTimer` with no clock installed is a fatal error, so hosts and search tests install one first. Timed waits (AsyncBot's `reportDuringSearchEvery` callback loop, upstream `condition_variable::wait_for`) go through `port::executor::set_sleep`, installed the same way (katago-cli: a timer thread; wasm: a `setTimeout` Promise). NN backends, model bytes and the NN server executor reach `Setup::initializeNNEvaluator(s)` through the `NNEvaluatorHost` trait (program/setup.rs), which also answers for the linked backend's static `NeuralNet::getBatchPolicy` / `getNumEffectiveDevices` (asked before any model is loaded, also for a skipped net); `MainCmds::analysis` gets its argv, input lines, stdout/stderr sinks and that host through `AnalysisHost` (command/analysis.rs).
 
 **Test-local copies.** A test that needs an upstream helper from a later milestone (e.g. `PlayUtils::chooseRandomLegalMove`, M3) may carry a faithful copy in its test file, tagged `/// upstream: PlayUtils::chooseRandomLegalMove (playutils.cpp) — test-local copy until M3`. Delete it when the module lands. The same applies to a helper from an `[[ignored]]` file that only a test needs (testsearchnonn's `GameInitializer` from play.cpp): tag it `— test-local copy` and say in the ignored entry's `reason` which test carries it. A function skipped because it does IO or reads stdin (`Global::pauseForKey`) gets no Rust fn; the manifest `notes` say so.
 

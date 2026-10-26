@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/core/rand_helpers.h @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/core/rand_helpers.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // cpp/core/rand_helpers.cpp only includes the header ("ensure it compiles on its own").
 // The out-of-line members of XorShift1024Mult and PCG32 (constructors, init, test) are defined

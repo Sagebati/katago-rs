@@ -1,5 +1,5 @@
 //! Transcription (a test, not a port) of upstream cpp/tests/testsearchv9.cpp `Tests::runSearchTestsV9` (and its
-//! `runV9Positions`) @ v1.16.5, with the TestSearchCommon helpers as test-local copies (common_search/mod.rs).
+//! `runV9Positions`) @ v1.18.2, with the TestSearchCommon helpers as test-local copies (common_search/mod.rs).
 //!
 //! It replays the same calls in the same order (same params, seeds and printing) through the ported AsyncBot /
 //! Search / NNEvaluator with the REAL network g170-b6c96 on the burn flex backend, and compares the captured

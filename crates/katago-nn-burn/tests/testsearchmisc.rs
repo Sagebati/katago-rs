@@ -1,4 +1,4 @@
-//! Transcription (a test, not a port) of upstream cpp/tests/testsearchmisc.cpp `Tests::runNNOnTinyBoard` @ v1.16.5,
+//! Transcription (a test, not a port) of upstream cpp/tests/testsearchmisc.cpp `Tests::runNNOnTinyBoard` @ v1.18.2,
 //! with the TestSearchCommon helpers as test-local copies (common_search/mod.rs).
 //!
 //! It replays the same calls (a 5x5 position on a 6x6 evaluator, symmetry 0, skipCache, owner map) through the

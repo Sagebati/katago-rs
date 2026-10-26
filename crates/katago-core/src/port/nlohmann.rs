@@ -1,4 +1,4 @@
-// Ported from KataGo cpp/external/nlohmann_json/json.hpp (nlohmann/json 3.8.0, MIT) @ ba938676d7f42d70950b3a535af2466fb642008c
+// Ported from KataGo cpp/external/nlohmann_json/json.hpp (nlohmann/json 3.8.0, MIT) @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // 1. The compact `basic_json::dump()` path (indent = -1, ensure_ascii = false,
 //    error_handler = strict) and the grisu2 `dtoa_impl` it uses for doubles.
