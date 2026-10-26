@@ -24,7 +24,8 @@ parity backend="flex" net="b10":
     cargo run --release -p katago-nn-burn --example parity {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}}
 
 # Native forward-pass throughput, evals/s with one readback per batch (backend: flex | wgpu | rocm; net: b6 | b10 |
-# b18 | human; precision: f32 | f16, GPU only). README "Benchmarks".
+# b18 | human; precision: f32 | f16, GPU only). README "Benchmarks". The transformer nets (b10c384tf | b10c512tf | tf3)
+# need their feature: `cargo run --release -p katago-nn-burn --example bench -F wgpu-fixed,net-b10c384h6nbttflrs -- wgpu b10c384tf`.
 bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
     cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
 

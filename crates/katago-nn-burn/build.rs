@@ -14,6 +14,11 @@ const NETS: &[(&str, &str)] = &[
   ("NET_B18C384NBT", "kata1-b18c384nbt"),
   // Human-SL net (model v15, metaEncoderVersion 1: a third input `meta_input`, SGFMetadata rows).
   ("NET_B18C384NBT_HUMANV0", "b18c384nbt-humanv0"),
+  // Transformer nets (hasAnyTransformerBlocks: attention + RMSNorm blocks between nested bottleneck blocks).
+  // b10c384h6nbttflrs is model v15, the other two model v17.
+  ("NET_B10C384H6NBTTFLRS", "b10c384h6nbttflrs"),
+  ("NET_B10C512H8NBT3TFLRS_FSON_SILU_RSNH", "b10c512h8nbt3tflrs-fson-silu-rsnh"),
+  ("NET_TF3_B11C768", "kata1-tf3-b11c768"),
 ];
 
 fn main() {
@@ -278,9 +283,12 @@ impl OpOverride for SameConv {
   }
 }
 
-/// Routes ReduceSum / ReduceMax through `crate::conv::spatial_sum` / `spatial_max`: KataGo nets only reduce the
-/// last axis of a rank-3 `[N, C, H*W]` tensor without keepdims (global pooling and the mask's area), which on GPUs
-/// is one workgroup per row instead of burn's generic reduce (~90 us per call at batch 1 without autotune).
+/// Routes ReduceSum / ReduceMax through `crate::conv::spatial_sum` / `spatial_max`: the convolutional nets only
+/// reduce the last axis of a rank-3 `[N, C, H*W]` tensor without keepdims (global pooling and the mask's area),
+/// which on GPUs is one workgroup per row instead of burn's generic reduce (~90 us per call at batch 1 without
+/// autotune). The transformer nets also have keepdims reduces (their RMSNorms, over the channels of `[N, H*W, C]`
+/// or over all of `[N, C*H*W]`): those get the code burn-onnx's built-in would generate (an override replaces the
+/// built-in for every node of its type).
 struct SpatialReduce(NodeType, &'static str);
 
 impl OpOverride for SpatialReduce {
@@ -299,18 +307,38 @@ impl OpOverride for SpatialReduce {
       other => return Err(ProcessError::Custom(format!("{}: reduce of {other:?}", node.name()))),
     };
     let last_axis = matches!(axes, onnx_ir::node::reduce::ReduceAxes::Static(dims) if dims[..] == [2]);
-    if !last_axis || keepdims || rank != 3 {
-      return Err(ProcessError::Custom(format!(
-        "{}: unsupported reduce (axes {axes:?}, keepdims {keepdims}, rank {rank})",
-        node.name()
-      )));
-    }
     let input = ctx.arg(&node.inputs()[0]);
     let output = arg_to_ident(&node.outputs()[0]);
-    let f = Ident::new(self.1, Span::call_site());
-    Ok(quote! {
-        let #output = crate::conv::#f(#input);
-    })
+    if last_axis && !keepdims && rank == 3 {
+      let f = Ident::new(self.1, Span::call_site());
+      return Ok(quote! {
+          let #output = crate::conv::#f(#input);
+      });
+    }
+    // Anything else: burn-onnx's built-in code for one static axis (node/reduce.rs `forward_reduce`).
+    let axis = match axes {
+      onnx_ir::node::reduce::ReduceAxes::Static(dims) if dims.len() == 1 && dims[0] < rank => dims[0],
+      _ => {
+        return Err(ProcessError::Custom(format!(
+          "{}: unsupported reduce (axes {axes:?}, keepdims {keepdims}, rank {rank})",
+          node.name()
+        )));
+      }
+    };
+    let reduced = match node {
+      Node::ReduceSum(_) => quote! { #input.sum_dim(#axis) },
+      _ => quote! { #input.max_dim(#axis) },
+    };
+    if keepdims {
+      Ok(quote! {
+          let #output = #reduced;
+      })
+    } else {
+      let out_rank = rank - 1;
+      Ok(quote! {
+          let #output = #reduced.squeeze_dims::<#out_rank>(&[#axis]);
+      })
+    }
   }
 }
 

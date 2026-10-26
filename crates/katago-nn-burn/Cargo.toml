@@ -16,6 +16,13 @@ net-b18c384nbt = []
 # Human-SL net b18c384nbt-humanv0 (models/onnx/b18c384nbt-humanv0.onnx, `just convert`): model v15 with the
 # SGF metadata input (+100 MB weights, +~30 s release build).
 net-b18c384nbt-humanv0 = []
+# Transformer nets (models/onnx/<net>.onnx, `just convert`; tools/bin2onnx/README.md), not default (big weights,
+# long release builds): b10c384h6nbttflrs (model v15, 48 MB ONNX, the browser candidate),
+# b10c512h8nbt3tflrs-fson-silu-rsnh (v17, 126 MB) and the main-run kata1-tf3-b11c768
+# (kata1-tf3-b11c768-s11003M-d5973M-7gres, v17, 300 MB).
+net-b10c384h6nbttflrs = []
+net-b10c512h8nbt3tflrs-fson-silu-rsnh = []
+net-tf3-b11c768 = []
 # CPU: `flex` is burn's portable pure-Rust backend (native and wasm).
 flex = ["burn/flex", "dep:burn-flex"]
 # GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser, with burn's autotune (each kernel family is

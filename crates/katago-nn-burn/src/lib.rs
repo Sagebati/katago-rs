@@ -54,6 +54,9 @@ macro_rules! network {
   ($feature:literal, $module:ident, $name:literal, |$m:ident, $b:ident, $g:ident, $mi:ident| $call:expr) => {
     #[cfg(feature = $feature)]
     pub mod $module {
+      // burn-onnx splits a big graph (the transformer nets) into submodules whose forward takes every tensor that
+      // crosses the cut.
+      #![allow(clippy::too_many_arguments)]
       include!(concat!(env!("OUT_DIR"), "/model/", $name, ".rs"));
       include!(concat!(env!("OUT_DIR"), "/model/", $name, ".desc.rs"));
 
@@ -93,6 +96,13 @@ network!("net-b6c96", b6c96, "g170-b6c96");
 network!("net-b10c128", b10c128, "g170e-b10c128");
 network!("net-b18c384nbt", b18c384nbt, "kata1-b18c384nbt");
 network!("net-b18c384nbt-humanv0", b18c384nbt_humanv0, "b18c384nbt-humanv0", meta);
+network!("net-b10c384h6nbttflrs", b10c384h6nbttflrs, "b10c384h6nbttflrs");
+network!(
+  "net-b10c512h8nbt3tflrs-fson-silu-rsnh",
+  b10c512h8nbt3tflrs_fson_silu_rsnh,
+  "b10c512h8nbt3tflrs-fson-silu-rsnh"
+);
+network!("net-tf3-b11c768", tf3_b11c768, "kata1-tf3-b11c768");
 
 /// The networks katago-nn-burn knows, compiled in or not (one `net-*` feature each).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -102,11 +112,25 @@ pub enum NetId {
   B18c384nbt,
   /// The human-SL net (SGF metadata input): `-human-model`, or `-model` with a humanSLProfile.
   B18c384nbtHumanv0,
+  /// Transformer nets (attention + RMSNorm blocks): b10c384h6nbttflrs (model v15), the browser candidate.
+  B10c384h6nbttflrs,
+  /// b10c512h8nbt3tflrs-fson-silu-rsnh (model v17).
+  B10c512h8nbt3tflrsFsonSiluRsnh,
+  /// The main-run transformer kata1-tf3-b11c768-s11003M-d5973M-7gres (model v17).
+  Tf3B11c768,
 }
 
 impl NetId {
-  /// Every network, smallest first.
-  pub const ALL: [NetId; 4] = [NetId::B6c96, NetId::B10c128, NetId::B18c384nbt, NetId::B18c384nbtHumanv0];
+  /// Every network, smallest first (by weights).
+  pub const ALL: [NetId; 7] = [
+    NetId::B6c96,
+    NetId::B10c128,
+    NetId::B10c384h6nbttflrs,
+    NetId::B18c384nbt,
+    NetId::B18c384nbtHumanv0,
+    NetId::B10c512h8nbt3tflrsFsonSiluRsnh,
+    NetId::Tf3B11c768,
+  ];
 
   /// The network's name, also the stem of its ONNX and `.bpk` files.
   pub fn name(self) -> &'static str {
@@ -115,6 +139,9 @@ impl NetId {
       NetId::B10c128 => "g170e-b10c128",
       NetId::B18c384nbt => "kata1-b18c384nbt",
       NetId::B18c384nbtHumanv0 => "b18c384nbt-humanv0",
+      NetId::B10c384h6nbttflrs => "b10c384h6nbttflrs",
+      NetId::B10c512h8nbt3tflrsFsonSiluRsnh => "b10c512h8nbt3tflrs-fson-silu-rsnh",
+      NetId::Tf3B11c768 => "kata1-tf3-b11c768",
     }
   }
 
@@ -144,6 +171,12 @@ impl NetId {
       NetId::B18c384nbt => Some(b18c384nbt::BPK_PATH),
       #[cfg(feature = "net-b18c384nbt-humanv0")]
       NetId::B18c384nbtHumanv0 => Some(b18c384nbt_humanv0::BPK_PATH),
+      #[cfg(feature = "net-b10c384h6nbttflrs")]
+      NetId::B10c384h6nbttflrs => Some(b10c384h6nbttflrs::BPK_PATH),
+      #[cfg(feature = "net-b10c512h8nbt3tflrs-fson-silu-rsnh")]
+      NetId::B10c512h8nbt3tflrsFsonSiluRsnh => Some(b10c512h8nbt3tflrs_fson_silu_rsnh::BPK_PATH),
+      #[cfg(feature = "net-tf3-b11c768")]
+      NetId::Tf3B11c768 => Some(tf3_b11c768::BPK_PATH),
       #[allow(unreachable_patterns)]
       _ => None,
     }
@@ -167,6 +200,18 @@ impl NetId {
       #[cfg(feature = "net-b18c384nbt-humanv0")]
       NetId::B18c384nbtHumanv0 => Some(std::rc::Rc::new(
         BurnNeuralNet::<b18c384nbt_humanv0::Model>::new(device).with_batch_buckets(batch_buckets),
+      )),
+      #[cfg(feature = "net-b10c384h6nbttflrs")]
+      NetId::B10c384h6nbttflrs => Some(std::rc::Rc::new(
+        BurnNeuralNet::<b10c384h6nbttflrs::Model>::new(device).with_batch_buckets(batch_buckets),
+      )),
+      #[cfg(feature = "net-b10c512h8nbt3tflrs-fson-silu-rsnh")]
+      NetId::B10c512h8nbt3tflrsFsonSiluRsnh => Some(std::rc::Rc::new(
+        BurnNeuralNet::<b10c512h8nbt3tflrs_fson_silu_rsnh::Model>::new(device).with_batch_buckets(batch_buckets),
+      )),
+      #[cfg(feature = "net-tf3-b11c768")]
+      NetId::Tf3B11c768 => Some(std::rc::Rc::new(
+        BurnNeuralNet::<tf3_b11c768::Model>::new(device).with_batch_buckets(batch_buckets),
       )),
       #[allow(unreachable_patterns)]
       _ => None,

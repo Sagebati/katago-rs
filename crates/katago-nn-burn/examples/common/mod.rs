@@ -21,7 +21,8 @@ pub fn take_precision(args: &mut Vec<String>) -> &'static str {
   if precision == "f16" { "f16" } else { "f32" }
 }
 
-/// Runs `$body` with `$net` bound to the network type named by `$name` (b6 | b10 | b18 | human) and its `.bpk`.
+/// Runs `$body` with `$net` bound to the network type named by `$name` (b6 | b10 | b18 | human, or the transformer
+/// nets b10c384tf | b10c512tf | tf3, also by their full names) and its `.bpk`.
 #[macro_export]
 macro_rules! with_net {
   ($name:expr, $net:ident => $body:expr) => {
@@ -46,7 +47,22 @@ macro_rules! with_net {
         type $net = katago_nn_burn::b18c384nbt_humanv0::Model;
         $body(katago_nn_burn::b18c384nbt_humanv0::BPK_PATH)
       }
-      other => panic!("network {other} not compiled in (b6 | b10 | b18 | human)"),
+      #[cfg(feature = "net-b10c384h6nbttflrs")]
+      "b10c384tf" | "b10c384h6nbttflrs" => {
+        type $net = katago_nn_burn::b10c384h6nbttflrs::Model;
+        $body(katago_nn_burn::b10c384h6nbttflrs::BPK_PATH)
+      }
+      #[cfg(feature = "net-b10c512h8nbt3tflrs-fson-silu-rsnh")]
+      "b10c512tf" | "b10c512h8nbt3tflrs-fson-silu-rsnh" => {
+        type $net = katago_nn_burn::b10c512h8nbt3tflrs_fson_silu_rsnh::Model;
+        $body(katago_nn_burn::b10c512h8nbt3tflrs_fson_silu_rsnh::BPK_PATH)
+      }
+      #[cfg(feature = "net-tf3-b11c768")]
+      "tf3" | "kata1-tf3-b11c768" => {
+        type $net = katago_nn_burn::tf3_b11c768::Model;
+        $body(katago_nn_burn::tf3_b11c768::BPK_PATH)
+      }
+      other => panic!("network {other} not compiled in (b6 | b10 | b18 | human | b10c384tf | b10c512tf | tf3)"),
     }
   };
 }
