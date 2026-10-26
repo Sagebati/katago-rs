@@ -111,28 +111,10 @@ macro_rules! coutln {
 
 /// The oracle's `Logger logger(nullptr, false, false, false); logger.addOStream(out)` for the Search only:
 /// `Logger::write(str)` = `": " + str + endl`. The NNEvaluator got a NULL logger there, so records of the
-/// port's neuralnet modules are dropped.
-struct SearchLogger;
-
-impl log::Log for SearchLogger {
-  fn enabled(&self, _metadata: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, record: &log::Record) {
-    if record.target().starts_with("katago_core::search") {
-      coutln!(": {}", record.args());
-    }
-  }
-  fn flush(&self) {}
-}
-
-static LOGGER: SearchLogger = SearchLogger;
-
-fn install_logger_clock_and_hook() {
+/// port's neuralnet modules are dropped. The records are captured until the returned guard drops.
+fn install_logger_clock_and_hook() -> tracing::subscriber::DefaultGuard {
   static ONCE: OnceLock<()> = OnceLock::new();
   ONCE.get_or_init(|| {
-    log::set_logger(&LOGGER).expect("no other logger in this test binary");
-    log::set_max_level(log::LevelFilter::Trace);
     #[cfg(not(target_arch = "wasm32"))]
     {
       let prev = std::panic::take_hook();
@@ -154,6 +136,7 @@ fn install_logger_clock_and_hook() {
     }
   });
   set_clock(common::fixed_clock);
+  common::capture_logs("katago_core::search", |msg| coutln!(": {}", msg))
 }
 
 /// Runs `f`, returning the panic message instead of unwinding (only the capturing threads' panics are swallowed).
@@ -1381,7 +1364,7 @@ fn compare_case(label: &str, actual: &str, expected: &str) -> Result<(), String>
 fn run_oracle() -> (usize, Vec<Mismatch>) {
   init();
   ScoreValue::init_tables(); //upstream's main(): "MUST BE CALLED AT PROGRAM START!"
-  install_logger_clock_and_hook();
+  let _logs = install_logger_clock_and_hook();
   let (expected, explore) = fixture_text();
   let cases = split_cases(&expected);
   if !explore {
@@ -1623,7 +1606,7 @@ impl Stopwatch {
 fn run_multithread() -> String {
   init();
   ScoreValue::init_tables();
-  install_logger_clock_and_hook();
+  let _logs = install_logger_clock_and_hook();
   let started = Stopwatch::new();
   let expected = fixture("oracle", "search_nonn.txt");
   let all: Vec<Spec> = split_cases(&expected).iter().map(|(l, _)| parse_spec(l)).collect();

@@ -158,8 +158,8 @@ impl Analyzer for WasmAnalyzer {
             self.progress(pass, turns.last().expect("just fed"), turns.len(), expected);
           }
         }
-        Ok(Fed::Warning(warning)) => log::warn!("katago-wasm review: warning: {warning}"),
-        Ok(Fed::Unparsable(e)) => log::warn!("katago-wasm review: {e}"),
+        Ok(Fed::Warning(warning)) => tracing::warn!("katago-wasm review: warning: {warning}"),
+        Ok(Fed::Unparsable(e)) => tracing::warn!("katago-wasm review: {e}"),
         // The router only hands this query its own lines.
         Ok(Fed::OtherQuery(_) | Fed::NoId) => {}
         Err(e) => break Err(e),

@@ -71,7 +71,7 @@ pub async fn analyze_game<A: Analyzer>(
     let human_profile = human_profile.filter(|profile| {
         let loaded = !cfg.human_model.is_empty();
         if !loaded {
-            log::warn!(
+            tracing::warn!(
                 "job asked for a human profile ({profile}) but no human_model is loaded; \
                  analysing without human policy"
             );

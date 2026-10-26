@@ -49,18 +49,10 @@ thread_local! {
   static LOGS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Collects the log lines (`logger.write` -> `log::info!`) of the current thread.
-struct Cap;
-impl log::Log for Cap {
-  fn enabled(&self, _: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, r: &log::Record) {
-    LOGS.with(|l| l.borrow_mut().push(format!("{}", r.args())));
-  }
-  fn flush(&self) {}
+/// Collects the log lines (`logger.write` -> `tracing::info!`) of the current thread.
+fn capture_logs() -> tracing::subscriber::DefaultGuard {
+  common::capture_logs("", |msg| LOGS.with(|l| l.borrow_mut().push(msg.to_string())))
 }
-static CAP: Cap = Cap;
 
 /// load_model must not be reached: every NN op here has debugSkipNeuralNet ("/dev/null").
 struct Host {
@@ -298,8 +290,7 @@ fn parse_cases(text: &str) -> Vec<Case> {
 /// The ops of setup_oracle.cpp, through the port. `nn_only` is the oracle's "nn" mode.
 fn run_oracle(cases: &[Case], prefix: &str, nn_only: bool) -> String {
   common::init();
-  let _ = log::set_logger(&CAP);
-  log::set_max_level(log::LevelFilter::Info);
+  let _logs = capture_logs();
   let base_lines = param_lines(&SearchParams::new());
   let mut o = String::new();
   {

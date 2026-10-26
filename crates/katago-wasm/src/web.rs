@@ -2,6 +2,7 @@
 
 use std::cell::Cell;
 use std::cell::RefCell;
+use std::fmt::Write as _;
 use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -17,6 +18,17 @@ use js_sys::Reflect;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
+
+use tracing::Event;
+use tracing::Level;
+use tracing::Metadata;
+use tracing::Subscriber;
+use tracing::field::Field;
+use tracing::field::Visit;
+use tracing::level_filters::LevelFilter;
+use tracing_log::AsLog as _;
+use tracing_subscriber::layer::Layer;
+use tracing_subscriber::layer::SubscriberExt as _;
 
 use katago_core::command::analysis::AnalysisArgs;
 use katago_core::command::analysis::AnalysisHost;
@@ -144,7 +156,7 @@ impl Spawner for WasmSpawner {
 }
 
 //------------------------------------------------------------------------------------------------
-// Logging (core/logger.cpp is the log crate; this is its browser backend)
+// Logging (core/logger.cpp is `tracing`; this is its browser subscriber)
 
 thread_local! {
   /// `(kind, text)` callback of the current engine: kind is "error" | "warn" | "info" for log lines and
@@ -152,32 +164,39 @@ thread_local! {
   static LOG_FN: RefCell<Option<Function>> = const { RefCell::new(None) };
 }
 
-struct WebLogger;
+/// The `message` of an event (what `log` calls `record.args()`).
+struct Message(String);
 
-static WEB_LOGGER: WebLogger = WebLogger;
-
-impl log::Log for WebLogger {
-  /// The engine's own lines (katago_core, katago_nn_burn, katago_wasm) at info; dependencies (wgpu,
-  /// cubecl, burn) only from warn.
-  fn enabled(&self, metadata: &log::Metadata) -> bool {
-    if metadata.target().starts_with("katago") {
-      metadata.level() <= log::Level::Info
-    } else {
-      metadata.level() <= log::Level::Warn
+impl Visit for Message {
+  fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+    if field.name() == "message" {
+      let _ = write!(self.0, "{value:?}");
     }
   }
-  fn log(&self, record: &log::Record) {
-    if !self.enabled(record.metadata()) {
-      return;
+}
+
+struct WebLayer;
+
+impl<S: Subscriber> Layer<S> for WebLayer {
+  /// The engine's own lines (katago_core, katago_nn_burn, katago_wasm) at info; dependencies (wgpu,
+  /// cubecl, burn) only from warn. Their `log` records come through LogTracer with their own target and level.
+  fn enabled(&self, metadata: &Metadata<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) -> bool {
+    if metadata.target().starts_with("katago") {
+      *metadata.level() <= Level::INFO
+    } else {
+      *metadata.level() <= Level::WARN
     }
-    let kind = match record.level() {
-      log::Level::Error => "error",
-      log::Level::Warn => "warn",
+  }
+  fn on_event(&self, event: &Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
+    let kind = match *event.metadata().level() {
+      Level::ERROR => "error",
+      Level::WARN => "warn",
       _ => "info",
     };
-    emit_log(kind, &record.args().to_string());
+    let mut msg = Message(String::new());
+    event.record(&mut msg);
+    emit_log(kind, &msg.0);
   }
-  fn flush(&self) {}
 }
 
 fn emit_log(kind: &str, text: &str) {
@@ -189,12 +208,12 @@ fn emit_log(kind: &str, text: &str) {
   });
 }
 
-/// Clock, timed wait and log backend: once per wasm instance.
+/// Clock, timed wait and log subscriber: once per wasm instance.
 fn install_globals() {
   katago_core::core::timer::set_clock(clock);
   katago_core::port::executor::set_sleep(sleep);
-  if log::set_logger(&WEB_LOGGER).is_ok() {
-    log::set_max_level(log::LevelFilter::Info);
+  if tracing::subscriber::set_global_default(tracing_subscriber::registry().with(WebLayer)).is_ok() {
+    let _ = tracing_log::LogTracer::builder().with_max_level(LevelFilter::INFO.as_log()).init();
   }
 }
 
@@ -358,7 +377,7 @@ impl NeuralNet for StatsNeuralNet {
           let tb = now_ms();
           self.inner.get_output(&mut *compute_handle, &mut *buffers, b, &bufs, &mut outs).await?;
           self.stats.warmup_batches.set(self.stats.warmup_batches.get() + 1);
-          log::info!("katago-wasm: warm-up batch of {b}: {:.0} ms", now_ms() - tb);
+          tracing::info!("katago-wasm: warm-up batch of {b}: {:.0} ms", now_ms() - tb);
         }
         self.stats.warmup_ms.set(now_ms() - t0);
       }

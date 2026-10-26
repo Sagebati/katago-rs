@@ -228,7 +228,7 @@ impl NNServerBuf {
 
 impl NNEvaluator {
   /// upstream: NNEvaluator::NNEvaluator (nneval.cpp)
-  /// PORT NOTE: `Logger* logger` dropped (log crate); `ConfigParser& cfg` -> `&mut ConfigParser`
+  /// PORT NOTE: `Logger* logger` dropped (tracing); `ConfigParser& cfg` -> `&mut ConfigParser`
   /// (consulted by the backend, not stored, as upstream). New trailing params (OWNERSHIP.tsv, D6):
   /// `backend` (the NeuralNet:: functions), `spawner` (spawnServerThreads), and `model_bytes`, the
   /// contents of `modelFileName`, which the backend loads instead of opening the file (no file IO
@@ -317,7 +317,7 @@ impl NNEvaluator {
       return Err(KataError::StringError("gpuIdxByServerThread.size() != numThreads".to_string()));
     }
 
-    log::info!(
+    tracing::info!(
       "{}",
       "Initializing neural net buffer to be size ".to_string()
         + &Global::int_to_string(s.nn_x_len)
@@ -989,7 +989,7 @@ impl NNEvaluator {
     // NeuralNet::freeComputeHandle(gpuHandle)
     drop(gpu_handle);
     // PORT NOTE: `buf` (NNServerBuf) is a stack local upstream, destroyed at the end of serve.
-    log::info!(
+    tracing::info!(
       "{}",
       "GPU ".to_string()
         + &Global::int_to_string(gpu_idx_for_this_thread)
@@ -1262,10 +1262,10 @@ impl NNEvaluator {
       }
 
       if !policy_sum.is_finite() {
-        // PORT NOTE: `cout << ...; history.printDebugInfo(cout,board);` -> log::error!
+        // PORT NOTE: `cout << ...; history.printDebugInfo(cout,board);` -> tracing::error!
         let mut dbg = String::new();
         history.print_debug_info(&mut dbg, board);
-        log::error!("Got nonfinite for policy sum\n{}", dbg);
+        tracing::error!("Got nonfinite for policy sum\n{}", dbg);
         return Err(KataError::StringError("Got nonfinite for policy sum".to_string()));
       }
 
@@ -1273,7 +1273,7 @@ impl NNEvaluator {
       if (policy_sum as f64) <= 0.0 {
         if !buf.error_log_lockout.get() {
           buf.error_log_lockout.set(true);
-          log::warn!("{}", "Warning: all legal moves rounded to 0 probability for ".to_string() + &self.model_file_name);
+          tracing::warn!("{}", "Warning: all legal moves rounded to 0 probability for ".to_string() + &self.model_file_name);
         }
         let uniform: f32 = 1.0f32 / legal_count as f32;
         for i in 0..self.policy_size {
@@ -1322,7 +1322,7 @@ impl NNEvaluator {
           no_result_prob /= prob_sum;
 
           if !prob_sum.is_finite() || !score_value.is_finite() {
-            log::error!(
+            tracing::error!(
               "Got nonfinite for nneval value\n{} {} {} {}",
               crate::port::fmt::cpp_ostream_f64(win_logits),
               crate::port::fmt::cpp_ostream_f64(loss_logits),
@@ -1433,7 +1433,7 @@ impl NNEvaluator {
             || !shortterm_score_error.is_finite()
           {
             let f = crate::port::fmt::cpp_ostream_f64;
-            log::error!(
+            tracing::error!(
               "Got nonfinite for nneval value\n{} {} {} {} {} {} {} {} {}",
               f(win_logits),
               f(loss_logits),
@@ -1572,8 +1572,8 @@ async fn serve_evals(rand_seed_this_thread: String, nn_eval: Rc<NNEvaluator>, gp
   alive_ref.num_server_threads_alive.set(alive_ref.num_server_threads_alive.get() - 1);
   alive_ref.server_threads_exited.notify_all();
   if let Err(e) = res {
-    log::info!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
-    log::error!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
+    tracing::info!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
+    tracing::error!("{}", "ERROR: NN server thread failed: ".to_string() + e.what());
     Global::fatal_error(&("ERROR: NN server thread failed: ".to_string() + e.what()));
   }
 }

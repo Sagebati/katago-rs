@@ -7,7 +7,7 @@ publish = false
 description = "File-by-file port of KataGo's cpp/ (upstream v1.18.2). No burn dependency; wasm-safe."
 
 [dependencies]
-log = "0.4"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 md-5 = "0.10"
 sha2 = "0.10"
 # No `preserve_order`: serde_json's Map must be a BTreeMap so keys sort like nlohmann's std::map (PORTING.md §9).
@@ -16,6 +16,10 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 getrandom = "0.4"
 # Async virtual threads (PORTING.md §10/§11): LocalBoxFuture, LocalPool for native hosts/tests. No thread-pool.
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+
+# The tests capture the port's log lines with a scoped subscriber (tests/common).
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry"] }
 
 # Unseeded Rand::init() entropy needs the browser's crypto.getRandomValues on wasm32-unknown-unknown.
 [target.'cfg(target_arch = "wasm32")'.dependencies]

@@ -32,7 +32,7 @@ katago-core = { path = "../katago-core" }
 # Full-game review (M6): katago-ws's annotation, IO-free (reviewGame).
 katago-annotate = { path = "../katago-annotate" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
-log = "0.4"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 wasm-bindgen = "=0.2.129"
 
@@ -47,6 +47,9 @@ wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["console", "Performance"] }
 console_error_panic_hook = "0.1"
+# The worker's log subscriber (web.rs): a Layer on a Registry; LogTracer bridges the `log` records of burn, cubecl, wgpu.
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry"] }
+tracing-log = "0.2"
 # rand (via burn) and Rand::init() entropy need crypto.getRandomValues on wasm32-unknown-unknown.
 getrandom = { version = "0.4", features = ["wasm_js"] }
 

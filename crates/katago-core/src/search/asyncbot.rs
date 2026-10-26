@@ -17,7 +17,7 @@
 //   `Rc<dyn Fn(&Search)>`. The analyze callback loop thread is a task that Search::runWholeSearch polls
 //   next to its search threads (its `concurrent_task` parameter), waiting through the injected
 //   `port::executor::sleep` (upstream: `condition_variable::wait_for`).
-// - `Logger*` dropped (log crate).
+// - `Logger*` dropped (tracing).
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -531,7 +531,7 @@ impl AsyncBot {
       self.search.run_whole_search_full(Some(&search_begun), Some(&should_stop_early), pondering, &tc, self.search_factor, concurrent_task).await;
     if let Err(e) = result {
       // upstream: searchThreadLoop's catch (the bot thread then exits).
-      log::info!("{}", "ERROR: Async bot thread failed: ".to_string() + e.what());
+      tracing::info!("{}", "ERROR: Async bot thread failed: ".to_string() + e.what());
       self.is_running = false;
       self.is_pondering = false;
       return Err(e);

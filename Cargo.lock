@@ -3753,10 +3753,10 @@ version = "0.1.0"
 dependencies = [
  "flate2",
  "katago-core",
- "log",
  "serde",
  "serde_json",
  "sgf-parse",
+ "tracing",
  "wasm-bindgen-test",
 ]
 
@@ -3771,6 +3771,9 @@ dependencies = [
  "libc",
  "log",
  "serde_json",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -3779,10 +3782,11 @@ version = "0.0.0"
 dependencies = [
  "futures",
  "getrandom 0.4.3",
- "log",
  "md-5",
  "serde_json",
  "sha2",
+ "tracing",
+ "tracing-subscriber",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]
@@ -3800,9 +3804,10 @@ dependencies = [
  "half",
  "js-sys",
  "katago-core",
- "log",
  "onnx-ir",
  "regex",
+ "tracing",
+ "tracing-subscriber",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
@@ -3821,8 +3826,10 @@ dependencies = [
  "katago-annotate",
  "katago-core",
  "katago-nn-burn",
- "log",
  "serde_json",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

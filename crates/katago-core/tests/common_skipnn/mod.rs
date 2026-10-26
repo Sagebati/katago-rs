@@ -82,7 +82,7 @@ impl NeuralNet for NoBackend {
 }
 
 /// upstream: TestSearchCommon::startNNEval (testsearchcommon.cpp) — test-local copy
-/// PORT NOTE: `Logger&` dropped (log crate); the backend is NoBackend, so only debugSkipNeuralNet = true works;
+/// PORT NOTE: `Logger&` dropped (tracing); the backend is NoBackend, so only debugSkipNeuralNet = true works;
 /// `spawnServerThreads()` is async, driven to completion on `pool`; the `sleep_for(0.1)` ordering hack is not
 /// needed (one OS thread, deterministic).
 pub fn start_nn_eval(

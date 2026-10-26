@@ -15,7 +15,6 @@ mod common;
 use std::cell::RefCell;
 use std::fmt::Write as _;
 use std::rc::Rc;
-use std::sync::OnceLock;
 
 use common::Cases;
 use common::compare_lines;
@@ -66,30 +65,11 @@ macro_rules! coutln {
   }};
 }
 
-/// The oracle's Logger (`": " + message`) for the Search's records only (the evaluators got a NULL logger).
-struct SearchLogger;
-
-impl log::Log for SearchLogger {
-  fn enabled(&self, _metadata: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, record: &log::Record) {
-    if record.target().starts_with("katago_core::search") {
-      coutln!(": {}", record.args());
-    }
-  }
-  fn flush(&self) {}
-}
-
-static LOGGER: SearchLogger = SearchLogger;
-
-fn install_logger_and_clock() {
-  static ONCE: OnceLock<()> = OnceLock::new();
-  ONCE.get_or_init(|| {
-    log::set_logger(&LOGGER).expect("no other logger in this test binary");
-    log::set_max_level(log::LevelFilter::Trace);
-  });
+/// The oracle's Logger (`": " + message`) for the Search's records only (the evaluators got a NULL logger),
+/// until the returned guard drops.
+fn install_logger_and_clock() -> tracing::subscriber::DefaultGuard {
   set_clock(common::fixed_clock);
+  common::capture_logs("katago_core::search", |msg| coutln!(": {}", msg))
 }
 
 /// debugSkipNeuralNet: the backend is never reached.
@@ -344,7 +324,7 @@ wasm_test! {
 fn search_humansl_vs_upstream() {
   init();
   ScoreValue::init_tables();
-  install_logger_and_clock();
+  let _logs = install_logger_and_clock();
   let text = fixture("oracle", "search_humansl.txt");
   let mut cases = Cases::new("search_humansl_vs_upstream");
   let mut blocks: Vec<(String, String)> = Vec::new();

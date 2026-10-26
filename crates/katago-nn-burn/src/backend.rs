@@ -18,7 +18,7 @@
 // - getOutput is async: one readback of all outputs (`into_data_async`), then a yield so other
 //   virtual threads run, and on wasm32 also the host's event loop (PORTING.md §11). The per-row
 //   `symmetry` / `policyOptimism` are read from the input bufs before that await.
-// - Logger output goes to the `log` crate.
+// - Logger output goes to `tracing`.
 // - Optional batch-shape buckets (`BurnNeuralNet::with_batch_buckets`, port-only, off by default): a
 //   batch is padded to the smallest bucket that holds it, so a GPU backend sees a few fixed shapes
 //   (each new shape costs a shader compile + autotune on wgpu, 1-3 s in the browser).
@@ -352,11 +352,11 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
   ) -> Result<Box<dyn nninterface::ComputeHandle>, KataError> {
     let context = context.as_any().downcast_ref::<BurnComputeContext>().expect("ComputeContext created by BurnNeuralNet");
     let loaded_model = downcast_model(loaded_model);
-    log::info!(
+    tracing::info!(
       "{}",
       "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model version " + &Global::int_to_string(loaded_model.model_desc.model_version)
     );
-    log::info!(
+    tracing::info!(
       "{}",
       "Burn backend thread ".to_string() + &Global::int_to_string(server_thread_idx) + ": Model name: " + &loaded_model.model_desc.name
         + " (" + &loaded_model.model_desc.get_short_info_string() + ")"
