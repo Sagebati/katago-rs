@@ -326,6 +326,12 @@ impl OpOverride for SpatialReduce {
         )));
       }
     };
+    // The spatial trunk-tip RMSNorm's sum over all of `[N, C*H*W]`: in two steps on GPUs (crate::conv::row_sum).
+    if matches!(node, Node::ReduceSum(_)) && rank == 2 && axis == 1 && keepdims {
+      return Ok(quote! {
+          let #output = crate::conv::row_sum(#input);
+      });
+    }
     let reduced = match node {
       Node::ReduceSum(_) => quote! { #input.sum_dim(#axis) },
       _ => quote! { #input.max_dim(#axis) },
@@ -694,8 +700,25 @@ fn fuse_tf(net: &str) {
     linears += call.find_iter(&out).count();
     out = call.replace_all(&out, format!("crate::tf::linear(&self.{f}, ").as_str()).into_owned();
   }
-  let attentions = out.matches("burn::tensor::module::attention(").count();
-  out = out.replace("burn::tensor::module::attention(", "crate::tf::attention(");
+  // burn-onnx's attention block zeroes the query rows whose key bias is -inf everywhere (`hidden_rows`, a max over the
+  // bias, then a mask_fill): crate::tf::attention_masked does both, inside the kernel on GPUs.
+  let hidden = regex::Regex::new(concat!(
+    r"let hidden_rows = score_bias\s*\.clone\(\)\s*\.max_dim\(3\)\s*\.equal_elem\(f32::NEG_INFINITY\);\s*",
+    r"let (\w+) = burn::tensor::module::attention\(\s*q,\s*k,\s*v,\s*None,\s*Some\(score_bias\),\s*",
+    r"(burn::tensor::ops::AttentionModuleOptions \{[^}]*\}),?\s*\);\s*",
+    r"let (\w+) = \{\s*let dims = (\w+)\.dims\(\);\s*(\w+)\s*\.mask_fill\(hidden_rows\.expand\(dims\), 0\.0\)\s*\};",
+  ))
+  .unwrap();
+  let attentions = hidden.find_iter(&out).count();
+  out = hidden
+    .replace_all(&out, "let $3 = crate::tf::attention_masked(q, k, v, score_bias, $2);")
+    .into_owned();
+  if out.contains("burn::tensor::module::attention(") {
+    panic!(
+      "build.rs fuse_tf: {net} has an attention call outside the hidden-rows block fuse_tf expects; burn-onnx's \
+       generated code changed shape, update the regex in fuse_tf"
+    );
+  }
   if fused_rms == 0 {
     panic!(
       "build.rs fuse_tf: {net} has attention but no transformer RMSNorm chain matched; burn-onnx's generated code \

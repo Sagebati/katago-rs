@@ -43,28 +43,21 @@ pub fn rms_norm(x: Tensor<3>, divisor: Tensor<1>, eps: Tensor<1>, gamma: Tensor<
   x.mul(rms).mul(gamma.unsqueeze_dims(&[0isize, 1isize])).mul(mask)
 }
 
-/// `burn::tensor::module::attention` with the graph's arguments. The nets' form (no boolean mask, an additive
-/// `[N, 1, 1, S]` key bias for the off-board points, no softcap, not causal) runs as one fused kernel on GPUs.
-pub fn attention(
-  q: Tensor<4>,
-  k: Tensor<4>,
-  v: Tensor<4>,
-  mask: Option<Tensor<4, Bool>>,
-  bias: Option<Tensor<4>>,
-  options: AttentionModuleOptions,
-) -> Tensor<4> {
+/// burn-onnx's attention block with an additive key bias (the off-board mask): `softmax(q kᵗ * scale + bias) v`
+/// per head, and 0 for a query row whose bias is -inf for every key. The nets' form (a `[N, 1, 1, S]` bias, no
+/// softcap, not causal) runs as one fused kernel on GPUs.
+pub fn attention_masked(q: Tensor<4>, k: Tensor<4>, v: Tensor<4>, bias: Tensor<4>, options: AttentionModuleOptions) -> Tensor<4> {
   #[cfg(feature = "gpu-kernels")]
-  if !is_cpu(&q.device())
-    && let (None, Some(b)) = (&mask, &bias)
-    && options.softcap.is_none()
-    && !options.is_causal
-  {
-    let [n, _, _, s] = b.dims();
-    if b.dims() == [n, 1, 1, s] && q.dims()[0] == n && q.dims()[2] == s {
+  if !is_cpu(&q.device()) && options.softcap.is_none() && !options.is_causal {
+    let [n, _, _, s] = bias.dims();
+    if bias.dims() == [n, 1, 1, s] && q.dims()[0] == n && q.dims()[2] == s {
       let dq = q.dims()[3];
       let scale = options.scale.unwrap_or(1.0 / (dq as f64).sqrt()) as f32;
-      return crate::tfk::attention(q, k, v, bias.unwrap().reshape([n, s]), scale);
+      return crate::tfk::attention(q, k, v, bias.reshape([n, s]), scale);
     }
   }
-  burn::tensor::module::attention(q, k, v, mask, bias, options)
+  let hidden_rows = bias.clone().max_dim(3).equal_elem(f32::NEG_INFINITY);
+  let out = burn::tensor::module::attention(q, k, v, None, Some(bias), options);
+  let dims = out.dims();
+  out.mask_fill(hidden_rows.expand(dims), 0.0)
 }

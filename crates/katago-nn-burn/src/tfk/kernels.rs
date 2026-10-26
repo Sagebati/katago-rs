@@ -25,7 +25,8 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
   let n_size = n_size as usize;
   let k_size = k_size as usize;
 
-  let mut a_s = Shared::<[F]>::new_slice(16usize * 64usize);
+  // A is stored k-major with rows of 65: the transposing stores of 16 consecutive k would hit one bank with 64.
+  let mut a_s = Shared::<[F]>::new_slice(16usize * 65usize);
   let mut b_s = Shared::<[F]>::new_slice(16usize * 64usize);
   let mut acc = Array::<F>::new(16usize);
   #[unroll]
@@ -46,7 +47,7 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
       if m0 + mm < m_size && k0 + ka < k_size {
         v = x[(m0 + mm) * k_size + k0 + ka];
       }
-      a_s[ka * 64 + mm] = v;
+      a_s[ka * 65 + mm] = v;
       // B: 16 k x 64 n, read along n.
       let kb = idx / 64;
       let nn = idx % 64;
@@ -61,7 +62,7 @@ pub(crate) fn linear_gemm<F: Float>(x: &[F], w: &[F], bias: &[F], out: &mut [F],
     for kk in 0..16usize {
       #[unroll]
       for i in 0..4usize {
-        a_reg[i] = a_s[kk * 64 + ty + 16 * i];
+        a_reg[i] = a_s[kk * 65 + ty + 16 * i];
         b_reg[i] = b_s[kk * 64 + tx + 16 * i];
       }
       #[unroll]
@@ -132,7 +133,7 @@ pub(crate) const ATT_Q: usize = 64;
 /// Softmax attention over the board with an additive per-key bias (the off-board mask): one thread per query row,
 /// online softmax over blocks of 32 keys staged in shared memory. `q` is a contiguous `[N, H, S, dq]`, `k` and `v`
 /// `[N, Hkv, S, dq]` and `[N, Hkv, S, dv]`, `groups = H / Hkv` query heads sharing a key/value head (GQA), `bias` the
-/// `[N, S]` additive key bias. The output is a contiguous `[N, H, S, dv]`.
+/// `[N, S]` additive key bias. The output is a contiguous `[N, H, S, dv]`; a query row with every key at -inf gets 0.
 #[cube(launch)]
 pub(crate) fn attention_kernel<F: Float>(
   q: &[F],
@@ -238,7 +239,11 @@ pub(crate) fn attention_kernel<F: Float>(
   }
 
   if in_range {
-    let inv = F::new(1.0f32) / l_run;
+    // A row whose keys are all masked out (-inf bias) sums to 0: its output is 0 (burn-onnx's `hidden_rows`).
+    let mut inv = F::new(0.0f32);
+    if l_run > F::new(0.0f32) {
+      inv = F::new(1.0f32) / l_run;
+    }
     let o_base = ((n * heads as usize + h) * seq + qi) * dv;
     #[unroll]
     for d in 0..dv {

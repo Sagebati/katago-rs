@@ -133,3 +133,17 @@ pub fn spatial_max(x: Tensor<3>) -> Tensor<2> {
   }
   x.max_dim(2usize).squeeze_dims::<2usize>(&[2])
 }
+
+/// ReduceSum over the last axis of `[N, L]` with keepdims (build.rs `SpatialReduce`: the spatial trunk-tip RMSNorm
+/// sums all of `[N, C*H*W]`). On GPUs, rows of 361 (or 64) through [`spatial_sum`]'s kernel, then their sums: burn's
+/// generic reduce gives such a row one workgroup (3.2 ms of a 32 ms forward at batch 16, b10c384h6nbttflrs).
+pub fn row_sum(x: Tensor<2>) -> Tensor<2> {
+  #[cfg(feature = "gpu-kernels")]
+  if !is_cpu(&x.device()) {
+    let [n, len] = x.dims();
+    if let Some(part) = [361, 64].into_iter().find(|p| len.is_multiple_of(*p) && len > *p) {
+      return crate::wino::reduce_last(x.reshape([n, len / part, part]), false).sum_dim(1usize);
+    }
+  }
+  x.sum_dim(1usize)
+}
