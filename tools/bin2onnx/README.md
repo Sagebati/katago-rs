@@ -185,6 +185,11 @@ eigenbackend's own float32 error: its spatial RMSNorm sums `C*361` squares seque
 float, e.g. -4.1e-5 relative on b10c384 (rms +2.0e-5), which moves a -102.76 score by 2e-3. The
 ONNX graph agrees with a float64 evaluation of the same graph to 7e-5 there.
 
+b10c384h6nbttflrs, b10c512h8nbt3tflrs-fson-silu-rsnh and kata1-tf3-b11c768 are imported by katago-nn-burn (features
+`net-b10c384h6nbttflrs`, `net-b10c512h8nbt3tflrs-fson-silu-rsnh`, `net-tf3-b11c768`) and checked there through the
+ported NNEvaluator against upstream's Eigen NNEvaluator (`tests/nn_parity.rs`, `check_tf`): on the spatial-RMSNorm
+nets burn flex and burn wgpu agree with each other 20-100x better than either with Eigen, the same float32 error.
+
 By default it uses `build/eigen/katago` (Eigen fp32 build of the submodule) if present.
 For an OpenCL build pass `--katago ... --extra-overrides openclUseFP16=false`
 (and `--home-data-dir` with existing tuning). Tolerances: `--tol-prob 1e-4`,
