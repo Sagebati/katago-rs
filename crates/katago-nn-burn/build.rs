@@ -39,6 +39,7 @@ fn main() {
       .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
       .run_from_script();
     fuse_bn_act(net);
+    fuse_tf(net);
     write_model_desc(&onnx, net);
   }
 }
@@ -588,6 +589,122 @@ fn fuse_bn_act(net: &str) {
   out.insert_str(
     0,
     &format!("// build.rs fuse_bn_act: {fused_mish} batch norm + mish + mask and {fused_relu} batch norm + relu + mask chains fused into their convs.\n"),
+  );
+  std::fs::write(&path, out).unwrap();
+}
+
+/// Routes the transformer blocks of the generated code to `crate::tf` (no-op on a convolutional net): every
+/// `Linear` field's forward, burn's attention call, and each per-token RMSNorm chain (bin2onnx
+/// `transformer_rmsnorm`: square, sum over the channels, / C, + eps, sqrt, 1 / that, times x, gamma and the token
+/// mask), which becomes one `crate::tf::rms_norm` when its intermediates have no other use.
+fn fuse_tf(net: &str) {
+  let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap())
+    .join("model")
+    .join(format!("{net}.rs"));
+  let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+  if !code.contains("burn::tensor::module::attention(") {
+    return;
+  }
+  // A constant the chain loads on its first use (kept: later chains use it too).
+  const LOAD: &str = r"(?:let \w+ = self\.\w+\.val\(\);\s*)?";
+  let rms = regex::Regex::new(
+    &[
+      r"let (\w+) = (\w+)\.clone\(\)\s*\.mul\((\w+)\.clone\(\)\);\s*",
+      r"let (\w+) = (\w+)\.sum_dim\(2usize\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.div\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.add\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      r"let (\w+) = (\w+)\.sqrt\(\);\s*",
+      LOAD,
+      r"let (\w+) = \(\w+(?:\.clone\(\))?\)\s*\.unsqueeze_dims\(&\[0isize, 1isize\]\)\s*\.div\((\w+)\);\s*",
+      r"let (\w+) = (\w+)(\.clone\(\))?\s*\.mul\((\w+)\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.mul\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      r"let (\w+) = (\w+)\s*\.mul\((\w+(?:\.clone\(\))?)\);",
+    ]
+    .concat(),
+  )
+  .unwrap();
+  let loads = regex::Regex::new(r"let \w+ = self\.\w+\.val\(\);").unwrap();
+  let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+  for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(&code) {
+    *words.entry(w.as_str()).or_default() += 1;
+  }
+  let count = |name: &str| words.get(name).copied().unwrap_or(0);
+  let mut edits: Vec<(usize, usize, String)> = Vec::new();
+  let mut fused_rms = 0;
+  for m in rms.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (sq, x, ss, ms, divisor, den, eps, sqrt, inv, normed, x_last, x_clone, scaled, gamma, out, mask) = (
+      g(1),
+      g(2),
+      g(4),
+      g(6),
+      g(8),
+      g(9),
+      g(11),
+      g(12),
+      g(14),
+      g(16),
+      g(17),
+      g(18),
+      g(20),
+      g(22),
+      g(23),
+      g(25),
+    );
+    let linked = g(3) == x
+      && g(5) == sq
+      && g(7) == ss
+      && g(10) == ms
+      && g(13) == den
+      && g(15) == sqrt
+      && x_last == x
+      && g(19) == inv
+      && g(21) == normed
+      && g(24) == scaled;
+    let private = [sq, ss, ms, den, sqrt, inv, normed, scaled].iter().all(|n| count(n) == 2);
+    if !(linked && private) {
+      continue;
+    }
+    let whole = m.get(0).unwrap();
+    let kept: String = loads.find_iter(whole.as_str()).map(|l| format!("{}\n", l.as_str())).collect();
+    edits.push((
+      whole.start(),
+      whole.end(),
+      format!("{kept}let {out} = crate::tf::rms_norm({x}{x_clone}, {divisor}, {eps}, {gamma}, {mask});"),
+    ));
+    fused_rms += 1;
+  }
+  let mut out = code.clone();
+  edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+  for (start, end, text) in edits {
+    out.replace_range(start..end, &text);
+  }
+  // Linear fields (`name: Linear,` in the module struct) and the attention call.
+  let fields: std::collections::BTreeSet<String> = regex::Regex::new(r"(?m)^\s*(?:pub )?(\w+): Linear,")
+    .unwrap()
+    .captures_iter(&out)
+    .map(|c| c[1].to_string())
+    .collect();
+  let mut linears = 0;
+  for f in &fields {
+    let call = regex::Regex::new(&format!(r"self\.{f}\s*\.forward\(")).unwrap();
+    linears += call.find_iter(&out).count();
+    out = call.replace_all(&out, format!("crate::tf::linear(&self.{f}, ").as_str()).into_owned();
+  }
+  let attentions = out.matches("burn::tensor::module::attention(").count();
+  out = out.replace("burn::tensor::module::attention(", "crate::tf::attention(");
+  if fused_rms == 0 {
+    panic!(
+      "build.rs fuse_tf: {net} has attention but no transformer RMSNorm chain matched; burn-onnx's generated code \
+       changed shape, update the regex in fuse_tf"
+    );
+  }
+  out.insert_str(
+    0,
+    &format!("// build.rs fuse_tf: {fused_rms} RMSNorms, {linears} linears and {attentions} attentions routed to crate::tf.\n"),
   );
   std::fs::write(&path, out).unwrap();
 }

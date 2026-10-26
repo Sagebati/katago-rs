@@ -4,6 +4,9 @@
 #[rustfmt::skip]
 pub mod backend;
 pub mod conv;
+pub mod tf;
+#[cfg(feature = "gpu-kernels")]
+pub mod tfk;
 #[cfg(feature = "gpu-kernels")]
 pub mod wino;
 #[cfg(target_arch = "wasm32")]
