@@ -2,7 +2,7 @@
 
 pub mod backend;
 pub mod conv;
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 pub mod wino;
 #[cfg(target_arch = "wasm32")]
 pub mod host;
@@ -189,7 +189,7 @@ pub fn device(backend: &str) -> Option<Device> {
     match backend {
         #[cfg(feature = "flex")]
         "flex" => Some(burn::backend::FlexDevice.into()),
-        #[cfg(feature = "wgpu-fixed-kernels")]
+        #[cfg(feature = "wgpu-fixed")]
         "wgpu" => Some(burn::backend::WgpuDevice::default().into()),
         #[cfg(feature = "rocm")]
         "rocm" => Some(burn::backend::RocmDevice::default().into()),

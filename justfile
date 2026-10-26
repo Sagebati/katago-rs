@@ -21,16 +21,16 @@ katago-eigen:
 
 # Raw-output parity of the burn import against onnxruntime (backend: flex | wgpu | rocm; net: b10 | b18 | human).
 parity backend="flex" net="b10":
-    cargo run --release -p katago-nn-burn --example parity {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed-kernels" } else { "" } }} -- {{backend}} {{net}}
+    cargo run --release -p katago-nn-burn --example parity {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}}
 
 # Native forward-pass throughput, evals/s with one readback per batch (backend: flex | wgpu | rocm; net: b6 | b10 |
 # b18 | human; precision: f32 | f16, GPU only). README "Benchmarks".
 bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
-    cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed-kernels" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
+    cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
 
 # Per-layer timing and check of the Winograd 3x3 and NCHW 1x1 convs against im2col on b18's trunk shapes (WebGPU).
 wino-bench precision="f32" *batches="8 16 32 64":
-    cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed-kernels -- {{precision}} {{batches}}
+    cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed -- {{precision}} {{batches}}
 
 # Upstream KataGo's own `benchmark` on the same net, for comparison (README "Benchmarks"): KATAGO is the binary
 # (default katago-ws's bench copy, an OpenCL v1.16.5 release), NETS the directory of `.bin.gz` nets (default

@@ -452,14 +452,14 @@ fn nn_parity_b18c384nbt_humanv0() {
 /// wgpu (native Vulkan/Metal): PORTING.md §13 / CLAUDE.md: 2e-4 on logits, 1e-4 on win rate and
 /// ownership. After post-processing that is 1e-4 absolute on probabilities, policy and
 /// ownership, and 1e-4 relative (floor 1e-4) on the score-like outputs.
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 fn check_wgpu(diffs: &Diffs) {
   check_wgpu_with(diffs, 1e-4, 1e-4);
 }
 
 /// `abs` on probabilities, policy and ownership; `rel` of the largest magnitude (floor `abs`) on the score-like
 /// outputs.
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {
@@ -471,19 +471,19 @@ fn check_wgpu_with(diffs: &Diffs, abs: f64, rel: f64) {
 }
 
 /// The wgpu tests share the process-wide precision switch of wino.rs: one at a time.
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 static GPU: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 fn gpu_lock() -> std::sync::MutexGuard<'static, ()> {
   GPU.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 /// wino.rs in f16 for the guard's lifetime.
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 struct Half;
 
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 impl Half {
   fn on() -> Self {
     katago_nn_burn::wino::set_half(true);
@@ -491,7 +491,7 @@ impl Half {
   }
 }
 
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(any(feature = "wgpu", feature = "rocm"))]
 impl Drop for Half {
   fn drop(&mut self) {
     katago_nn_burn::wino::set_half(false);
@@ -516,7 +516,7 @@ fn nn_parity_b18c384nbt_wgpu() {
 
 /// The precision is per network: an f16 evaluator (useFP16 = true) in the process leaves a later f32 one exactly as
 /// it was before (it used to switch every network of the process to f16).
-#[cfg(all(feature = "wgpu-fixed-kernels", feature = "net-b18c384nbt"))]
+#[cfg(all(feature = "wgpu-fixed", feature = "net-b18c384nbt"))]
 #[test]
 fn nn_parity_b18c384nbt_precision_is_per_network_wgpu() {
   type N = katago_nn_burn::b18c384nbt::Model;
@@ -576,7 +576,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
 /// (policy per move by the top-policy delta); scoreMeanSq and varTimeLeft, which testgpuerror does not report, get
 /// 5% of their largest magnitude. Measured here (b18, 72 evals): winrate 2.5e-3, lead 0.21, stScoreError 0.16,
 /// policy 9.6e-3, ownership 1.3e-2.
-#[cfg(feature = "wgpu-fixed-kernels")]
+#[cfg(feature = "gpu-kernels")]
 fn check_f16(diffs: &Diffs) {
   for (i, name) in FIELDS.iter().enumerate() {
     let tol = match i {

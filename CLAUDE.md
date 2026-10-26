@@ -150,7 +150,7 @@ suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runne
 - `+relaxed-simd` does not build (macerator 0.5.1). Weights are loaded at runtime
   (`LoadStrategy::Bytes`), never embedded. First run per batch shape costs 1–3 s: warm up.
 - Browser start-up (docs/M4-report.md, "Start-up on WebGPU"): katago-wasm builds without burn's autotune
-  (`wgpu-fixed-kernels`), calls `__wasm_call_ctors` itself (else wasm-ld wraps every export in
+  (`wgpu-fixed`), calls `__wasm_call_ctors` itself (else wasm-ld wraps every export in
   the static constructors), and persists compiled WGSL through `third_party/cubecl-wgpu`, a
   patched cubecl-wgpu 0.11.2 (`[patch.crates-io]`; every change is marked `PATCH(katago-rs)`).
   Re-apply the patch when bumping cubecl.

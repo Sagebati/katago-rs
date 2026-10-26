@@ -4,7 +4,7 @@
 //! global inputs are b18c384nbt's files) with `meta_input` = the rows of humanSLProfile rank_1k_15k
 //! (`verify.py --human-sl-profiles rank_1k_15k --dump-features`, the npz arrays written as raw f32).
 //!
-//! cargo run --release -p katago-nn-burn --example parity [-F wgpu-fixed-kernels|rocm] -- <flex|wgpu|rocm> [b10|b18|human]
+//! cargo run --release -p katago-nn-burn --example parity [-F wgpu-fixed|rocm] -- <flex|wgpu|rocm> [b10|b18|human]
 //!
 //! In f32: f16 is checked against the Eigen reference by `just nn-parity` (tests/nn_parity.rs).
 

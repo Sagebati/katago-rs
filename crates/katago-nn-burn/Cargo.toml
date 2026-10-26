@@ -20,15 +20,17 @@ net-b18c384nbt-humanv0 = []
 flex = ["burn/flex", "dep:burn-flex"]
 # GPU through wgpu: Vulkan/Metal natively, WebGPU in the browser, with burn's autotune (each kernel family is
 # benchmarked once per process and shape).
-wgpu = ["wgpu-fixed-kernels", "burn/autotune"]
-# wgpu without autotune: burn's default kernel for each op, no tuning pass, plus the cubecl kernels of wino/
-# (Winograd 3x3, NCHW 1x1, board reduces). katago-wasm uses this: in the browser the tuning results cannot be kept
-# across page loads and the pass cost ~8 s per load (docs/M4-report.md). Includes burn's fusion: wino/'s kernels
-# are a burn backend extension whose Fusion routing must exist whenever burn's fusion is on (katago-wasm turns it
-# on), else the call panics at runtime.
-wgpu-fixed-kernels = ["burn/wgpu", "burn/extension", "burn/fusion", "dep:burn-cubecl", "dep:half"]
+wgpu = ["wgpu-fixed", "burn/autotune"]
+# wgpu without autotune: burn's default kernel for each op, no tuning pass, plus gpu-kernels. katago-wasm uses
+# this: in the browser the tuning results cannot be kept across page loads and the pass cost ~8 s per load
+# (docs/M4-report.md).
+wgpu-fixed = ["gpu-kernels", "burn/wgpu"]
+# The cubecl kernels of wino/ (Winograd 3x3, NCHW 1x1, board reduces), for any cubecl GPU runtime (wgpu, rocm).
+# Includes burn's fusion: wino/'s kernels are a burn backend extension whose Fusion routing must exist whenever
+# burn's fusion is on (katago-wasm turns it on), else the call panics at runtime.
+gpu-kernels = ["burn/extension", "burn/fusion", "dep:burn-cubecl", "dep:half"]
 # Native AMD GPUs through HIP (ROCm), with wino.rs's kernels (the same cubecl source as on WebGPU). Not a browser path.
-rocm = ["wgpu-fixed-kernels", "burn/rocm"]
+rocm = ["gpu-kernels", "burn/rocm"]
 
 [dependencies]
 # The ported engine (nninterface.rs trait, NNEvaluator, SymmetryHelpers); backend.rs implements its NeuralNet trait.
@@ -60,4 +62,4 @@ regex = "1"
 
 [[example]]
 name = "wino_bench"
-required-features = ["wgpu-fixed-kernels"]
+required-features = ["wgpu-fixed"]

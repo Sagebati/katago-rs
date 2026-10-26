@@ -1,7 +1,7 @@
 //! Per-layer check and timing of wino/'s convs (Winograd 3x3, NCHW 1x1) against `conv2d_im2col` on
 //! b18c384nbt's trunk shapes, and of the device filter transform against the host one.
 //!
-//! cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed-kernels -- [f16|f32] [batches...]
+//! cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed -- [f16|f32] [batches...]
 //! (`just wino-bench`)
 
 mod common;

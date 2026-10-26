@@ -12,14 +12,14 @@ use crate::is_cpu;
 /// layer without autotune on an RX 6800 XT) and the trunk's 1x1 kernels through its NCHW GEMM (no permutes).
 /// Every other kernel size is lowered to (im2col +) one matmul: on wgpu this is ~7x faster than burn's direct
 /// conv kernel for KataGo's 19x19 shapes with 3x3 kernels, and for 1x1 kernels too, which matter in
-/// b18c384nbt's bottleneck blocks: without autotune (the browser build, `wgpu-fixed-kernels`) burn's 1x1
+/// b18c384nbt's bottleneck blocks: without autotune (the browser build, `wgpu-fixed`) burn's 1x1
 /// conv is its direct kernel, ~10x slower than the equivalent matmul, and was 78% of the forward pass
 /// (docs/M7-report.md). The CPU backend, where burn's own conv is faster, uses it for every size.
 pub fn conv2d_same(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     if is_cpu(&x.device()) {
         return conv.forward(x);
     }
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     {
         let [oc, ic, kh, kw] = conv.weight.dims();
         if (kh, kw) == (3, 3) {
@@ -37,7 +37,7 @@ pub fn conv2d_same(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
 /// input loads (Winograd transform, 1x1 GEMM) instead of as a separate elementwise kernel; elsewhere it is the
 /// original op sequence.
 pub fn conv2d_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     if !is_cpu(&x.device()) {
         let [oc, ic, kh, kw] = conv.weight.dims();
         if (kh, kw) == (3, 3) {
@@ -81,7 +81,7 @@ pub fn conv2d_im2col(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
 
 /// ReduceSum over the last axis of `[N, C, L]` (build.rs `SpatialReduce`): one workgroup per row on GPUs.
 pub fn spatial_sum(x: Tensor<3>) -> Tensor<2> {
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     if !is_cpu(&x.device()) {
         return crate::wino::reduce_last(x, false);
     }
@@ -90,7 +90,7 @@ pub fn spatial_sum(x: Tensor<3>) -> Tensor<2> {
 
 /// ReduceMax over the last axis of `[N, C, L]` (build.rs `SpatialReduce`).
 pub fn spatial_max(x: Tensor<3>) -> Tensor<2> {
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     if !is_cpu(&x.device()) {
         return crate::wino::reduce_last(x, true);
     }

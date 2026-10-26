@@ -285,15 +285,15 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
     // CPU (flex) it is rejected as before. Each context keeps its own precision: two networks of one process
     // (e.g. `-human-model`) can differ.
     if use_fp16 {
-      #[cfg(feature = "wgpu-fixed-kernels")]
+      #[cfg(feature = "gpu-kernels")]
       let gpu = !crate::is_cpu(&self.device);
-      #[cfg(not(feature = "wgpu-fixed-kernels"))]
+      #[cfg(not(feature = "gpu-kernels"))]
       let gpu = false;
       if !gpu {
         return Err(KataError::StringError("Burn backend: useFP16 = true not supported".to_string()));
       }
     }
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     let use_fp16: bool = use_fp16 || (crate::wino::default_half() && !crate::is_cpu(&self.device));
     if use_nhwc {
       return Err(KataError::StringError("Burn backend: useNHWC = true not supported".to_string()));
@@ -474,9 +474,9 @@ async fn get_output_impl<N: Network>(
     None
   };
   // PORT NOTE: the forward pass is built in this handle's precision (wino::with_half).
-  #[cfg(feature = "wgpu-fixed-kernels")]
+  #[cfg(feature = "gpu-kernels")]
   let raw = crate::wino::with_half(compute_handle.use_fp16, || compute_handle.model.forward(input, input_global, input_meta));
-  #[cfg(not(feature = "wgpu-fixed-kernels"))]
+  #[cfg(not(feature = "gpu-kernels"))]
   let raw = compute_handle.model.forward(input, input_global, input_meta);
 
   // PORT NOTE: one readback for all four outputs (one GPU->CPU round trip per batch).

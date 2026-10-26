@@ -1,7 +1,7 @@
 use burn::prelude::*;
 
 /// The device of a native backend (`flex`, `wgpu`, `rocm`); panics when it is not compiled in. `wgpu` needs
-/// `wgpu-fixed-kernels` (no autotune, as the browser) or `wgpu` (with burn's autotune).
+/// `wgpu-fixed` (no autotune, as the browser) or `wgpu` (with burn's autotune).
 pub fn device(name: &str) -> Device {
     katago_nn_burn::device(name).unwrap_or_else(|| panic!("backend {name} not compiled in (flex | wgpu | rocm)"))
 }
@@ -14,10 +14,10 @@ pub fn take_precision(args: &mut Vec<String>) -> &'static str {
         Some(i) => args.remove(i),
         None => "f32".to_string(),
     };
-    #[cfg(feature = "wgpu-fixed-kernels")]
+    #[cfg(feature = "gpu-kernels")]
     katago_nn_burn::wino::set_half(precision == "f16");
-    #[cfg(not(feature = "wgpu-fixed-kernels"))]
-    assert_eq!(precision, "f32", "f16 needs a GPU backend (wgpu-fixed-kernels)");
+    #[cfg(not(feature = "gpu-kernels"))]
+    assert_eq!(precision, "f32", "f16 needs a GPU backend (wgpu-fixed or rocm)");
     if precision == "f16" { "f16" } else { "f32" }
 }
 

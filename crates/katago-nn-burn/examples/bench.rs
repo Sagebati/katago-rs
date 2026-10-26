@@ -1,10 +1,10 @@
 //! Forward-pass throughput of an imported net on one backend: evals/s with one readback per batch, as the engine
 //! reads its batches (random inputs: the speed does not depend on them).
 //!
-//! cargo run --release -p katago-nn-burn --example bench -F <wgpu-fixed-kernels|rocm> -- <flex|wgpu|rocm> \
+//! cargo run --release -p katago-nn-burn --example bench -F <wgpu-fixed|rocm> -- <flex|wgpu|rocm> \
 //!     <b6|b10|b18|human> [f16|f32] [batches...]
 //!
-//! `just bench` runs it. `wgpu-fixed-kernels` is the browser's kernel set (no autotune); `-F wgpu` adds burn's
+//! `just bench` runs it. `wgpu-fixed` is the browser's kernel set (no autotune); `-F wgpu` adds burn's
 //! autotune. Batches default to 1 8 16 32 64.
 
 mod common;
