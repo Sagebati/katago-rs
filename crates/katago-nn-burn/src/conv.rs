@@ -28,12 +28,15 @@ pub fn conv2d_same(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
     if (kh, kw) == (1, 1) && crate::wino::conv1x1_fits(oc, ic) {
       return crate::wino::conv1x1(conv, x);
     }
+    if kh % 2 == 1 && kw % 2 == 1 {
+      return crate::wino::conv_direct(conv, x);
+    }
   }
   conv2d_im2col(conv, x)
 }
 
 /// `conv2d_same(conv, mish(x * scale + bias) * mask)`: KataGo's batch norm + activation + board mask before a conv
-/// (build.rs `fuse_bn_act` rewrites the generated chains into this). On GPUs the prologue runs inside the conv's
+/// (build.rs `fuse_bn_act` rewrites the generated chains into this; [`conv2d_bn_relu`] for relu nets). On GPUs the prologue runs inside the conv's
 /// input loads (Winograd transform, 1x1 GEMM) instead of as a separate elementwise kernel; elsewhere it is the
 /// original op sequence.
 pub fn conv2d_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
@@ -41,15 +44,51 @@ pub fn conv2d_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor
   if !is_cpu(&x.device()) {
     let [oc, ic, kh, kw] = conv.weight.dims();
     if (kh, kw) == (3, 3) {
-      return crate::wino::conv3x3_bn_act(conv, x, scale, bias, mask);
+      return crate::wino::conv3x3_bn_act(conv, x, scale, bias, mask, false, true);
     }
     if (kh, kw) == (1, 1) && crate::wino::conv1x1_fits(oc, ic) {
-      return crate::wino::conv1x1_bn_act(conv, x, scale, bias, mask);
+      return crate::wino::conv1x1_bn_act(conv, x, scale, bias, mask, false, true);
     }
   }
   let a = x.mul(scale).add(bias);
   let sp = burn::tensor::activation::softplus(a.clone(), 1.0);
   let m = a.mul(sp.tanh()).mul(mask);
+  conv2d_same(conv, m)
+}
+
+/// [`conv2d_bn_act`] with relu instead of mish: `conv2d_same(conv, relu(x * scale + bias) * mask)`, the older nets'
+/// (b6c96, b10c128) batch norm + activation + board mask (build.rs `fuse_bn_act`).
+pub fn conv2d_bn_relu(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+  #[cfg(feature = "gpu-kernels")]
+  if !is_cpu(&x.device()) {
+    let [oc, ic, kh, kw] = conv.weight.dims();
+    if (kh, kw) == (3, 3) {
+      return crate::wino::conv3x3_bn_act(conv, x, scale, bias, mask, true, true);
+    }
+    if (kh, kw) == (1, 1) && crate::wino::conv1x1_fits(oc, ic) {
+      return crate::wino::conv1x1_bn_act(conv, x, scale, bias, mask, true, true);
+    }
+  }
+  let a = x.mul(scale).add(bias);
+  let m = burn::tensor::activation::relu(a).mul(mask);
+  conv2d_same(conv, m)
+}
+
+/// [`conv2d_bn_relu`] without the scale (folded into the previous conv): `conv2d_same(conv, relu(x + bias) * mask)`.
+pub fn conv2d_bias_relu(conv: &Conv2d, x: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+  #[cfg(feature = "gpu-kernels")]
+  if !is_cpu(&x.device()) {
+    let [oc, ic, kh, kw] = conv.weight.dims();
+    // The kernels do not read the scale: the bias stands in for its buffer.
+    if (kh, kw) == (3, 3) {
+      return crate::wino::conv3x3_bn_act(conv, x, bias.clone(), bias, mask, true, false);
+    }
+    if (kh, kw) == (1, 1) && crate::wino::conv1x1_fits(oc, ic) {
+      return crate::wino::conv1x1_bn_act(conv, x, bias.clone(), bias, mask, true, false);
+    }
+  }
+  let a = x.add(bias);
+  let m = burn::tensor::activation::relu(a).mul(mask);
   conv2d_same(conv, m)
 }
 

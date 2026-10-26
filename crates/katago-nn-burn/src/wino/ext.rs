@@ -48,11 +48,16 @@ pub trait ConvOps: Backend {
   #[fusion(dtype = x, shape = reduce_last_shape(x))]
   fn reduce_last(x: FloatTensor<Self>, max: bool) -> FloatTensor<Self>;
 
+  /// Stride-1 "same" convolution with a `[oc, ic, kh, kw]` weight (odd kh, kw), no bias, computed directly.
+  #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
+  fn conv_direct(x: FloatTensor<Self>, weight: FloatTensor<Self>, oc: usize) -> FloatTensor<Self>;
+
   /// 1x1 convolution, no bias. `wt` is the `[ic, oc]` transposed weight; `ic % GEMM_K == 0`.
   #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
   fn conv1x1(x: FloatTensor<Self>, wt: FloatTensor<Self>, oc: usize) -> FloatTensor<Self>;
 
-  /// [`ConvOps::conv1x1`] of `mish(x * scale + bias) * mask`: `scale`, `bias` `[ic]`, `mask` `[N * H * W]`.
+  /// [`ConvOps::conv1x1`] of `act(x * scale + bias) * mask`, act mish (or relu with `relu`): `scale`, `bias` `[ic]`,
+  /// `mask` `[N * H * W]`. Without `has_scale`, `act(x + bias) * mask` (`scale` is not read).
   #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
   fn conv1x1_bn_act(
     x: FloatTensor<Self>,
@@ -61,9 +66,11 @@ pub trait ConvOps: Backend {
     bias: FloatTensor<Self>,
     mask: FloatTensor<Self>,
     oc: usize,
+    relu: bool,
+    has_scale: bool,
   ) -> FloatTensor<Self>;
 
-  /// [`ConvOps::wino_conv3x3`] of `mish(x * scale + bias) * mask` (as [`ConvOps::conv1x1_bn_act`]).
+  /// [`ConvOps::wino_conv3x3`] of `act(x * scale + bias) * mask` (as [`ConvOps::conv1x1_bn_act`]).
   #[fusion(dtype = x, shape = wino_out_shape(x, oc))]
   fn wino_conv3x3_bn_act(
     x: FloatTensor<Self>,
@@ -72,6 +79,8 @@ pub trait ConvOps: Backend {
     bias: FloatTensor<Self>,
     mask: FloatTensor<Self>,
     oc: usize,
+    relu: bool,
+    has_scale: bool,
   ) -> FloatTensor<Self>;
 }
 
@@ -150,37 +159,101 @@ impl ConvOps for CubeBackend {
     out
   }
 
+  fn conv_direct(x: CubeTensor, weight: CubeTensor, oc: usize) -> CubeTensor {
+    let x = contiguous(x);
+    let weight = contiguous(weight);
+    let dims = x.meta.shape().to_vec();
+    let (n, ic, h, w) = (dims[0], dims[1], dims[2], dims[3]);
+    let wd = weight.meta.shape().to_vec();
+    assert_eq!((wd[0], wd[1]), (oc, ic), "conv_direct weight shape");
+    let (kh, kw) = (wd[2], wd[3]);
+    assert!(kh % 2 == 1 && kw % 2 == 1, "conv_direct: odd kernels only");
+    let out = empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([n, oc, h, w]), x.dtype);
+    let points = h * w;
+    macro_rules! launch {
+      ($f:ty) => {
+        // SAFETY: contiguous NCHW input / output and `[oc, ic, kh, kw]` weight of the lengths given; threads past
+        // the board points return, output channels past oc are skipped.
+        unsafe {
+          conv_direct_kernel::launch::<$f>(
+            &x.client,
+            CubeCount::Static(points.div_ceil(64) as u32, oc.div_ceil(DIRECT_OC) as u32, n as u32),
+            CubeDim::new_1d(64),
+            BufferArg::from_raw_parts(x.handle.clone(), n * ic * points),
+            BufferArg::from_raw_parts(weight.handle.clone(), oc * ic * kh * kw),
+            BufferArg::from_raw_parts(out.handle.clone(), n * oc * points),
+            ic as u32,
+            oc as u32,
+            h as u32,
+            w as u32,
+            kh as u32,
+            kw as u32,
+          )
+        }
+      };
+    }
+    match x.dtype {
+      DType::F32 => launch!(f32),
+      other => panic!("conv_direct: unsupported dtype {other:?}"),
+    }
+    out
+  }
+
   fn conv1x1(x: CubeTensor, wt: CubeTensor, oc: usize) -> CubeTensor {
     conv1x1_impl(x, wt, oc, None)
   }
 
-  fn conv1x1_bn_act(x: CubeTensor, wt: CubeTensor, scale: CubeTensor, bias: CubeTensor, mask: CubeTensor, oc: usize) -> CubeTensor {
-    conv1x1_impl(x, wt, oc, Some(Prologue::new(scale, bias, mask)))
+  fn conv1x1_bn_act(
+    x: CubeTensor,
+    wt: CubeTensor,
+    scale: CubeTensor,
+    bias: CubeTensor,
+    mask: CubeTensor,
+    oc: usize,
+    relu: bool,
+    has_scale: bool,
+  ) -> CubeTensor {
+    conv1x1_impl(x, wt, oc, Some(Prologue::new(scale, bias, mask, relu, has_scale)))
   }
 
   fn wino_conv3x3(x: CubeTensor, filter: CubeTensor, oc: usize) -> CubeTensor {
     wino_conv3x3_impl(x, filter, oc, None)
   }
 
-  fn wino_conv3x3_bn_act(x: CubeTensor, filter: CubeTensor, scale: CubeTensor, bias: CubeTensor, mask: CubeTensor, oc: usize) -> CubeTensor {
-    wino_conv3x3_impl(x, filter, oc, Some(Prologue::new(scale, bias, mask)))
+  fn wino_conv3x3_bn_act(
+    x: CubeTensor,
+    filter: CubeTensor,
+    scale: CubeTensor,
+    bias: CubeTensor,
+    mask: CubeTensor,
+    oc: usize,
+    relu: bool,
+    has_scale: bool,
+  ) -> CubeTensor {
+    wino_conv3x3_impl(x, filter, oc, Some(Prologue::new(scale, bias, mask, relu, has_scale)))
   }
 }
 
-/// The `mish(x * scale + bias) * mask` that KataGo applies before every conv (batch norm, activation, board mask),
-/// fused into the conv's input loads: `scale`, `bias` per input channel, `mask` per board point of each row.
+/// The `act(x * scale + bias) * mask` that KataGo applies before every conv (batch norm, activation, board mask),
+/// fused into the conv's input loads: `scale`, `bias` per input channel, `mask` per board point of each row; act is
+/// mish, or relu (the older nets) with `relu`.
 struct Prologue {
   scale: CubeTensor,
   bias: CubeTensor,
   mask: CubeTensor,
+  relu: bool,
+  /// false: `act(x + bias) * mask` (`scale` not read).
+  has_scale: bool,
 }
 
 impl Prologue {
-  fn new(scale: CubeTensor, bias: CubeTensor, mask: CubeTensor) -> Self {
+  fn new(scale: CubeTensor, bias: CubeTensor, mask: CubeTensor, relu: bool, has_scale: bool) -> Self {
     Prologue {
       scale: contiguous(scale),
       bias: contiguous(bias),
       mask: contiguous(mask),
+      relu,
+      has_scale,
     }
   }
 
@@ -230,6 +303,8 @@ fn conv1x1_impl(x: CubeTensor, wt: CubeTensor, oc: usize, pro: Option<Prologue>)
           oc as u32,
           ic as u32,
           pro.is_some(),
+          pro.as_ref().is_some_and(|p| p.relu),
+          pro.as_ref().is_none_or(|p| p.has_scale),
         )
       }
     };
@@ -302,6 +377,8 @@ fn wino_conv3x3_impl(x: CubeTensor, filter: CubeTensor, oc: usize, pro: Option<P
           ic_pad as u32,
           nt_pad as u32,
           pro.is_some(),
+          pro.as_ref().is_some_and(|p| p.relu),
+          pro.as_ref().is_none_or(|p| p.has_scale),
         );
         if vector {
           wino_gemm_v::launch::<$s, $o>(

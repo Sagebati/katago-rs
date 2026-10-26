@@ -71,7 +71,9 @@ pub fn transform_filter_3x3(weights: &[f32], oc: usize, ic: usize) -> Vec<f32> {
 /// One thread per (tile, input channel), in `F`, storing in `S` (f16 halves the transformed buffer): load the 6x6
 /// window (zero outside the board), apply B^T d B, write the
 /// 36 values. With `bn_act`, the window first goes through `mish(x * scale + bias) * mask` as upstream's
-/// `bnActTransform` (ACTIVATION 2); positions outside the board stay 0, as the padding of the activated tensor.
+/// `bnActTransform` (ACTIVATION 2), or `relu(x * scale + bias) * mask` with `relu` (ACTIVATION 1); without
+/// `has_scale`, `x + bias` (a scale folded into the previous conv). Positions outside the board stay 0, as the padding
+/// of the activated tensor.
 /// upstream: winogradTransformNCHW / winogradBNActTransformNCHW (openclkernels.cpp), CONV 3, OUTTILE 4
 #[cube(launch)]
 pub(crate) fn wino_transform<F: Float, S: Float>(
@@ -89,6 +91,8 @@ pub(crate) fn wino_transform<F: Float, S: Float>(
   ic_pad: u32,
   nt_pad: u32,
   #[comptime] bn_act: bool,
+  #[comptime] relu: bool,
+  #[comptime] has_scale: bool,
 ) {
   let ntxty = ABSOLUTE_POS_X;
   let ic = ABSOLUTE_POS_Y;
@@ -116,10 +120,17 @@ pub(crate) fn wino_transform<F: Float, S: Float>(
         let xy = (y as u32 * x_size + x as u32) as usize;
         let v = input[nic * xy_size as usize + xy];
         if comptime![bn_act] {
-          let a = v * scale[ic as usize] + bias[ic as usize];
-          // burn's softplus: identity above 20 (exclusive).
-          let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
-          value = a * F::tanh(sp) * mask[(n * xy_size) as usize + xy];
+          let mut a = v + bias[ic as usize];
+          if comptime![has_scale] {
+            a = v * scale[ic as usize] + bias[ic as usize];
+          }
+          if comptime![relu] {
+            value = F::max(a, F::new(0.0f32)) * mask[(n * xy_size) as usize + xy];
+          } else {
+            // burn's softplus: identity above 20 (exclusive).
+            let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
+            value = a * F::tanh(sp) * mask[(n * xy_size) as usize + xy];
+          }
         } else {
           value = v;
         }
@@ -436,6 +447,8 @@ pub(crate) fn conv1x1_gemm<F: Float>(
   n_size: u32,
   k_size: u32,
   #[comptime] bn_act: bool,
+  #[comptime] relu: bool,
+  #[comptime] has_scale: bool,
 ) {
   let bt = CUBE_POS_Z as usize;
   let m0 = CUBE_POS_X as usize * 64;
@@ -469,9 +482,16 @@ pub(crate) fn conv1x1_gemm<F: Float>(
       if m0 + mm < m_size {
         v = x[a_base + (k0 + kk) * m_size + m0 + mm];
         if comptime![bn_act] {
-          let a = v * scale[k0 + kk] + bias[k0 + kk];
-          let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
-          v = a * F::tanh(sp) * mask[bt * m_size + m0 + mm];
+          let mut a = v + bias[k0 + kk];
+          if comptime![has_scale] {
+            a = v * scale[k0 + kk] + bias[k0 + kk];
+          }
+          if comptime![relu] {
+            v = F::max(a, F::new(0.0f32)) * mask[bt * m_size + m0 + mm];
+          } else {
+            let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
+            v = a * F::tanh(sp) * mask[bt * m_size + m0 + mm];
+          }
         }
       }
       a_s[idx] = v;
@@ -552,5 +572,71 @@ pub(crate) fn reduce_last_kernel<F: Float>(x: &[F], out: &mut [F], len: u32, cha
   }
   if tid == 0 {
     out[row] = s[0];
+  }
+}
+
+/// Output channels per thread of [`conv_direct_kernel`]: each input value it loads feeds that many accumulators.
+pub(crate) const DIRECT_OC: usize = 16;
+
+/// Stride-1 "same" convolution of any odd kernel size, computed directly: one thread per (row, board point) and
+/// `DIRECT_OC` output channels, summing over input channels then kernel rows and columns (zero outside the board).
+/// For the convs Winograd and the 1x1 GEMM do not take: the input conv of the older nets (5x5 over 22 features),
+/// small enough that this beats im2col + matmul by far.
+#[cube(launch)]
+pub(crate) fn conv_direct_kernel<F: Float>(
+  x: &[F],
+  w: &[F],
+  out: &mut [F],
+  ic_size: u32,
+  oc_size: u32,
+  y_size: u32,
+  x_size: u32,
+  #[comptime] kh: u32,
+  #[comptime] kw: u32,
+) {
+  // x over the board points of a row, y over output-channel groups, z over rows.
+  let points = y_size * x_size;
+  let p = ABSOLUTE_POS_X;
+  if p >= points {
+    terminate!();
+  }
+  let oc0 = CUBE_POS_Y * 16;
+  let n = CUBE_POS_Z;
+  let py = (p / x_size) as i32;
+  let px = (p % x_size) as i32;
+  let mut acc = Array::<F>::new(16usize);
+  #[unroll]
+  for j in 0..16usize {
+    acc[j] = F::new(0.0f32);
+  }
+  let ph = (kh / 2) as i32;
+  let pw = (kw / 2) as i32;
+  for ic in 0..ic_size {
+    let in_base = ((n * ic_size + ic) * points) as usize;
+    #[unroll]
+    for ky in 0..kh {
+      let iy = py + ky as i32 - ph;
+      #[unroll]
+      for kx in 0..kw {
+        let ix = px + kx as i32 - pw;
+        if iy >= 0 && iy < y_size as i32 && ix >= 0 && ix < x_size as i32 {
+          let v = x[in_base + (iy as u32 * x_size + ix as u32) as usize];
+          #[unroll]
+          for j in 0..16u32 {
+            let oc = oc0 + j;
+            if oc < oc_size {
+              acc[j as usize] += v * w[(((oc * ic_size + ic) * kh + ky) * kw + kx) as usize];
+            }
+          }
+        }
+      }
+    }
+  }
+  #[unroll]
+  for j in 0..16u32 {
+    let oc = oc0 + j;
+    if oc < oc_size {
+      out[((n * oc_size + oc) * points + p) as usize] = acc[j as usize];
+    }
   }
 }

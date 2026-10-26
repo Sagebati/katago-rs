@@ -273,7 +273,8 @@ impl OpOverride for SpatialReduce {
   }
 }
 
-/// Rewrites, in the generated `$OUT_DIR/model/<net>.rs`, every batch norm + mish + mask chain that only feeds convs
+/// Rewrites, in the generated `$OUT_DIR/model/<net>.rs`, every batch norm + activation + mask chain that only feeds
+/// convs. The mish chain (b18c384nbt and the human-SL net)
 ///
 /// ```text
 /// let c1 = self.S.val(); let m = X[.clone()].mul(c1); let c2 = self.B.val(); let a = m.add(c2);
@@ -281,15 +282,17 @@ impl OpOverride for SpatialReduce {
 /// ... crate::conv::conv2d_same(&self.CONV, m2[.clone()]) ...
 /// ```
 ///
-/// into `crate::conv::conv2d_bn_act(&self.CONV, X, self.S.val(), self.B.val(), MASK.clone())`, which on GPUs runs the
-/// chain inside the conv's input loads. A chain is rewritten only when none of its intermediates is used
-/// elsewhere and every use of its result is such a conv; anything else is left as generated.
+/// becomes `crate::conv::conv2d_bn_act(&self.CONV, X, self.S.val(), self.B.val(), MASK.clone())`, and the relu chain
+/// of the older nets (b6c96, b10c128), the same with `let r = relu(a); let m2 = r.mul(MASK.clone());`, becomes
+/// `crate::conv::conv2d_bn_relu(...)`. On GPUs these run the chain inside the conv's input loads. A chain is
+/// rewritten only when none of its intermediates is used elsewhere and every use of its result is such a conv;
+/// anything else is left as generated.
 fn fuse_bn_act(net: &str) {
   let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap())
     .join("model")
     .join(format!("{net}.rs"));
   let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-  let chain = regex::Regex::new(concat!(
+  let mish = regex::Regex::new(concat!(
     r"let (\w+) = self\.(\w+)\.val\(\);\s*",
     r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
     r"let (\w+) = self\.(\w+)\.val\(\);\s*",
@@ -300,14 +303,96 @@ fn fuse_bn_act(net: &str) {
     r"let (\w+) = (\w+)\.mul\((\w+)\.clone\(\)\);",
   ))
   .unwrap();
+  let relu = regex::Regex::new(concat!(
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  let relu_loaded = regex::Regex::new(concat!(
+    r"let (\w+) = (\w+)(\.clone\(\))?\.mul\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  // Bias only (the scale folded into the previous conv): `let c = self.B.val(); let a = X[.clone()].add(c); relu, mask`.
+  let bias_relu = regex::Regex::new(concat!(
+    r"let (\w+) = self\.(\w+)\.val\(\);\s*",
+    r"let (\w+) = (\w+)(\.clone\(\))?\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
+  // Bias only, with the bias loaded into a variable earlier (b6c96's generated code).
+  let bias_relu_loaded = regex::Regex::new(concat!(
+    r"let (\w+) = (\w+)(\.clone\(\))?\.add\((\w+)\);\s*",
+    r"let (\w+) = burn::tensor::activation::relu\((\w+)\);\s*",
+    r"let (\w+) = (\w+)\.mul\((\w+)(?:\.clone\(\))?\);",
+  ))
+  .unwrap();
   let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
   for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(&code) {
     *words.entry(w.as_str()).or_default() += 1;
   }
   let count = |name: &str| words.get(name).copied().unwrap_or(0);
   let mut edits: Vec<(usize, usize, String)> = Vec::new();
-  let mut fused = 0;
-  for m in chain.captures_iter(&code) {
+
+  // One matched chain: its span, its input X (and whether the chain cloned it), S, B, MASK and its result. Rewrites
+  // the convs that consume the result, if they are its only uses.
+  struct Chain<'a> {
+    start: usize,
+    end: usize,
+    x: &'a str,
+    x_cloned: bool,
+    /// The scale and bias arguments (`self.S.val()`, or a variable the generated code loaded earlier); no scale for
+    /// a bias-only chain.
+    scale: Option<String>,
+    bias: String,
+    mask: &'a str,
+    out: &'a str,
+  }
+  // The chains already rewritten: the patterns overlap (a hoisted-constants or bias-only match can be the tail of
+  // a full chain), so a chain inside one of these spans is skipped.
+  let mut taken: Vec<(usize, usize)> = Vec::new();
+  let mut rewrite = |c: Chain<'_>, func: &str| -> bool {
+    if taken.iter().any(|&(start, end)| c.start < end && start < c.end) {
+      return false;
+    }
+    let rest = &code[c.end..];
+    let uses = regex::Regex::new(&format!(r"\b{}\b", c.out)).unwrap();
+    let conv_use = regex::Regex::new(&format!(r"crate::conv::conv2d_same\(&self\.(\w+), {}(\.clone\(\))?\)", c.out)).unwrap();
+    let convs: Vec<_> = conv_use.captures_iter(rest).collect();
+    if convs.is_empty() || convs.len() != uses.find_iter(rest).count() {
+      return false;
+    }
+    taken.push((c.start, c.end));
+    edits.push((c.start, c.end, String::new()));
+    for (i, conv) in convs.iter().enumerate() {
+      // X is cloned unless the chain consumed it and this is its last use.
+      let x_arg = if !c.x_cloned && i + 1 == convs.len() {
+        c.x.to_string()
+      } else {
+        format!("{}.clone()", c.x)
+      };
+      let span = conv.get(0).unwrap();
+      edits.push((
+        c.end + span.start(),
+        c.end + span.end(),
+        match &c.scale {
+          Some(scale) => format!("crate::conv::{func}(&self.{}, {x_arg}, {scale}, {}, {}.clone())", &conv[1], c.bias, c.mask),
+          None => format!("crate::conv::{func}(&self.{}, {x_arg}, {}, {}.clone())", &conv[1], c.bias, c.mask),
+        },
+      ));
+    }
+    true
+  };
+
+  let mut fused_mish = 0;
+  for m in mish.captures_iter(&code) {
     let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
     let (c1, scale, mul, x, x_clone, c2, bias, add, sp, th, m1, out, mask) =
       (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16), g(19), g(21));
@@ -316,44 +401,115 @@ fn fuse_bn_act(net: &str) {
     let private = [(c1, 2), (mul, 2), (c2, 2), (add, 3), (sp, 2), (th, 2), (m1, 2)]
       .iter()
       .all(|(n, k)| count(n) == *k);
-    if !linked || !private {
-      continue;
-    }
     let whole = m.get(0).unwrap();
-    let rest = &code[whole.end()..];
-    let uses = regex::Regex::new(&format!(r"\b{out}\b")).unwrap();
-    let conv_use = regex::Regex::new(&format!(r"crate::conv::conv2d_same\(&self\.(\w+), {out}(\.clone\(\))?\)")).unwrap();
-    let convs: Vec<_> = conv_use.captures_iter(rest).collect();
-    if convs.is_empty() || convs.len() != uses.find_iter(rest).count() {
-      continue;
+    let (scale, bias) = (Some(format!("self.{scale}.val()")), format!("self.{bias}.val()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_act") {
+      fused_mish += 1;
     }
-    edits.push((whole.start(), whole.end(), String::new()));
-    for (i, c) in convs.iter().enumerate() {
-      // X is cloned unless the chain consumed it and this is its last use.
-      let x_arg = if x_clone.is_empty() && i + 1 == convs.len() {
-        x.to_string()
-      } else {
-        format!("{x}.clone()")
-      };
-      let span = c.get(0).unwrap();
-      edits.push((
-        whole.end() + span.start(),
-        whole.end() + span.end(),
-        format!(
-          "crate::conv::conv2d_bn_act(&self.{}, {x_arg}, self.{scale}.val(), self.{bias}.val(), {mask}.clone())",
-          &c[1]
-        ),
-      ));
-    }
-    fused += 1;
   }
-  // A mish net (softplus in its activations) with nothing fused means the generated code no longer has the shape
-  // the chain regex expects (a burn-onnx update): fail rather than silently lose the fused GPU path.
-  if fused == 0 && code.contains("burn::tensor::activation::softplus(") {
-    panic!(
-      "build.rs fuse_bn_act: {net} has mish activations but no batch norm + mish + mask chain matched; \
-             burn-onnx's generated code changed shape, update the regex in fuse_bn_act"
-    );
+  let mut fused_relu = 0;
+  for m in relu.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (c1, scale, mul, x, x_clone, c2, bias, add, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(9), g(12), g(14), g(16));
+    let linked = g(6) == c1 && g(10) == mul && g(11) == c2 && g(13) == add && g(15) == r;
+    let private = [(c1, 2), (mul, 2), (c2, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let (scale, bias) = (Some(format!("self.{scale}.val()")), format!("self.{bias}.val()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_relu") {
+      fused_relu += 1;
+    }
+  }
+  // The same relu chain where the scale and bias were loaded into variables earlier (b6c96's generated code).
+  for m in relu_loaded.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (mul, x, x_clone, scale, add, bias, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(8), g(10), g(12));
+    let linked = g(6) == mul && g(9) == add && g(11) == r;
+    let private = [(mul, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let (scale, bias) = (Some(format!("{scale}.clone()")), format!("{bias}.clone()"));
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale,
+      bias,
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bn_relu") {
+      fused_relu += 1;
+    }
+  }
+  for m in bias_relu.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (c, bias, add, x, x_clone, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(9), g(11));
+    let linked = g(6) == c && g(8) == add && g(10) == r;
+    let private = [(c, 2), (add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale: None,
+      bias: format!("self.{bias}.val()"),
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bias_relu") {
+      fused_relu += 1;
+    }
+  }
+  for m in bias_relu_loaded.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (add, x, x_clone, bias, r, out, mask) = (g(1), g(2), g(3), g(4), g(5), g(7), g(9));
+    let linked = g(6) == add && g(8) == r;
+    let private = [(add, 2), (r, 2)].iter().all(|(n, k)| count(n) == *k);
+    let whole = m.get(0).unwrap();
+    let chain = Chain {
+      start: whole.start(),
+      end: whole.end(),
+      x,
+      x_cloned: !x_clone.is_empty(),
+      scale: None,
+      bias: format!("{bias}.clone()"),
+      mask,
+      out,
+    };
+    if linked && private && rewrite(chain, "conv2d_bias_relu") {
+      fused_relu += 1;
+    }
+  }
+  // A net with mish (softplus) or relu activations and nothing fused means the generated code no longer has the shape
+  // the chain regexes expect (a burn-onnx update): fail rather than silently lose the fused GPU path.
+  for (fused, op, act) in [(fused_mish, "softplus", "mish"), (fused_relu, "relu", "relu")] {
+    if fused == 0 && code.contains(&format!("burn::tensor::activation::{op}(")) {
+      panic!(
+        "build.rs fuse_bn_act: {net} has {act} activations but no batch norm + {act} + mask chain matched; \
+         burn-onnx's generated code changed shape, update the regex in fuse_bn_act"
+      );
+    }
   }
   edits.sort_by_key(|e| std::cmp::Reverse(e.0));
   let mut out = code.clone();
@@ -362,7 +518,7 @@ fn fuse_bn_act(net: &str) {
   }
   out.insert_str(
     0,
-    &format!("// build.rs fuse_bn_act: {fused} batch norm + mish + mask chains fused into their convs.\n"),
+    &format!("// build.rs fuse_bn_act: {fused_mish} batch norm + mish + mask and {fused_relu} batch norm + relu + mask chains fused into their convs.\n"),
   );
   std::fs::write(&path, out).unwrap();
 }

@@ -85,7 +85,7 @@ pub fn conv1x1(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
 }
 
 /// `conv2d_bn_act` (conv.rs) for a 1x1 kernel with [`conv1x1_fits`] on a cubecl device.
-pub fn conv1x1_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+pub fn conv1x1_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>, relu: bool, has_scale: bool) -> Tensor<4> {
   let [oc, ic, _, _] = conv.weight.dims();
   let wt = cached_filter(conv, |w| w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]));
   let (scale, bias, mask) = prologue_args(scale, bias, mask);
@@ -96,11 +96,13 @@ pub fn conv1x1_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tenso
     bias.into_dispatch(),
     mask.into_dispatch(),
     oc,
+    relu,
+    has_scale,
   ))
 }
 
 /// `conv2d_bn_act` (conv.rs) for a 3x3 kernel on a cubecl device.
-pub fn conv3x3_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>) -> Tensor<4> {
+pub fn conv3x3_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>, relu: bool, has_scale: bool) -> Tensor<4> {
   let [oc, _, _, _] = conv.weight.dims();
   let filter = cached_filter(conv, |w| Tensor::<1>::from_dispatch(Dispatch::wino_filter_3x3(w.into_dispatch(), half())));
   let (scale, bias, mask) = prologue_args(scale, bias, mask);
@@ -111,6 +113,8 @@ pub fn conv3x3_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tenso
     bias.into_dispatch(),
     mask.into_dispatch(),
     oc,
+    relu,
+    has_scale,
   ))
 }
 
@@ -126,6 +130,13 @@ pub fn conv3x3(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
   let [oc, _, _, _] = conv.weight.dims();
   let filter = cached_filter(conv, |w| Tensor::<1>::from_dispatch(Dispatch::wino_filter_3x3(w.into_dispatch(), half())));
   Tensor::<4>::from_dispatch(Dispatch::wino_conv3x3(x.into_dispatch(), filter.into_dispatch(), oc))
+}
+
+/// `conv2d_same` for a kernel neither Winograd nor the 1x1 GEMM takes (the older nets' 5x5 input conv): computed
+/// directly on a cubecl device.
+pub fn conv_direct(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
+  let [oc, _, _, _] = conv.weight.dims();
+  Tensor::<4>::from_dispatch(Dispatch::conv_direct(x.into_dispatch(), conv.weight.val().into_dispatch(), oc))
 }
 
 /// [`ConvOps::reduce_last`] on a `[N, C, L]` tensor.
