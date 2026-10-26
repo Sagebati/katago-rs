@@ -683,6 +683,141 @@ fn nn_parity_b18c384nbt_rocm_f16() {
   check_f16(&d);
 }
 
+/// The transformer nets (attention + RMSNorm blocks between nested bottleneck blocks; model v15 b10c384h6nbttflrs,
+/// model v17 b10c512h8nbt3tflrs-fson-silu-rsnh and kata1-tf3-b11c768) on the evals of evals_b18.txt (72 evals,
+/// policyOptimism > 0 included), each on flex, wgpu and rocm, f32 and f16 (`wino::set_half`; only the 3x3 convs run
+/// in f16, and a transformer net has one, its input conv). Tolerances: [`check_tf`]. The flex tests are release-only
+/// (1.5-2 minutes per net in release, b10c512h8nbt3tflrs-fson-silu-rsnh ~10 minutes: it runs the first `$flex_limit`
+/// evals only).
+macro_rules! transformer_parity {
+  ($feature:literal, $module:ident, $out:literal, $flex_limit:expr, $flex:ident, $wgpu:ident, $wgpu_f16:ident, $rocm:ident, $rocm_f16:ident) => {
+    #[cfg(feature = $feature)]
+    #[cfg_attr(debug_assertions, ignore = "release only (just nn-parity -F <net>): minutes in debug")]
+    #[test]
+    fn $flex() {
+      let d = run_net::<katago_nn_burn::$module::Model>("flex", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, $flex_limit);
+      check_tf(&d, Tier::Flex);
+    }
+
+    #[cfg(all(feature = "wgpu", feature = $feature))]
+    #[test]
+    fn $wgpu() {
+      let _gpu = gpu_lock();
+      let d = run_net::<katago_nn_burn::$module::Model>("wgpu", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, usize::MAX);
+      check_tf(&d, Tier::Gpu);
+    }
+
+    #[cfg(all(feature = "wgpu", feature = $feature))]
+    #[test]
+    fn $wgpu_f16() {
+      let _gpu = gpu_lock();
+      let _half = Half::on();
+      let d = run_net::<katago_nn_burn::$module::Model>("wgpu", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, usize::MAX);
+      check_tf(&d, Tier::F16);
+    }
+
+    #[cfg(all(feature = "rocm", feature = $feature))]
+    #[test]
+    fn $rocm() {
+      let _gpu = gpu_lock();
+      let d = run_net::<katago_nn_burn::$module::Model>("rocm", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, usize::MAX);
+      check_tf(&d, Tier::Gpu);
+    }
+
+    #[cfg(all(feature = "rocm", feature = $feature))]
+    #[test]
+    fn $rocm_f16() {
+      let _gpu = gpu_lock();
+      let _half = Half::on();
+      let d = run_net::<katago_nn_burn::$module::Model>("rocm", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, usize::MAX);
+      check_tf(&d, Tier::F16);
+    }
+  };
+}
+
+transformer_parity!(
+  "net-b10c384h6nbttflrs",
+  b10c384h6nbttflrs,
+  "b10c384h6nbttflrs.out.bin",
+  usize::MAX,
+  nn_parity_b10c384h6nbttflrs,
+  nn_parity_b10c384h6nbttflrs_wgpu,
+  nn_parity_b10c384h6nbttflrs_wgpu_f16,
+  nn_parity_b10c384h6nbttflrs_rocm,
+  nn_parity_b10c384h6nbttflrs_rocm_f16
+);
+transformer_parity!(
+  "net-b10c512h8nbt3tflrs-fson-silu-rsnh",
+  b10c512h8nbt3tflrs_fson_silu_rsnh,
+  "b10c512h8nbt3tflrs-fson-silu-rsnh.out.bin",
+  24,
+  nn_parity_b10c512h8nbt3tflrs_fson_silu_rsnh,
+  nn_parity_b10c512h8nbt3tflrs_fson_silu_rsnh_wgpu,
+  nn_parity_b10c512h8nbt3tflrs_fson_silu_rsnh_wgpu_f16,
+  nn_parity_b10c512h8nbt3tflrs_fson_silu_rsnh_rocm,
+  nn_parity_b10c512h8nbt3tflrs_fson_silu_rsnh_rocm_f16
+);
+transformer_parity!(
+  "net-tf3-b11c768",
+  tf3_b11c768,
+  "kata1-tf3-b11c768.out.bin",
+  usize::MAX,
+  nn_parity_tf3_b11c768,
+  nn_parity_tf3_b11c768_wgpu,
+  nn_parity_tf3_b11c768_wgpu_f16,
+  nn_parity_tf3_b11c768_rocm,
+  nn_parity_tf3_b11c768_rocm_f16
+);
+
+#[cfg(any(
+  feature = "net-b10c384h6nbttflrs",
+  feature = "net-b10c512h8nbt3tflrs-fson-silu-rsnh",
+  feature = "net-tf3-b11c768"
+))]
+#[allow(dead_code)]
+enum Tier {
+  Flex,
+  Gpu,
+  F16,
+}
+
+/// Transformer-net tolerances. GPU f32 ([`check_wgpu`]) and f16 ([`check_f16`]) as for the convolutional nets. flex:
+/// twice [`check`]'s (2e-5 on probabilities and policy, 4e-5 on ownership) and 5e-5 relative (floor 1e-5) on the
+/// score-like outputs. The error is the reference's: the nets with a spatial RMSNorm (b10c384h6nbttflrs and the `rsnh`
+/// net) normalize by sums over C*361 squares that eigenbackend accumulates sequentially in float, which alone moves a
+/// |score| ~100 by ~2e-3 (tools/bin2onnx/README.md "Verification", verify.py's `--tol-score-rel 5e-5`). flex and wgpu
+/// (CPU gemm vs the cubecl kernels, different accumulation orders) agree with each other 20-100x better than either
+/// with Eigen: b10c512h8nbt3tflrs-fson-silu-rsnh, 24 evals, flex vs wgpu winrate 4.0e-7, lead 1.6e-5, policy 6.8e-7,
+/// ownership 3.3e-6, against flex vs Eigen 9.3e-6, 1.7e-3, 8.6e-6, 2.3e-5. Measured worst flex vs Eigen over the three
+/// nets (72 evals each): winrate 9.3e-6, policy 8.6e-6, ownership 2.26e-5 (b10c512), whiteScoreMean 1.7e-3 at 104.5
+/// (1.7e-5 relative), scoreMeanSq 3.3e-5 relative (b10c384); kata1-tf3-b11c768 (no spatial RMSNorm) stays within
+/// [`check`] (winrate 5e-7, policy 1.9e-6, ownership 4.6e-6, scoreMean 4.6e-5).
+#[cfg(any(
+  feature = "net-b10c384h6nbttflrs",
+  feature = "net-b10c512h8nbt3tflrs-fson-silu-rsnh",
+  feature = "net-tf3-b11c768"
+))]
+fn check_tf(diffs: &Diffs, tier: Tier) {
+  match tier {
+    Tier::Flex => {
+      for (i, name) in FIELDS.iter().enumerate() {
+        let tol = match i {
+          0..=2 | 9 => 2e-5,
+          10 => 4e-5,
+          _ => (5e-5 * diffs.scale[i]).max(1e-5),
+        };
+        assert!(diffs.max[i] <= tol, "{}: max diff {:.3e} > tolerance {:.3e}", name, diffs.max[i], tol);
+      }
+    }
+    #[cfg(feature = "gpu-kernels")]
+    Tier::Gpu => check_wgpu(diffs),
+    #[cfg(feature = "gpu-kernels")]
+    Tier::F16 => check_f16(diffs),
+    #[allow(unreachable_patterns)]
+    _ => unreachable!("GPU tiers need gpu-kernels"),
+  }
+}
+
 /// The layouts the generated graph cannot take are rejected like eigenbackend rejects its own
 /// (StringError at context / handle creation), not silently mis-evaluated.
 #[cfg(feature = "net-b6c96")]

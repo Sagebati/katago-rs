@@ -75,6 +75,13 @@
 //   /tmp/nneval_eigen humanevals $N
 //   H=/home/sam/src/web/baduk_review/backend/docker/models/b18c384nbt-humanv0.bin.gz
 //   /tmp/nneval_eigen eval $H $N/positions.txt $N/evals_human.txt $N/b18c384nbt-humanv0.out.bin
+// The transformer nets (models/nets/, the .bin.gz files tools/bin2onnx converts) on the evals of evals_b18.txt:
+//   T=models/nets
+//   /tmp/nneval_eigen eval $T/b10c384h6nbttflrs.bin.gz $N/positions.txt $N/evals_b18.txt $N/b10c384h6nbttflrs.out.bin
+//   /tmp/nneval_eigen eval $T/b10c512h8nbt3tflrs-fson-silu-rsnh.bin.gz $N/positions.txt $N/evals_b18.txt \
+//     $N/b10c512h8nbt3tflrs-fson-silu-rsnh.out.bin
+//   /tmp/nneval_eigen eval $T/kata1-tf3-b11c768-s11003M-d5973M-7gres.bin.gz $N/positions.txt $N/evals_b18.txt \
+//     $N/kata1-tf3-b11c768.out.bin
 // Generated with g++ (GCC) 16.2.1 / glibc 2.44 on x86-64 (Intel i7-8700K, FMA), Eigen 3.4.0.
 #include <cstdint>
 #include <cstdio>

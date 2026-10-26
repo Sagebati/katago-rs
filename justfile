@@ -104,7 +104,8 @@ test-gpu *flags="":
 
 # NN tier (M2): ported NNEvaluator + burn backend vs upstream NNEvaluator + Eigen (fixtures/upstream-v1.18.2/nn).
 # Default features: flex with b6c96 (incl. the evals_rand.txt symmetry/lifecycle replay), b10c128 and
-# b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`.
+# b18c384nbt (~27 s release). wgpu too: `just nn-parity -F wgpu`. The transformer nets need their features:
+# `just nn-parity -F wgpu,net-b10c384h6nbttflrs,net-b10c512h8nbt3tflrs-fson-silu-rsnh,net-tf3-b11c768` (~10 min).
 nn-parity *flags="":
     cargo nextest run --release -p katago-nn-burn --test nn_parity --success-output final {{flags}}
 
