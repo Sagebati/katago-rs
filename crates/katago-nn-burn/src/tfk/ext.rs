@@ -259,7 +259,10 @@ impl TfOps for CubeBackend {
     assert_eq!(len(&k), n * seq * kv_heads * dq, "tf_attention_tokens: k");
     assert_eq!(len(&v), n * seq * kv_heads * dv, "tf_attention_tokens: v");
     assert_eq!(len(&bias), n * seq, "tf_attention_tokens: bias");
-    assert!(heads.is_multiple_of(kv_heads) && dq.is_multiple_of(2));
+    assert!(
+      heads.is_multiple_of(kv_heads) && dq.is_multiple_of(4) && dv.is_multiple_of(4),
+      "tf_attention_tokens: dq {dq}, dv {dv}"
+    );
     let tables = |t: &CubeTensor, hmax: usize| {
       let rows = len(t) / (seq * dq / 2);
       assert!(
@@ -279,6 +282,7 @@ impl TfOps for CubeBackend {
             &q.client,
             CubeCount::Static(seq.div_ceil(ATT_Q) as u32, heads as u32, n as u32),
             CubeDim::new_1d(ATT_Q as u32),
+            4,
             BufferArg::from_raw_parts(q.handle.clone(), len(&q)),
             BufferArg::from_raw_parts(k.handle.clone(), len(&k)),
             BufferArg::from_raw_parts(v.handle.clone(), len(&v)),
@@ -287,7 +291,7 @@ impl TfOps for CubeBackend {
             BufferArg::from_raw_parts(cos_k.handle.clone(), len(&cos_k)),
             BufferArg::from_raw_parts(sin_k.handle.clone(), len(&sin_k)),
             BufferArg::from_raw_parts(bias.handle.clone(), n * seq),
-            BufferArg::from_raw_parts(out.handle.clone(), n * seq * heads * dv),
+            BufferArg::from_raw_parts(out.handle.clone(), n * seq * heads * dv / 4),
             seq as u32,
             heads as u32,
             kv_heads as u32,
