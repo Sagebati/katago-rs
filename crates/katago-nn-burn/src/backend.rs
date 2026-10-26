@@ -382,6 +382,8 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
 }
 
 /// upstream: NeuralNet::getOutput (eigenbackend.cpp)
+/// PORT NOTE: in three parts, in upstream's order: [`copy_inputs`] (the input loop), [`run_network`] (Eigen's
+/// Model::apply, here the generated network and the readback) and [`copy_outputs`] (the output loop).
 async fn get_output_impl<N: Network>(
   compute_handle: &mut BurnComputeHandle<N>,
   input_buffers: &mut BurnInputBuffers,
@@ -403,7 +405,60 @@ async fn get_output_impl<N: Network>(
   debug_assert!((num_spatial_features * nn_x_len * nn_y_len) as usize == input_buffers.single_input_elts);
   debug_assert!(num_global_features as usize == input_buffers.single_input_global_elts);
   let num_policy_channels: i32 = compute_handle.num_policy_channels;
+  let dims = BatchDims {
+    batch_size,
+    nn_x_len,
+    nn_y_len,
+    model_version,
+    num_spatial_features,
+    num_global_features,
+    num_meta_features,
+    num_policy_channels,
+  };
+  let rows = copy_inputs(compute_handle, input_buffers, input_bufs, &dims);
+  let readback = run_network(compute_handle, input_buffers, &dims).await?;
+  copy_outputs(compute_handle, input_buffers, &dims, &rows, &readback, outputs);
+  Ok(())
+}
 
+/// PORT NOTE: port-only. getOutput's locals, shared by its three parts.
+#[derive(Clone, Copy)]
+struct BatchDims {
+  batch_size: i32,
+  nn_x_len: i32,
+  nn_y_len: i32,
+  model_version: i32,
+  num_spatial_features: i32,
+  num_global_features: i32,
+  num_meta_features: i32,
+  num_policy_channels: i32,
+}
+
+/// PORT NOTE: port-only. Each row's symmetry and policy optimism, read while the input is copied.
+struct RowParams {
+  symmetry_by_row: Vec<i32>,
+  policy_optimism_by_row: Vec<f32>,
+}
+
+/// PORT NOTE: port-only. The batch's outputs as read back: rows of `row_len` values (policy, value, score,
+/// ownership), of which the first `batch_size` are real (the rest is bucket padding).
+struct Readback {
+  data: Vec<f32>,
+  hw: usize,
+  policy_row_len: usize,
+  num_value_channels: usize,
+  num_score_value_channels: usize,
+  row_len: usize,
+}
+
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), the input loop
+fn copy_inputs<N: Network>(
+  compute_handle: &BurnComputeHandle<N>,
+  input_buffers: &mut BurnInputBuffers,
+  input_bufs: &[Rc<NNResultBuf>],
+  dims: &BatchDims,
+) -> RowParams {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, num_spatial_features, num_global_features, num_meta_features, .. } = *dims;
   // PORT NOTE: upstream reads `inputBufs[row]->symmetry` / `->policyOptimism` in the output loop
   // below; here that loop runs after an await, so both are read now, while the input is copied
   // (same values: nothing writes them while the eval is queued, PORTING.md §11).
@@ -445,11 +500,15 @@ async fn get_output_impl<N: Network>(
       symmetry_by_row[n_idx],
     );
   }
+  RowParams { symmetry_by_row, policy_optimism_by_row }
+}
 
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), Model::apply
+async fn run_network<N: Network>(compute_handle: &BurnComputeHandle<N>, input_buffers: &BurnInputBuffers, dims: &BatchDims) -> Result<Readback, KataError> {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, num_spatial_features, num_global_features, num_meta_features, num_policy_channels, .. } = *dims;
   // PORT NOTE: Eigen maps the buffers as tensors and calls Model::apply; here the batch is copied
   // into burn tensors (NCHW) and the generated network runs, padded to a batch bucket if configured
   // (rows n..n_run of the input buffers hold stale inputs; their outputs are not read).
-  let n = batch_size as usize;
   let n_run = padded_batch_size(&compute_handle.batch_buckets, batch_size, input_buffers.max_batch_size) as usize;
   let hw = (nn_x_len * nn_y_len) as usize;
   let device = &compute_handle.device;
@@ -514,7 +573,24 @@ async fn get_output_impl<N: Network>(
   crate::host::yield_to_event_loop().await;
   let row_len = policy_row_len + num_value_channels + num_score_value_channels + ownership_row_len;
   testAssert!(data.len() == row_len * n_run);
+  Ok(Readback { data, hw, policy_row_len, num_value_channels, num_score_value_channels, row_len })
+}
 
+/// upstream: NeuralNet::getOutput (eigenbackend.cpp), the output loop
+fn copy_outputs<N: Network>(
+  compute_handle: &BurnComputeHandle<N>,
+  input_buffers: &BurnInputBuffers,
+  dims: &BatchDims,
+  rows: &RowParams,
+  readback: &Readback,
+  outputs: &mut [NNOutput],
+) {
+  let BatchDims { batch_size, nn_x_len, nn_y_len, model_version, num_policy_channels, .. } = *dims;
+  let RowParams { symmetry_by_row, policy_optimism_by_row } = rows;
+  let Readback { data, hw, policy_row_len, num_value_channels, num_score_value_channels, row_len } = readback;
+  let (hw, policy_row_len, num_value_channels, num_score_value_channels, row_len) =
+    (*hw, *policy_row_len, *num_value_channels, *num_score_value_channels, *row_len);
+  let n = batch_size as usize;
   debug_assert!(input_buffers.single_policy_pass_result_elts == num_policy_channels as usize);
   debug_assert!(input_buffers.single_policy_result_elts == (num_policy_channels as usize) * hw);
 
@@ -610,7 +686,6 @@ async fn get_output_impl<N: Network>(
       unreachable!();
     }
   }
-  Ok(())
 }
 
 

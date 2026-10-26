@@ -12,6 +12,7 @@
 //!   - whether the chosen move (getChosenMoveLoc, chosenMoveTemperature 0) is identical,
 //!   - the max |burn - eigen| of winLossValue / utility / scoreMean / lead / policy prior over the children both
 //!     sides have, plus the root values (getRootValues).
+//!
 //! The test FAILS only if a root visit count differs, the chosen move differs in more than 10% of the searches, or
 //! a value difference exceeds the loose bounds below. It always prints the summary table: these numbers inform the
 //! tolerance policy (docs/PORTING.md section 13). Run in release (debug burn is very slow):

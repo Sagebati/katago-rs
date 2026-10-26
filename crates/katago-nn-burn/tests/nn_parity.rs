@@ -117,8 +117,8 @@ fn parse_eval_tokens(t: &[&str]) -> Eval {
 fn read_records(file: &str) -> Vec<Vec<u32>> {
   let bytes = std::fs::read(fixture_path(file)).unwrap();
   assert_eq!(bytes.len() % (4 * WORDS_PER_RECORD), 0);
-  let words: Vec<u32> = bytes.chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
-  words.chunks_exact(WORDS_PER_RECORD).map(|c| c.to_vec()).collect()
+  let words: Vec<u32> = bytes.as_chunks::<4>().0.iter().map(|b| u32::from_le_bytes(*b)).collect();
+  words.as_chunks::<WORDS_PER_RECORD>().0.iter().map(|c| c.to_vec()).collect()
 }
 
 const FIELDS: [&str; 11] = [
@@ -310,13 +310,13 @@ fn nn_parity_b6c96_rand() {
   let text = std::fs::read_to_string(fixture_path("evals_rand.txt")).unwrap();
   let bytes = std::fs::read(fixture_path("g170-b6c96.rand.out.bin")).unwrap();
   assert_eq!(bytes.len() % (4 * (1 + WORDS_PER_RECORD)), 0);
-  let words: Vec<u32> = bytes.chunks_exact(4).map(|b| u32::from_le_bytes(b.try_into().unwrap())).collect();
-  let records: Vec<&[u32]> = words.chunks_exact(1 + WORDS_PER_RECORD).collect();
+  let words: Vec<u32> = bytes.as_chunks::<4>().0.iter().map(|b| u32::from_le_bytes(*b)).collect();
+  let records: Vec<&[u32]> = words.as_chunks::<{ 1 + WORDS_PER_RECORD }>().0.iter().map(|c| &c[..]).collect();
 
   let mut lines = text.lines().filter(|l| !l.is_empty());
   let cfg: Vec<&str> = lines.next().unwrap().split_whitespace().collect();
   assert_eq!(cfg[0], "config");
-  let device: Device = burn::backend::FlexDevice::default().into();
+  let device: Device = burn::backend::FlexDevice.into();
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let backend = Rc::new(BurnNeuralNet::<N>::new(device));
@@ -618,7 +618,7 @@ fn nn_parity_b18c384nbt_rocm_f16() {
 fn backend_rejects_unsupported_layouts() {
   use katago_core::neuralnet::nninterface::NeuralNet;
   type N = katago_nn_burn::b6c96::Model;
-  let device: Device = burn::backend::FlexDevice::default().into();
+  let device: Device = burn::backend::FlexDevice.into();
   let backend = BurnNeuralNet::<N>::new(device);
   let model = backend.load_model_file("b6", std::fs::read(katago_nn_burn::b6c96::BPK_PATH).unwrap(), "").unwrap();
   let desc = backend.get_model_desc(&*model);

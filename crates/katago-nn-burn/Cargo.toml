@@ -57,6 +57,9 @@ wasm-bindgen-test = "=0.3.79"
 
 [build-dependencies]
 burn-onnx.workspace = true
+# build.rs SpatialReduce matches the reduce axes (burn-onnx does not re-export onnx-ir's ReduceAxes): the version
+# burn-onnx uses, so the types are the same.
+onnx-ir = "=0.22.0"
 # build.rs fuse_bn_act: rewriting the generated forward passes.
 regex = "1"
 

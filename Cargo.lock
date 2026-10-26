@@ -3801,6 +3801,7 @@ dependencies = [
  "js-sys",
  "katago-core",
  "log",
+ "onnx-ir",
  "regex",
  "wasm-bindgen",
  "wasm-bindgen-futures",

@@ -16,6 +16,7 @@
 //!     values), utility, scoreMean, lead and policy prior (over the children both trees have),
 //!   - for the searches whose visit vector differs, the max and median of the largest edge-visit difference of any
 //!     child (a child missing on one side counts as 0 visits).
+//!
 //! The test FAILS only on gross problems: a root visit count differs, the chosen move differs in more than 10% of the
 //! searches, or a value difference exceeds the loose bounds below (those of search_smoke.rs). Run in release (debug
 //! burn is very slow; the tests are ignored in debug):
@@ -63,8 +64,8 @@ fn summary(label: &str, outcomes: &[Outcome], total_seconds: f64) -> String {
   let _ = writeln!(s, "per search (diffs are max |burn - eigen| over the children both trees have + the root values; dvis = max child edge-visit difference):");
   let _ = writeln!(
     s,
-    "  {:>3} {:<18} {:>4} {:>6} {:>4} {:>4} {:>5} {:>9} {:>9} {:>9} {:>9} {:>9} {:>6}  {}",
-    "idx", "position", "base", "visits", "vec", "top", "dvis", "d_wl", "d_util", "d_sm", "d_lead", "d_prior", "secs", "params"
+    "  {:>3} {:<18} {:>4} {:>6} {:>4} {:>4} {:>5} {:>9} {:>9} {:>9} {:>9} {:>9} {:>6}  params",
+    "idx", "position", "base", "visits", "vec", "top", "dvis", "d_wl", "d_util", "d_sm", "d_lead", "d_prior", "secs"
   );
   for o in outcomes {
     let _ = writeln!(

@@ -113,8 +113,8 @@ pub fn parse_cases(file: &str) -> Vec<Case> {
     let mut res = SearchResult { root_visits: -1, children: Vec::new(), rv: [f64::NAN; 6], chosen: Board::NULL_LOC, chosen_str: String::new() };
     loop {
       let l = lines.next().expect("END line");
-      if l.starts_with("END ") {
-        assert_eq!(l[4..].parse::<usize>().unwrap(), idx);
+      if let Some(n) = l.strip_prefix("END ") {
+        assert_eq!(n.parse::<usize>().unwrap(), idx);
         break;
       }
       let t: Vec<&str> = l.split_whitespace().collect();
@@ -231,14 +231,14 @@ pub fn run_search(pool: &mut LocalPool, nn_eval: &Rc<NNEvaluator>, c: &Case, set
   let mut v = ReportedSearchValues::new();
   assert!(search.get_root_values(&mut v));
   let chosen = search.get_chosen_move_loc();
-  let result = SearchResult {
+  
+  SearchResult {
     root_visits: search.get_root_visits(),
     children: out,
     rv: [v.win_value, v.loss_value, v.expected_score, v.lead, v.win_loss_value, v.utility],
     chosen,
     chosen_str: Location::to_string(chosen, search.get_root_board()),
-  };
-  result
+  }
 }
 
 //------------------------------------------------------------------------------------------------
@@ -350,7 +350,7 @@ pub fn median(v: &mut [f64]) -> f64 {
 /// defaultSymmetry 0, no randomization. One evaluator (and cache) for all cases, like the oracle's. Returns the pool it
 /// runs on, with the server threads spawned.
 pub fn new_nn_eval<N: Network + 'static>(name: &str, bpk: &str) -> (LocalPool, Rc<NNEvaluator>) {
-  let device: Device = burn::backend::FlexDevice::default().into();
+  let device: Device = burn::backend::FlexDevice.into();
   let mut pool = LocalPool::new();
   let spawner: Rc<dyn Spawner> = Rc::new(pool.spawner());
   let backend = Rc::new(BurnNeuralNet::<N>::new(device));

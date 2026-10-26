@@ -22,11 +22,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use burn::backend::Dispatch;
 use burn::module::ParamId;
 use burn::nn::conv::Conv2d;
-use burn::tensor::Tensor;
+use burn::tensor::{Device, Tensor};
 
 pub use ext::ConvOps;
 #[doc(hidden)]
 pub use kernels::{GEMM_K, GEMM_M, GEMM_N, IN_TILE, OUT_TILE, TILE_POINTS, transform_filter_3x3};
+
+/// One device's transformed filters, by (weight parameter, f16).
+type DeviceFilters = (Device, HashMap<(ParamId, bool), Tensor<1>>);
 
 /// The default precision of the 3x3 convs ([`set_half`]): what a network runs in unless its forward pass is
 /// inside [`with_half`]. Process-wide.
@@ -35,10 +38,10 @@ static HALF: AtomicBool = AtomicBool::new(false);
 thread_local! {
     /// The precision of the forward pass being built on this thread ([`with_half`]), over [`HALF`].
     static FORWARD_HALF: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
-    /// Transformed filters by weight parameter: computed on a conv's first call (one weight readback).
-    /// Keyed also by precision and device: burn-onnx fixes a net's ParamIds at build time, so every load of the
-    /// same net shares them (and its weights: the same `.bpk`).
-    static FILTERS: RefCell<HashMap<(ParamId, bool, String), Tensor<1>>> = RefCell::new(HashMap::new());
+    /// Transformed filters, built on a conv's first call with device ops only: per device (burn's Device is not
+    /// Hash, and a thread uses one or two), by weight parameter and precision. burn-onnx fixes a net's ParamIds at
+    /// build time, so every load of the same net shares them (and its weights: the same `.bpk`).
+    static FILTERS: RefCell<Vec<DeviceFilters>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Run the 3x3 convs in f16 from now on, by default (the device must support f16; filters already built keep their
@@ -54,9 +57,19 @@ pub fn set_half(half: bool) {
 /// device ops only (wasm cannot read a tensor back synchronously).
 fn cached_filter(conv: &Conv2d, make: impl FnOnce(Tensor<4>) -> Tensor<1>) -> Tensor<1> {
     let w = conv.weight.val();
-    // burn's Device is not Hash: its Debug form names it (a few hundred ns per conv).
-    let key = (conv.weight.id, half(), format!("{:?}", w.device()));
-    FILTERS.with(|filters| filters.borrow_mut().entry(key).or_insert_with(|| make(w)).clone())
+    let device = w.device();
+    let key = (conv.weight.id, half());
+    FILTERS.with(|filters| {
+        let mut filters = filters.borrow_mut();
+        let i = match filters.iter().position(|(d, _)| *d == device) {
+            Some(i) => i,
+            None => {
+                filters.push((device, HashMap::new()));
+                filters.len() - 1
+            }
+        };
+        filters[i].1.entry(key).or_insert_with(|| make(w)).clone()
+    })
 }
 
 /// Whether [`conv1x1`] takes this 1x1 conv: every one of KataGo's nets but a 19- or 22-channel input.

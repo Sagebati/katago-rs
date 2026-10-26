@@ -244,20 +244,19 @@ impl OpOverride for SpatialReduce {
     }
 
     fn forward(&self, node: &Node, ctx: &mut CodegenContext<'_, '_>) -> Result<TokenStream, ProcessError> {
-        // The axes as their Debug form: onnx-ir's ReduceAxes is not re-exported by burn-onnx. Any other form is
-        // rejected below, loudly.
         let (axes, keepdims) = match node {
-            Node::ReduceSum(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
-            Node::ReduceMax(n) => (format!("{:?}", n.config.axes), n.config.keepdims),
+            Node::ReduceSum(n) => (&n.config.axes, n.config.keepdims),
+            Node::ReduceMax(n) => (&n.config.axes, n.config.keepdims),
             _ => return Err(ProcessError::Custom("expected a ReduceSum or ReduceMax node".into())),
         };
         let rank = match &node.inputs()[0].ty {
             burn_onnx::ext::ArgType::Tensor(t) => t.rank,
             other => return Err(ProcessError::Custom(format!("{}: reduce of {other:?}", node.name()))),
         };
-        if axes != "Static([2])" || keepdims || rank != 3 {
+        let last_axis = matches!(axes, onnx_ir::node::reduce::ReduceAxes::Static(dims) if dims[..] == [2]);
+        if !last_axis || keepdims || rank != 3 {
             return Err(ProcessError::Custom(format!(
-                "{}: unsupported reduce (axes {axes}, keepdims {keepdims}, rank {rank})",
+                "{}: unsupported reduce (axes {axes:?}, keepdims {keepdims}, rank {rank})",
                 node.name()
             )));
         }
