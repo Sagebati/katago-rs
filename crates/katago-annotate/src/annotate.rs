@@ -2,7 +2,7 @@
 // the payload types are what baduk_review's libs/katago-sdk/src/models.rs @ 8bcb98e1 reads (payload v3).
 // Divergences, each marked `KATAGO-ANNOTATE:`: `EngineConfig` -> `AnnotateOptions`; `EngineInfo::name` comes
 // from the options (default `katago`) and an optional `version` follows it (left out when `None`, so a
-// default payload is byte-identical to katago-ws's); `tracing::warn!` -> `log::warn!`; `f32::exp` ->
+// default payload is byte-identical to katago-ws's); `tracing::warn!` fields -> the message; `f32::exp` ->
 // `crate::math::expf` (glibc's expf on wasm32 as natively).
 
 //! Turn KataGo per-turn analysis into the annotation payload returned to clients.
@@ -486,8 +486,8 @@ fn check_turn_alignment(game: &ParsedGame, by_turn: &HashMap<usize, TurnResponse
         .count();
 
     if mismatched > 0 {
-        // KATAGO-ANNOTATE: log, not tracing (same fields, in the message).
-        log::warn!(
+        // KATAGO-ANNOTATE: the fields are in the message (the hosts print the message only).
+        tracing::warn!(
             "KataGo's currentPlayer disagrees with the move list — per-move \
              losses may be attributed to the wrong player (mismatched={mismatched}, turns={})",
             game.moves.len() + 1
@@ -519,8 +519,8 @@ fn per_turn_grid<T>(
             return Vec::new();
         };
         if raw.len() != expected {
-            // KATAGO-ANNOTATE: log, not tracing (same fields, in the message).
-            log::warn!(
+            // KATAGO-ANNOTATE: the fields are in the message (the hosts print the message only).
+            tracing::warn!(
                 "per-turn grid has the wrong length — dropping it for this game \
                  (turn={turn}, got={}, expected={expected}, grid={name})",
                 raw.len()

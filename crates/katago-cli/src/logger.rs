@@ -1,12 +1,25 @@
-//! The Logger's outputs (core/logger.cpp is replaced by the log crate; this is its backend).
+//! The Logger's outputs (core/logger.cpp is replaced by `tracing`; this is its subscriber).
 
+use std::fmt::Write as _;
 use std::io::Write as _;
 use std::sync::Mutex;
+use std::sync::Once;
 
 use katago_core::command::analysis::LoggerSettings;
 use katago_core::core::global::Global;
 use katago_core::core::global::KataError;
 use katago_core::core::rand::Rand;
+use tracing::Event;
+use tracing::Level;
+use tracing::Metadata;
+use tracing::Subscriber;
+use tracing::field::Field;
+use tracing::field::Visit;
+use tracing::level_filters::LevelFilter;
+use tracing_log::AsLog as _;
+use tracing_subscriber::layer::Context;
+use tracing_subscriber::layer::Layer;
+use tracing_subscriber::layer::SubscriberExt as _;
 
 struct LoggerState {
   to_stdout: bool,
@@ -15,7 +28,7 @@ struct LoggerState {
   files: Vec<std::fs::File>,
 }
 
-/// The log backend. Until init_logger runs (the Logger constructor) there is no Logger upstream, so
+/// The Logger's state. Until init_logger runs (the Logger constructor) there is no Logger upstream, so
 /// messages are dropped.
 struct CliLogger {
   state: Mutex<Option<LoggerState>>,
@@ -64,33 +77,50 @@ impl CliLogger {
   }
 }
 
-impl log::Log for CliLogger {
-  fn enabled(&self, metadata: &log::Metadata) -> bool {
-    // The GPU stack (burn, cubecl and its pliron IR, wgpu, naga) logs kernel IR at Info: one analysis run wrote a
-    // 2.6M-line log file. Only its warnings and errors reach the engine's log.
-    const GPU_STACK: [&str; 6] = ["burn", "cubecl", "cubek", "wgpu", "naga", "pliron"];
-    if GPU_STACK.iter().any(|p| metadata.target().starts_with(p)) {
-      return metadata.level() <= log::Level::Warn;
-    }
-    metadata.level() <= log::Level::Info
-  }
-  fn log(&self, record: &log::Record) {
-    if !self.enabled(record.metadata()) {
-      return;
-    }
-    let mut guard = self.state.lock().unwrap();
-    if let Some(state) = guard.as_mut() {
-      CliLogger::write_locked(state, &record.args().to_string());
+/// The `message` of an event (`log`'s `record.args()`); the engine's events carry no other fields.
+struct Message(String);
+
+impl Visit for Message {
+  fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+    if field.name() == "message" {
+      let _ = write!(self.0, "{value:?}");
     }
   }
-  fn flush(&self) {}
 }
 
-/// Installs the log backend (once). It writes nothing until [`init_logger`].
-pub fn install_logger() {
-  if log::set_logger(&LOGGER).is_ok() {
-    log::set_max_level(log::LevelFilter::Info);
+/// The subscriber's one layer: `Logger::write` for every enabled event.
+struct CliLayer;
+
+impl<S: Subscriber> Layer<S> for CliLayer {
+  fn enabled(&self, metadata: &Metadata<'_>, _ctx: Context<'_, S>) -> bool {
+    // The GPU stack (burn, cubecl and its pliron IR, wgpu, naga) logs kernel IR at Info: one analysis run wrote a
+    // 2.6M-line log file. Only its warnings and errors reach the engine's log. Its `log` records come through
+    // LogTracer, which asks with the record's own target and level.
+    const GPU_STACK: [&str; 6] = ["burn", "cubecl", "cubek", "wgpu", "naga", "pliron"];
+    if GPU_STACK.iter().any(|p| metadata.target().starts_with(p)) {
+      return *metadata.level() <= Level::WARN;
+    }
+    *metadata.level() <= Level::INFO
   }
+  fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
+    let mut guard = LOGGER.state.lock().unwrap();
+    if let Some(state) = guard.as_mut() {
+      let mut msg = Message(String::new());
+      event.record(&mut msg);
+      CliLogger::write_locked(state, &msg.0);
+    }
+  }
+}
+
+/// Installs the subscriber (once), and LogTracer for the `log` records of the dependencies. It writes nothing
+/// until [`init_logger`].
+pub fn install_logger() {
+  static INSTALL: Once = Once::new();
+  INSTALL.call_once(|| {
+    if tracing::subscriber::set_global_default(tracing_subscriber::registry().with(CliLayer)).is_ok() {
+      let _ = tracing_log::LogTracer::builder().with_max_level(LevelFilter::INFO.as_log()).init();
+    }
+  });
 }
 
 /// `MakeDir::make` (makedir.cpp, Unix): mkdir 0775, EEXIST is fine, any other failure is
@@ -122,7 +152,7 @@ fn add_file(state: &mut LoggerState, file: &str) {
 
 /// AnalysisHost::init_logger: the outputs of the `Logger` constructor (logger.cpp) from the settings it
 /// read: stdout / stderr / timestamps, then `logFile` (addFile) or `logDir` / `logDirDated` (MakeDir::make,
-/// then addFile of `<dir>/[<date>/]<compact date>-<random hex>.log`). Installs the backend if needed.
+/// then addFile of `<dir>/[<date>/]<compact date>-<random hex>.log`). Installs the subscriber if needed.
 pub fn init_logger(settings: &LoggerSettings) -> Result<(), KataError> {
   install_logger();
   let mut state = LoggerState {

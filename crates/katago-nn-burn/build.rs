@@ -39,6 +39,7 @@ fn main() {
       .register_op_override(SpatialReduce(NodeType::ReduceMax, "spatial_max"))
       .run_from_script();
     fuse_bn_act(net);
+    fuse_tf(net);
     write_model_desc(&onnx, net);
   }
 }
@@ -325,6 +326,12 @@ impl OpOverride for SpatialReduce {
         )));
       }
     };
+    // The spatial trunk-tip RMSNorm's sum over all of `[N, C*H*W]`: in two steps on GPUs (crate::conv::row_sum).
+    if matches!(node, Node::ReduceSum(_)) && rank == 2 && axis == 1 && keepdims {
+      return Ok(quote! {
+          let #output = crate::conv::row_sum(#input);
+      });
+    }
     let reduced = match node {
       Node::ReduceSum(_) => quote! { #input.sum_dim(#axis) },
       _ => quote! { #input.max_dim(#axis) },
@@ -590,4 +597,246 @@ fn fuse_bn_act(net: &str) {
     &format!("// build.rs fuse_bn_act: {fused_mish} batch norm + mish + mask and {fused_relu} batch norm + relu + mask chains fused into their convs.\n"),
   );
   std::fs::write(&path, out).unwrap();
+}
+
+/// Routes the transformer blocks of the generated code to `crate::tf` (no-op on a convolutional net): every
+/// `Linear` field's forward, burn's attention call, and each per-token RMSNorm chain (bin2onnx
+/// `transformer_rmsnorm`: square, sum over the channels, / C, + eps, sqrt, 1 / that, times x, gamma and the token
+/// mask), which becomes one `crate::tf::rms_norm` when its intermediates have no other use.
+fn fuse_tf(net: &str) {
+  let path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap())
+    .join("model")
+    .join(format!("{net}.rs"));
+  let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+  if !code.contains("burn::tensor::module::attention(") {
+    return;
+  }
+  // A constant the chain loads on its first use (kept: later chains use it too).
+  const LOAD: &str = r"(?:let \w+ = self\.\w+\.val\(\);\s*)?";
+  let rms = regex::Regex::new(
+    &[
+      r"let (\w+) = (\w+)\.clone\(\)\s*\.mul\((\w+)\.clone\(\)\);\s*",
+      r"let (\w+) = (\w+)\.sum_dim\(2usize\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.div\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.add\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      r"let (\w+) = (\w+)\.sqrt\(\);\s*",
+      LOAD,
+      r"let (\w+) = \(\w+(?:\.clone\(\))?\)\s*\.unsqueeze_dims\(&\[0isize, 1isize\]\)\s*\.div\((\w+)\);\s*",
+      r"let (\w+) = (\w+)(\.clone\(\))?\s*\.mul\((\w+)\);\s*",
+      LOAD,
+      r"let (\w+) = (\w+)\s*\.mul\(\((\w+(?:\.clone\(\))?)\)\.unsqueeze_dims\(&\[0isize, 1isize\]\)\);\s*",
+      r"let (\w+) = (\w+)\s*\.mul\((\w+(?:\.clone\(\))?)\);",
+    ]
+    .concat(),
+  )
+  .unwrap();
+  let loads = regex::Regex::new(r"let \w+ = self\.\w+\.val\(\);").unwrap();
+  let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+  for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(&code) {
+    *words.entry(w.as_str()).or_default() += 1;
+  }
+  let count = |name: &str| words.get(name).copied().unwrap_or(0);
+  let mut edits: Vec<(usize, usize, String)> = Vec::new();
+  let mut fused_rms = 0;
+  for m in rms.captures_iter(&code) {
+    let g = |i: usize| m.get(i).map_or("", |x| x.as_str());
+    let (sq, x, ss, ms, divisor, den, eps, sqrt, inv, normed, x_last, x_clone, scaled, gamma, out, mask) = (
+      g(1),
+      g(2),
+      g(4),
+      g(6),
+      g(8),
+      g(9),
+      g(11),
+      g(12),
+      g(14),
+      g(16),
+      g(17),
+      g(18),
+      g(20),
+      g(22),
+      g(23),
+      g(25),
+    );
+    let linked = g(3) == x
+      && g(5) == sq
+      && g(7) == ss
+      && g(10) == ms
+      && g(13) == den
+      && g(15) == sqrt
+      && x_last == x
+      && g(19) == inv
+      && g(21) == normed
+      && g(24) == scaled;
+    let private = [sq, ss, ms, den, sqrt, inv, normed, scaled].iter().all(|n| count(n) == 2);
+    if !(linked && private) {
+      continue;
+    }
+    let whole = m.get(0).unwrap();
+    let kept: String = loads.find_iter(whole.as_str()).map(|l| format!("{}\n", l.as_str())).collect();
+    edits.push((
+      whole.start(),
+      whole.end(),
+      format!("{kept}let {out} = crate::tf::rms_norm({x}{x_clone}, {divisor}, {eps}, {gamma}, {mask});"),
+    ));
+    fused_rms += 1;
+  }
+  let mut out = code.clone();
+  edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+  for (start, end, text) in edits {
+    out.replace_range(start..end, &text);
+  }
+  // Linear fields (`name: Linear,` in the module struct) and the attention call.
+  let fields: std::collections::BTreeSet<String> = regex::Regex::new(r"(?m)^\s*(?:pub )?(\w+): Linear,")
+    .unwrap()
+    .captures_iter(&out)
+    .map(|c| c[1].to_string())
+    .collect();
+  let mut linears = 0;
+  for f in &fields {
+    let call = regex::Regex::new(&format!(r"self\.{f}\s*\.forward\(")).unwrap();
+    linears += call.find_iter(&out).count();
+    out = call.replace_all(&out, format!("crate::tf::linear(&self.{f}, ").as_str()).into_owned();
+  }
+  // burn-onnx's attention block zeroes the query rows whose key bias is -inf everywhere (`hidden_rows`, a max over the
+  // bias, then a mask_fill): crate::tf::attention_masked does both, inside the kernel on GPUs.
+  let hidden = regex::Regex::new(concat!(
+    r"let hidden_rows = score_bias\s*\.clone\(\)\s*\.max_dim\(3\)\s*\.equal_elem\(f32::NEG_INFINITY\);\s*",
+    r"let (\w+) = burn::tensor::module::attention\(\s*q,\s*k,\s*v,\s*None,\s*Some\(score_bias\),\s*",
+    r"(burn::tensor::ops::AttentionModuleOptions \{[^}]*\}),?\s*\);\s*",
+    r"let (\w+) = \{\s*let dims = (\w+)\.dims\(\);\s*(\w+)\s*\.mask_fill\(hidden_rows\.expand\(dims\), 0\.0\)\s*\};",
+  ))
+  .unwrap();
+  let attentions = hidden.find_iter(&out).count();
+  out = hidden
+    .replace_all(&out, "let $3 = crate::tf::attention_masked(q, k, v, score_bias, $2);")
+    .into_owned();
+  if out.contains("burn::tensor::module::attention(") {
+    panic!(
+      "build.rs fuse_tf: {net} has an attention call outside the hidden-rows block fuse_tf expects; burn-onnx's \
+       generated code changed shape, update the regex in fuse_tf"
+    );
+  }
+  let (out_tok, attention_tokens) = fuse_attention_tokens(&out);
+  out = out_tok;
+  if fused_rms == 0 {
+    panic!(
+      "build.rs fuse_tf: {net} has attention but no transformer RMSNorm chain matched; burn-onnx's generated code \
+       changed shape, update the regex in fuse_tf"
+    );
+  }
+  out.insert_str(
+    0,
+    &format!(
+      "// build.rs fuse_tf: {fused_rms} RMSNorms, {linears} linears and {attentions} attentions routed to crate::tf \
+       ({attention_tokens} of them on the token layout with their RoPE).\n"
+    ),
+  );
+  std::fs::write(&path, out).unwrap();
+}
+
+/// The attention of each transformer block from its q/k/v projections to its merged heads (the head splits, the RoPE
+/// of q and k, `crate::tf::attention_masked`'s block and the head merge) as one `crate::tf::attention_tokens`, when its
+/// intermediates have no other use. Returns the rewritten code and the number of blocks rewritten.
+fn fuse_attention_tokens(code: &str) -> (String, usize) {
+  const LOADS: &str = r"(?:let \w+ = self\.\w+\.val\(\);\s*)*";
+  let split = |p: &str| {
+    format!(
+      r"let (?P<{p}r>\w+) = (?P<{p}in>\w+)\s*\.reshape\(\[-1, (?P<{p}s>\d+), (?P<{p}h>\d+), (?P<{p}d>\d+)\]\);\s*let (?P<{p}t>\w+) = (?P<{p}r2>\w+)\.permute\(\[0, 2, 1, 3\]\);\s*"
+    )
+  };
+  let rope = |p: &str| {
+    format!(
+      concat!(
+        r"let (?P<{p}a>\w+) = (?P<{p}x1>\w+)\.clone\(\)\s*\.slice\(s!\[\.\., \.\., \.\., 0\.\.(?P<{p}h1>\d+)\]\);\s*",
+        r"let (?P<{p}b>\w+) = (?P<{p}x2>\w+)\s*\.slice\(s!\[\.\., \.\., \.\., (?P<{p}h2>\d+)\.\.(?P<{p}d>\d+)\]\);\s*",
+        "{loads}",
+        r"let (?P<{p}m1>\w+) = (?P<{p}a1>\w+)\.clone\(\)\s*\.mul\((?P<{p}cos>\w+)(?:\.clone\(\))?\);\s*",
+        "{loads}",
+        r"let (?P<{p}m2>\w+) = (?P<{p}b1>\w+)\.clone\(\)\s*\.mul\((?P<{p}sin>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}r0>\w+) = (?P<{p}m1b>\w+)\.sub\((?P<{p}m2b>\w+)\);\s*",
+        r"let (?P<{p}m3>\w+) = (?P<{p}a2>\w+)\.mul\((?P<{p}sin2>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}m4>\w+) = (?P<{p}b2>\w+)\.mul\((?P<{p}cos2>\w+)(?:\.clone\(\))?\);\s*",
+        r"let (?P<{p}r1>\w+) = (?P<{p}m3b>\w+)\.add\((?P<{p}m4b>\w+)\);\s*",
+        r"let (?P<{p}cat>\w+) = burn::tensor::Tensor::cat\(\s*\[(?P<{p}r0b>\w+), (?P<{p}r1b>\w+)\]\.into\(\),\s*3,?\s*\);\s*",
+      ),
+      p = p,
+      loads = LOADS
+    )
+  };
+  let block = concat!(
+    r"let \((?P<mm>\w+),\) = \{\s*let q = (?P<cq>\w+);\s*let k = (?P<ck>\w+);\s*let v = (?P<cv>\w+);\s*",
+    r"let groups = q\.dims\(\)\[1\] / k\.dims\(\)\[1\];[\s\S]*?\} else \{\s*\(k, v\)\s*\};\s*",
+    r"let score_bias = (?P<bias>\w+)(?:\.clone\(\))?;\s*",
+    r"let (?P<mm2>\w+) = crate::tf::attention_masked\(q, k, v, score_bias, burn::tensor::ops::AttentionModuleOptions \{\s*",
+    r"scale: Some\((?P<scale>[0-9.eE+-]+)f64\),\s*softcap: None,\s*is_causal: false,?\s*\}\);\s*\((?P<mm3>\w+),\)\s*\};\s*",
+    r"let (?P<t6>\w+) = (?P<mm4>\w+)\.permute\(\[0, 2, 1, 3\]\);\s*",
+    r"let (?P<out>\w+) = (?P<t6b>\w+)\s*\.reshape\(\[-1, (?P<os>\d+), (?P<oc>\d+)\]\);",
+  );
+  let re = regex::Regex::new(&format!(
+    "{}{}{}{LOADS}{}{LOADS}{}{block}",
+    split("q"),
+    split("k"),
+    split("v"),
+    rope("rq"),
+    rope("rk")
+  ))
+  .unwrap();
+  let loads = regex::Regex::new(r"let \w+ = self\.\w+\.val\(\);").unwrap();
+  let mut words: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+  for w in regex::Regex::new(r"\b\w+\b").unwrap().find_iter(code) {
+    *words.entry(w.as_str()).or_default() += 1;
+  }
+  let count = |name: &str| words.get(name).copied().unwrap_or(0);
+  let mut edits: Vec<(usize, usize, String)> = Vec::new();
+  for c in re.captures_iter(code) {
+    let g = |n: &str| c.name(n).map_or("", |m| m.as_str());
+    let num = |n: &str| g(n).parse::<usize>().unwrap();
+    let (seq, heads, kv_heads, dq, dv) = (num("qs"), num("qh"), num("kh"), num("qd"), num("vd"));
+    let mut ok = g("qr") == g("qr2") && g("kr") == g("kr2") && g("vr") == g("vr2");
+    ok &= num("ks") == seq && num("vs") == seq && num("os") == seq && num("kd") == dq && heads == kv_heads;
+    ok &= g("cv") == g("vt") && g("mm") == g("mm2") && g("mm") == g("mm3") && g("mm") == g("mm4") && g("t6") == g("t6b");
+    ok &= num("oc") == heads * dv;
+    for (p, input, cat) in [("rq", "qt", "cq"), ("rk", "kt", "ck")] {
+      let h = |n: &str| g(&format!("{p}{n}"));
+      ok &= h("x1") == g(input) && h("x2") == g(input) && g(cat) == h("cat");
+      ok &= h("a1") == h("a") && h("a2") == h("a") && h("b1") == h("b") && h("b2") == h("b");
+      ok &= h("m1b") == h("m1") && h("m2b") == h("m2") && h("m3b") == h("m3") && h("m4b") == h("m4");
+      ok &= h("r0b") == h("r0") && h("r1b") == h("r1") && h("cos2") == h("cos") && h("sin2") == h("sin");
+      ok &= h("h1") == h("h2") && 2 * h("h1").parse::<usize>().unwrap_or(0) == dq && h("d").parse::<usize>().ok() == Some(dq);
+      ok &= ["m1", "m2", "m3", "m4", "r0", "r1", "cat"].iter().all(|n| count(h(n)) == 2);
+      ok &= count(h("a")) == 3 && count(h("b")) == 3;
+    }
+    ok &= ["qr", "kr", "vr", "vt", "t6"].iter().all(|n| count(g(n)) == 2);
+    ok &= count(g("qt")) == 3 && count(g("kt")) == 3 && count(g("mm")) == 4;
+    if !ok {
+      continue;
+    }
+    let whole = c.get(0).unwrap();
+    let kept: String = loads.find_iter(whole.as_str()).map(|l| format!("{}\n", l.as_str())).collect();
+    let (cq, sq, ck, sk) = (g("rqcos"), g("rqsin"), g("rkcos"), g("rksin"));
+    edits.push((
+      whole.start(),
+      whole.end(),
+      format!(
+        "{kept}let {} = crate::tf::attention_tokens({}, {}, {}, Some([{cq}.clone(), {sq}.clone(), {ck}.clone(), {sk}.clone()]), \
+         {}.clone(), {heads}, {kv_heads}, {dq}, {dv}, {}f64);",
+        g("out"),
+        g("qin"),
+        g("kin"),
+        g("vin"),
+        g("bias"),
+        g("scale"),
+      ),
+    ));
+  }
+  let n = edits.len();
+  let mut out = code.to_string();
+  edits.sort_by_key(|e| std::cmp::Reverse(e.0));
+  for (start, end, text) in edits {
+    out.replace_range(start..end, &text);
+  }
+  (out, n)
 }

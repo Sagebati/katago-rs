@@ -97,7 +97,7 @@ cpp/neuralnet/nneval.h	NNServerBuf	inputBuffers	InputBuffers*	OWNED	Option<Box<d
 cpp/neuralnet/nneval.h	NNEvaluator	computeContext	ComputeContext*	OWNED	Option<Box<dyn ComputeContext>>	NULL when debugSkipNeuralNet
 cpp/neuralnet/nneval.h	NNEvaluator	loadedModel	LoadedModel*	OWNED	Option<Box<dyn LoadedModel>>	NULL when debugSkipNeuralNet
 cpp/neuralnet/nneval.h	NNEvaluator	nnCacheTable	NNCacheTable*	OWNED	Option<Box<NNCacheTable>>	NULL when nnCacheSizePowerOfTwo < 0
-cpp/neuralnet/nneval.h	NNEvaluator	logger	Logger*	NULLABLE_BORROWED	(removed)	log crate (manifest); ctor param dropped (PORT NOTE)
+cpp/neuralnet/nneval.h	NNEvaluator	logger	Logger*	NULLABLE_BORROWED	(removed)	tracing (manifest); ctor param dropped (PORT NOTE)
 cpp/neuralnet/nneval.h	NNEvaluator	(new) spawner	-	SHARED	Rc<dyn Spawner>	PORT NOTE: port::executor::Spawner injected by the host (new ctor param); used by spawnServerThreads to spawn serve tasks
 cpp/neuralnet/nneval.h	NNEvaluator	(new) backend	-	SHARED	Rc<dyn NeuralNet>	PORT NOTE: trait in nninterface.rs standing in for the NeuralNet:: free functions (new ctor param); implemented by katago-nn-burn
 cpp/neuralnet/nneval.h	NNEvaluator	serverThreads	std::vector<std::thread*>	OWNED	(removed)	server threads become tasks spawned via spawner, counted by server_threads: Cell<i32> and num_server_threads_alive: Cell<i32>; killServerThreads sets is_killed + setReadOnly and does not join: the join moves to the next spawnServerThreads (D8, PORT NOTE)
@@ -195,7 +195,7 @@ cpp/search/search.h	Search	patternBonusTable	PatternBonusTable*	OWNED	Option<Box
 cpp/search/search.h	Search	externalPatternBonusTable	std::unique_ptr<PatternBonusTable>	OWNED	Option<Box<PatternBonusTable>>	as patternBonusTable; setCopyOfExternalPatternBonusTable clones
 cpp/search/search.h	Search	evalCache	std::shared_ptr<EvalCacheTable>	SHARED	Option<Rc<EvalCacheTable>>	shared across bots (analysis.cpp)
 cpp/search/search.h	Search	nonSearchRand	Rand	OWNED	Rand	
-cpp/search/search.h	Search	logger	Logger*	BORROWED	(removed)	log crate; ctor param dropped (PORT NOTE)
+cpp/search/search.h	Search	logger	Logger*	BORROWED	(removed)	tracing; ctor param dropped (PORT NOTE)
 cpp/search/search.h	Search	nnEvaluator	NNEvaluator*	BORROWED	Rc<NNEvaluator>	owned by the host (setup/analysis), outlives Search; setNNEval replaces it
 cpp/search/search.h	Search	humanEvaluator	NNEvaluator*	NULLABLE_BORROWED	Option<Rc<NNEvaluator>>	
 cpp/search/search.h	Search	rootNode	SearchNode*	ARENA	Option<NodeIdx>	allocated directly (not in nodeTable); `delete rootNode` -> self.node_arena.free(idx)

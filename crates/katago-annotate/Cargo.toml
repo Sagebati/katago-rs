@@ -16,7 +16,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The SGF parser katago-ws uses (its Cargo.lock: 4.2.8).
 sgf-parse = "4.2.8"
-log = "0.4"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 # glibc's expf on wasm32 (src/math.rs); natively the system libm, as in katago-ws.
 [target.'cfg(target_arch = "wasm32")'.dependencies]

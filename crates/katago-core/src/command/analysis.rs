@@ -15,7 +15,7 @@
 // - The lambdas of MainCmds::analysis become fns over `AnalysisContext`, the struct holding what they
 //   capture (PORT NOTE: captures passed explicitly). The body of the request loop's `while(getline)` is
 //   `handle_request_line` (`continue` -> `return Ok(())`).
-// - Logger -> log crate (`logger.write(s)` -> `log::info!`); the Logger constructor's config reads are
+// - Logger -> tracing (`logger.write(s)` -> `tracing::info!`); the Logger constructor's config reads are
 //   kept (`logger_config_reads`) so used keys and `logToStderr` decisions are unchanged, and its
 //   outputs (stdout / stderr / timestamps / logFile / logDir / logDirDated) are the host's
 //   (`AnalysisHost::init_logger`, called where the constructor opens its file).
@@ -289,7 +289,7 @@ fn load_params(human_model_file: &str, config: &mut ConfigParser, params: &mut S
 
 /// upstream: Logger::Logger(ConfigParser*, bool, bool, bool, bool) (logger.cpp), as MainCmds::analysis constructs it
 /// (`Logger logger(&cfg, logToStdoutDefault, logToStderrDefault)`: logTimeDefault = true, logConfigContents = true)
-/// PORT NOTE: the Logger is replaced by the log crate; the constructor's config reads are kept so the used
+/// PORT NOTE: the Logger is replaced by tracing; the constructor's config reads are kept so the used
 /// keys match upstream, its outputs (and addFile / MakeDir) are the host's `init_logger`, called where the
 /// constructor sets up its file, and the config header is logged last, as upstream. Returns
 /// `logger.isLoggingToStderr()`. Throws -> Result.
@@ -333,7 +333,7 @@ fn logger_config_reads(
   init_logger(&settings)?;
 
   if !header.is_empty() {
-    log::info!("{}", header);
+    tracing::info!("{}", header);
   }
   Ok(settings.log_to_stderr)
 }
@@ -353,7 +353,7 @@ impl AnalysisContext {
     ret["error"] = Value::from(s);
     self.push_to_write(nlohmann::dump(&ret));
     if self.log_errors_and_warnings {
-      log::info!("{}", "Error: ".to_string() + &nlohmann::dump(&ret));
+      tracing::info!("{}", "Error: ".to_string() + &nlohmann::dump(&ret));
     }
   }
 
@@ -375,7 +375,7 @@ impl AnalysisContext {
     ret["error"] = Value::from(s);
     self.push_to_write(nlohmann::dump(&ret));
     if self.log_errors_and_warnings {
-      log::info!("{}", "Error: ".to_string() + &nlohmann::dump(&ret));
+      tracing::info!("{}", "Error: ".to_string() + &nlohmann::dump(&ret));
     }
   }
 
@@ -387,7 +387,7 @@ impl AnalysisContext {
     ret["warning"] = Value::from(s);
     self.push_to_write(nlohmann::dump(&ret));
     if self.log_errors_and_warnings {
-      log::info!("{}", "Warning: ".to_string() + &nlohmann::dump(&ret));
+      tracing::info!("{}", "Warning: ".to_string() + &nlohmann::dump(&ret));
     }
   }
 
@@ -472,7 +472,7 @@ async fn write_loop(ctx: &AnalysisContext) {
     }
     (ctx.write_stdout)(&message);
     if ctx.log_all_responses {
-      log::info!("{}", "Response: ".to_string() + &message);
+      tracing::info!("{}", "Response: ".to_string() + &message);
     }
     // delete message: dropped
   }
@@ -553,7 +553,7 @@ async fn analysis_loop(ctx: &Rc<AnalysisContext>, bot: &mut AsyncBot, thread_idx
       if ctx.log_search_info {
         let mut sout: String = String::new();
         PlayUtils::print_genmove_log(&mut sout, bot.get_search(), &ctx.nn_eval, Board::NULL_LOC, f64::NAN, request.perspective, false)?;
-        log::info!("{}", sout);
+        tracing::info!("{}", sout);
       }
 
       {
@@ -569,7 +569,7 @@ async fn analysis_loop(ctx: &Rc<AnalysisContext>, bot: &mut AsyncBot, thread_idx
           }
           //Otherwise, this case is only possible if we're just shutting down
           else {
-            log::info!("Note: Search quitting due to no visits - this is normal and possible when shutting down but a bug under any other situation.");
+            tracing::info!("Note: Search quitting due to no visits - this is normal and possible when shutting down but a bug under any other situation.");
           }
         }
       }
@@ -591,7 +591,7 @@ async fn analysis_loop(ctx: &Rc<AnalysisContext>, bot: &mut AsyncBot, thread_idx
 /// PORT NOTE: logs, sleeps 5 s (the other loops keep running), then, where upstream's rethrow terminates
 /// the process, flags the process as terminated (file header) and stops every loop.
 async fn log_thread_uncaught_failed(ctx: &AnalysisContext, name: &str, e: &KataError) {
-  log::info!("{}", "ERROR: ".to_string() + name + " loop thread failed: " + e.what());
+  tracing::info!("{}", "ERROR: ".to_string() + name + " loop thread failed: " + e.what());
   crate::port::executor::sleep(5.0).await;
   ctx.loop_failed.set(true);
   ctx.loop_failed_notify.notify_all();
@@ -665,8 +665,8 @@ async fn request_loop(ctx: &Rc<AnalysisContext>, input: &mut (dyn Stream<Item = 
     }
 
     if ctx.log_all_requests {
-      // PORT NOTE: the log crate takes text; invalid UTF-8 bytes are logged as U+FFFD.
-      log::info!("{}", "Request: ".to_string() + &String::from_utf8_lossy(line));
+      // PORT NOTE: tracing takes text; invalid UTF-8 bytes are logged as U+FFFD.
+      tracing::info!("{}", "Request: ".to_string() + &String::from_utf8_lossy(line));
     }
 
     let num_requests_before: i64 = ctx.num_requests_so_far.get();
@@ -1644,8 +1644,8 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   // PORT NOTE: `Logger logger(&cfg, logToStdoutDefault, logToStderrDefault);` (file header).
   let log_to_stderr: bool = logger_config_reads(&mut cfg, log_to_stdout_default, log_to_stderr_default, &*host.init_logger)?;
 
-  log::info!("Analysis Engine starting...");
-  log::info!("{}", KATAGO_VERSION_FOR_HELP);
+  tracing::info!("Analysis Engine starting...");
+  tracing::info!("{}", KATAGO_VERSION_FOR_HELP);
   if !log_to_stderr {
     write_stderr(&(KATAGO_VERSION_FOR_HELP.to_string() + "\n"));
   }
@@ -1717,7 +1717,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
       if !h.requires_sgf_metadata() {
         let mut warning: String = String::new();
         warning += "WARNING: Human model was not trained from SGF metadata to vary by rank! Did you pass the wrong model for -human-model?\n";
-        log::info!("{}", warning);
+        tracing::info!("{}", warning);
         if !log_to_stderr {
           write_stderr(&(warning.clone() + "\n"));
         }
@@ -1731,7 +1731,7 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     let nn_max_batch_size_total: i32 = nn_eval.get_num_gpus() * nn_eval.get_max_batch_size();
     let num_threads_total: i32 = default_params.num_threads * num_analysis_threads;
     if nn_max_batch_size_total as f64 * 1.5 <= num_threads_total as f64 {
-      log::info!(
+      tracing::info!(
         "{}",
         crate::strprintf!(
           "Note: nnMaxBatchSize * number of GPUs (%d) is smaller than numSearchThreads * numAnalysisThreads (%d)",
@@ -1739,8 +1739,8 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
           num_threads_total
         )
       );
-      log::info!("The number of simultaneous threads that might query the GPU could be larger than the batch size that the GPU will handle at once.");
-      log::info!("It may improve performance to increase nnMaxBatchSize, unless you are constrained on GPU memory.");
+      tracing::info!("The number of simultaneous threads that might query the GPU could be larger than the batch size that the GPU will handle at once.");
+      tracing::info!("It may improve performance to increase nnMaxBatchSize, unless you are constrained on GPU memory.");
     }
   }
 
@@ -1756,20 +1756,20 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     write_stderr(&cerr);
   }
 
-  log::info!("{}", "Loaded config ".to_string() + &cfg.get_file_name());
-  log::info!("{}", "Loaded model ".to_string() + &model_file);
+  tracing::info!("{}", "Loaded config ".to_string() + &cfg.get_file_name());
+  tracing::info!("{}", "Loaded model ".to_string() + &model_file);
   // upstream: cmd.logOverrides(logger) (commandline.cpp)
   for override_config in &host.args.override_configs {
     if override_config != "" {
       let newkvs: BTreeMap<String, String> = ConfigParser::parse_comma_separated(override_config)?;
       for (k, v) in &newkvs {
-        log::info!("{}", "Config override: ".to_string() + k + " = " + v);
+        tracing::info!("{}", "Config override: ".to_string() + k + " = " + v);
       }
     }
   }
 
   if human_model_file != "" && !cfg.contains("humanSLProfile") && human_eval.as_ref().expect("humanModelFile given").requires_sgf_metadata() {
-    log::info!(
+    tracing::info!(
       "Warning: Provided -human-model but humanSLProfile is not yet set. The human SL model will only be used on queries that provide humanSLProfile in overrideSettings."
     );
     if !log_to_stderr {
@@ -1866,8 +1866,8 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     request_loop_idle_notify: WakerList::new(),
   });
 
-  log::info!("{}", "Analyzing up to ".to_string() + &Global::int_to_string(num_analysis_threads) + " positions at a time in parallel");
-  log::info!("Started, ready to begin handling requests");
+  tracing::info!("{}", "Analyzing up to ".to_string() + &Global::int_to_string(num_analysis_threads) + " positions at a time in parallel");
+  tracing::info!("Started, ready to begin handling requests");
   if !log_to_stderr {
     write_stderr("Started, ready to begin handling requests\n");
   }
@@ -1937,15 +1937,15 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
     unreachable!("loop_failed is set only by a failing loop, whose error is returned");
   }
 
-  log::info!("{}", nn_eval.get_model_file_name());
-  log::info!("{}", "NN rows: ".to_string() + &Global::uint64_to_string(nn_eval.num_rows_processed()));
-  log::info!("{}", "NN batches: ".to_string() + &Global::uint64_to_string(nn_eval.num_batches_processed()));
-  log::info!("{}", "NN avg batch size: ".to_string() + &Global::double_to_string(nn_eval.average_processed_batch_size()));
+  tracing::info!("{}", nn_eval.get_model_file_name());
+  tracing::info!("{}", "NN rows: ".to_string() + &Global::uint64_to_string(nn_eval.num_rows_processed()));
+  tracing::info!("{}", "NN batches: ".to_string() + &Global::uint64_to_string(nn_eval.num_batches_processed()));
+  tracing::info!("{}", "NN avg batch size: ".to_string() + &Global::double_to_string(nn_eval.average_processed_batch_size()));
   if let Some(human_eval) = &human_eval {
-    log::info!("{}", human_eval.get_model_file_name());
-    log::info!("{}", "NN rows: ".to_string() + &Global::uint64_to_string(human_eval.num_rows_processed()));
-    log::info!("{}", "NN batches: ".to_string() + &Global::uint64_to_string(human_eval.num_batches_processed()));
-    log::info!("{}", "NN avg batch size: ".to_string() + &Global::double_to_string(human_eval.average_processed_batch_size()));
+    tracing::info!("{}", human_eval.get_model_file_name());
+    tracing::info!("{}", "NN rows: ".to_string() + &Global::uint64_to_string(human_eval.num_rows_processed()));
+    tracing::info!("{}", "NN batches: ".to_string() + &Global::uint64_to_string(human_eval.num_batches_processed()));
+    tracing::info!("{}", "NN avg batch size: ".to_string() + &Global::double_to_string(human_eval.average_processed_batch_size()));
   }
   // delete nnEval; delete humanEval;
   // PORT NOTE (PORTING.md §11 Lifecycle): the serve tasks hold an Rc, so the evaluators are killed
@@ -1964,6 +1964,6 @@ pub async fn analysis(mut cfg: ConfigParser, host: AnalysisHost<'_>) -> Result<i
   for r in thread_results {
     r?;
   }
-  log::info!("All cleaned up, quitting");
+  tracing::info!("All cleaned up, quitting");
   Ok(0)
 }

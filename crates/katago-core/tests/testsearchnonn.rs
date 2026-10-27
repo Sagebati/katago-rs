@@ -12,11 +12,11 @@
 //!
 //! Output interleaving. Upstream's Logger writes `": " + message + endl` to cout (logTime false) and the
 //! expected text contains those lines (NNEvaluator's "Initializing neural net buffer...", the server
-//! thread's "GPU 0 finishing..."). The port replaces Logger by the `log` crate, so this test installs a
-//! `log::Log` that appends the same text to the same thread-local buffer as the test's own `cout`
+//! thread's "GPU 0 finishing..."). The port replaces Logger by `tracing`, so this test installs a
+//! `tracing` subscriber that appends the same text to the same thread-local buffer as the test's own `cout`
 //! writes (`Cout`). `delete nnEval` joins the server thread upstream (which logs as it ends); here it is
 //! `kill_server_threads()` + `pool.run_until_stalled()` so the line lands in the same place.
-//! Two `log::info!` calls of `SearchParams::print_params` stand for lines upstream writes straight to
+//! Two `tracing::info!` calls of `SearchParams::print_params` stand for lines upstream writes straight to
 //! `std::cout` (no ": " prefix); the logger below writes those two raw (see `PLAIN_COUT_LINES`).
 //!
 //! Every section is compared. "Board size distribution" runs a test-local copy of the GameInitializer
@@ -36,7 +36,6 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::rc::Rc;
-use std::sync::OnceLock;
 
 use common::Cases;
 use common::compare_lines;
@@ -117,36 +116,22 @@ macro_rules! coutln {
 }
 
 /// printParams writes these two lines to `std::cout` directly upstream (no Logger, so no ": ");
-/// the port logs them with `log::info!`.
+/// the port logs them with `tracing::info!`.
 const PLAIN_COUT_LINES: [&str; 2] = ["avoidMYTDaggerHackPla: ", "playoutDoublingAdvantagePla: "];
 
 /// `Logger logger(nullptr, logToStdout=false, logToStderr=false, logTime=false); logger.addOStream(cout);`:
 /// `Logger::write(str)` = `": " + str + endl` on cout.
-struct CoutLogger;
-
-impl log::Log for CoutLogger {
-  fn enabled(&self, _metadata: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, record: &log::Record) {
-    let msg = format!("{}", record.args());
+fn capture_logs() -> tracing::subscriber::DefaultGuard {
+  common::capture_logs("", |msg| {
     if PLAIN_COUT_LINES.iter().any(|p| msg.starts_with(p)) {
       coutln!("{}", msg);
     } else {
       coutln!(": {}", msg);
     }
-  }
-  fn flush(&self) {}
+  })
 }
 
-static LOGGER: CoutLogger = CoutLogger;
-
-fn install_logger_and_clock() {
-  static ONCE: OnceLock<()> = OnceLock::new();
-  ONCE.get_or_init(|| {
-    log::set_logger(&LOGGER).expect("no other logger in this test binary");
-    log::set_max_level(log::LevelFilter::Trace);
-  });
+fn install_clock() {
   set_clock(common::fixed_clock);
 }
 
@@ -224,7 +209,7 @@ impl Ctx {
 }
 
 /// upstream: TestSearchCommon::startNNEval (testsearchcommon.cpp) — test-local copy
-/// PORT NOTE: `Logger&` dropped (log crate); `spawnServerThreads()` is async, driven to completion on
+/// PORT NOTE: `Logger&` dropped (tracing); `spawnServerThreads()` is async, driven to completion on
 /// the pool; the `sleep_for(0.1)` ordering hack is not needed (single thread, deterministic).
 fn start_nn_eval(
   ctx: &mut Ctx,
@@ -3059,6 +3044,7 @@ fn install_panic_hook() {}
 
 /// Runs every section, returning (title, status) in order.
 fn run_all(expected: &str) -> Vec<(String, Status)> {
+  let _logs = capture_logs();
   install_panic_hook();
   let expected_sections = split_sections(expected);
   assert_eq!(expected_sections.len(), 1 + SECTIONS.len(), "header trios in the expected text vs SECTIONS");
@@ -3115,7 +3101,7 @@ fn run_all(expected: &str) -> Vec<(String, Status)> {
 fn run_nn_less_search_tests() {
   init();
   ScoreValue::init_tables(); //upstream's main(): "MUST BE CALLED AT PROGRAM START!"
-  install_logger_and_clock();
+  install_clock();
   let mut cases = Cases::new("testsearchnonn::run_nn_less_search_tests");
   let expected = fixture(F, "runnnlesssearchtests.expected0.txt");
   assert!(expected.starts_with("Running neuralnetless search tests\n"));

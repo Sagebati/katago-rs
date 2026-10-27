@@ -17,7 +17,6 @@
 mod common;
 
 use std::cell::RefCell;
-use std::sync::OnceLock;
 
 use common::Cases;
 use common::compare_lines;
@@ -26,31 +25,13 @@ use katago_core::game::board::C_EMPTY;
 use katago_core::port::nlohmann;
 use katago_core::search::searchparams::SearchParams;
 
-//Captures `log` records per thread, for the two printParams lines that upstream writes to std::cout.
+//Captures `tracing` events per thread, for the two printParams lines that upstream writes to std::cout.
 thread_local! {
   static CAPTURED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
-struct CaptureLogger;
-
-impl log::Log for CaptureLogger {
-  fn enabled(&self, _metadata: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, record: &log::Record) {
-    CAPTURED.with(|c| c.borrow_mut().push(format!("{}", record.args())));
-  }
-  fn flush(&self) {}
-}
-
-static LOGGER: CaptureLogger = CaptureLogger;
-
-fn install_logger() {
-  static ONCE: OnceLock<()> = OnceLock::new();
-  ONCE.get_or_init(|| {
-    log::set_logger(&LOGGER).expect("no other logger in this test binary");
-    log::set_max_level(log::LevelFilter::Info);
-  });
+fn capture_logs() -> tracing::subscriber::DefaultGuard {
+  common::capture_logs("", |msg| CAPTURED.with(|c| c.borrow_mut().push(msg.to_string())))
 }
 
 fn emit_lines(tag: &str, s: &str, out: &mut String) {
@@ -300,7 +281,7 @@ fn unchangeable(name: &str, a: &SearchParams, b: &SearchParams, out: &mut String
 
 wasm_test! {
 fn searchparams_vs_cpp() {
-  install_logger();
+  let _logs = capture_logs();
   let mut cases = Cases::new("searchparams_oracle::searchparams_vs_cpp");
   let expected = fixture("oracle", "searchparams.txt");
   let mut out = String::new();

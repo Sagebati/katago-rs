@@ -259,7 +259,7 @@ upstream = ["cpp/search/searchparams.cpp", "cpp/search/searchparams.h"]
 synced = "fd0723fdbc0e9d82cf269c9630af8c27c57c07c4"
 status = "done"
 phase = "M3"
-notes = "plain struct with snake_case fields; operator== is PartialEq (humanSLProfile through SGFMetadata's operator==, M8); printParams's two cout lines go through log::info!; JSON via changeable_parameters_to_json + port::nlohmann::dump; oracle tests/searchparams_oracle.rs (+ real kata-get-params reply); the setup.cpp side is checked by tests/setup_oracle.rs. v1.18.2 re-sync: alwaysComputePassAliveUnderSuicideRules / excludeTerritoryAdjacentToAtari (enabled_t, Auto) in the ctor, operator==, changeableParametersToJson and printParams; getHash (changeableParametersToJson + the omitted params + the humanSL profile hash, nlohmann dump, SHA2::get256 -> Hash128(hash[0], hash[1]); checked by search_oracle's eval-cache cases and testsearchnonn's 'Eval cache keys depend on search params')."
+notes = "plain struct with snake_case fields; operator== is PartialEq (humanSLProfile through SGFMetadata's operator==, M8); printParams's two cout lines go through tracing::info!; JSON via changeable_parameters_to_json + port::nlohmann::dump; oracle tests/searchparams_oracle.rs (+ real kata-get-params reply); the setup.cpp side is checked by tests/setup_oracle.rs. v1.18.2 re-sync: alwaysComputePassAliveUnderSuicideRules / excludeTerritoryAdjacentToAtari (enabled_t, Auto) in the ctor, operator==, changeableParametersToJson and printParams; getHash (changeableParametersToJson + the omitted params + the humanSL profile hash, nlohmann dump, SHA2::get256 -> Hash128(hash[0], hash[1]); checked by search_oracle's eval-cache cases and testsearchnonn's 'Eval cache keys depend on search params')."
 
 [[module]]
 rust = "crates/katago-core/src/search/searchexplorehelpers.rs"
@@ -571,7 +571,7 @@ reason = "MD5 (Rand seeding) -> md-5 crate (identical digests)."
 [[ignored]]
 kind = "replaced"
 paths = ["cpp/core/logger.cpp", "cpp/core/logger.h"]
-reason = "Logger -> `log` crate macros at the same call sites (message text kept). The constructor's config reads stay in analysis.rs (logger_config_reads), which hands the settings to the host (AnalysisHost::init_logger); katago-cli implements the outputs like logger.cpp: logToStdout / logToStderr, `%F %T%z: ` local-time stamps (strftime) or ': ', logFile (append; unopenable -> the WARNING on the log and stderr), logDir / logDirDated (MakeDir::make, `Error creating directory` uncaught, then <date>-<hex>.log), config header written last. No log files in wasm. Log lines are text: an invalid UTF-8 request line is logged with U+FFFD."
+reason = "Logger -> `tracing` macros at the same call sites (message text kept). The constructor's config reads stay in analysis.rs (logger_config_reads), which hands the settings to the host (AnalysisHost::init_logger); katago-cli implements the outputs like logger.cpp as a tracing_subscriber Layer (src/logger.rs; tracing-log's LogTracer carries the `log` records of burn, cubecl and wgpu, warnings and errors only): logToStdout / logToStderr, `%F %T%z: ` local-time stamps (strftime) or ': ', logFile (append; unopenable -> the WARNING on the log and stderr), logDir / logDirDated (MakeDir::make, `Error creating directory` uncaught, then <date>-<hex>.log), config header written last. No log files in wasm (katago-wasm's Layer hands the lines to the worker's log callback). Log lines are text: an invalid UTF-8 request line is logged with U+FFFD."
 
 [[ignored]]
 kind = "replaced"

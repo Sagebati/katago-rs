@@ -9,7 +9,7 @@
 // the runWholeSearch* overloads are async. Methods reachable from the playout loop take `&self`
 // and mutate only Cell/RefCell fields. Nodes live in `node_arena`; stored node pointers are
 // NodeIdx. Every mutex/spin lock is removed (their bodies kept); `createMutexIdxForNode` still
-// draws from the thread's Rand (D12). `Logger*` is replaced by the log crate (ctor param dropped).
+// draws from the thread's Rand (D12). `Logger*` is replaced by tracing (ctor param dropped).
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -237,7 +237,7 @@ pub struct Search {
   // Externally owned values
   //================================================================================================================
 
-  // PORT NOTE: `Logger* logger` removed (log crate).
+  // PORT NOTE: `Logger* logger` removed (tracing).
   pub nn_evaluator: Rc<NNEvaluator>,
   pub human_evaluator: Option<Rc<NNEvaluator>>,
   pub nn_x_len: i32,
@@ -1880,11 +1880,11 @@ impl Search {
             let nn_hash: Hash128 = nn_output.nn_hash;
             //In case of a cycle or bad transposition, this will fire a lot, so limit it to once per thread per search.
             if !thread.illegal_move_hashes.contains(&nn_hash) {
-              log::info!("{}", "WARNING: Chosen move not legal so about to regenerate nn output, nnhash=".to_string() + &nn_hash.to_string());
+              tracing::info!("{}", "WARNING: Chosen move not legal so about to regenerate nn output, nnhash=".to_string() + &nn_hash.to_string());
               let mut out: String = String::new();
               nn_output.debug_print(&mut out, &thread.board);
               self.debug_print_children_summary(&mut out, node, &nn_output);
-              log::info!("{}", out);
+              tracing::info!("{}", out);
             }
           }
 
@@ -1897,7 +1897,7 @@ impl Search {
             //In case of a cycle or bad transposition, this will fire a lot, so limit it to once per thread per search.
             if !thread.illegal_move_hashes.contains(&nn_hash) {
               thread.illegal_move_hashes.insert(nn_hash);
-              log::info!("{}", "WARNING: Chosen move not legal so regenerated nn output, nnhash=".to_string() + &nn_hash.to_string());
+              tracing::info!("{}", "WARNING: Chosen move not legal so regenerated nn output, nnhash=".to_string() + &nn_hash.to_string());
               let mut out: String = String::new();
               thread.history.print_basic_info(&mut out, &thread.board);
               thread.history.print_debug_info(&mut out, &thread.board);
@@ -1908,7 +1908,7 @@ impl Search {
               }
               nn_output.debug_print(&mut out, &thread.board);
               self.debug_print_children_summary(&mut out, node, &nn_output);
-              log::info!("{}", out);
+              tracing::info!("{}", out);
             }
           }
 

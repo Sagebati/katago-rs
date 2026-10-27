@@ -77,7 +77,7 @@ impl Search {
       // our simpleRepetitionBoundGt logic... such that the node managed to get visits as a terminal node despite not having an nn eval. There's
       // nothing reasonable to do here once we have such a bad collision, so just at least don't crash.
       if old_visits != 0 {
-        log::info!("WARNING: assumeNoExistingWeight for leaf but leaf already has visits");
+        tracing::info!("WARNING: assumeNoExistingWeight for leaf but leaf already has visits");
       }
     } else {
       // PORT NOTE: statsLock spin lock removed (single-threaded).

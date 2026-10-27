@@ -9,7 +9,7 @@
 //   no moment to inject the reader): `ConfigParser(const std::string& file, bool, bool)` and
 //   `ConfigParser(const char* file, bool, bool)`. Use `new` + `set_include_reader` + `initialize`.
 // - `usedKeysMutex` removed (single-threaded): `usedKeys` is a plain set.
-// - `Logger*` removed: `warnUnusedKeys` logs through the `log` crate.
+// - `Logger*` removed: `warnUnusedKeys` logs through `tracing`.
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -656,7 +656,7 @@ impl ConfigParser {
   }
 
   /// upstream: ConfigParser::warnUnusedKeys (config_parser.cpp)
-  /// PORT NOTE: `Logger* logger` removed (PORTING.md §3): `if(logger) logger->write(m)` is `log::info!`.
+  /// PORT NOTE: `Logger* logger` removed (PORTING.md §3): `if(logger) logger->write(m)` is `tracing::info!`.
   pub fn warn_unused_keys(&self, out: &mut dyn std::fmt::Write) {
     let unused: Vec<String> = self.unused_keys();
     let mut messages: Vec<String> = Vec::new();
@@ -675,7 +675,7 @@ impl ConfigParser {
     }
 
     for i in 0..messages.len() {
-      log::info!("{}", messages[i]);
+      tracing::info!("{}", messages[i]);
     }
     for i in 0..messages.len() {
       writeln!(out, "{}", messages[i]).unwrap();

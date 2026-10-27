@@ -31,9 +31,14 @@ katago-core = { path = "../katago-core" }
 katago-nn-burn = { path = "../katago-nn-burn", default-features = false }
 burn = { workspace = true, features = ["std"] }
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
-log = "0.4"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+# The engine's log backend (src/logger.rs): a Layer on a Registry; LogTracer bridges the `log` records of burn, cubecl, wgpu.
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry"] }
+tracing-log = "0.2"
 # Local-time log stamps (strftime, as DateTime::writeTimeToStream) and mkdir errno (MakeDir::make).
 libc = "0.2"
 
 [dev-dependencies]
+# tests/cli_logger.rs emits the `log` records of a dependency.
+log = "0.4"
 serde_json = { version = "1", features = ["float_roundtrip"] }

@@ -4,7 +4,7 @@
 //! (fixtures/upstream-v1.18.2/unit/testsearchv{8,9}/*.expected0.txt). Not a port of upstream code.
 //!
 //! Output capture. Upstream's Logger (logToStdout, logTime false) writes `": " + message + endl` to cout; the
-//! expected texts contain those lines. The port logs through the `log` crate, so `CoutLogger` appends the same
+//! expected texts contain those lines. The port logs through `tracing`, so `CoutLogger` appends the same
 //! text to the thread-local buffer the transcription's own `cout!` writes to. `delete nnEval` (which joins the
 //! server thread upstream; it logs "GPU 0 finishing..." as it ends) is `kill_server_threads()` + running the pool
 //! until stalled.
@@ -130,37 +130,41 @@ macro_rules! coutln {
 /// `": " + str + endl` on cout.
 struct CoutLogger;
 
-impl log::Log for CoutLogger {
-  fn enabled(&self, _metadata: &log::Metadata) -> bool {
-    true
+/// The `message` of a `tracing` event.
+struct Message(String);
+
+impl tracing::field::Visit for Message {
+  fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+    if field.name() == "message" {
+      let _ = write!(self.0, "{:?}", value);
+    }
   }
-  fn log(&self, record: &log::Record) {
+}
+
+impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CoutLogger {
+  fn on_event(&self, event: &tracing::Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
     // Only the engine's own log lines are upstream Logger output (burn / cubecl may log too).
-    let target = record.target();
+    let target = event.metadata().target();
     if !(target.starts_with("katago_core") || target.starts_with("katago_nn_burn")) {
       return;
     }
     if LOGGER_DISABLED.with(|d| d.get()) {
       return;
     }
-    let msg = format!("{}", record.args());
-    coutln!(": {}", msg);
+    let mut msg = Message(String::new());
+    event.record(&mut msg);
+    coutln!(": {}", msg.0);
   }
-  fn flush(&self) {}
 }
 
-static LOGGER: CoutLogger = CoutLogger;
-
-/// Program start (upstream main + runtests): Board::initHash, ScoreValue::initTables, the Logger and the clock.
-pub fn init() {
-  static ONCE: OnceLock<()> = OnceLock::new();
-  ONCE.get_or_init(|| {
-    log::set_logger(&LOGGER).expect("no other logger in this test binary");
-    log::set_max_level(log::LevelFilter::Trace);
-  });
+/// Program start (upstream main + runtests): Board::initHash, ScoreValue::initTables, the Logger (on this thread
+/// until the returned guard drops) and the clock.
+pub fn init() -> tracing::subscriber::DefaultGuard {
+  use tracing_subscriber::layer::SubscriberExt as _;
   Board::init_hash();
   ScoreValue::init_tables();
   set_clock(fake_clock);
+  tracing::subscriber::set_default(tracing_subscriber::registry().with(CoutLogger))
 }
 
 /// Takes everything written to `OUT` so far.
@@ -658,7 +662,7 @@ pub fn run_bot_on_sgf(ctx: &mut Ctx, bot: &mut AsyncBot, sgf_str: &str, default_
 }
 
 /// upstream: TestSearchCommon::startNNEval (testsearchcommon.cpp) — test-local copy
-/// PORT NOTE: `Logger&` dropped (log crate). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useFP16 = true
+/// PORT NOTE: `Logger&` dropped (tracing). The burn backend (NCHW, fp32) rejects inputsUseNHWC / useFP16 = true
 /// and ignores the `cudaUseNHWC` key useNHWC becomes, which upstream's regen.sh passes to the Eigen build (`true true
 /// false`, Eigen rejects NCHW); the outputs do not depend on them, so callers pass `false` for all three. `spawnServerThreads()` is async and
 /// driven to completion; the `sleep_for(0.1)` ordering hack is not needed (one OS thread, deterministic).
@@ -1457,7 +1461,7 @@ pub fn run_capturing(name: &str, f: fn()) -> (String, Option<String>) {
     .stack_size(512 << 20)
     .spawn(move || {
       install_panic_hook();
-      init();
+      let _logs = init();
       take_out();
       let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
       let out = take_out();

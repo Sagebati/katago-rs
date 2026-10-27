@@ -6,7 +6,7 @@
 //!
 //! The oracle reads real files from a scratch directory; here the same names are served from memory through
 //! `ConfigParser::set_include_reader` (the port does no file IO). Paths are normalised like a file system
-//! would ("//", "./", "dir/../"). warnUnusedKeys's logger (NULL in the oracle) is the `log` crate here: the
+//! would ("//", "./", "dir/../"). warnUnusedKeys's logger (NULL in the oracle) is `tracing` here: the
 //! test also checks that every message written to `out` was logged too.
 
 #![allow(clippy::needless_range_loop, clippy::manual_range_contains)]
@@ -29,30 +29,12 @@ use katago_core::core::global::KataError;
 
 // ===================================================================== log capture (the oracle passes a NULL logger)
 
-struct CaptureLogger;
-
 thread_local! {
   static LOGGED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
-impl log::Log for CaptureLogger {
-  fn enabled(&self, _: &log::Metadata) -> bool {
-    true
-  }
-  fn log(&self, record: &log::Record) {
-    if record.target().starts_with("katago_core") {
-      LOGGED.with(|l| l.borrow_mut().push(format!("{}", record.args())));
-    }
-  }
-  fn flush(&self) {}
-}
-
-static LOGGER: CaptureLogger = CaptureLogger;
-
-fn install_logger() {
-  // set_logger fails if another test of this binary already did it: the logger is the same one.
-  let _ = log::set_logger(&LOGGER);
-  log::set_max_level(log::LevelFilter::Info);
+fn capture_logs() -> tracing::subscriber::DefaultGuard {
+  common::capture_logs("katago_core", |msg| LOGGED.with(|l| l.borrow_mut().push(msg.to_string())))
 }
 
 // ===================================================================== script helpers (same as the oracle's)
@@ -236,7 +218,7 @@ fn kind(e: &KataError) -> &'static str {
 }
 
 fn run(script: &str, cases: &mut Cases) -> String {
-  install_logger();
+  let _logs = capture_logs();
   let files: Files = Rc::new(RefCell::new(BTreeMap::new()));
   let reader = make_reader(&files);
   let mut cfgs: BTreeMap<String, ConfigParser> = BTreeMap::new();

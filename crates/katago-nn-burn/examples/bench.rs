@@ -35,7 +35,9 @@ fn bench<N: Network>(backend: &str, precision: &str, bpk: &str, batches: &[usize
       let out = model.forward(bin.clone(), global.clone(), meta.clone());
       // One readback per batch, like the engine will do.
       let all = Tensor::cat(vec![out.policy.flatten::<2>(1, 2), out.value, out.score, out.ownership.flatten::<2>(1, 3)], 1);
-      all.into_data()
+      // Read the values: on rocm `into_data` returns before the GPU is done, so an unread readback lets the batches
+      // queue up and times the queue instead of the GPU.
+      std::hint::black_box(all.into_data().iter::<f32>().sum::<f32>())
     };
     // The first runs at a new shape compile kernels (and autotune with `-F wgpu`).
     let warm = Instant::now();

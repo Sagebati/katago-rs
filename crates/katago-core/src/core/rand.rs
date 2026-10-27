@@ -360,9 +360,9 @@ impl XorShift1024Mult {
     for i in 0..32 {
       let r: u32 = xorm.next_uint();
       if r != expected[i] {
-        log::error!("{}", i);
-        log::error!("{}", Global::uint32_to_hex_string(r));
-        log::error!("{}", Global::uint32_to_hex_string(expected[i]));
+        tracing::error!("{}", i);
+        tracing::error!("{}", Global::uint32_to_hex_string(r));
+        tracing::error!("{}", Global::uint32_to_hex_string(expected[i]));
         Global::fatal_error("XorShift1024Mult generated unexpected values");
       }
     }
@@ -396,9 +396,9 @@ impl PCG32 {
     for i in 0..16 {
       let r: u32 = pcg.next_uint();
       if r != expected[i] {
-        log::error!("{}", i);
-        log::error!("{}", Global::uint32_to_hex_string(r));
-        log::error!("{}", Global::uint32_to_hex_string(expected[i]));
+        tracing::error!("{}", i);
+        tracing::error!("{}", Global::uint32_to_hex_string(r));
+        tracing::error!("{}", Global::uint32_to_hex_string(expected[i]));
         Global::fatal_error("PCG32 generated unexpected values");
       }
     }

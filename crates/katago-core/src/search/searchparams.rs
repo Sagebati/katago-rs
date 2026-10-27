@@ -759,7 +759,7 @@ impl SearchParams {
   /// doubles/floats through cpp_ostream_f64 (default `ostream` precision), bools as `0`/`1`
   /// (no boolalpha), integers as is.
   /// PORT NOTE: upstream writes `avoidMYTDaggerHackPla` and `playoutDoublingAdvantagePla` to
-  /// `std::cout`, not to `out` (apparent upstream bug, kept): `cout` becomes the `log` macros.
+  /// `std::cout`, not to `out` (apparent upstream bug, kept): `cout` becomes the `tracing` macros.
   pub fn print_params(&self, out: &mut dyn std::fmt::Write) {
 
 
@@ -839,7 +839,7 @@ impl SearchParams {
     writeln!(out, "rootPruneUselessMoves: {}", self.root_prune_useless_moves as i32).unwrap();
     writeln!(out, "conservativePass: {}", self.conservative_pass as i32).unwrap();
     writeln!(out, "fillDameBeforePass: {}", self.fill_dame_before_pass as i32).unwrap();
-    log::info!("avoidMYTDaggerHackPla: {}", self.avoid_myt_dagger_hack_pla as i32);
+    tracing::info!("avoidMYTDaggerHackPla: {}", self.avoid_myt_dagger_hack_pla as i32);
     writeln!(out, "wideRootNoise: {}", cpp_ostream_f64(self.wide_root_noise)).unwrap();
     writeln!(out, "enablePassingHacks: {}", self.enable_passing_hacks as i32).unwrap();
     writeln!(out, "enableMorePassingHacks: {}", self.enable_more_passing_hacks as i32).unwrap();
@@ -847,7 +847,7 @@ impl SearchParams {
     writeln!(out, "excludeTerritoryAdjacentToAtari: {}", self.exclude_territory_adjacent_to_atari.to_string()).unwrap();
 
     writeln!(out, "playoutDoublingAdvantage: {}", cpp_ostream_f64(self.playout_doubling_advantage)).unwrap();
-    log::info!("playoutDoublingAdvantagePla: {}", self.playout_doubling_advantage_pla as i32);
+    tracing::info!("playoutDoublingAdvantagePla: {}", self.playout_doubling_advantage_pla as i32);
 
     writeln!(out, "avoidRepeatedPatternUtility: {}", cpp_ostream_f64(self.avoid_repeated_pattern_utility)).unwrap();
 

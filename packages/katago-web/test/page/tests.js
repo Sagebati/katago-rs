@@ -265,9 +265,49 @@ export async function review({ backend, network, humanNetwork, allowSlowCpu, con
   return { backend: ready.backend, ready, reviews: out, after: after.map((r) => ({ id: r.id, turnNumber: r.turnNumber, visits: r.rootInfo.visits })), stats };
 }
 
+/** Forward passes at a fixed batch size, the browser's counterpart of `just bench`: `batch` analysis threads of one
+ * search thread each, every turn of `games` at maxVisits 1 (one root evaluation per turn), so the NN batches fill to
+ * `batch` rows. evals/s are rows over the NN's busy time (get_output: upload, kernels, readback), as bench.rs times
+ * them; `avgBatch` is the batch size the engine actually ran. One warm-up game first, then the NN cache emptied. */
+export async function benchForward({ network, precision, batch, games }) {
+  const overrides = `numAnalysisThreads=${batch}, numSearchThreadsPerAnalysisThread=1, nnMaxBatchSize=${batch}`;
+  const { c, ready } = await client({ backend: "webgpu", network, precision, overrides });
+  const run = (moves) => c.analyze({ ...EMPTY_19, moves, analyzeTurns: [...Array(moves.length + 1).keys()], maxVisits: 1 }).done;
+  await run(games[0]);
+  await c.clearCache();
+  const s0 = await c.stats();
+  const t0 = performance.now();
+  await Promise.all(games.slice(1).map(run));
+  const ms = performance.now() - t0;
+  const s1 = await c.stats();
+  c.dispose();
+  const rows = s1.rows - s0.rows;
+  const batches = s1.batches - s0.batches;
+  return { precision: ready.precision, batch, rows, batches, avgBatch: rows / batches, evalsPerS: (rows * 1000) / (s1.busyMs - s0.busyMs), wallEvalsPerS: (rows * 1000) / ms };
+}
+
+/** Positions per second of whole-game reviews (KataGoClient.reviewGame: katago-ws's queries, 100 visits), the
+ * browser's counterpart of `just bench-analysis`: the SGFs of `games` one after another until `secs` have passed
+ * (the model load and its warm-up batches come before), with the NN's evals/s over the same time. */
+export async function benchPositions({ network, precision, overrides, games, secs }) {
+  const { c, ready } = await client({ backend: "webgpu", network, precision, overrides });
+  let turns = 0;
+  const s0 = await c.stats();
+  const t0 = performance.now();
+  for (const sgf of games) {
+    await c.reviewGame(sgf, {}, () => turns++).json;
+    if (performance.now() - t0 >= secs * 1000) break;
+  }
+  const ms = performance.now() - t0;
+  const s1 = await c.stats();
+  c.dispose();
+  const rows = s1.rows - s0.rows;
+  return { precision: ready.precision, overrides: overrides ?? null, turns, ms, positionsPerS: (turns * 1000) / ms, evalsPerS: (rows * 1000) / ms, avgBatch: rows / (s1.batches - s0.batches) };
+}
+
 export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, nnOutputs, terminateLatency, apiSmoke, kernelCacheParity, review, takeLogs };
+window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, nnOutputs, terminateLatency, apiSmoke, kernelCacheParity, review, benchForward, benchPositions, takeLogs };
 window.kgwReady = true;

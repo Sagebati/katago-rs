@@ -79,6 +79,40 @@ pub fn fixed_clock() -> f64 {
   1000.0
 }
 
+/// The `message` of a `tracing` event.
+struct Message(String);
+
+impl tracing::field::Visit for Message {
+  fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+    if field.name() == "message" {
+      use std::fmt::Write as _;
+      let _ = write!(self.0, "{value:?}");
+    }
+  }
+}
+
+struct CaptureLogs {
+  target_prefix: &'static str,
+  sink: fn(&str),
+}
+
+impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLogs {
+  fn on_event(&self, event: &tracing::Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
+    if event.metadata().target().starts_with(self.target_prefix) {
+      let mut msg = Message(String::new());
+      event.record(&mut msg);
+      (self.sink)(&msg.0);
+    }
+  }
+}
+
+/// Where the oracles' Logger lines go (the port logs through `tracing`): calls `sink(message)` for every event
+/// whose target starts with `target_prefix`, on this thread until the returned guard drops.
+pub fn capture_logs(target_prefix: &'static str, sink: fn(&str)) -> tracing::subscriber::DefaultGuard {
+  use tracing_subscriber::layer::SubscriberExt as _;
+  tracing::subscriber::set_default(tracing_subscriber::registry().with(CaptureLogs { target_prefix, sink }))
+}
+
 /// Upstream's test driver calls Board::initHash() at program start.
 pub fn init() {
   Board::init_hash();

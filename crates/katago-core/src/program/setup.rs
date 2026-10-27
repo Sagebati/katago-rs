@@ -1,7 +1,7 @@
 // Ported from KataGo cpp/program/setup.cpp, cpp/program/setup.h @ fd0723fdbc0e9d82cf269c9630af8c27c57c07c4
 //
 // Divergences (port-manifest.toml notes):
-// - `Logger&` / `Logger*` parameters dropped (log crate, PORTING.md §3); `logger.write` -> `log::info!`.
+// - `Logger&` / `Logger*` parameters dropped (tracing, PORTING.md §3); `logger.write` -> `tracing::info!`.
 // - initializeNNEvaluator(s): the compile-time backend (`#if defined(USE_*_BACKEND)`) and the model file
 //   come from an injected `NNEvaluatorHost` (DECISIONS.md D6: backend trait objects, models as bytes;
 //   core does no file IO). Async, because NNEvaluator::spawnServerThreads is (PORTING.md §11, D8). The
@@ -352,7 +352,7 @@ impl Setup {
       // FP16-overflow NaN rows, so always apply the scale8 workaround regardless of onnxSkipScale8.
       if setup_for == SETUP_FOR_DISTRIBUTED && cfg.contains("onnxSkipScale8") && cfg.get_bool("onnxSkipScale8")? {
         cfg.override_key("onnxSkipScale8", "false");
-        log::info!(
+        tracing::info!(
           "{}",
           "WARNING: onnxSkipScale8 = true is not allowed for contribute (distributed selfplay); \
 forcing it to false so FP16-overflow NaNs cannot poison contributed training data."
@@ -450,7 +450,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
       } else {
         nn_rand_seed = Global::uint64_to_string(seed_rand.next_uint64());
       }
-      log::info!("{}", "nnRandSeed".to_string() + &idx_str + " = " + &nn_rand_seed);
+      tracing::info!("{}", "nnRandSeed".to_string() + &idx_str + " = " + &nn_rand_seed);
 
       // PORT NOTE: the `#ifndef USE_EIGEN_BACKEND` branch.
       cfg.mark_all_keys_used_with_prefix("numEigenThreadsPerModel");
@@ -522,7 +522,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
         forced_symmetry = cfg.get_int("nnForcedSymmetry", 0, SymmetryHelpers::NUM_SYMMETRIES - 1)?;
       }
 
-      log::info!(
+      tracing::info!(
         "{}",
         "After dedups: nnModelFile".to_string() + &idx_str + " = " + nn_model_file + " useFP16 " + &use_fp16_mode.to_string()
       );
@@ -1586,7 +1586,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
 
   /// upstream: Setup::maybeWarnHumanSLParams (setup.cpp)
   /// PORT NOTE: `Logger* logger` -> `logger: bool` (whether upstream passed a Logger, i.e. whether to
-  /// log through the log crate); `NNEvaluator*` -> Option<&NNEvaluator>.
+  /// log through tracing); `NNEvaluator*` -> Option<&NNEvaluator>.
   pub fn maybe_warn_human_sl_params(
     params: &SearchParams,
     nn_eval: Option<&NNEvaluator>,
@@ -1609,7 +1609,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
           model_names += &human_eval.get_model_name();
         }
         if logger {
-          log::info!("{}", "WARNING: humanSLProfile is specified as config param but model(s) don't use it: ".to_string() + &model_names);
+          tracing::info!("{}", "WARNING: humanSLProfile is specified as config param but model(s) don't use it: ".to_string() + &model_names);
         }
         writeln!(out, "WARNING: humanSLProfile is specified as config param but model(s) don't use it: {}", model_names).unwrap();
         return true;
@@ -1731,7 +1731,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
 
   /// upstream: Setup::loadDefaultBoardXYSize (setup.cpp)
   //Returns true if the user's config specified the size, false if it did not. If false, does not set defaultBoardXSizeRet or defaultBoardYSizeRet.
-  /// PORT NOTE: `Logger&` dropped (log crate); throws -> Result.
+  /// PORT NOTE: `Logger&` dropped (tracing); throws -> Result.
   pub fn load_default_board_xy_size(cfg: &mut ConfigParser, default_board_x_size_ret: &mut i32, default_board_y_size_ret: &mut i32) -> Result<bool, KataError> {
     let default_board_x_size: i32 = if cfg.contains("defaultBoardXSize") {
       cfg.get_int("defaultBoardXSize", 2, Board::MAX_LEN)?
@@ -1748,7 +1748,7 @@ forcing it to false so FP16-overflow NaNs cannot poison contributed training dat
       -1
     };
     if (default_board_x_size == -1) != (default_board_y_size == -1) {
-      log::info!("Warning: Config specified only one of defaultBoardXSize or defaultBoardYSize and no other board size parameter, ignoring it");
+      tracing::info!("Warning: Config specified only one of defaultBoardXSize or defaultBoardYSize and no other board size parameter, ignoring it");
     }
 
     if default_board_x_size == -1 || default_board_y_size == -1 {
