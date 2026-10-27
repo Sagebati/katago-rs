@@ -164,7 +164,6 @@ impl TfOps for CubeBackend {
     assert_eq!(len(&mask), rows, "tf_rms_norm: mask");
     let out = empty_device_contiguous_dtype(x.client.clone(), x.device.clone(), Shape::new([rows, c]), x.dtype);
     let (gx, gy) = (rows.min(GRID_X), rows.div_ceil(GRID_X));
-    assert!(gy == 1 || rows.is_multiple_of(GRID_X), "tf_rms_norm: {rows} rows");
     macro_rules! launch {
       ($f:ty) => {
         // SAFETY: contiguous `[rows, c]` input and output; one workgroup per row.
@@ -180,6 +179,7 @@ impl TfOps for CubeBackend {
             BufferArg::from_raw_parts(eps.handle.clone(), 1),
             BufferArg::from_raw_parts(out.handle.clone(), rows * c),
             c as u32,
+            rows as u32,
             gx as u32,
           )
         }

@@ -22,7 +22,9 @@ pub fn linear<const D: usize>(lin: &Linear, x: Tensor<D>) -> Tensor<D> {
     let mut out_dims = dims;
     out_dims[D - 1] = w.dims()[1];
     // f16 nets (crate::wino::half): an f16 copy of the weight, for the packed-f16 GEMM (widths a multiple of 4), from a
-    // few boards on (its 128-row tiles leave a single board too few workgroups; the f32 GEMM is faster there).
+    // few boards on (its 128-row tiles leave a single board too few workgroups; the f32 GEMM is faster there). So an
+    // f16 net's outputs for a position differ slightly between batches below and above HALF_MIN_ROWS (within the f16
+    // tolerances; one forward pass is consistent, all its token linears have the same rows).
     if crate::wino::half() && w.dims()[1].is_multiple_of(4) && rows >= crate::tfk::HALF_MIN_ROWS {
       w = crate::tfk::half_weight(lin.weight.id, w);
     }
@@ -106,6 +108,14 @@ pub fn attention_tokens(
     qh = rotate(qh, cos_q, sin_q);
     kh = rotate(kh, cos_k, sin_k);
   }
+  // GQA: each kv head serves `heads / kv_heads` query heads (burn-onnx's attention block expands them the same way).
+  let groups = heads / kv_heads;
+  let (kh, vh) = if groups > 1 {
+    let expand = |t: Tensor<4>, d: usize| t.unsqueeze_dim::<5>(2).expand([n, kv_heads, groups, s, d]).reshape([n, heads, s, d]);
+    (expand(kh, dq), expand(vh, dv))
+  } else {
+    (kh, vh)
+  };
   let options = AttentionModuleOptions {
     scale: Some(scale),
     softcap: None,

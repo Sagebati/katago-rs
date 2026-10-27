@@ -272,36 +272,42 @@ pub(crate) fn linear_gemm_v<F: Float, S: Float, N: Size>(
 /// `x`. `divisor` and `eps` are 1-element buffers (the graph's constants, on the device). One 64-thread workgroup per
 /// row: strided partial sums, then a shared-memory tree.
 #[cube(launch)]
-pub(crate) fn rms_norm_kernel<F: Float>(x: &[F], gamma: &[F], mask: &[F], divisor: &[F], eps: &[F], out: &mut [F], c: u32, rows_x: u32) {
-  // x over the first 65535 rows' remainder, y over blocks of them (65535 workgroups per grid dimension).
+pub(crate) fn rms_norm_kernel<F: Float>(x: &[F], gamma: &[F], mask: &[F], divisor: &[F], eps: &[F], out: &mut [F], c: u32, rows: u32, rows_x: u32) {
+  // x over up to `rows_x` rows, y over blocks of them (65535 workgroups per grid dimension); the last block's
+  // workgroups past `rows` do nothing (the whole workgroup alike, so the barriers stay uniform).
   let row = (CUBE_POS_Y * rows_x + CUBE_POS_X) as usize;
-  let tid = UNIT_POS_X as usize;
-  let c = c as usize;
-  let base = row * c;
-  let mut acc = F::new(0.0f32);
-  for i in range_stepped(tid, c, 64usize) {
-    let v = x[base + i];
-    acc += v * v;
-  }
-  let mut s = Shared::<[F]>::new_slice(64usize);
-  s[tid] = acc;
-  sync_cube();
-  #[unroll]
-  for step in 0..6u32 {
-    let half = 32usize >> step as usize;
-    if tid < half {
-      s[tid] = s[tid] + s[tid + half];
+  if row < rows as usize {
+    let tid = UNIT_POS_X as usize;
+    let c = c as usize;
+    let base = row * c;
+    let mut acc = F::new(0.0f32);
+    for i in range_stepped(tid, c, 64usize) {
+      let v = x[base + i];
+      acc += v * v;
     }
+    let mut s = Shared::<[F]>::new_slice(64usize);
+    s[tid] = acc;
     sync_cube();
-  }
-  let inv = F::new(1.0f32) / F::sqrt(s[0] / divisor[0] + eps[0]);
-  let m = mask[row];
-  for i in range_stepped(tid, c, 64usize) {
-    out[base + i] = x[base + i] * inv * gamma[i] * m;
+    #[unroll]
+    for step in 0..6u32 {
+      let half = 32usize >> step as usize;
+      if tid < half {
+        s[tid] = s[tid] + s[tid + half];
+      }
+      sync_cube();
+    }
+    let inv = F::new(1.0f32) / F::sqrt(s[0] / divisor[0] + eps[0]);
+    let m = mask[row];
+    for i in range_stepped(tid, c, 64usize) {
+      out[base + i] = x[base + i] * inv * gamma[i] * m;
+    }
   }
 }
 
-/// Queries per workgroup of [`attention_kernel`] (one thread each).
+/// Queries per workgroup of [`attention_kernel`] (one thread each). Both attention kernels stage 32 keys and values
+/// in shared memory: `32 * (dq + dv) * 4` bytes in f32, within WebGPU's default 16 KiB per workgroup up to
+/// dq + dv = 120 (every current net: 32 + 32). The padded keys' bias and the running max start at `F::min_value()`
+/// (finite, also in f16).
 pub(crate) const ATT_Q: usize = 64;
 
 /// Softmax attention over the board with an additive per-key bias (the off-board mask): one thread per query row,
@@ -342,7 +348,7 @@ pub(crate) fn attention_kernel<F: Float>(
   for d in 0..dv {
     acc[d] = F::new(0.0f32);
   }
-  let mut m_run = F::new(-3.0e38f32);
+  let mut m_run = F::min_value();
   let mut l_run = F::new(0.0f32);
 
   let mut k_s = Shared::<[F]>::new_slice(32usize * dq);
@@ -374,7 +380,7 @@ pub(crate) fn attention_kernel<F: Float>(
       v_s[e] = val;
     }
     if tid < 32usize {
-      let mut bv = F::new(-3.0e38f32);
+      let mut bv = F::min_value();
       if j0 + tid < seq {
         bv = bias[n * seq + j0 + tid];
       }
@@ -500,7 +506,7 @@ pub(crate) fn attention_tok_kernel<F: Float, N: Size>(
   for d4 in 0..dv4 {
     acc[d4] = Vector::new(F::new(0.0f32));
   }
-  let mut m_run = F::new(-3.0e38f32);
+  let mut m_run = F::min_value();
   let mut l_run = F::new(0.0f32);
 
   let mut k_s = Shared::<[Vector<F, N>]>::new_slice(32usize * dq4);
@@ -551,7 +557,7 @@ pub(crate) fn attention_tok_kernel<F: Float, N: Size>(
       v_s[e] = vec;
     }
     if tid < 32usize {
-      let mut bv = F::new(-3.0e38f32);
+      let mut bv = F::min_value();
       if j0 + tid < seq {
         bv = bias[n * seq + j0 + tid];
       }
