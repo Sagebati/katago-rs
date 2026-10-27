@@ -11,7 +11,8 @@ rules, NN inputs, evaluator, search, analysis protocol) is ported by hand from `
 - `upstream/KataGo/`: submodule pinned to the tag in `port-manifest.toml`. **Never modify it.**
 - `crates/katago-core/`: the port. Mirrors `upstream/KataGo/cpp/` 1:1. No burn dep, wasm-safe.
 - `crates/katago-nn-burn/`: burn-onnx-generated nets (`NetId` lists them), the backend (`backend.rs`, ported NeuralNet
-  glue), the GPU conv lowering (`conv.rs`, cubecl kernels in `wino/`).
+  glue), the GPU conv lowering (`conv.rs`, cubecl kernels in `wino/`) and transformer-block lowering (`tf.rs`, cubecl
+  kernels in `tfk/`).
 - `crates/katago-cli/`: the native `katago-rs analysis` binary (katago-ws's engine). `crates/katago-wasm/`: the
   browser engine (Web Worker). `crates/katago-annotate/`: katago-ws's game annotation, IO-free. `packages/katago-web/`:
   the npm package over katago-wasm.
@@ -150,6 +151,12 @@ suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runne
   (`fuse_bn_act`, a regex rewrite of the generated code that fails the build if it stops matching) and routes the
   board reduces to one kernel (`SpatialReduce`). `useFP16` / katago-web `precision` run the 3x3 convs in f16,
   per compute context (`wino::with_half` around each forward pass; `wino::set_half` is only the default). Keep all three when regenerating models; the `.bpk` is unchanged.
+- Transformer nets: build.rs `fuse_tf` (regex rewrites of the generated code, failing the build if a net with
+  attention stops matching) routes every `Linear` forward, each per-token RMSNorm chain and each attention block
+  (q/k/v head splits, RoPE, attention, head merge) to `katago_nn_burn::tf`. On GPUs these run `tfk/`'s kernels (a
+  token-major GEMM, f16-packed in f16 mode; a one-pass RMSNorm; an online-softmax attention on the token layout with
+  RoPE applied at load); on the CPU the original op sequence. The spatial trunk-tip RMSNorm sum goes through
+  `conv::row_sum`.
 - `+relaxed-simd` does not build (macerator 0.5.1). Weights are loaded at runtime
   (`LoadStrategy::Bytes`), never embedded. First run per batch shape costs 1–3 s: warm up.
 - Browser start-up (docs/M4-report.md, "Start-up on WebGPU"): katago-wasm builds without burn's autotune

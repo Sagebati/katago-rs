@@ -32,7 +32,9 @@ Status:
 - Transformer nets (model v15/v17, attention + RMSNorm blocks): b10c384h6nbttflrs, b10c512h8nbt3tflrs-fson-silu-rsnh and
   the main-run kata1-tf3-b11c768 (opt-in `net-*` features of katago-nn-burn, katago-cli and, for the two smaller ones,
   katago-wasm), checked against Eigen v1.18.2 on flex, wgpu and rocm (`just nn-parity -F net-...`) and through the
-  analysis engine (`just analysis-goldens -F net-b10c384h6nbttflrs`). Not yet tuned: no fused attention kernels.
+  analysis engine (`just analysis-goldens -F net-b10c384h6nbttflrs`), and b10c384h6nbttflrs in Chromium
+  (`just web-test-tf`). cubecl kernels for their blocks (token GEMM, RMSNorm, fused attention with RoPE): 2-3.5x
+  native KataGo v1.18.2 OpenCL's forward passes on an RX 6800 XT ([Benchmarks](#transformer-nets)).
 - Not ported: loading the SGF files of the avoid-repeated-moves pattern tables (`avoidSgfPatternDirs`, file IO);
   the keys are read and an error is raised if one is fully configured. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -43,7 +45,7 @@ Status:
 | `upstream/KataGo` | upstream KataGo (submodule, pinned to a release tag) |
 | `tools/bin2onnx` | KataGo `.bin.gz` → ONNX converter and its verifier against real KataGo |
 | `crates/katago-core` | the port, mirroring upstream `cpp/` (core, game, neuralnet, search, program, command) |
-| `crates/katago-nn-burn` | networks imported with burn-onnx (`NetId`); the GPU convs (cubecl kernels in `wino/`); the NN backend |
+| `crates/katago-nn-burn` | networks imported with burn-onnx (`NetId`); the GPU convs (cubecl kernels in `wino/`) and transformer blocks (`tfk/`); the NN backend |
 | `crates/katago-cli` | native `katago-rs analysis` binary (analysis protocol over stdin/stdout) |
 | `crates/katago-annotate` | katago-ws's game annotation (SGF → queries → payload v3), IO-free and wasm-safe |
 | `tools/annotate-parity` | a separate cargo workspace replaying katago-ws's own annotator against katago-annotate (needs `../katago-ws`) |
