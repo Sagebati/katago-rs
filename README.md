@@ -33,8 +33,9 @@ Status:
   the main-run kata1-tf3-b11c768 (opt-in `net-*` features of katago-nn-burn, katago-cli and, for the two smaller ones,
   katago-wasm), checked against Eigen v1.18.2 on flex, wgpu and rocm (`just nn-parity -F net-...`) and through the
   analysis engine (`just analysis-goldens -F net-b10c384h6nbttflrs`), and b10c384h6nbttflrs in Chromium
-  (`just web-test-tf`). cubecl kernels for their blocks (token GEMM, RMSNorm, fused attention with RoPE): 2-3.5x
-  native KataGo v1.18.2 OpenCL's forward passes on an RX 6800 XT ([Benchmarks](#transformer-nets)).
+  (`just web-test-tf`). cubecl kernels for their blocks (token GEMM, RMSNorm, fused attention with RoPE): 1.7-2.6x
+  native KataGo v1.18.2 OpenCL's forward passes at batches 8-64 on an RX 6800 XT, and 3.4x its positions/s as
+  katago-ws's engine with tf3 ([Benchmarks](#transformer-nets)).
 - Not ported: loading the SGF files of the avoid-repeated-moves pattern tables (`avoidSgfPatternDirs`, file IO);
   the keys are read and an error is raised if one is fully configured. Decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -55,9 +56,11 @@ Status:
 
 ## Benchmarks
 
-Measured 2026-10-26 on one machine: Intel i7-8700K (6 cores, 12 threads), AMD Radeon RX 6800 XT (RDNA2), Linux 7.2,
-Mesa 26.2.5 (RADV for Vulkan/WebGPU), ROCm 7.2.3 (HIP, and AMD's OpenCL for upstream), Chromium 156. katago-rs at
-this README's commit, against upstream KataGo v1.16.5 (`ba938676`). Every row has a command; the milestone reports
+Measured on one machine: Intel i7-8700K (6 cores, 12 threads), AMD Radeon RX 6800 XT (RDNA2), Linux 7.2,
+Mesa 26.2.5 (RADV for Vulkan/WebGPU), Chromium 156. katago-rs's forward passes and the [transformer nets](#transformer-nets)
+were measured 2026-10-27 at this README's commit, with AMD's opencl-amd 10.1.0 package (HIP 7.16; AMD's OpenCL for
+upstream). The conv nets' upstream rows, browser searches and server runs date from 2026-10-25/26 (ROCm 7.2.3),
+against upstream KataGo v1.16.5 (`ba938676`). Every row has a command; the milestone reports
 ([M0](docs/M0-report.md), [M4](docs/M4-report.md), [M7](docs/M7-report.md), [M9](docs/M9-report.md)) have the
 history and the profiles. Nothing here was measured on NVIDIA, Intel or Apple GPUs, or in Firefox or Safari.
 
@@ -70,15 +73,19 @@ kernel set, and katago-ws's images). f16 runs the 3x3 convolutions in f16 (`useF
 | Net | Backend | Precision | batch 1 | 8 | 16 | 32 | 64 |
 |---|---|---|---:|---:|---:|---:|---:|
 | b10c128 | flex (CPU, 1 thread) | f32 | 30 | 33 | | | |
-| | wgpu (Vulkan) | f32 | 680 | 3685 | 5756 | 6671 | 7116 |
-| | wgpu (Vulkan) | f16 | 608 | 4169 | 6552 | 8046 | **8582** |
-| | rocm (HIP) | f32 | 654 | 3408 | 4671 | 5641 | 6859 |
-| | rocm (HIP) | f16 | 638 | 4101 | 5633 | 6849 | 8315 |
+| | wgpu (Vulkan) | f32 | 402 | 2464 | 4177 | 5235 | 6098 |
+| | wgpu (Vulkan) | f16 | 426 | 2497 | 4609 | 6383 | **7174** |
+| | rocm (HIP) | f32 | 524 | 2617 | 3730 | 4653 | 5171 |
+| | rocm (HIP) | f16 | 643 | 2986 | 4514 | 5814 | 6530 |
 | b18c384nbt | flex (CPU, 1 thread) | f32 | 2.2 | 2.5 | | | |
-| | wgpu (Vulkan) | f32 | 193 | 658 | 835 | 918 | 893 |
-| | wgpu (Vulkan) | f16 | 200 | 801 | 1013 | 1139 | 1152 |
-| | rocm (HIP) | f32 | 154 | 630 | 720 | 912 | 1160 |
-| | rocm (HIP) | f16 | 181 | 756 | 888 | 1104 | **1364** |
+| | wgpu (Vulkan) | f32 | 159 | 591 | 772 | 863 | 845 |
+| | wgpu (Vulkan) | f16 | 178 | 715 | 938 | 1062 | **1075** |
+| | rocm (HIP) | f32 | 129 | 509 | 642 | 725 | 754 |
+| | rocm (HIP) | f16 | 147 | 633 | 812 | 926 | 967 |
+
+Earlier versions of this table had higher rocm numbers: the bench dropped each readback unread, and on rocm burn's
+`into_data` returns before the GPU is done, so the batches queued up and the bench timed the queue. It now reads
+the values, as the engine does (which was never affected).
 
 Upstream KataGo for comparison, `just bench-upstream <net>` (KataGo's own `benchmark`, 800 visits; its nnEvals/s at
 the average batch its search threads produce, so a search is running around them). OpenCL FP16 on AMD's OpenCL
@@ -91,8 +98,8 @@ small batches):
 | b18c384nbt | KataGo OpenCL FP16 | 295 | 356 | 401 | 441 | 449 |
 | b10c128 | KataGo Eigen (CPU, 12 threads) | 164 at batch 1 | | | | |
 
-So on this GPU katago-rs's b18c384nbt forward pass is about 2.5x upstream's at batch 32 (1104-1139 vs 441), and
-b10c128's 1.7-2x (6849-8046 vs 4120). On the CPU, flex is single-threaded: about upstream's Eigen per thread
+So on this GPU katago-rs's b18c384nbt forward pass is about 2.1-2.4x upstream's at batch 32 (926-1062 vs 441), and
+b10c128's 1.4-1.5x (5814-6383 vs 4120). On the CPU, flex is single-threaded: about upstream's Eigen per thread
 (M0), and 5x behind Eigen on 12 threads.
 
 ### Searches in the browser
@@ -131,6 +138,55 @@ The analysis quality matches upstream's run-to-run noise (docs/M9-report.md). b1
 is about 2x upstream's throughput. b10c128 leans on the search side instead (katago-rs runs every search on one OS
 thread, the wasm design), and the GPU's per-batch overhead matters more: on Vulkan, one katago-rs process matches
 upstream's best, and on ROCm it reaches about 0.85x. katago-ws's `BENCH_BACKEND=upstream` runs the KataGo rows.
+
+### Transformer nets
+
+The three transformer nets (attention + RMSNorm blocks, model v15/v17), against upstream KataGo **v1.18.2** (the
+submodule, `just katago-opencl`), 2026-10-27. katago-rs, `just bench <backend> <b10c384tf|b10c512tf|tf3> <precision>`
+(the net's feature is turned on by the recipe); f16 also runs the token linears in f16 from 6 boards per batch on.
+
+| Net | Engine | Precision | batch 1 | 8 | 16 | 32 | 64 |
+|---|---|---|---:|---:|---:|---:|---:|
+| b10c384h6nbttflrs | katago-rs wgpu (Vulkan) | f32 | 129 | 580 | 674 | 706 | 738 |
+| | katago-rs wgpu (Vulkan) | f16 | 129 | 578 | **725** | **758** | **773** |
+| | katago-rs rocm (HIP) | f32 | 128 | 507 | 548 | 595 | 631 |
+| | katago-rs rocm (HIP) | f16 | 127 | 525 | 580 | 613 | 668 |
+| | KataGo OpenCL, Mesa rusticl | auto | 46 | 220 | 283 | 395 | 445 |
+| | KataGo OpenCL, AMD OpenCL | auto | 93 | 160 | 171 | 175 | 178 |
+| b10c512h8nbt3tflrs-fson-silu-rsnh | katago-rs wgpu (Vulkan) | f32 | 81 | 251 | 298 | 318 | 326 |
+| | katago-rs wgpu (Vulkan) | f16 | 81 | **285** | **318** | **348** | **360** |
+| | katago-rs rocm (HIP) | f32 | 83 | 236 | 256 | 277 | 284 |
+| | katago-rs rocm (HIP) | f16 | 83 | 269 | 285 | 304 | 313 |
+| | KataGo OpenCL, Mesa rusticl | auto | 29 | 128 | 155 | 180 | 191 |
+| | KataGo OpenCL, AMD OpenCL | auto | 45 | 65 | 67 | 68 | 68 |
+| kata1-tf3-b11c768 | katago-rs wgpu (Vulkan) | f32 | 54 | 143 | 150 | 159 | 157 |
+| | katago-rs wgpu (Vulkan) | f16 | 54 | **167** | **174** | **185** | **182** |
+| | katago-rs rocm (HIP) | f32 | 55 | 120 | 131 | 136 | 136 |
+| | katago-rs rocm (HIP) | f16 | 55 | 146 | 159 | 166 | 163 |
+| | KataGo OpenCL, Mesa rusticl | auto | 22 | 74 | 86 | 92 | 95 |
+| | KataGo OpenCL, AMD OpenCL | auto | 24 | 31 | 32 | 32 | 32 |
+
+The KataGo rows are its `benchmarknn` (forward passes only, fixed batch, `useFP16 = auto`):
+`just bench-upstream-nn <net.bin.gz> <libRusticlOpenCL.so.1|libamdocl64.so>`. On these nets Mesa's rusticl is the
+faster OpenCL driver from batch 8 on; AMD's caps out early. Against the better of the two, katago-rs is 1.7-2.6x
+from batch 8 on (b10c384h6nbttflrs 2.6x at batch 8 and 16, 1.7x at 64; tf3 1.9-2.3x). Vulkan is the faster katago-rs
+backend at every batch above 1.
+
+As katago-ws's engine with tf3-b11c768 (its quick bench as above, FP16, two runs each), positions per second:
+
+| Engine | Settings (NN servers x batch, analysis threads) | positions/s |
+|---|---|---:|
+| katago-rs, wgpu (Vulkan) f16 | 4 x 64, 256 | **2.57 / 2.57** |
+| katago-rs, rocm f16 | 8 x 64, 256 | 2.25 / 2.25 |
+| KataGo v1.18.2 OpenCL FP16, Mesa rusticl | 4 x 64, 128 | 0.76 / 0.75 |
+
+That is 3.4x upstream. In the browser, visits per second of one search at a time (Chromium, WebGPU,
+`just web-build -F net-b10c384h6nbttflrs && just web-test-tf`):
+
+| Net | Backend | 100 visits | 400 visits |
+|---|---|---:|---:|
+| b10c384h6nbttflrs | WebGPU f32 | 351-375 | 391-561 |
+| b10c384h6nbttflrs | WebGPU f16 | 390-405 | 388-606 |
 
 ## Setup
 

@@ -16,6 +16,12 @@ katago-eigen:
     cmake -S upstream/KataGo/cpp -B build/eigen -G Ninja -DUSE_BACKEND=EIGEN -DEIGEN3_INCLUDE_DIRS={{justfile_directory()}}/build/deps/eigen -DCMAKE_BUILD_TYPE=Release -DNO_GIT_REVISION=1
     ninja -C build/eigen katago
 
+# Build KataGo's OpenCL backend from the upstream submodule (build/opencl/katago): upstream's forward passes for
+# `just bench-upstream-nn`.
+katago-opencl:
+    cmake -S upstream/KataGo/cpp -B build/opencl -G Ninja -DUSE_BACKEND=OPENCL -DCMAKE_BUILD_TYPE=Release -DNO_GIT_REVISION=1
+    ninja -C build/opencl katago
+
 # The examples below build per backend: wgpu with the cubecl kernels and no burn autotune (the browser's kernel set,
 # as katago-ws's images run), rocm with ROCm, flex with the defaults.
 
@@ -27,7 +33,7 @@ parity backend="flex" net="b10":
 # b18 | human; precision: f32 | f16, GPU only). README "Benchmarks". The transformer nets (b10c384tf | b10c512tf | tf3)
 # need their feature: `cargo run --release -p katago-nn-burn --example bench -F wgpu-fixed,net-b10c384h6nbttflrs -- wgpu b10c384tf`.
 bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
-    cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
+    cargo run --release -p katago-nn-burn --example bench {{ if backend == "rocm" { "-F rocm" } else if backend == "wgpu" { "-F wgpu-fixed" } else { "" } }} {{ if net == "b10c384tf" { "-F net-b10c384h6nbttflrs" } else if net == "b10c512tf" { "-F net-b10c512h8nbt3tflrs-fson-silu-rsnh" } else if net == "tf3" { "-F net-tf3-b11c768" } else { "" } }} -- {{backend}} {{net}} {{precision}} {{batches}}
 
 # Per-layer timing and check of the Winograd 3x3 and NCHW 1x1 convs against im2col on b18's trunk shapes (WebGPU).
 wino-bench precision="f32" *batches="8 16 32 64":
@@ -48,6 +54,18 @@ bench-upstream net="kata1-b18c384nbt" threads="8,16,32,64":
 
 # Browser throughput (Chromium, headless): b10c128 100-visit searches on WebGPU and the wasm CPU, then the b18c384nbt
 # set (f32 and f16, 100 and 400 visits). `just web-build` first. README "Benchmarks".
+# Upstream's forward passes alone at fixed batch sizes (its `benchmarknn`, 100 batches each; README "Transformer
+# nets"), with the submodule's OpenCL build (`just katago-opencl`). `icd` picks one OpenCL driver (Mesa's
+# libRusticlOpenCL.so.1 or AMD's libamdocl64.so): with both loaded at once AMD's crashes in LLVM.
+bench-upstream-nn net icd="libRusticlOpenCL.so.1" *batches="1 8 16 32 64":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for b in {{batches}}; do
+      echo "batch $b: $(OCL_ICD_VENDORS=/nonexistent OCL_ICD_FILENAMES={{icd}} build/opencl/katago benchmarknn -model {{net}} \
+        -config upstream/KataGo/cpp/configs/gtp_example.cfg -override-config "openclDeviceToUse=0,numNNServerThreadsPerModel=1,logDir=" \
+        -batch-size $b -iterations 100 2>&1 | grep -E "overall throughput|rror")"
+    done
+
 bench-web:
     node {{web_pkg}}/test/run.mjs --only throughput --backends webgpu,cpu
     node {{web_pkg}}/test/run.mjs --only b18
