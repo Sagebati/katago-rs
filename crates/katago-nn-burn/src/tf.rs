@@ -21,8 +21,9 @@ pub fn linear<const D: usize>(lin: &Linear, x: Tensor<D>) -> Tensor<D> {
     let mut w = lin.weight.val();
     let mut out_dims = dims;
     out_dims[D - 1] = w.dims()[1];
-    // f16 nets (crate::wino::half): an f16 copy of the weight, for the packed-f16 GEMM (widths a multiple of 4).
-    if crate::wino::half() && w.dims()[1].is_multiple_of(4) {
+    // f16 nets (crate::wino::half): an f16 copy of the weight, for the packed-f16 GEMM (widths a multiple of 4), from a
+    // few boards on (its 128-row tiles leave a single board too few workgroups; the f32 GEMM is faster there).
+    if crate::wino::half() && w.dims()[1].is_multiple_of(4) && rows >= crate::tfk::HALF_MIN_ROWS {
       w = crate::tfk::half_weight(lin.weight.id, w);
     }
     return crate::tfk::linear(x.reshape([rows, k]), w, lin.bias.as_ref().map(|b| b.val())).reshape(out_dims);

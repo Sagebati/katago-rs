@@ -5,11 +5,11 @@ use burn_cubecl::cubecl;
 use burn_cubecl::cubecl::prelude::*;
 
 /// GEMM block of [`linear_gemm`]: `16 * tm` rows (`tm` [`LIN_TM`]) x `LIN_N` output features per cube (16 inputs per
-/// shared-memory step), `LIN_T` x `LIN_T` threads each computing `tm` x 4 outputs. [`linear_gemm_v`]: `LIN_M` rows.
+/// shared-memory step), `LIN_T` x `LIN_T` threads each computing `tm` x 4 outputs; [`linear_gemm_v`]: `LIN_VM` rows.
 pub(crate) const LIN_TM: usize = 8;
+pub(crate) const LIN_VM: usize = 128;
 /// Rows from which [`linear_gemm`] takes `tm` = [`LIN_TM`] (4 below): about 6 boards.
 pub(crate) const LIN_TM_ROWS: usize = 2048;
-pub(crate) const LIN_M: usize = 64;
 pub(crate) const LIN_N: usize = 64;
 pub(crate) const LIN_T: usize = 16;
 
@@ -144,10 +144,11 @@ pub(crate) fn linear_gemm<F: Float>(
   }
 }
 
-/// [`linear_gemm`] with the weight and output read and written as `N`-wide vectors (`N` = 4) along the output
-/// features, `n_size` a multiple of 4: each thread computes 4 rows x one vector of outputs per K step, the products of
-/// each 16-input step summed in `S` and added into f32 accumulators (`wino_gemm_v`'s scheme). With `S` f16 (the f16
-/// weight) the inner products use packed f16 math; `x`, `bias` and `out` stay in `F`.
+/// [`linear_gemm`] in the compute type `S` (f16 for packed f16 math) with 4-wide vectors: `w` and `out` along the
+/// output features (`n_size` a multiple of 4), the A tile along its rows in shared memory. Each thread computes 8 rows
+/// x one vector of outputs from 2 + 1 vector reads per input, the products of each 16-input step summed in `S` and
+/// added into f32 accumulators (`wino_gemm_v`'s scheme); the next step is prefetched into registers. `x`, `bias` and
+/// `out` stay in `F`.
 #[cube(launch)]
 pub(crate) fn linear_gemm_v<F: Float, S: Float, N: Size>(
   x: &[F],
@@ -159,7 +160,8 @@ pub(crate) fn linear_gemm_v<F: Float, S: Float, N: Size>(
   k_size: u32,
   #[comptime] has_bias: bool,
 ) {
-  let m0 = CUBE_POS_X as usize * 64;
+  // 128 rows x 64 outputs (16 vectors) per cube; thread (tx, ty): output vector tx, rows 8 * ty .. 8 * ty + 8.
+  let m0 = CUBE_POS_X as usize * 128;
   let nv0 = CUBE_POS_Y as usize * 16;
   let tx = UNIT_POS_X as usize;
   let ty = UNIT_POS_Y as usize;
@@ -168,57 +170,93 @@ pub(crate) fn linear_gemm_v<F: Float, S: Float, N: Size>(
   let n_v = n_size as usize / 4;
   let k_size = k_size as usize;
 
-  let mut a_s = Shared::<[S]>::new_slice(16usize * 65usize);
+  // A: 16 k x 32 vectors of 4 rows (+1 against bank conflicts); B: 16 k x 16 vectors of 4 outputs.
+  let mut a_s = Shared::<[Vector<S, N>]>::new_slice(16usize * 33usize);
   let mut b_s = Shared::<[Vector<S, N>]>::new_slice(16usize * 16usize);
-  let mut acc = Array::<Vector<f32, N>>::new(4usize);
-  let mut part = Array::<Vector<S, N>>::new(4usize);
+  let mut acc = Array::<Vector<f32, N>>::new(8usize);
+  let mut part = Array::<Vector<S, N>>::new(8usize);
   #[unroll]
-  for i in 0..4usize {
+  for i in 0..8usize {
     acc[i] = Vector::new(0.0f32);
+  }
+  // The next K step: two A vectors (rows 4g..4g+4 of column ka, g = tid / 16 and + 16) and one B vector.
+  let mut a_next = Array::<Vector<S, N>>::new(2usize);
+  let mut b_next = Vector::<S, N>::new(S::new(0.0f32));
+  let ka = tid % 16;
+  let g = tid / 16;
+  let kb = tid / 16;
+  let nv = tid % 16;
+
+  #[unroll]
+  for r in 0..2usize {
+    let mut vec = Vector::<S, N>::new(S::new(0.0f32));
+    #[unroll]
+    for c in 0..4usize {
+      let m = m0 + (g + 16 * r) * 4 + c;
+      let mut v = F::new(0.0f32);
+      if m < m_size && ka < k_size {
+        v = x[m * k_size + ka];
+      }
+      vec.insert(c, S::cast_from(v));
+    }
+    a_next[r] = vec;
+  }
+  if nv0 + nv < n_v && kb < k_size {
+    b_next = w[kb * n_v + nv0 + nv];
   }
 
   for k0 in range_stepped(0usize, k_size, 16usize) {
-    #[unroll]
-    for r in 0..4usize {
-      let idx = tid + 256 * r;
-      let mm = idx / 16;
-      let ka = idx % 16;
-      let mut v = F::new(0.0f32);
-      if m0 + mm < m_size && k0 + ka < k_size {
-        v = x[(m0 + mm) * k_size + k0 + ka];
-      }
-      a_s[ka * 65 + mm] = S::cast_from(v);
-    }
-    let kb = tid / 16;
-    let nv = tid % 16;
-    let mut u = Vector::new(S::new(0.0f32));
-    if nv0 + nv < n_v && k0 + kb < k_size {
-      u = w[(k0 + kb) * n_v + nv0 + nv];
-    }
-    b_s[tid] = u;
+    a_s[ka * 33 + g] = a_next[0];
+    a_s[ka * 33 + g + 16] = a_next[1];
+    b_s[tid] = b_next;
     sync_cube();
+    let k1 = k0 + 16;
+    if k1 < k_size {
+      #[unroll]
+      for r in 0..2usize {
+        let mut vec = Vector::<S, N>::new(S::new(0.0f32));
+        #[unroll]
+        for c in 0..4usize {
+          let m = m0 + (g + 16 * r) * 4 + c;
+          let mut v = F::new(0.0f32);
+          if m < m_size && k1 + ka < k_size {
+            v = x[m * k_size + k1 + ka];
+          }
+          vec.insert(c, S::cast_from(v));
+        }
+        a_next[r] = vec;
+      }
+      let mut u = Vector::<S, N>::new(S::new(0.0f32));
+      if nv0 + nv < n_v && k1 + kb < k_size {
+        u = w[(k1 + kb) * n_v + nv0 + nv];
+      }
+      b_next = u;
+    }
     #[unroll]
-    for i in 0..4usize {
+    for i in 0..8usize {
       part[i] = Vector::new(S::new(0.0f32));
     }
     #[unroll]
     for kk in 0..16usize {
       let bv = b_s[kk * 16 + tx];
+      let a0 = a_s[kk * 33 + ty * 2];
+      let a1 = a_s[kk * 33 + ty * 2 + 1];
       #[unroll]
-      for i in 0..4usize {
-        part[i] += Vector::new(a_s[kk * 65 + ty * 4 + i]) * bv;
+      for c in 0..4usize {
+        part[c] += Vector::new(a0.extract(c)) * bv;
+        part[4 + c] += Vector::new(a1.extract(c)) * bv;
       }
     }
     #[unroll]
-    for i in 0..4usize {
+    for i in 0..8usize {
       acc[i] += Vector::cast_from(part[i]);
     }
     sync_cube();
   }
 
   #[unroll]
-  for i in 0..4usize {
-    let m = m0 + ty * 4 + i;
+  for i in 0..8usize {
+    let m = m0 + ty * 8 + i;
     if m < m_size && nv0 + tx < n_v {
       let mut v: Vector<F, N> = Vector::cast_from(acc[i]);
       if comptime![has_bias] {

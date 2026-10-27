@@ -17,6 +17,9 @@ use burn::tensor::{DType, Device, Tensor};
 
 pub use ext::TfOps;
 
+/// Rows from which an f16 net's linears use the packed-f16 GEMM (crate::tf::linear).
+pub const HALF_MIN_ROWS: usize = kernels::LIN_TM_ROWS;
+
 thread_local! {
   /// f16 copies of the linears' weights, per device and weight parameter (as wino's transformed filters).
   static HALF_WEIGHTS: RefCell<Vec<(Device, HashMap<ParamId, Tensor<2>>)>> = const { RefCell::new(Vec::new()) };

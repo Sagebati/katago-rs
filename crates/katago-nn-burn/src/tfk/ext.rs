@@ -102,7 +102,7 @@ impl TfOps for CubeBackend {
           unsafe {
             linear_gemm_v::launch::<$f, $s>(
               &x.client,
-              CubeCount::Static(m.div_ceil(LIN_M) as u32, n.div_ceil(LIN_N) as u32, 1),
+              CubeCount::Static(m.div_ceil(LIN_VM) as u32, n.div_ceil(LIN_N) as u32, 1),
               CubeDim::new_2d(LIN_T as u32, LIN_T as u32),
               4,
               BufferArg::from_raw_parts(x.handle.clone(), len(&x)),
