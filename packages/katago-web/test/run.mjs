@@ -39,7 +39,8 @@ const opt = (name, def) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : def;
 };
-// `b18` (kata1-b18c384nbt: goldens, 105 MB weights, CPU guard, throughput; `just web-test-b18`) is not in the default set.
+// `b18` (kata1-b18c384nbt: goldens, 105 MB weights, CPU guard, throughput; `just web-test-b18`) and `tf` (the transformer
+// b10c384h6nbttflrs: goldens, throughput, f16; `just web-test-tf`) are not in the default set.
 const only = opt("only", "goldens,fallback,cache,kernels,partials,terminate,throughput,review").split(",");
 const backends = opt("backends", "webgpu,cpu").split(",");
 const headed = args.includes("--headed");
@@ -73,6 +74,13 @@ const B18_GOLDENS = [
 ];
 // The same on a device limited to WebGPU's default buffer limits (test/page/lowlimits-worker.js), batches of at most 32
 // (80 MB im2col buffers; 64 rows would need 160 MB, more than the default 128 MiB binding).
+// b10c384h6nbttflrs goldens: fixtures/upstream-v1.18.2/analysis/regen_tf.sh (needs a build with net-b10c384h6nbttflrs).
+const TF = "b10c384h6nbttflrs";
+const TF_FILE = "models/b10c384h6nbttflrs.bin.gz";
+const TF_GOLDENS = [
+  ["b10c384h6nbttflrs_basic", "b10c384h6nbttflrs_basic.stdout", "basic.txt", LOOP],
+  ["b10c384h6nbttflrs_symmetry", "b10c384h6nbttflrs_symmetry.stdout", "symmetry.txt", LOOP],
+];
 const B18_GOLDENS_LOW = [["b18_basic_lowlimits", "b18_basic.stdout", "basic.txt", `${LOOP}, nnMaxBatchSize=32`]];
 const goldenFilter = opt("goldens", null)?.split(",");
 
@@ -345,6 +353,42 @@ try {
       for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
       await context.close();
     }
+  }
+
+  if (only.includes("tf") && backends.includes("webgpu")) {
+    const net = { network: TF, modelFile: TF_FILE };
+    results.tf = {};
+    const { context, page } = await openPage(gpuBrowser);
+    const cold = await call(page, "loadModel", { backend: "webgpu", network: TF, precision: "auto" });
+    results.tf.load = cold;
+    check("tf: loads on WebGPU", cold.backend === "webgpu", `backend ${cold.backend}, precision ${cold.precision}, ready in ${cold.timings?.totalMs?.toFixed(0)} ms`);
+    await goldens(page, "webgpu", "tf webgpu", goldenFilter, TF_GOLDENS, net);
+    for (const precision of ["f32", "f16"]) {
+      for (const visits of [100, 400]) {
+        const t = await call(page, "throughput", { backend: "webgpu", network: TF, visits, positions: 4, precision });
+        (results.tf.throughput ??= []).push({ visits, precision: t.ready.precision, ...t });
+        for (const x of t.results) console.log(`  tf ${t.ready.precision} ${visits}: ${x.moves} moves: ${x.visits} visits ${x.ms.toFixed(0)} ms = ${x.visitsPerS.toFixed(0)} visits/s, ${x.rows} evals in ${x.batches} batches (avg ${x.avgBatch.toFixed(1)}) = ${x.evalsPerS.toFixed(0)} evals/s (NN busy ${x.nnBusyEvalsPerS.toFixed(0)}/s)`);
+        check(`tf: ${t.ready.precision} ${visits}-visit searches complete`, t.results.every((x) => x.visits >= visits), t.results.map((x) => x.visits).join(","));
+      }
+    }
+    // f16 vs f32 raw outputs, with b18's bound (upstream's own FP16 error, testgpuerror on b18c384nbt).
+    {
+      const a = await call(page, "nnOutputs", { backend: "webgpu", network: TF, precision: "f32", positions: 12 });
+      const b = await call(page, "nnOutputs", { backend: "webgpu", network: TF, precision: "f16", positions: 12 });
+      const maxAbs = (xs, ys, legal) => xs.reduce((m, x, i) => (!legal || (x >= 0 && ys[i] >= 0) ? Math.max(m, Math.abs(x - ys[i])) : m), 0);
+      let wr = 0, lead = 0, own = 0, pol = 0;
+      for (const [i, x] of a.out.entries()) {
+        const y = b.out[i];
+        wr = Math.max(wr, Math.abs(x.winrate - y.winrate));
+        lead = Math.max(lead, Math.abs(x.scoreLead - y.scoreLead));
+        own = Math.max(own, maxAbs(x.ownership, y.ownership, false));
+        pol = Math.max(pol, maxAbs(x.policy, y.policy, true));
+      }
+      results.tf.f16 = { wr, lead, own, pol };
+      check("tf: f16 outputs within upstream's FP16 error of f32", a.precision === "f32" && b.precision === "f16" && wr <= 0.0445 && lead <= 2.27 && own <= 0.0923 && pol <= 0.0504, `precisions ${a.precision}/${b.precision}, 12 positions, max |f16 - f32|: winrate ${wr.toExponential(2)}, lead ${lead.toExponential(2)}, ownership ${own.toExponential(2)}, policy ${pol.toExponential(2)}`);
+    }
+    for (const l of await call(page, "takeLogs", null)) console.log(`  [engine] ${l}`);
+    await context.close();
   }
 } finally {
   await gpuBrowser.close();

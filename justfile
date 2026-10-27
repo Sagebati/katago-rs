@@ -211,6 +211,11 @@ web-test *args="":
 web-test-b18 *args="":
     node {{web_pkg}}/test/run.mjs --only b18 {{args}}
 
+# Browser test of the transformer b10c384h6nbttflrs on WebGPU (goldens, f32/f16 throughput, f16 vs f32): needs a build
+# with it, `just web-build -F net-b10c384h6nbttflrs`.
+web-test-tf *args="":
+    node {{web_pkg}}/test/run.mjs --only tf --backends webgpu {{args}}
+
 # The human SL network as `humanModel` in the browser: reviewGame with a humanProfile against the native run with
 # `-human-model`, and the network left out on the CPU. Needs a build with it: `just web-build -F net-b18c384nbt-humanv0`.
 web-test-human *args="":
