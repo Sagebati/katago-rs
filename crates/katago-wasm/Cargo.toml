@@ -26,6 +26,8 @@ net-b18c384nbt-humanv0 = ["katago-nn-burn/net-b18c384nbt-humanv0"]
 # v15; 47.8 MB .bpk, f32 weights plus its RoPE tables), b10c512h8nbt3tflrs-fson-silu-rsnh (v17; 125.3 MB).
 net-b10c384h6nbttflrs = ["katago-nn-burn/net-b10c384h6nbttflrs"]
 net-b10c512h8nbt3tflrs-fson-silu-rsnh = ["katago-nn-burn/net-b10c512h8nbt3tflrs-fson-silu-rsnh"]
+# kata1-tf3-b11c768 (v17, 300 MB of f32 weights): for the browser benchmarks (`just bench-web-all`).
+net-tf3-b11c768 = ["katago-nn-burn/net-tf3-b11c768"]
 
 [dependencies]
 katago-core = { path = "../katago-core" }

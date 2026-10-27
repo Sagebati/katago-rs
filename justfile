@@ -39,7 +39,7 @@ bench backend="wgpu" net="b18" precision="f32" *batches="1 8 16 32 64":
 wino-bench precision="f32" *batches="8 16 32 64":
     cargo run --release -p katago-nn-burn --example wino_bench -F wgpu-fixed -- {{precision}} {{batches}}
 
-# Upstream KataGo's own `benchmark` on the same net, for comparison (README "Benchmarks"): KATAGO is the binary
+# Upstream KataGo's own `benchmark` (a search around its forward passes) on the same net: KATAGO is the binary
 # (default katago-ws's bench copy, an OpenCL v1.16.5 release), NETS the directory of `.bin.gz` nets (default
 # katago-ws's bench/models, `scripts/bench_setup.sh` there), CONFIG its GTP config (default: the one beside KATAGO,
 # else upstream's gtp_example.cfg), threads the search threads to try.
@@ -52,10 +52,8 @@ bench-upstream net="kata1-b18c384nbt" threads="8,16,32,64":
     [ -f "$config" ] || config={{justfile_directory()}}/upstream/KataGo/cpp/configs/gtp_example.cfg
     "$katago" benchmark -model "$nets/{{net}}.bin.gz" -config "$config" -t {{threads}} -v 800 -n 10
 
-# Browser throughput (Chromium, headless): b10c128 100-visit searches on WebGPU and the wasm CPU, then the b18c384nbt
-# set (f32 and f16, 100 and 400 visits). `just web-build` first. README "Benchmarks".
-# Upstream's forward passes alone at fixed batch sizes (its `benchmarknn`, 100 batches each; README "Transformer
-# nets"), with the submodule's OpenCL build (`just katago-opencl`). `icd` picks one OpenCL driver (Mesa's
+# Upstream's forward passes alone at fixed batch sizes (its `benchmarknn`, 100 batches each; README "Benchmarks"),
+# with the submodule's OpenCL build (`just katago-opencl`). `icd` picks one OpenCL driver (Mesa's
 # libRusticlOpenCL.so.1 or AMD's libamdocl64.so): with both loaded at once AMD's crashes in LLVM.
 bench-upstream-nn net icd="libRusticlOpenCL.so.1" *batches="1 8 16 32 64":
     #!/usr/bin/env bash
@@ -66,6 +64,38 @@ bench-upstream-nn net icd="libRusticlOpenCL.so.1" *batches="1 8 16 32 64":
         -batch-size $b -iterations 100 2>&1 | grep -E "overall throughput|rror")"
     done
 
+# Analysis throughput, positions/s (README "Benchmarks"): katago-ws's queries (100 visits, ownership and policy) of
+# fixtures/bench-games, 4 games in flight, 60 s of warm-up then two 120 s windows (katago-annotate's example
+# analysis_bench; its options go in `args`). engine: wgpu | rocm, katago-rs in FP16 (KATAGO_RS: the binary, default
+# target/release/katago-rs, built with that backend and the net); rusticl | amdocl, upstream's OpenCL build (`just
+# katago-opencl`) on that driver. net: a .bin.gz (katago-rs takes the compiled-in net of that name). servers x 64:
+# the NN server threads and their batch; threads: the analysis threads, one search thread each.
+bench-analysis engine net servers="4" threads="256" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo build -q --release -p katago-annotate --example analysis_bench
+    cfg=upstream/KataGo/cpp/configs/analysis_example.cfg
+    common="numAnalysisThreads={{threads}},numSearchThreadsPerAnalysisThread=1,nnMaxBatchSize=64,numNNServerThreadsPerModel={{servers}},logDir="
+    case {{engine}} in
+      wgpu|rocm) cmd=("${KATAGO_RS:-target/release/katago-rs}" analysis -backend {{engine}} -config $cfg -model {{net}} -override-config "$common,burnUseFP16=true") ;;
+      rusticl) cmd=(env OCL_ICD_VENDORS=/nonexistent OCL_ICD_FILENAMES=libRusticlOpenCL.so.1 build/opencl/katago analysis -config $cfg -model {{net}} -override-config "$common,openclDeviceToUse=0") ;;
+      amdocl) cmd=(env OCL_ICD_VENDORS=/nonexistent OCL_ICD_FILENAMES=libamdocl64.so build/opencl/katago analysis -config $cfg -model {{net}} -override-config "$common,openclDeviceToUse=0") ;;
+      *) echo "bench-analysis: engine wgpu | rocm | rusticl | amdocl" >&2; exit 2 ;;
+    esac
+    target/release/examples/analysis_bench {{args}} -- "${cmd[@]}"
+
+# The native rows of README "Benchmarks" (tools/bench-all.sh): evals/s and positions/s of katago-rs (wgpu, rocm) and
+# upstream (rusticl, AMD's OpenCL) for each net (default: b10 b18 b10c384tf b10c512tf tf3). About half an hour per net.
+bench-all *nets="":
+    tools/bench-all.sh {{nets}}
+
+# The browser rows of README "Benchmarks": forward passes at batch 1-64 (f32, f16) and positions/s of game reviews for
+# every net of the build. Needs `just web-build -F net-b10c384h6nbttflrs,net-b10c512h8nbt3tflrs-fson-silu-rsnh,net-tf3-b11c768`.
+bench-web-all *args="":
+    node {{web_pkg}}/test/run.mjs --only bench {{args}}
+
+# Browser throughput (Chromium, headless): b10c128 100-visit searches on WebGPU and the wasm CPU, then the b18c384nbt
+# set (f32 and f16, 100 and 400 visits). `just web-build` first.
 bench-web:
     node {{web_pkg}}/test/run.mjs --only throughput --backends webgpu,cpu
     node {{web_pkg}}/test/run.mjs --only b18
@@ -202,7 +232,7 @@ web-build *features="":
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
     entries=()
-    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0 b10c384h6nbttflrs b10c512h8nbt3tflrs-fson-silu-rsnh; do
+    for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0 b10c384h6nbttflrs b10c512h8nbt3tflrs-fson-silu-rsnh kata1-tf3-b11c768; do
         bpk="$nn_out/model/$net.bpk"
         [ -f "$bpk" ] || continue
         sha="$(sha256sum "$bpk" | cut -d' ' -f1)"

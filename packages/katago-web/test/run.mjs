@@ -10,6 +10,9 @@
 // target/web-test-profile), so after the first run the WebGPU kernels come from the kernel cache.
 // `b18` (M7, kata1-b18c384nbt; not in the default set, `just web-test-b18`): the Eigen b18 goldens, the 105 MB
 // weights cache, the CPU guard, adapter limits, throughput, terminate.
+// `bench` (not in the default set, `just bench-web-all`): forward passes at fixed batch sizes and positions/s of
+// game reviews for every net of the build (--bench-nets, --bench-precisions, --bench-batches, --bench-secs,
+// --bench-overrides).
 // `human` (the human SL network as `humanModel`; not in the default set, `just web-test-human`, needs a build with
 // net-b18c384nbt-humanv0): reviewGame with a humanProfile against the native run of the same deterministic search, and
 // the human network left out on the CPU.
@@ -631,6 +634,62 @@ if (only.includes("human")) {
     await context.close();
   } finally {
     await noGpu.close();
+  }
+}
+
+if (only.includes("bench")) {
+  // README "Benchmarks", `just bench-web-all`: for every net of the build (or --bench-nets), the forward passes at
+  // fixed batch sizes in each precision (benchForward), then positions/s of whole-game reviews of the native bench's
+  // games (fixtures/bench-games) for --bench-secs (benchPositions; f16 where the adapter has it, the client's
+  // `auto`) under each engine config of --bench-overrides (`;`-separated; `default` is the browser's own, 2 analysis
+  // threads x 16 search threads; the other default is a throughput shape, many positions at once as katago-ws runs).
+  const models = JSON.parse(readFileSync(join(pkg, "dist/models/models.json"), "utf8")).models.map((m) => m.network);
+  const nets = opt("bench-nets", "g170e-b10c128,kata1-b18c384nbt,b10c384h6nbttflrs,b10c512h8nbt3tflrs-fson-silu-rsnh,kata1-tf3-b11c768").split(",");
+  const precisions = opt("bench-precisions", "f32,f16").split(",");
+  const batches = opt("bench-batches", "1,8,16,32,64").split(",").map(Number);
+  const secs = Number(opt("bench-secs", "120"));
+  const benchOverrides = opt("bench-overrides", "default;numAnalysisThreads=64, numSearchThreadsPerAnalysisThread=1, nnMaxBatchSize=64").split(";");
+  // The forward passes' positions: two fixture games under the 8 board symmetries (16 distinct games).
+  const cols = "ABCDEFGHJKLMNOPQRST";
+  const sym = (s, mv) => {
+    if (mv.toLowerCase() === "pass") return mv;
+    let x = cols.indexOf(mv[0].toUpperCase());
+    let y = Number(mv.slice(1)) - 1;
+    if (s & 1) x = 18 - x;
+    if (s & 2) y = 18 - y;
+    if (s & 4) [x, y] = [y, x];
+    return `${cols[x]}${y + 1}`;
+  };
+  const base = [fixture("ogs-60000000").moves, fixture("ogs-60046344-twopass").moves];
+  const forwardGames = base.flatMap((g) => [...Array(8).keys()].map((s) => g.map(([c, m]) => [c, sym(s, m)])));
+  const benchDir = join(root, "fixtures/bench-games");
+  const sgfs = readdirSync(benchDir).filter((f) => f.endsWith(".sgf")).sort().map((f) => readFileSync(join(benchDir, f), "utf8"));
+  results.bench = [];
+  const { context, page } = await openPersistent();
+  try {
+    for (const network of nets) {
+      if (!models.includes(network)) {
+        console.log(`  bench: ${network} not in this build's models.json, skipped`);
+        continue;
+      }
+      for (const precision of precisions) {
+        for (const batch of batches) {
+          // about 24 rows per batch slot, plus the warm-up game
+          const n = Math.min(forwardGames.length - 1, Math.ceil((batch * 24) / 135));
+          const r = await call(page, "benchForward", { network, precision, batch, games: forwardGames.slice(0, n + 1) });
+          results.bench.push({ network, kind: "forward", ...r });
+          console.log(`  bench ${network} ${r.precision} batch ${batch}: ${r.rows} evals in ${r.batches} batches (avg ${r.avgBatch.toFixed(1)}) = ${r.evalsPerS.toFixed(0)} evals/s NN busy, ${r.wallEvalsPerS.toFixed(0)} wall`);
+        }
+      }
+      for (const o of benchOverrides) {
+        const r = await call(page, "benchPositions", { network, precision: "auto", overrides: o === "default" ? undefined : o, games: sgfs, secs });
+        results.bench.push({ network, kind: "positions", ...r });
+        console.log(`  bench ${network} ${r.precision} reviews: ${r.turns} positions in ${(r.ms / 1000).toFixed(1)} s = ${r.positionsPerS.toFixed(2)} positions/s, ${r.evalsPerS.toFixed(0)} evals/s (avg batch ${r.avgBatch.toFixed(1)}), ${r.overrides ?? "default config"}`);
+      }
+    }
+    for (const l of await call(page, "takeLogs", null)) if (!l.includes("warm-up batch")) console.log(`  [engine] ${l}`);
+  } finally {
+    await context.close();
   }
 }
 
