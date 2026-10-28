@@ -286,28 +286,29 @@ export async function benchForward({ network, precision, batch, games }) {
   return { precision: ready.precision, batch, rows, batches, avgBatch: rows / batches, evalsPerS: (rows * 1000) / (s1.busyMs - s0.busyMs), wallEvalsPerS: (rows * 1000) / ms };
 }
 
-/** Positions per second of whole-game reviews (KataGoClient.reviewGame: katago-ws's queries, 100 visits), the
- * browser's counterpart of `just bench-analysis`: the SGFs of `games` one after another until `secs` have passed
- * (the model load and its warm-up batches come before), with the NN's evals/s over the same time. */
-export async function benchPositions({ network, precision, overrides, games, secs }) {
+/** Time to analyse one position to `visits` (KataGoClient.analyze with the drill check's query: the 8-move lines
+ * of liveAnalysis.check), one engine. `positions` are move lists from the start of the board; the first is a
+ * warm-up and is not timed. Per timed position: its wall ms (to the final answer) and the visits it reached.
+ * `avgBatch` is the NN batch size over all the positions (the warm-up included), which one query fills only
+ * up to its search threads. */
+export async function benchPosition({ network, precision, overrides, positions, visits }) {
   const { c, ready } = await client({ backend: "webgpu", network, precision, overrides });
-  let turns = 0;
+  const timed = [];
   const s0 = await c.stats();
-  const t0 = performance.now();
-  for (const sgf of games) {
-    await c.reviewGame(sgf, {}, () => turns++).json;
-    if (performance.now() - t0 >= secs * 1000) break;
+  for (const [i, moves] of positions.entries()) {
+    const t0 = performance.now();
+    const [final] = await c.analyze({ ...EMPTY_19, moves, maxVisits: visits, analysisPVLen: 8 }).done;
+    const ms = performance.now() - t0;
+    if (i > 0) timed.push({ ms, visits: final.rootInfo.visits });
   }
-  const ms = performance.now() - t0;
   const s1 = await c.stats();
   c.dispose();
-  const rows = s1.rows - s0.rows;
-  return { precision: ready.precision, overrides: overrides ?? null, turns, ms, positionsPerS: (turns * 1000) / ms, evalsPerS: (rows * 1000) / ms, avgBatch: rows / (s1.batches - s0.batches) };
+  return { precision: ready.precision, overrides: overrides ?? null, visits, positions: timed, avgBatch: (s1.rows - s0.rows) / (s1.batches - s0.batches) };
 }
 
 export function takeLogs() {
   return logs.splice(0);
 }
 
-window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, nnOutputs, terminateLatency, apiSmoke, kernelCacheParity, review, benchForward, benchPositions, takeLogs };
+window.kgwTests = { runGolden, loadModel, tryLoadModel, slowCpuSearch, storageAndLimits, throughput, nnOutputs, terminateLatency, apiSmoke, kernelCacheParity, review, benchForward, benchPosition, takeLogs };
 window.kgwReady = true;

@@ -89,7 +89,7 @@ bench-analysis engine net servers="4" threads="256" *args="":
 bench-all *nets="":
     tools/bench-all.sh {{nets}}
 
-# The browser rows of README "Benchmarks": forward passes at batch 1-64 (f32, f16) and positions/s of game reviews for
+# The browser rows of README "Benchmarks": forward passes at batch 1-64 (f32, f16) and the time to analyse a position for
 # every net of the build. Needs `just web-build -F net-b10c384h6nbttflrs,net-b10c512h8nbt3tflrs-fson-silu-rsnh,net-tf3-b11c768`.
 bench-web-all *args="":
     node {{web_pkg}}/test/run.mjs --only bench {{args}}
