@@ -42,14 +42,15 @@ impl Backend {
 /// - No log directory (`logDir=` removes the key; there are no files, log lines go to the host's log callback).
 /// - NN cache 2^16 entries (upstream 2^23: ~3 KB per filled entry with ownership, so up to ~190 MB here).
 /// - WebGPU: one forward pass per batch costs a ~20 ms dispatch + readback floor, so the search must batch:
-///   16 search threads per analysis thread (upstream's value), 2 analysis threads, batches of up to 32.
+///   16 search threads per analysis thread (upstream's value), 4 analysis threads, batches of up to 32.
+///   Four keeps batches near 20 rows on reviews (2 threads: ~10); eight saturates the single wasm thread.
 /// - CPU: the wasm flex backend is single-threaded and gains nothing from batching (~11 evals/s at batch
 ///   1 or 8 for b10c128, docs/M0-report.md), so one search thread (no virtual-loss dilution) and one
 ///   analysis thread; a terminate then waits for at most one ~90 ms forward pass.
 pub fn browser_defaults(backend: Backend) -> &'static str {
   match backend {
     Backend::WebGpu => {
-      "logDir=, numAnalysisThreads=2, numSearchThreadsPerAnalysisThread=16, nnMaxBatchSize=32, nnCacheSizePowerOfTwo=16, nnMutexPoolSizePowerOfTwo=14"
+      "logDir=, numAnalysisThreads=4, numSearchThreadsPerAnalysisThread=16, nnMaxBatchSize=32, nnCacheSizePowerOfTwo=16, nnMutexPoolSizePowerOfTwo=14"
     }
     Backend::Cpu => {
       "logDir=, numAnalysisThreads=1, numSearchThreadsPerAnalysisThread=1, nnMaxBatchSize=4, nnCacheSizePowerOfTwo=16, nnMutexPoolSizePowerOfTwo=12"

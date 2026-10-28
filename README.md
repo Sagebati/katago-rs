@@ -150,7 +150,7 @@ fixtures/bench-games (katago-ws's bench set) are cycled, with the NN cache clear
   60 s of warm-up and 120 s windows, except KataGo on AMD's OpenCL for b10c512h8nbt3tflrs and tf3: 240 s and 240 s
   (its first response there takes up to two minutes).
 - Browser: `KataGoClient.reviewGame` in Chromium, one game after another for 2 minutes, f16. "default" is the
-  engine's default config (2 analysis threads x 16 search threads, batch 32), "64 x 1" overrides it to 64 analysis
+  engine's default config (4 analysis threads x 16 search threads, batch 32), "64 x 1" overrides it to 64 analysis
   threads of one search thread and batch 64 (`numAnalysisThreads=64, numSearchThreadsPerAnalysisThread=1,
   nnMaxBatchSize=64`), which fills the batches (47-51 rows on average against 11-12).
 
