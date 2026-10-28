@@ -149,12 +149,15 @@ fixtures/bench-games (katago-ws's bench set) are cycled, with the NN cache clear
   b10c128). katago-rs in f16, built as katago-ws's images build it (Vulkan with burn's autotune, ROCm without).
   60 s of warm-up and 120 s windows, except KataGo on AMD's OpenCL for b10c512h8nbt3tflrs and tf3: 240 s and 240 s
   (its first response there takes up to two minutes).
-- Browser: `KataGoClient.reviewGame` in Chromium, one game after another for 2 minutes, f16. "default" is the
-  engine's default config (2 analysis threads x 16 search threads, batch 32), "64 x 1" overrides it to 64 analysis
+- Browser: `KataGoClient.reviewGame` in Chromium, one game after another for 2 minutes, f16. The browser columns are
+  from the bench that measured whole-game reviews (`benchPositions`), which has since been replaced by the
+  per-position timing below, so `just bench-web-all` no longer reproduces them. "2 x 16" was the default then
+  (2 analysis threads x 16 search threads, batch 32) and is now 4 analysis threads; on the same 692 positions that
+  went from 14.1 to 19.9 positions/s (average batch 10.5 to 20.5). "64 x 1" overrides the engine to 64 analysis
   threads of one search thread and batch 64 (`numAnalysisThreads=64, numSearchThreadsPerAnalysisThread=1,
   nnMaxBatchSize=64`), which fills the batches (47-51 rows on average against 11-12).
 
-| Net | KataGo, Mesa rusticl | KataGo, AMD OpenCL | katago-rs, Vulkan | katago-rs, ROCm | browser, default | browser, 64 x 1 |
+| Net | KataGo, Mesa rusticl | KataGo, AMD OpenCL | katago-rs, Vulkan | katago-rs, ROCm | browser, 2 x 16 | browser, 64 x 1 |
 |---|---:|---:|---:|---:|---:|---:|
 | b10c128 | 44.4 / 43.9 | **101.7 / 100.7** | 75.1 / 72.5 | 69.4 / 68.0 | 16.0 | 27.7 |
 | b18c384nbt | 6.36 / 6.71 | 5.65 / 5.48 | **14.2 / 14.2** | 12.2 / 11.6 | 5.80 | 8.79 |
@@ -172,6 +175,30 @@ fixtures/bench-games (katago-ws's bench set) are cycled, with the NN cache clear
   tf3 games faster than native KataGo (1.82 against 1.25 positions/s), and reaches 62-75% of native katago-rs on
   Vulkan with the GPU-bound nets.
 - The analysis quality matches upstream's run-to-run noise (docs/M9-report.md).
+
+### One position in the browser (ms)
+
+The time to analyse one position to 200 visits, the setting a drill's check uses on WebGPU, with 8-move lines:
+`KataGoClient.analyze` on the middle move of each of the 17 games of fixtures/bench-games (the first is a warm-up),
+b10c128, f16, default config (4 analysis threads), Chromium, WebGPU. Run with
+`just bench-web-all --bench-nets g170e-b10c128 --bench-precisions f16 --bench-batches 32 --bench-visits 192,200,208,224`.
+
+| Visits asked | Visits reached | Mean | Median | Min-max | Average batch |
+|---:|---:|---:|---:|---:|---:|
+| 192 | 206-207 | 182 ms | 172 ms | 150-241 ms | 13.2 |
+| 200 | 215 | 174 ms | 167 ms | 149-215 ms | 13.2 |
+| 208 | 222-223 | 176 ms | 171 ms | 152-222 ms | 13.2 |
+| 224 | 239 | 182 ms | 173 ms | 155-237 ms | 13.2 |
+
+Two runs at 200 visits gave 200 ms and 174 ms means (195 and 167 ms medians), so treat about 170-200 ms as the figure.
+
+- One position fills the NN batches only to about 13-14 rows, not 32: a query has 16 search threads and each holds at
+  most one leaf waiting on the network. `nnMaxBatchSize` therefore only matters when several queries run together
+  (reviews, or drills in parallel).
+- A search overshoots its visit cap by about 15 (the leaves in flight). Time follows the number of network rounds, so
+  200 and 208 visits cost about the same.
+- One query uses one analysis thread, so the 4-thread default makes no difference to a single position (not measured
+  at 2 threads). The native engines are not measured on this bench.
 
 ### One search in the browser (visits/s)
 
