@@ -34,6 +34,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const pkg = resolve(here, "..");
 const root = resolve(pkg, "../..");
 const PLAYWRIGHT = process.env.PLAYWRIGHT ?? fileURLToPath(new URL("../../../../baduk_review/sai-frontend/node_modules/playwright", import.meta.url));
+const SABAKI_SGF = process.env.SABAKI_SGF ?? fileURLToPath(new URL("../../../../baduk_review/sai-frontend/node_modules/@sabaki/sgf/src/main.js", import.meta.url));
 const CHROMIUM = process.env.CHROMIUM ?? "/usr/bin/chromium";
 const { chromium } = await import(pathToFileURL(join(PLAYWRIGHT, "index.mjs")).href);
 
@@ -640,9 +641,9 @@ if (only.includes("human")) {
 if (only.includes("bench")) {
   // README "Benchmarks", `just bench-web-all`: for every net of the build (or --bench-nets), the forward passes at
   // fixed batch sizes in each precision (benchForward), then the time to analyse one position of each of the native
-  // bench's games (fixtures/bench-games: the middle move of its main line; benchPosition; the client's `auto`
-  // precision) at each of --bench-visits, under each engine config of --bench-overrides (`;`-separated; `default` is
-  // the browser's own, 4 analysis threads x 16 search threads).
+  // bench's games (fixtures/bench-games: the position after the middle move of its main line, with its handicap
+  // stones; benchPosition; the client's `auto` precision) at each of --bench-visits, under each engine config of
+  // --bench-overrides (`;`-separated; `default` is the browser's own, 4 analysis threads x 16 search threads).
   const models = JSON.parse(readFileSync(join(pkg, "dist/models/models.json"), "utf8")).models.map((m) => m.network);
   const nets = opt("bench-nets", "g170e-b10c128,kata1-b18c384nbt,b10c384h6nbttflrs,b10c512h8nbt3tflrs-fson-silu-rsnh,kata1-tf3-b11c768").split(",");
   const precisions = opt("bench-precisions", "f32,f16").split(",");
@@ -665,34 +666,28 @@ if (only.includes("bench")) {
   const forwardGames = base.flatMap((g) => [...Array(8).keys()].map((s) => g.map(([c, m]) => [c, sym(s, m)])));
   const benchDir = join(root, "fixtures/bench-games");
   const sgfs = readdirSync(benchDir).filter((f) => f.endsWith(".sgf")).sort().map((f) => readFileSync(join(benchDir, f), "utf8"));
-  // The main line of an SGF (the first variation at every fork, the one a review reads), as [color, GTP] moves.
-  const mainLine = (sgf) => {
+  // The main line of an SGF (the first variation at every fork, the one a review reads): the setup stones of its root
+  // and its moves, as [color, GTP]. Setup stones below the root would change the position partway through the line,
+  // which a position cut from the root cannot show, so they throw.
+  const sgfLib = (await import(pathToFileURL(SABAKI_SGF).href)).default;
+  const vertexGtp = ([x, y]) => (x < 0 || x > 18 || y < 0 || y > 18 ? "pass" : `${cols[x]}${19 - y}`);
+  const mainLine = (text) => {
+    const setup = [];
     const moves = [];
-    let depth = 0;
-    let skipDepth = null; // the depth of a variation being skipped: a later sibling of one already taken
-    const closedChild = []; // closedChild[d]: a child variation of the group at depth d has been taken and closed
-    for (const m of sgf.matchAll(/\(|\)|;\s*([BW])\[([a-z]{0,2})\]/g)) {
-      if (m[0] === "(") {
-        depth += 1;
-        if (skipDepth !== null) continue;
-        if (closedChild[depth - 1]) {
-          skipDepth = depth;
-          continue;
-        }
-        closedChild[depth] = false;
-      } else if (m[0] === ")") {
-        if (skipDepth === null) closedChild[depth - 1] = true;
-        else if (depth === skipDepth) skipDepth = null;
-        depth -= 1;
-      } else if (skipDepth === null) {
-        const pass = m[2] === "" || m[2] === "tt";
-        moves.push([m[1], pass ? "pass" : `${cols[m[2].charCodeAt(0) - 97]}${19 - (m[2].charCodeAt(1) - 97)}`]);
-      }
+    const [root] = sgfLib.parse(text);
+    for (let node = root; node; node = node.children[0]) {
+      const { AB, AW, B, W } = node.data;
+      if (node !== root && (AB || AW)) throw new Error("setup stones below the root of an SGF");
+      for (const v of (AB ?? []).flatMap(sgfLib.parseCompressedVertices)) setup.push(["B", vertexGtp(v)]);
+      for (const v of (AW ?? []).flatMap(sgfLib.parseCompressedVertices)) setup.push(["W", vertexGtp(v)]);
+      for (const p of B ?? []) moves.push(["B", vertexGtp(sgfLib.parseVertex(p))]);
+      for (const p of W ?? []) moves.push(["W", vertexGtp(sgfLib.parseVertex(p))]);
     }
-    return moves;
+    return { setup, moves };
   };
-  // The positions of benchPosition: each game's main line cut at its middle move (where a drill would be).
-  const midGames = sgfs.map((sgf) => mainLine(sgf)).map((moves) => moves.slice(0, Math.floor(moves.length / 2)));
+  // The positions of benchPosition: each game's main line cut at its middle move (where a drill would be), from its
+  // handicap stones.
+  const midGames = sgfs.map(mainLine).map(({ setup, moves }) => ({ initialStones: setup, moves: moves.slice(0, Math.floor(moves.length / 2)) }));
   results.bench = [];
   const { context, page } = await openPersistent();
   try {
@@ -711,13 +706,13 @@ if (only.includes("bench")) {
         }
       }
       for (const o of benchOverrides) {
-        for (const visits of visitCounts) {
-          const one = await call(page, "benchPosition", { network, precision: "auto", overrides: o === "default" ? undefined : o, positions: midGames, visits });
-          results.bench.push({ network, kind: "position", ...one });
-          const times = one.positions.map((p) => p.ms).sort((a, b) => a - b);
+        const one = await call(page, "benchPosition", { network, precision: "auto", overrides: o === "default" ? undefined : o, positions: midGames, visitCounts });
+        for (const run of one.runs) {
+          results.bench.push({ network, kind: "position", precision: one.precision, overrides: one.overrides, visits: run.visits, avgBatch: one.avgBatch, positions: run.positions });
+          const times = run.positions.map((p) => p.ms).sort((a, b) => a - b);
           const meanMs = times.reduce((sum, x) => sum + x, 0) / times.length;
-          const reached = one.positions.map((p) => p.visits);
-          console.log(`  bench ${network} ${one.precision} one position at ${visits} visits: mean ${meanMs.toFixed(0)} ms, median ${times[Math.floor(times.length / 2)].toFixed(0)} ms, min ${times[0].toFixed(0)} ms, max ${times.at(-1).toFixed(0)} ms over ${times.length} positions (${Math.min(...reached)}-${Math.max(...reached)} visits, avg batch ${one.avgBatch.toFixed(1)}), ${one.overrides ?? "default config"}`);
+          const reached = run.positions.map((p) => p.visits);
+          console.log(`  bench ${network} ${one.precision} one position at ${run.visits} visits: mean ${meanMs.toFixed(0)} ms, median ${times[Math.floor(times.length / 2)].toFixed(0)} ms, min ${times[0].toFixed(0)} ms, max ${times.at(-1).toFixed(0)} ms over ${times.length} positions (${Math.min(...reached)}-${Math.max(...reached)} visits, avg batch ${one.avgBatch.toFixed(1)}), ${one.overrides ?? "default config"}`);
         }
       }
     }

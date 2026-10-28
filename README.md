@@ -185,12 +185,12 @@ b10c128, f16, default config (4 analysis threads), Chromium, WebGPU. Run with
 
 | Visits asked | Visits reached | Mean | Median | Min-max | Average batch |
 |---:|---:|---:|---:|---:|---:|
-| 192 | 206-207 | 176 ms | 170 ms | 146-214 ms | 13.3 |
-| 200 | 214-215 | 190 ms | 182 ms | 162-245 ms | 13.1 |
-| 208 | 223 | 192 ms | 186 ms | 164-255 ms | 13.3 |
-| 224 | 239 | 195 ms | 188 ms | 167-266 ms | 14.1 |
+| 192 | 206-207 | 182 ms | 172 ms | 150-241 ms | 13.2 |
+| 200 | 215 | 174 ms | 167 ms | 149-215 ms | 13.2 |
+| 208 | 222-223 | 176 ms | 171 ms | 152-222 ms | 13.2 |
+| 224 | 239 | 182 ms | 173 ms | 155-237 ms | 13.2 |
 
-A repeat at 200 visits gave 211 ms mean (198 ms median), so treat about 190-210 ms as the figure.
+Two runs at 200 visits gave 200 ms and 174 ms means (195 and 167 ms medians), so treat about 170-200 ms as the figure.
 
 - One position fills the NN batches only to about 13-14 rows, not 32: a query has 16 search threads and each holds at
   most one leaf waiting on the network. `nnMaxBatchSize` therefore only matters when several queries run together

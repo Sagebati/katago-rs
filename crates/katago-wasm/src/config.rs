@@ -43,7 +43,7 @@ impl Backend {
 /// - NN cache 2^16 entries (upstream 2^23: ~3 KB per filled entry with ownership, so up to ~190 MB here).
 /// - WebGPU: one forward pass per batch costs a ~20 ms dispatch + readback floor, so the search must batch:
 ///   16 search threads per analysis thread (upstream's value), 4 analysis threads, batches of up to 32.
-///   Four keeps batches near 20 rows on reviews (2 threads: ~10); eight saturates the single wasm thread.
+///   A query puts at most its search threads' rows in a batch, so the analysis threads are what fill one.
 /// - CPU: the wasm flex backend is single-threaded and gains nothing from batching (~11 evals/s at batch
 ///   1 or 8 for b10c128, docs/M0-report.md), so one search thread (no virtual-loss dilution) and one
 ///   analysis thread; a terminate then waits for at most one ~90 ms forward pass.
@@ -87,6 +87,7 @@ mod tests {
   fn defaults_per_backend() {
     let (mut cfg, applied) = build_config(None, Backend::WebGpu, &[]).unwrap();
     assert_eq!(applied.len(), 1);
+    assert_eq!(cfg.get_int("numAnalysisThreads", 1, 1024).unwrap(), 4);
     assert_eq!(cfg.get_int("numSearchThreadsPerAnalysisThread", 1, 1024).unwrap(), 16);
     assert_eq!(cfg.get_int("nnMaxBatchSize", 1, 1024).unwrap(), 32);
     assert_eq!(cfg.get_int("nnCacheSizePowerOfTwo", 0, 48).unwrap(), 16);

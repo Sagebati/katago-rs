@@ -286,24 +286,32 @@ export async function benchForward({ network, precision, batch, games }) {
   return { precision: ready.precision, batch, rows, batches, avgBatch: rows / batches, evalsPerS: (rows * 1000) / (s1.busyMs - s0.busyMs), wallEvalsPerS: (rows * 1000) / ms };
 }
 
-/** Time to analyse one position to `visits` (KataGoClient.analyze with the drill check's query: the 8-move lines
- * of liveAnalysis.check), one engine. `positions` are move lists from the start of the board; the first is a
- * warm-up and is not timed. Per timed position: its wall ms (to the final answer) and the visits it reached.
- * `avgBatch` is the NN batch size over all the positions (the warm-up included), which one query fills only
- * up to its search threads. */
-export async function benchPosition({ network, precision, overrides, positions, visits }) {
+/** Time to analyse one position to each of `visitCounts` (KataGoClient.analyze with the drill check's query: the
+ * 8-move lines of liveAnalysis.check), on one engine. A position is `{initialStones, moves}`: the ColoredMoves from
+ * the start of the board, handicap stones first. The first position is a warm-up and is not timed; each timed
+ * position runs with the NN cache cleared, so the positions before it do not help it. Per visit count: the wall ms
+ * of each position (to the final answer) and the visits it reached. `avgBatch` is the NN batch size over all the
+ * analyses (the warm-up included), which one query fills only up to its search threads. */
+export async function benchPosition({ network, precision, overrides, positions, visitCounts }) {
+  if (positions.length < 2) throw new Error("benchPosition needs a warm-up position and at least one timed one");
   const { c, ready } = await client({ backend: "webgpu", network, precision, overrides });
-  const timed = [];
   const s0 = await c.stats();
-  for (const [i, moves] of positions.entries()) {
-    const t0 = performance.now();
-    const [final] = await c.analyze({ ...EMPTY_19, moves, maxVisits: visits, analysisPVLen: 8 }).done;
-    const ms = performance.now() - t0;
-    if (i > 0) timed.push({ ms, visits: final.rootInfo.visits });
+  const analyze = ({ initialStones, moves }, visits) => c.analyze({ ...EMPTY_19, initialStones, moves, maxVisits: visits, analysisPVLen: 8 }).done;
+  await analyze(positions[0], visitCounts[0]);
+  const runs = [];
+  for (const visits of visitCounts) {
+    const timed = [];
+    for (const position of positions) {
+      await c.clearCache();
+      const t0 = performance.now();
+      const [final] = await analyze(position, visits);
+      timed.push({ ms: performance.now() - t0, visits: final.rootInfo.visits });
+    }
+    runs.push({ visits, positions: timed });
   }
   const s1 = await c.stats();
   c.dispose();
-  return { precision: ready.precision, overrides: overrides ?? null, visits, positions: timed, avgBatch: (s1.rows - s0.rows) / (s1.batches - s0.batches) };
+  return { precision: ready.precision, overrides: overrides ?? null, runs, avgBatch: (s1.rows - s0.rows) / (s1.batches - s0.batches) };
 }
 
 export function takeLogs() {
