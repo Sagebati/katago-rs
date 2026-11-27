@@ -103,4 +103,11 @@ summation order) and stay in the WebGPU tier.
 
 - `nn_parity` GPU tests as above: 12/12, master and branch.
 - `cargo check -p katago-wasm --target wasm32-unknown-unknown`; `cargo fmt --all --check`.
-- Browser: see the PR (the WGSL path is not exercised natively: cubecl-wgpu compiles to SPIR-V on Vulkan).
+- Browser (Chromium headless, WebGPU; the WGSL path, which native Vulkan does not exercise: cubecl-wgpu compiles to
+  SPIR-V there): `just web-test --only goldens,throughput --backends webgpu` 9/9 (b10c128 100-visit searches
+  800-980 visits/s); `just web-test-b18` 23/25: f16 vs f32 within upstream's FP16 error (winrate 8.4e-4, lead
+  1.5e-2, ownership 6.2e-3, policy 5.0e-3), 400-visit f16 searches 481-645 visits/s (M9: 461-550). The two failures
+  are one position (rect2, line 5) of `b18_symmetry` and `b18_symmetry_with_pruning`: an ownership of 0.234375 vs the
+  golden's 0.234373, 2e-6 apart (tolerance 1e-4), reported as DIVERGED because test/compare.mjs `sameFloatClass` takes
+  a 6-digit value that is exactly an f32 (0.234375 = 15/64) for a different number format. A comparator false
+  positive; the harness is unchanged here.
