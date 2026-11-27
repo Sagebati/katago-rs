@@ -44,8 +44,8 @@ thread_local! {
     static FILTERS: RefCell<Vec<DeviceFilters>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Run the 3x3 convs in f16 from now on, by default (the device must support f16; filters already built keep their
-/// dtype, so call this before the first forward pass). A network with its own precision builds its forward pass
+/// Run the 3x3 and 1x1 convs in f16 from now on, by default (the device must support f16; filters already built keep
+/// their dtype, so call this before the first forward pass). A network with its own precision builds its forward pass
 /// inside [`with_half`] instead.
 pub fn set_half(half: bool) {
   // (filters are cached per precision, so switching never reuses the other precision's)
@@ -77,17 +77,31 @@ pub fn conv1x1_fits(_oc: usize, ic: usize) -> bool {
   ic.is_multiple_of(GEMM_K)
 }
 
+/// The cached `[ic, oc]` transposed weight of a 1x1 conv: in f16 when the convs run in f16 ([`half`]) and `oc` is a
+/// multiple of 4 (the packed-f16 GEMM's output vectors), else f32.
+fn conv1x1_filter(conv: &Conv2d) -> Tensor<1> {
+  let [oc, ic, _, _] = conv.weight.dims();
+  cached_filter(conv, |w| {
+    let wt = w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]);
+    if half() && oc.is_multiple_of(4) {
+      wt.cast(burn::tensor::DType::F16)
+    } else {
+      wt
+    }
+  })
+}
+
 /// `conv2d_same` for a 1x1 kernel with [`conv1x1_fits`] on a cubecl device.
 pub fn conv1x1(conv: &Conv2d, x: Tensor<4>) -> Tensor<4> {
-  let [oc, ic, _, _] = conv.weight.dims();
-  let wt = cached_filter(conv, |w| w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]));
+  let [oc, _, _, _] = conv.weight.dims();
+  let wt = conv1x1_filter(conv);
   Tensor::<4>::from_dispatch(Dispatch::conv1x1(x.into_dispatch(), wt.into_dispatch(), oc))
 }
 
 /// `conv2d_bn_act` (conv.rs) for a 1x1 kernel with [`conv1x1_fits`] on a cubecl device.
 pub fn conv1x1_bn_act(conv: &Conv2d, x: Tensor<4>, scale: Tensor<4>, bias: Tensor<4>, mask: Tensor<4>, relu: bool, has_scale: bool) -> Tensor<4> {
-  let [oc, ic, _, _] = conv.weight.dims();
-  let wt = cached_filter(conv, |w| w.reshape([oc, ic]).swap_dims(0, 1).reshape([ic * oc]));
+  let [oc, _, _, _] = conv.weight.dims();
+  let wt = conv1x1_filter(conv);
   let (scale, bias, mask) = prologue_args(scale, bias, mask);
   Tensor::<4>::from_dispatch(Dispatch::conv1x1_bn_act(
     x.into_dispatch(),
@@ -154,8 +168,8 @@ pub fn default_half() -> bool {
   HALF.load(Ordering::Relaxed)
 }
 
-/// Runs `f` (a network's forward pass) with its 3x3 convs in f16 or not. The precision is read while the graph is
-/// built, which happens inside `f` on this thread (the kernels may run later on another), so each network of a
+/// Runs `f` (a network's forward pass) with its 3x3 and 1x1 convs in f16 or not. The precision is read while the graph
+/// is built, which happens inside `f` on this thread (the kernels may run later on another), so each network of a
 /// process can have its own.
 pub fn with_half<R>(half: bool, f: impl FnOnce() -> R) -> R {
   struct Restore(Option<bool>);

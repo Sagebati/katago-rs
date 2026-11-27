@@ -68,6 +68,15 @@ pub fn transform_filter_3x3(weights: &[f32], oc: usize, ic: usize) -> Vec<f32> {
   out
 }
 
+/// mish(a) = a * tanh(softplus(a)), with tanh(log1p(e^a)) in closed form: `a * n / (n + 2)`, `n = e^a (e^a + 2)` (one
+/// exp and one division instead of exp, log1p and tanh); `a` above 20, burn's softplus threshold (tanh is 1 there).
+#[cube]
+fn mish<F: Float>(a: F) -> F {
+  let e = F::exp(a);
+  let n = e * (e + F::new(2.0f32));
+  if a > F::new(20.0f32) { a } else { a * n / (n + F::new(2.0f32)) }
+}
+
 /// One thread per (tile, input channel), in `F`, storing in `S` (f16 halves the transformed buffer): load the 6x6
 /// window (zero outside the board), apply B^T d B, write the
 /// 36 values. With `bn_act`, the window first goes through `mish(x * scale + bias) * mask` as upstream's
@@ -93,20 +102,51 @@ pub(crate) fn wino_transform<F: Float, S: Float>(
   #[comptime] bn_act: bool,
   #[comptime] relu: bool,
   #[comptime] has_scale: bool,
+  #[comptime] planes: usize,
+  #[comptime] plane_len: usize,
 ) {
+  // The grid is exact (nt_pad / 64 x ic_pad cubes of 64): no thread returns before the barrier.
   let ntxty = ABSOLUTE_POS_X;
   let ic = ABSOLUTE_POS_Y;
-  if ntxty >= nt_pad || ic >= ic_pad {
-    terminate!();
-  }
+  let tiles = tiles_x * tiles_y;
   let tile_x = ntxty % tiles_x;
   let rest = ntxty / tiles_x;
   let tile_y = rest % tiles_y;
   let n = rest / tiles_y;
-  let xy_size = x_size * y_size;
-  let live = n < n_size && ic < ic_size;
-  let nic = (n * ic_size + ic) as usize;
 
+  // The cube's 64 tiles lie on at most `planes` boards of this channel: load those in the batch into shared memory
+  // with coalesced reads and the prologue applied once per point (the 6x6 windows overlap, each point is read by up
+  // to 4 of them). Padded tiles and channels read none of it: they are 0.
+  let n_first = CUBE_POS_X * 64 / tiles;
+  let n_end = u32::min((CUBE_POS_X * 64 + 63) / tiles + 1, n_size);
+  let mut board = Shared::<[F]>::new_slice(planes * plane_len);
+  let live = n < n_size && ic < ic_size;
+  let loaded = if ic < ic_size && n_end > n_first {
+    (n_end - n_first) as usize * plane_len
+  } else {
+    0usize
+  };
+  for i in range_stepped(UNIT_POS_X as usize, loaded, 64usize) {
+    let pn = n_first + (i / plane_len) as u32;
+    let xy = i % plane_len;
+    let v = input[(pn * ic_size + ic) as usize * plane_len + xy];
+    let mut value = v;
+    if comptime![bn_act] {
+      let mut a = v + bias[ic as usize];
+      if comptime![has_scale] {
+        a = v * scale[ic as usize] + bias[ic as usize];
+      }
+      if comptime![relu] {
+        value = F::max(a, F::new(0.0f32)) * mask[pn as usize * plane_len + xy];
+      } else {
+        value = mish::<F>(a) * mask[pn as usize * plane_len + xy];
+      }
+    }
+    board[i] = value;
+  }
+  sync_cube();
+
+  let base = (n - n_first) as usize * plane_len;
   let mut w = Array::<F>::new(36usize);
   #[unroll]
   for sub_y in 0..6u32 {
@@ -117,23 +157,7 @@ pub(crate) fn wino_transform<F: Float, S: Float>(
       let x = (tile_x * 4 + sub_x) as i32 - 1;
       let mut value = F::new(0.0f32);
       if live && y >= 0 && y < y_size as i32 && x >= 0 && x < x_size as i32 {
-        let xy = (y as u32 * x_size + x as u32) as usize;
-        let v = input[nic * xy_size as usize + xy];
-        if comptime![bn_act] {
-          let mut a = v + bias[ic as usize];
-          if comptime![has_scale] {
-            a = v * scale[ic as usize] + bias[ic as usize];
-          }
-          if comptime![relu] {
-            value = F::max(a, F::new(0.0f32)) * mask[(n * xy_size) as usize + xy];
-          } else {
-            // burn's softplus: identity above 20 (exclusive).
-            let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
-            value = a * F::tanh(sp) * mask[(n * xy_size) as usize + xy];
-          }
-        } else {
-          value = v;
-        }
+        value = board[base + (y as u32 * x_size + x as u32) as usize];
       }
       w[(sub_y * 6 + sub_x) as usize] = value;
     }
@@ -489,8 +513,7 @@ pub(crate) fn conv1x1_gemm<F: Float>(
           if comptime![relu] {
             v = F::max(a, F::new(0.0f32)) * mask[bt * m_size + m0 + mm];
           } else {
-            let sp = if a > F::new(20.0f32) { a } else { F::log1p(F::exp(a)) };
-            v = a * F::tanh(sp) * mask[bt * m_size + m0 + mm];
+            v = mish::<F>(a) * mask[bt * m_size + m0 + mm];
           }
         }
       }
@@ -529,6 +552,113 @@ pub(crate) fn conv1x1_gemm<F: Float>(
       let n = n0 + ty + 16 * j;
       if m < m_size && n < n_size {
         out[c_base + n * m_size + m] = acc[j * 4 + i];
+      }
+    }
+  }
+}
+
+/// [`conv1x1_gemm`] with packed f16 math (`S` f16), `wino_gemm_v`'s scheme: the shared tiles in 4-wide vectors (A along
+/// the board points, B along the output channels, `n_size` a multiple of 4), each thread 4 points x 4 channels from
+/// two vector reads per input channel, each 16-channel step summed in `S` and added into f32 accumulators. `x`, the
+/// prologue and `out` stay in `F`.
+#[cube(launch)]
+pub(crate) fn conv1x1_gemm_v<F: Float, S: Float, N: Size>(
+  x: &[F],
+  wt: &[Vector<S, N>],
+  scale: &[F],
+  bias: &[F],
+  mask: &[F],
+  out: &mut [F],
+  m_size: u32,
+  n_size: u32,
+  k_size: u32,
+  #[comptime] bn_act: bool,
+  #[comptime] relu: bool,
+  #[comptime] has_scale: bool,
+) {
+  let bt = CUBE_POS_Z as usize;
+  let m0 = CUBE_POS_X as usize * 64;
+  let nv0 = CUBE_POS_Y as usize * 16;
+  let tx = UNIT_POS_X as usize;
+  let ty = UNIT_POS_Y as usize;
+  let tid = ty * 16 + tx;
+  let m_size = m_size as usize;
+  let n_v = n_size as usize / 4;
+  let k_size = k_size as usize;
+
+  let mut a_s = Shared::<[Vector<S, N>]>::new_slice(256usize);
+  let mut b_s = Shared::<[Vector<S, N>]>::new_slice(256usize);
+  let mut acc = Array::<Vector<f32, N>>::new(4usize);
+  let mut part = Array::<Vector<S, N>>::new(4usize);
+  #[unroll]
+  for c in 0..4usize {
+    acc[c] = Vector::new(0.0f32);
+  }
+  // This thread's tile elements: input channel kk, points m0 + 4 * lane .. + 4 of A and channel vector lane of B.
+  let kk = tid / 16;
+  let lane = tid % 16;
+  let a_base = bt * k_size * m_size;
+
+  for k0 in range_stepped(0usize, k_size, 16usize) {
+    let k = k0 + kk;
+    let mut av = Vector::<S, N>::new(S::new(0.0f32));
+    #[unroll]
+    for c in 0..4usize {
+      let m = m0 + lane * 4 + c;
+      let mut v = F::new(0.0f32);
+      if m < m_size {
+        v = x[a_base + k * m_size + m];
+        if comptime![bn_act] {
+          let mut a = v + bias[k];
+          if comptime![has_scale] {
+            a = v * scale[k] + bias[k];
+          }
+          if comptime![relu] {
+            v = F::max(a, F::new(0.0f32)) * mask[bt * m_size + m];
+          } else {
+            v = mish::<F>(a) * mask[bt * m_size + m];
+          }
+        }
+      }
+      av.insert(c, S::cast_from(v));
+    }
+    a_s[tid] = av;
+    let mut bv = Vector::<S, N>::new(S::new(0.0f32));
+    if nv0 + lane < n_v {
+      bv = wt[k * n_v + nv0 + lane];
+    }
+    b_s[tid] = bv;
+    sync_cube();
+    #[unroll]
+    for c in 0..4usize {
+      part[c] = Vector::new(S::new(0.0f32));
+    }
+    #[unroll]
+    for q in 0..16usize {
+      let a = a_s[q * 16 + tx];
+      let b = b_s[q * 16 + ty];
+      #[unroll]
+      for c in 0..4usize {
+        part[c] += Vector::new(a.extract(c)) * b;
+      }
+    }
+    #[unroll]
+    for c in 0..4usize {
+      acc[c] += Vector::cast_from(part[c]);
+    }
+    sync_cube();
+  }
+
+  let c_base = bt * n_size as usize * m_size;
+  if nv0 + ty < n_v {
+    #[unroll]
+    for c in 0..4usize {
+      let m = m0 + tx * 4 + c;
+      if m < m_size {
+        #[unroll]
+        for j in 0..4usize {
+          out[c_base + ((nv0 + ty) * 4 + j) * m_size + m] = F::cast_from(acc[c].extract(j));
+        }
       }
     }
   }

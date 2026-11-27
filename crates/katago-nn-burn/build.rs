@@ -599,7 +599,25 @@ fn fuse_bn_act(net: &str) {
   std::fs::write(&path, out).unwrap();
 }
 
-/// Routes the transformer blocks of the generated code to `crate::tf` (no-op on a convolutional net): every
+/// Routes every `Linear` field's forward (`name: Linear,` in a module struct) to `crate::tf::linear`. Returns the code
+/// and the number of calls routed.
+fn route_linears(code: &str) -> (String, usize) {
+  let fields: std::collections::BTreeSet<String> = regex::Regex::new(r"(?m)^\s*(?:pub )?(\w+): Linear,")
+    .unwrap()
+    .captures_iter(code)
+    .map(|c| c[1].to_string())
+    .collect();
+  let mut out = code.to_string();
+  let mut linears = 0;
+  for f in &fields {
+    let call = regex::Regex::new(&format!(r"self\.{f}\s*\.forward\(")).unwrap();
+    linears += call.find_iter(&out).count();
+    out = call.replace_all(&out, format!("crate::tf::linear(&self.{f}, ").as_str()).into_owned();
+  }
+  (out, linears)
+}
+
+/// Routes the transformer blocks of the generated code to `crate::tf` (on a convolutional net only its linears): every
 /// `Linear` field's forward, burn's attention call, and each per-token RMSNorm chain (bin2onnx
 /// `transformer_rmsnorm`: square, sum over the channels, / C, + eps, sqrt, 1 / that, times x, gamma and the token
 /// mask), which becomes one `crate::tf::rms_norm` when its intermediates have no other use.
@@ -609,6 +627,8 @@ fn fuse_tf(net: &str) {
     .join(format!("{net}.rs"));
   let code = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
   if !code.contains("burn::tensor::module::attention(") {
+    let (out, linears) = route_linears(&code);
+    std::fs::write(&path, format!("// build.rs fuse_tf: {linears} linears routed to crate::tf.\n{out}")).unwrap();
     return;
   }
   // A constant the chain loads on its first use (kept: later chains use it too).
@@ -688,18 +708,8 @@ fn fuse_tf(net: &str) {
   for (start, end, text) in edits {
     out.replace_range(start..end, &text);
   }
-  // Linear fields (`name: Linear,` in the module struct) and the attention call.
-  let fields: std::collections::BTreeSet<String> = regex::Regex::new(r"(?m)^\s*(?:pub )?(\w+): Linear,")
-    .unwrap()
-    .captures_iter(&out)
-    .map(|c| c[1].to_string())
-    .collect();
-  let mut linears = 0;
-  for f in &fields {
-    let call = regex::Regex::new(&format!(r"self\.{f}\s*\.forward\(")).unwrap();
-    linears += call.find_iter(&out).count();
-    out = call.replace_all(&out, format!("crate::tf::linear(&self.{f}, ").as_str()).into_owned();
-  }
+  let (routed, linears) = route_linears(&out);
+  out = routed;
   // burn-onnx's attention block zeroes the query rows whose key bias is -inf everywhere (`hidden_rows`, a max over the
   // bias, then a mask_fill): crate::tf::attention_masked does both, inside the kernel on GPUs.
   let hidden = regex::Regex::new(concat!(

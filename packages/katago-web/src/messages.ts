@@ -54,9 +54,9 @@ export interface EngineInitOptions {
   cacheKernels?: boolean;
   /** URL of `katago_wasm_bg.wasm` (default: next to the worker's wasm-bindgen glue). */
   wasmUrl?: string;
-  /** WebGPU: precision of the 3x3 convolutions. `auto` (default): f16 when the adapter has `shader-f16` (about +20%
-   * throughput, errors within upstream KataGo's own FP16 backend), else f32. `f32` matches the Eigen reference
-   * to the WebGPU tier (the analysis goldens); `f16` without `shader-f16` falls back to f32. */
+  /** WebGPU: precision of the 3x3 and 1x1 convolutions. `auto` (default): f16 when the adapter has `shader-f16`
+   * (about +30% throughput on b18c384nbt, errors within upstream KataGo's own FP16 backend), else f32. `f32` matches
+   * the Eigen reference to the WebGPU tier (the analysis goldens); `f16` without `shader-f16` falls back to f32. */
   precision?: "auto" | "f32" | "f16";
 }
 
@@ -81,7 +81,7 @@ export interface ReadyInfo {
   wasmMemoryBytes: number;
   /** Why WebGPU was not used, when `backend: "auto"` fell back to the CPU. */
   fallbackReason?: string;
-  /** WebGPU: the precision the 3x3 convolutions run in (see `EngineInitOptions.precision`). */
+  /** WebGPU: the precision the 3x3 and 1x1 convolutions run in (see `EngineInitOptions.precision`). */
   precision?: "f32" | "f16";
   /** The effective config. */
   configText: string;

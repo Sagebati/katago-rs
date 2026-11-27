@@ -149,7 +149,7 @@ suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runne
   (cubecl kernels in `wino/`, a burn backend extension; docs/M9-report.md), other sizes as im2col + matmul;
   burn's own conv on the CPU. build.rs also fuses each batch norm + mish + mask chain into its conv's input loads
   (`fuse_bn_act`, a regex rewrite of the generated code that fails the build if it stops matching) and routes the
-  board reduces to one kernel (`SpatialReduce`). `useFP16` / katago-web `precision` run the 3x3 convs in f16,
+  board reduces to one kernel (`SpatialReduce`). `useFP16` / katago-web `precision` run the 3x3 and 1x1 convs in f16,
   per compute context (`wino::with_half` around each forward pass; `wino::set_half` is only the default). Keep all three when regenerating models; the `.bpk` is unchanged.
 - Transformer nets: build.rs `fuse_tf` (regex rewrites of the generated code, failing the build if a net with
   attention stops matching) routes every `Linear` forward, each per-token RMSNorm chain and each attention block

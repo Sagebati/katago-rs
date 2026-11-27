@@ -6,7 +6,7 @@ pub fn device(name: &str) -> Device {
   katago_nn_burn::device(name).unwrap_or_else(|| panic!("backend {name} not compiled in (flex | wgpu | rocm)"))
 }
 
-/// Takes a precision argument (`f16` or `f32`) out of `args`: f16 runs the 3x3 convs in f16 on a GPU backend, as
+/// Takes a precision argument (`f16` or `f32`) out of `args`: f16 runs the 3x3 and 1x1 convs in f16 on a GPU backend, as
 /// `useFP16 = true` does in the engine. f32 when absent.
 #[allow(dead_code)]
 pub fn take_precision(args: &mut Vec<String>) -> &'static str {
