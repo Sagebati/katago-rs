@@ -59,7 +59,9 @@ function sameFloatClass(a, b) {
   const y = Number(b);
   const expForm = (v) => v !== 0 && (Math.abs(v) < 1e-4 || Math.abs(v) >= 1e15);
   if (ea !== eb && expForm(x) === expForm(y)) return false;
-  const isF32 = (v, d) => d > 4 && Math.fround(v) === v;
+  // An f32 widened to f64 carries more digits than any f32 needs (9); a shorter f32-exact literal (0.5, a rounded
+  // 0.234375 = 15/64) says nothing about storage.
+  const isF32 = (v, d) => d > 9 && Math.fround(v) === v;
   const fa = isF32(x, da);
   const fb = isF32(y, db);
   if (fa !== fb && da > 4 && db > 4) return false;
@@ -172,6 +174,8 @@ export function selfCheck(gold) {
   assert(differs('{"policy":[2.5e-06]}', '{"policy":[7.5e-06]}'), "tiny policy relative");
   assert(!differs('{"prior":0.25}', '{"prior":0.250004}'), "prior abs");
   assert(differs('{"winrate":0.000123}', '{"winrate":1.23e-04}'), "exponent form");
+  assert(differs('{"winrate":0.455756152}', '{"winrate":0.45575615763664246}'), "unrounded f32");
+  assert(!differs('{"ownership":[0.234373]}', '{"ownership":[0.234375]}'), "rounded value that is an f32");
   assert(!differs('{"winrate":0.0001}', '{"winrate":9.9999e-05}'), "straddling 1e-4");
   assert(!differs('{"scoreStdev":4.59838054}', '{"scoreStdev":4.59825107}'), "score tolerance");
   assert(differs('{"scoreLead":1.5}', '{"scoreLead":1.5006}'), "score over tolerance");

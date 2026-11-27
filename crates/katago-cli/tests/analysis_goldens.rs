@@ -71,6 +71,8 @@ fn comparator_catches_differences() {
   #[allow(clippy::excessive_precision)]
   let raw_f32 = format!("{:?}", 0.455756152f32 as f64);
   assert!(differs(r#"{"winrate":0.455756152}"#, &format!(r#"{{"winrate":{raw_f32}}}"#)));
+  // A rounded 6-digit value that happens to be exactly an f32 (15/64) is not an f32 storage class.
+  assert!(!differs(r#"{"ownership":[0.234373]}"#, r#"{"ownership":[0.234375]}"#));
   // Score keys: PORTING.md §13 NN tier (5e-4).
   assert!(!differs(r#"{"scoreStdev":4.59838054}"#, r#"{"scoreStdev":4.59825107}"#));
   assert!(differs(r#"{"scoreLead":1.5}"#, r#"{"scoreLead":1.5006}"#));

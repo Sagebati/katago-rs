@@ -105,9 +105,10 @@ summation order) and stay in the WebGPU tier.
 - `cargo check -p katago-wasm --target wasm32-unknown-unknown`; `cargo fmt --all --check`.
 - Browser (Chromium headless, WebGPU; the WGSL path, which native Vulkan does not exercise: cubecl-wgpu compiles to
   SPIR-V there): `just web-test --only goldens,throughput --backends webgpu` 9/9 (b10c128 100-visit searches
-  800-980 visits/s); `just web-test-b18` 23/25: f16 vs f32 within upstream's FP16 error (winrate 8.4e-4, lead
-  1.5e-2, ownership 6.2e-3, policy 5.0e-3), 400-visit f16 searches 481-645 visits/s (M9: 461-550). The two failures
-  are one position (rect2, line 5) of `b18_symmetry` and `b18_symmetry_with_pruning`: an ownership of 0.234375 vs the
-  golden's 0.234373, 2e-6 apart (tolerance 1e-4), reported as DIVERGED because test/compare.mjs `sameFloatClass` takes
-  a 6-digit value that is exactly an f32 (0.234375 = 15/64) for a different number format. A comparator false
-  positive; the harness is unchanged here.
+  800-980 visits/s); `just web-test-b18` 25/25: f16 vs f32 within upstream's FP16 error (winrate 8.4e-4, lead
+  1.5e-2, ownership 6.2e-3, policy 5.0e-3), 400-visit f16 searches 481-645 visits/s (M9: 461-550). It first gave
+  23/25: one position (rect2) of `b18_symmetry` and `b18_symmetry_with_pruning` had an ownership of 0.234375 against
+  the golden's 0.234373 (2e-6 apart, tolerance 1e-4), reported as DIVERGED because the comparators' storage-class
+  check took any f32-exact literal of more than 4 digits for an f32 widened to f64, and 0.234375 is 15/64. They now
+  require more than 9 digits (more than any f32 needs, as a widened f32 prints); test/compare.mjs and
+  katago-cli's tests/common/mod.rs alike, with a self-check case each.
