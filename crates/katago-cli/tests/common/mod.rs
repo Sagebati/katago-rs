@@ -284,8 +284,9 @@ fn float_format(s: &str) -> (bool, usize) {
 /// - exponent form: nlohmann writes `x.ye-05` below 1e-4 (and from 1e15): both the same, unless the two
 ///   values straddle such a boundary;
 /// - storage: a JSON value that upstream stored as a float (an f32 widened to f64: exactly representable
-///   as f32, and written with more than 4 significant digits, so not just a short decimal like 0.5) must
-///   be one in the port too, and the reverse (an f32/f64 mix-up in the port shows up here).
+///   as f32, and written with more than 9 significant digits, more than any f32 needs) must be one in the
+///   port too, and the reverse (an f32/f64 mix-up in the port shows up here). A shorter literal that is an
+///   f32 says nothing: a short decimal like 0.5, or a 6-digit rounded ownership that lands on 0.234375 (15/64).
 fn same_float_class(a: &str, b: &str) -> bool {
   let (ea, da) = float_format(a);
   let (eb, db) = float_format(b);
@@ -294,7 +295,7 @@ fn same_float_class(a: &str, b: &str) -> bool {
   if ea != eb && exp_form(x) == exp_form(y) {
     return false;
   }
-  let is_f32 = |v: f64, d: usize| d > 4 && (v as f32) as f64 == v;
+  let is_f32 = |v: f64, d: usize| d > 9 && (v as f32) as f64 == v;
   let (fa, fb) = (is_f32(x, da), is_f32(y, db));
   if fa != fb && (da > 4 && db > 4) {
     return false;

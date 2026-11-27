@@ -70,8 +70,8 @@ browser: `just web-build -F net-b10c384h6nbttflrs,net-b10c512h8nbt3tflrs-fson-si
 ### Forward passes (evals/s)
 
 Network evaluations per second at a fixed batch, each batch's outputs read back. katago-rs: `just bench <wgpu|rocm>
-<net> <f32|f16>`, random inputs, without burn's autotune (the browser's kernel set); f16 runs the 3x3 convolutions,
-and the transformer nets' token linears from 6 boards per batch on, in f16. KataGo: its `benchmarknn`, `just
+<net> <f32|f16>`, random inputs, without burn's autotune (the browser's kernel set); f16 runs the 3x3 and 1x1
+convolutions, and the transformer nets' token linears from 6 boards per batch on, in f16. KataGo: its `benchmarknn`, `just
 bench-upstream-nn <net.bin.gz> <libRusticlOpenCL.so.1|libamdocl64.so>`. Browser (WebGPU in a Web Worker): the engine
 evaluating every turn of two games under their 8 symmetries at 1 visit, with the batch size forced; evals/s over the
 time the NN spends on its batches (`just bench-web-all`).
@@ -80,28 +80,28 @@ time the NN spends on its batches (`just bench-web-all`).
 |---|---|---|---:|---:|---:|---:|---:|
 | b10c128 | KataGo, Mesa rusticl | auto | 164 | 1254 | 2014 | 2334 | 3412 |
 | | KataGo, AMD OpenCL | auto | 1216 | 5050 | 5478 | 6372 | 6718 |
-| | katago-rs, Vulkan | f32 | 402 | 2464 | 4177 | 5235 | 6098 |
-| | katago-rs, Vulkan | f16 | 426 | 2497 | 4609 | 6383 | **7174** |
-| | katago-rs, ROCm | f32 | 524 | 2617 | 3730 | 4653 | 5171 |
-| | katago-rs, ROCm | f16 | 643 | 2986 | 4514 | 5814 | 6530 |
+| | katago-rs, Vulkan | f32 | 405 | 2129 | 4187 | 5238 | 7097 |
+| | katago-rs, Vulkan | f16 | 432 | 2453 | 4090 | 6499 | **8867** |
+| | katago-rs, ROCm | f32 | 540 | 2678 | 4012 | 5133 | 5836 |
+| | katago-rs, ROCm | f16 | 657 | 3118 | 4799 | 6414 | 7496 |
 | | katago-rs, browser WebGPU | f32 | 128 | 811 | 1592 | 2498 | 3199 |
 | | katago-rs, browser WebGPU | f16 | 118 | 795 | 1504 | 2729 | 3497 |
 | | katago-rs, flex (CPU, 1 thread) | f32 | 30 | 33 | | | |
 | b18c384nbt | KataGo, Mesa rusticl | auto | 51 | 242 | 342 | 511 | 597 |
 | | KataGo, AMD OpenCL | auto | 157 | 367 | 421 | 449 | 465 |
-| | katago-rs, Vulkan | f32 | 159 | 591 | 772 | 863 | 845 |
-| | katago-rs, Vulkan | f16 | 178 | 715 | 938 | 1062 | **1075** |
-| | katago-rs, ROCm | f32 | 129 | 509 | 642 | 725 | 754 |
-| | katago-rs, ROCm | f16 | 147 | 633 | 812 | 926 | 967 |
+| | katago-rs, Vulkan | f32 | 155 | 667 | 867 | 973 | 954 |
+| | katago-rs, Vulkan | f16 | 160 | 841 | 1152 | 1337 | **1377** |
+| | katago-rs, ROCm | f32 | 143 | 528 | 690 | 780 | 827 |
+| | katago-rs, ROCm | f16 | 158 | 709 | 945 | 1095 | 1171 |
 | | katago-rs, browser WebGPU | f32 | 60 | 383 | 570 | 708 | 796 |
 | | katago-rs, browser WebGPU | f16 | 54 | 384 | 647 | 819 | 972 |
 | | katago-rs, flex (CPU, 1 thread) | f32 | 2.2 | 2.5 | | | |
 | b10c384h6nbttflrs | KataGo, Mesa rusticl | auto | 45 | 213 | 288 | 395 | 444 |
 | | KataGo, AMD OpenCL | auto | 92 | 160 | 170 | 174 | 178 |
-| | katago-rs, Vulkan | f32 | 129 | 580 | 674 | 706 | 738 |
-| | katago-rs, Vulkan | f16 | 129 | 578 | 725 | 758 | **773** |
-| | katago-rs, ROCm | f32 | 128 | 507 | 548 | 595 | 631 |
-| | katago-rs, ROCm | f16 | 127 | 525 | 580 | 613 | 668 |
+| | katago-rs, Vulkan | f32 | 114 | 563 | 664 | 702 | 736 |
+| | katago-rs, Vulkan | f16 | 110 | 603 | 748 | 780 | **796** |
+| | katago-rs, ROCm | f32 | 120 | 502 | 543 | 589 | 627 |
+| | katago-rs, ROCm | f16 | 125 | 535 | 591 | 642 | 686 |
 | | katago-rs, browser WebGPU | f32 | 46 | 285 | 483 | 586 | 680 |
 | | katago-rs, browser WebGPU | f16 | 45 | 293 | 515 | 624 | 705 |
 | b10c512h8nbt3tflrs-fson-silu-rsnh | KataGo, Mesa rusticl | auto | 29 | 129 | 153 | 179 | 192 |
@@ -121,14 +121,18 @@ time the NN spends on its batches (`just bench-web-all`).
 | | katago-rs, browser WebGPU | f32 | 32 | 127 | 143 | 151 | 151 |
 | | katago-rs, browser WebGPU | f16 | 32 | 149 | 170 | 183 | 183 |
 
-- b10c128: AMD's OpenCL is KataGo's faster driver, and at small batches it is ahead of katago-rs (1216 vs 643 at
-  batch 1); from batch 32 on they are even, Vulkan 7174 against 6718 at 64.
-- b18c384nbt: katago-rs on Vulkan is 1.8-2.2x the better KataGo driver from batch 8 on (1062 vs 511 at 32).
+- b10c128: AMD's OpenCL is KataGo's faster driver, and at small batches it is ahead of katago-rs (1216 vs 657 at
+  batch 1); from batch 32 on katago-rs is ahead, Vulkan 8867 against 6718 at 64.
+- b18c384nbt: katago-rs on Vulkan is 2.3-2.7x the better KataGo driver from batch 8 on (1337 vs 511 at 32).
 - The transformer nets: Mesa's rusticl is KataGo's faster driver from batch 8 on (AMD's caps out early), and
-  katago-rs is 1.7-2.7x it (b10c384h6nbttflrs 2.7x at batch 8, 1.7x at 64; tf3 1.9-2.3x).
+  katago-rs is 1.7-2.8x it (b10c384h6nbttflrs 2.8x at batch 8, 1.8x at 64; tf3 1.9-2.3x).
 - Vulkan is the faster katago-rs backend from batch 16 on; ROCm wins b10c128 at batches 1 and 8.
-- In the browser, WebGPU reaches about half of native Vulkan on b10c128 at batch 64 (its per-dispatch overhead
-  shows on a small net), 90% on b18c384nbt and 91-100% on the transformer nets.
+- In the browser (measured before the 2026-11 kernels, below), WebGPU reached about half of native Vulkan on b10c128
+  at batch 64 (its per-dispatch overhead shows on a small net), 90% on b18c384nbt and 91-100% on the transformer
+  nets.
+- The katago-rs Vulkan and ROCm rows of b10c128, b18c384nbt and b10c384h6nbttflrs were re-measured on 2026-11-27,
+  after the f16 1x1 convolutions and the shared-memory Winograd input transform
+  ([inference-perf-report](docs/inference-perf-report.md)); the other rows are from 2026-10-27.
 - Upstream's Eigen CPU build does 164 evals/s on b10c128 with 12 threads, 5x flex on one (M0).
 
 Earlier versions of this table had higher rocm numbers: the bench dropped each readback unread, and on rocm burn's

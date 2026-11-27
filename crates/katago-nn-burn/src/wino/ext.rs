@@ -312,6 +312,34 @@ fn conv1x1_impl(x: CubeTensor, wt: CubeTensor, oc: usize, pro: Option<Prologue>)
       }
     };
   }
+  if wt.dtype == DType::F16 {
+    assert!(
+      dtype == DType::F32 && oc.is_multiple_of(4),
+      "conv1x1: f16 weights need an f32 input and oc % 4 == 0"
+    );
+    // SAFETY: as above, with the weight as `ic * oc / 4` vectors (oc a multiple of 4, asserted).
+    unsafe {
+      conv1x1_gemm_v::launch::<f32, half::f16>(
+        &x.client,
+        CubeCount::Static(m.div_ceil(64) as u32, oc.div_ceil(GEMM_N) as u32, n as u32),
+        CubeDim::new_2d(GEMM_T as u32, GEMM_T as u32),
+        4,
+        BufferArg::from_raw_parts(x.handle.clone(), x_len),
+        BufferArg::from_raw_parts(wt.handle.clone(), w_len / 4),
+        BufferArg::from_raw_parts(pargs[0].0.clone(), pargs[0].1),
+        BufferArg::from_raw_parts(pargs[1].0.clone(), pargs[1].1),
+        BufferArg::from_raw_parts(pargs[2].0.clone(), pargs[2].1),
+        BufferArg::from_raw_parts(output.handle.clone(), o_len),
+        m as u32,
+        oc as u32,
+        ic as u32,
+        pro.is_some(),
+        pro.as_ref().is_some_and(|p| p.relu),
+        pro.as_ref().is_none_or(|p| p.has_scale),
+      )
+    };
+    return output;
+  }
   match dtype {
     DType::F32 => launch!(f32),
     DType::F16 => launch!(half::f16),
@@ -382,6 +410,9 @@ fn wino_conv3x3_impl(x: CubeTensor, filter: CubeTensor, oc: usize, pro: Option<P
           pro.is_some(),
           pro.as_ref().is_some_and(|p| p.relu),
           pro.as_ref().is_none_or(|p| p.has_scale),
+          // The boards a cube's 64 tiles can span, and their size.
+          63 / (tiles_x * tiles_y) + 2,
+          h * w,
         );
         if vector {
           wino_gemm_v::launch::<$s, $o>(

@@ -314,7 +314,7 @@ impl<N: Network + 'static> nninterface::NeuralNet for BurnNeuralNet<N> {
 
     let use_fp16: bool = if use_fp16_mode == enabled_t::True { true } else { false };
 
-    // PORT NOTE: useFP16 = true runs this context's 3x3 convs in f16 (wino/) on GPU devices; Auto stays f32 (the
+    // PORT NOTE: useFP16 = true runs this context's 3x3 and 1x1 convs in f16 (wino/) on GPU devices; Auto stays f32 (the
     // Eigen parity tier), unless the process default is f16 (`wino::set_half`, katago-web's `precision`). On the
     // CPU (flex) it is rejected as before. Each context keeps its own precision: two networks of one process
     // (e.g. `-human-model`) can differ.

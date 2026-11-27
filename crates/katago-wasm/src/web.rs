@@ -471,9 +471,9 @@ impl NNEvaluatorHost for WebNNHost {
 //------------------------------------------------------------------------------------------------
 // Precision of the WebGPU convolutions
 
-/// Run the WebGPU network's 3x3 convolutions (Winograd transforms and GEMM) in f16 (katago-nn-burn wino.rs): about
-/// +20% throughput on RDNA2, within upstream's own FP16 error. The adapter must have `shader-f16`. Call before
-/// [`Engine::create`]; the worker does, from its `precision` option.
+/// Run the WebGPU network's 3x3 convolutions (Winograd transforms and GEMM) and 1x1 convolutions in f16
+/// (katago-nn-burn wino.rs): about +30% throughput on RDNA2 (b18c384nbt), within upstream's own FP16 error. The
+/// adapter must have `shader-f16`. Call before [`Engine::create`]; the worker does, from its `precision` option.
 #[wasm_bindgen(js_name = setHalfPrecision)]
 pub fn set_half_precision(on: bool) {
   katago_nn_burn::wino::set_half(on);

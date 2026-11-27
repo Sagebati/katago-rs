@@ -214,7 +214,7 @@ fn run_net<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str
   run_net_with::<N>(backend_name, bpk, evals_file, out_file, limit, enabled_t::False)
 }
 
-/// [`run_net`] with the evaluator's `useFP16` (`enabled_t::True`: this network's 3x3 convs in f16).
+/// [`run_net`] with the evaluator's `useFP16` (`enabled_t::True`: this network's 3x3 and 1x1 convs in f16).
 fn run_net_with<N: Network + 'static>(backend_name: &str, bpk: &str, evals_file: &str, out_file: &str, limit: usize, use_fp16: enabled_t) -> Diffs {
   ScoreValue::init_tables();
   Board::init_hash();
@@ -599,7 +599,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
   check_wgpu(&d);
 }
 
-/// The 3x3 convs in f16 (wino.rs `set_half`, as the browser runs them on adapters with shader-f16).
+/// The 3x3 and 1x1 convs in f16 (wino.rs `set_half`, as the browser runs them on adapters with shader-f16).
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt"))]
 #[test]
 fn nn_parity_b18c384nbt_wgpu_f16() {
@@ -685,9 +685,9 @@ fn nn_parity_b18c384nbt_rocm_f16() {
 
 /// The transformer nets (attention + RMSNorm blocks between nested bottleneck blocks; model v15 b10c384h6nbttflrs,
 /// model v17 b10c512h8nbt3tflrs-fson-silu-rsnh and kata1-tf3-b11c768) on the evals of evals_b18.txt (72 evals,
-/// policyOptimism > 0 included), each on flex, wgpu and rocm, f32 and f16 (`wino::set_half`; only the 3x3 convs run
-/// in f16, and a transformer net has one, its input conv). Tolerances: [`check_tf`]. The flex tests are release-only
-/// (1.5-2 minutes per net in release, b10c512h8nbt3tflrs-fson-silu-rsnh ~10 minutes: it runs the first `$flex_limit`
+/// policyOptimism > 0 included), each on flex, wgpu and rocm, f32 and f16 (`wino::set_half`; the 3x3 and 1x1 convs run
+/// in f16: a transformer net's input conv and its 1x1 convs). Tolerances: [`check_tf`]. The flex tests are
+/// release-only (1.5-2 minutes per net in release, b10c512h8nbt3tflrs-fson-silu-rsnh ~10 minutes: it runs the first `$flex_limit`
 /// evals only).
 macro_rules! transformer_parity {
   ($feature:literal, $module:ident, $out:literal, $flex_limit:expr, $flex:ident, $wgpu:ident, $wgpu_f16:ident, $rocm:ident, $rocm_f16:ident) => {
