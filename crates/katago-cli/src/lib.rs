@@ -24,7 +24,7 @@
 //! `g170-b6c96-s175395328-d26788732` or `kata1-tf3-b11c768-s11003M-d5973M-7gres`; a symlink is also matched by its
 //! target's name). The weights are the
 //! `.bpk` generated at build time (`katago_nn_burn::<net>::BPK_PATH`) unless `-model` is itself a `.bpk`
-//! file, which is then read. Any other network is an error (upstream: an unloadable model file).
+//! file, which is then read (an `.f16.bpk` too: its f16 weights are widened to f32 on load). Any other network is an error (upstream: an unloadable model file).
 //! Not a port of upstream code (idiomatic Rust at the API edge, PORTING.md §1).
 
 pub mod args;

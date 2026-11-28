@@ -18,7 +18,7 @@ pub use katago_nn_burn::NetId as Net;
 
 fn resolve_net_by_name(model_file: &str) -> Option<Net> {
   let base = std::path::Path::new(model_file).file_name().and_then(|s| s.to_str()).unwrap_or(model_file);
-  let stem = [".bin.gz", ".txt.gz", ".onnx", ".bpk", ".gz", ".bin"]
+  let stem = [".bin.gz", ".txt.gz", ".onnx", ".f16.bpk", ".bpk", ".gz", ".bin"]
     .iter()
     .fold(base.to_string(), |s, ext| s.strip_suffix(ext).map(str::to_string).unwrap_or(s));
   let candidates: [(Net, &str); 7] = [

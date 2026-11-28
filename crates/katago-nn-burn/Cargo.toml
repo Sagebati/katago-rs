@@ -73,6 +73,9 @@ burn-onnx.workspace = true
 onnx-ir = "=0.22.0"
 # build.rs fuse_bn_act: rewriting the generated forward passes.
 regex = "1"
+# build.rs write_f16_weights: the `.f16.bpk` (burn-onnx's own burn-pack).
+burn-pack = { version = "0.22.1", default-features = false, features = ["std"] }
+half = "2"
 
 [[example]]
 name = "wino_bench"

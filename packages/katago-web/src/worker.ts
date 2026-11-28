@@ -56,6 +56,11 @@ function cpuSpec(options: EngineInitOptions): ModelSpec {
   return options.model;
 }
 
+/** `spec`'s f16 weights when `half` and it has them, else `spec`. */
+function weightsSpec(spec: ModelSpec, half: boolean): ModelSpec {
+  return half && spec.half ? { network: spec.network, ...spec.half } : spec;
+}
+
 let engine: Engine | null = null;
 let ready = false;
 let pendingLines: string[] = [];
@@ -285,14 +290,14 @@ async function createEngine(backend: Backend, options: EngineInitOptions, networ
 
 /** The human SL network's weights when `humanModel` is given and the backend can run it (WebGPU, or the CPU with
  * `allowSlowCpu`); a warning otherwise. */
-async function loadHuman(options: EngineInitOptions, backend: Backend): Promise<Weights | undefined> {
+async function loadHuman(options: EngineInitOptions, backend: Backend, half: boolean): Promise<Weights | undefined> {
   const spec = options.humanModel;
   if (!spec) return undefined;
   if (backend === "cpu" && !options.allowSlowCpu) {
     onEngineLog("warn", `${spec.network} (humanModel) is not loaded on the CPU, where it runs at ~1 eval/s (allowSlowCpu loads it)`);
     return undefined;
   }
-  return { network: spec.network, bytes: (await loadModel(options, spec)).bytes };
+  return { network: spec.network, bytes: (await loadModel(options, weightsSpec(spec, half))).bytes };
 }
 
 async function start(options: EngineInitOptions): Promise<void> {
@@ -330,33 +335,39 @@ async function start(options: EngineInitOptions): Promise<void> {
       kernelCacheLoadMs = performance.now() - t0;
     }
   })();
-  // Which weights depend on the backend only when the net has a CPU replacement or is GPU-only: then (with
-  // `auto`) the 105 MB of b18 must not be fetched before the probe says there is a GPU.
+  // Which weights depend on the backend when the net has a CPU replacement or is GPU-only (then, with `auto`, the
+  // 105 MB of b18 must not be fetched before the probe says there is a GPU), and on shader-f16 when it has f16 ones.
+  const wantHalf = (options.precision ?? "auto") !== "f32";
+  const halfWeights = () => backend === "webgpu" && wantHalf && adapterF16;
   const backendMatters = options.cpuModel !== undefined || GPU_ONLY_NETWORKS.has(options.model.network);
   let spec = options.model;
+  let modelWeights: ReadyInfo["modelWeights"] = "f32";
   let loading: Promise<Awaited<ReturnType<typeof loadModel>>>;
   if (choice === "cpu") {
     spec = cpuSpec(options);
     loading = loadModel(options, spec);
-  } else if (choice === "auto" && backendMatters) {
+  } else if ((choice === "auto" && backendMatters) || (wantHalf && spec.half)) {
     await probing;
     if (backend === "cpu") spec = cpuSpec(options);
-    loading = loadModel(options, spec);
+    const weights = weightsSpec(spec, halfWeights());
+    if (weights !== spec) modelWeights = "f16";
+    loading = loadModel(options, weights);
   } else {
     loading = loadModel(options, spec);
   }
   // The human SL network once the backend is known (it is not fetched for a CPU engine that would not load it).
-  const humanLoading = probing.then(() => loadHuman(options, backend));
+  const humanLoading = probing.then(() => loadHuman(options, backend, halfWeights()));
   const [model, , human] = await Promise.all([loading, probing, humanLoading]);
   let loadedHuman = human;
   post({ type: "progress", phase: "engine" });
   const tEngine = performance.now();
-  let half = (options.precision ?? "auto") !== "f32" && adapterF16;
+  let half = wantHalf && adapterF16;
   try {
     try {
       engine = await createEngine(backend, options, spec.network, model.bytes, half, loadedHuman);
     } catch (e) {
-      // An adapter that advertises shader-f16 but fails with it (driver bugs): WebGPU in f32 before the CPU.
+      // An adapter that advertises shader-f16 but fails with it (driver bugs): WebGPU in f32 before the CPU, on the
+      // weights already loaded.
       if (!half || backend !== "webgpu" || options.precision === "f16") throw e;
       onEngineLog("warn", `WebGPU engine failed in f16, retrying in f32: ${String((e as Error)?.message ?? e)}`);
       half = false;
@@ -372,11 +383,13 @@ async function start(options: EngineInitOptions): Promise<void> {
     } catch (err) {
       throw new CpuRefused(`${String((err as Error).message)} (${fallbackReason})`);
     }
+    // The same net keeps its weights, f16 ones too (widened to f32: within the f16 tier).
+    if (cpu !== spec) modelWeights = "f32";
     const cpuModel = cpu === spec ? model : await loadModel(options, cpu);
     spec = cpu;
     model.bytes = cpuModel.bytes;
     model.source = cpuModel.source;
-    loadedHuman = await loadHuman(options, backend);
+    loadedHuman = await loadHuman(options, backend, false);
     engine = await createEngine(backend, options, spec.network, model.bytes, false, loadedHuman);
   }
   const configText = engine.configText;
@@ -414,6 +427,7 @@ async function start(options: EngineInitOptions): Promise<void> {
     version: String(version.version),
     gitHash: String(version.git_hash),
     modelSource: model.source,
+    modelWeights,
     // The wasm heap never shrinks: this is the peak so far (the weights pass through it once on their way to the device).
     wasmMemoryBytes: wasm.memory.buffer.byteLength,
     fallbackReason,

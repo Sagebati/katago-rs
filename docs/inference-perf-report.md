@@ -77,6 +77,53 @@ elementwise kernels 7.0%, burn's matmul (the nets' small linears) 3.9%, burn's b
   has no matrix cores. The GEMMs (~47% of the forward) could at best double, the memory-bound transforms not at all,
   and the Winograd domain does not quantize well. A 1x1-only int8 path with per-channel scales is a separate study.
 
+## f16 weight files
+
+build.rs now also writes `<net>.f16.bpk` next to each `.bpk` (`write_f16_weights`). Its `*.weight` tensors, the conv
+and linear weights and ~99% of the bytes, are rounded to f16. The biases, the folded batch norms and the RoPE tables
+stay in f32. `Network::from_bpk` loads either file, casting f16 back to f32 (burn-store's `FloatCastAdapter`), so
+the model and kernels are unchanged. katago-web fetches the f16 file when the engine runs on WebGPU in f16
+(`ModelSpec.half`, filled by `fetchModelSpec` from the `f16` entry `just web-build` writes into `models.json`;
+`ReadyInfo.modelWeights` says which file was loaded). f32 engines, the CPU and native engines keep the `.bpk`, so the f32
+and Eigen-reference results do not change. When an f16 engine falls back to f32 or to the CPU on the same network, it
+keeps the f16 weights it already downloaded.
+
+| Net | `.bpk` | `.f16.bpk` |
+|---|---|---|
+| g170e-b10c128 | 12.0 MB | 6.0 MB |
+| kata1-b18c384nbt | 105.3 MB | 52.8 MB |
+| b18c384nbt-humanv0 | 107.0 MB | 53.6 MB |
+| b10c384h6nbttflrs | 47.8 MB | 26.7 MB |
+
+Inference speed is unchanged: f16 mode already cast the weights to f16 on the device. Loading b18c384nbt in Chromium
+(`just web-test-b18 --json`, served from localhost, so the 52 MB saved on the download does not show):
+
+| weights | sha256 check | model build | wasm heap peak |
+|---|---|---|---|
+| `.bpk` (f32 engine) | 233-238 ms | 109-112 ms | 424 MiB |
+| `.f16.bpk` (f16 engine) | 117-121 ms | 156-201 ms | 224 MiB |
+
+The f16-to-f32 widening adds 50-90 ms to the build (in wasm, on the CPU), less than the hashing saves. The heap peak
+halves: the weights pass through it once on their way to the device.
+
+The browser tests pass: `just web-test --only goldens,cache,throughput --backends webgpu` 12/12 (the goldens run in
+f32 on the `.bpk`), `just web-test-b18` 25/25. With `precision: "auto"`, b18 loads the f16 file and runs in f16. Its f16
+outputs vs f32 over 12 positions: winrate 1.45e-3, lead 2.79e-2, ownership 7.53e-3, policy 7.99e-3, within upstream's
+FP16 error. 400-visit f16 searches: 507-658 visits/s. Accuracy (`nn_parity`, wgpu, max
+|burn - eigen|; the wgpu f16 tests now load the `.f16.bpk`):
+
+| test | winrate | lead | stScoreError | policy | ownership |
+|---|---|---|---|---|---|
+| b18c384nbt f16, `.bpk` -> `.f16.bpk` | 2.25e-3 -> 1.86e-3 | 0.285 -> 0.305 | 0.134 -> 0.289 | 5.76e-3 -> 7.70e-3 | 1.86e-2 -> 4.47e-2 |
+| b18c384nbt-humanv0 f16 | 1.04e-3 -> 1.27e-3 | 0.121 -> 0.193 | 3.21e-2 -> 1.44e-2 | 2.21e-3 -> 2.18e-3 | 6.31e-3 -> 5.35e-3 |
+| b10c384h6nbttflrs f16 | 2.76e-3 -> 4.67e-3 | 9.81e-2 -> 8.44e-2 | 1.06e-2 -> 4.47e-2 | 8.36e-3 -> 8.20e-3 | 1.05e-2 -> 1.34e-2 |
+| b18c384nbt f32 math on `.f16.bpk` (new test) | 2.44e-4 | 3.13e-2 | 9.48e-3 | 8.81e-4 | 1.09e-3 |
+
+All stay inside upstream's FP16 bounds (below). The 3x3 weights are now rounded twice: once in the file, and again
+after the Winograd transform on the device. b18's ownership error grows 2.4x, to half its bound, where ROCm f16
+already was on the f32 file. Rounding the weights alone (f32 math on the f16 file) costs a tenth of the f16
+compute error.
+
 ## Accuracy
 
 `nn_parity` on Vulkan and ROCm (Eigen reference, fixtures/upstream-v1.18.2/nn): 12/12 pass on both master and this

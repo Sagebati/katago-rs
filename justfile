@@ -202,8 +202,8 @@ annotate-parity-regen *args="":
 
 # npm package packages/katago-web (M4): the katago-wasm engine (cargo profile `web`: size-optimized except burn's CPU
 # kernels; wasm-bindgen --target web, wasm-opt when installed),
-# the TypeScript client and worker (tsc), and dist/models/ (the compiled-in nets' .bpk weights + models.json with
-# their sha256). Needs wasm-bindgen 0.2.129 and a TypeScript compiler (TSC, default: sai-frontend's).
+# the TypeScript client and worker (tsc), and dist/models/ (the compiled-in nets' .bpk weights, f32 and f16, + models.json
+# with their sha256). Needs wasm-bindgen 0.2.129 and a TypeScript compiler (TSC, default: sai-frontend's).
 tsc := env_var_or_default("TSC", justfile_directory() / "../baduk_review/sai-frontend/node_modules/.bin/tsc")
 web_pkg := "packages/katago-web"
 
@@ -231,14 +231,17 @@ web-build *features="":
     {{tsc}} -p {{web_pkg}}
     cp -r {{web_pkg}}/src/wasm {{web_pkg}}/dist/wasm
     mkdir -p {{web_pkg}}/dist/models
+    # file, sha256 and size of $1 (copied into dist/models/ under a content-addressed name), as JSON fields.
+    copy() {
+        local sha; sha="$(sha256sum "$1" | cut -d' ' -f1)"
+        local file="$net.${sha:0:12}.$2"
+        cp "$1" "{{web_pkg}}/dist/models/$file"
+        echo "\"file\":\"$file\",\"sha256\":\"$sha\",\"size\":$(stat -c %s "$1")"
+    }
     entries=()
     for net in g170-b6c96 g170e-b10c128 kata1-b18c384nbt b18c384nbt-humanv0 b10c384h6nbttflrs b10c512h8nbt3tflrs-fson-silu-rsnh kata1-tf3-b11c768; do
-        bpk="$nn_out/model/$net.bpk"
-        [ -f "$bpk" ] || continue
-        sha="$(sha256sum "$bpk" | cut -d' ' -f1)"
-        file="$net.${sha:0:12}.bpk"
-        cp "$bpk" "{{web_pkg}}/dist/models/$file"
-        entries+=("{\"network\":\"$net\",\"file\":\"$file\",\"sha256\":\"$sha\",\"size\":$(stat -c %s "$bpk")}")
+        [ -f "$nn_out/model/$net.bpk" ] || continue
+        entries+=("{\"network\":\"$net\",$(copy "$nn_out/model/$net.bpk" bpk),\"f16\":{$(copy "$nn_out/model/$net.f16.bpk" f16.bpk)}}")
     done
     (IFS=,; echo "{\"models\":[${entries[*]}]}") > {{web_pkg}}/dist/models/models.json
     raw=$(stat -c %s {{web_pkg}}/dist/wasm/katago_wasm_bg.wasm)

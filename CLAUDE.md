@@ -151,6 +151,9 @@ suites (`just test-wasm`) run through nextest too, with `wasm-bindgen-test-runne
   (`fuse_bn_act`, a regex rewrite of the generated code that fails the build if it stops matching) and routes the
   board reduces to one kernel (`SpatialReduce`). `useFP16` / katago-web `precision` run the 3x3 and 1x1 convs in f16,
   per compute context (`wino::with_half` around each forward pass; `wino::set_half` is only the default). Keep all three when regenerating models; the `.bpk` is unchanged.
+- build.rs also writes `<net>.f16.bpk` (`write_f16_weights`: the `*.weight` tensors in f16, half the size; `from_bpk`
+  widens them to f32 on load). katago-web loads it for f16 engines (`ModelSpec.half`, models.json `f16`); native
+  engines and f32 use the `.bpk`. The parity tests' wgpu f16 cases run on it.
 - Transformer nets: build.rs `fuse_tf` (regex rewrites of the generated code, failing the build if a net with
   attention stops matching) routes every `Linear` forward, each per-token RMSNorm chain and each attention block
   (q/k/v head splits, RoPE, attention, head merge) to `katago_nn_burn::tf`. On GPUs these run `tfk/`'s kernels (a

@@ -36,6 +36,7 @@ pub trait Network {
   const NUM_INPUT_META_CHANNELS: i32;
   /// KataGo's `ModelDesc` for this network, from the ONNX `metadata_props` (build.rs).
   fn model_desc() -> katago_core::neuralnet::desc::ModelDesc;
+  /// Builds the network from its `.bpk` or `.f16.bpk` weights (the f16 ones widened to f32).
   fn from_bpk(bytes: Vec<u8>, device: &Device) -> Self;
   /// `meta_input` is `Some` exactly when `NUM_INPUT_META_CHANNELS > 0` (panics otherwise).
   fn forward(&self, bin_input: Tensor<4>, global_input: Tensor<2>, meta_input: Option<Tensor<2>>) -> RawOutputs;
@@ -66,6 +67,8 @@ macro_rules! network {
       /// Path of this network's generated `.bpk` weights in katago-nn-burn's build directory (native
       /// hosts and tests read it at runtime).
       pub const BPK_PATH: &str = concat!(env!("OUT_DIR"), "/model/", $name, ".bpk");
+      /// The same weights with the conv and linear weights in f16 (build.rs write_f16_weights).
+      pub const BPK_F16_PATH: &str = concat!(env!("OUT_DIR"), "/model/", $name, ".f16.bpk");
 
       impl super::Network for Model {
         const NAME: &'static str = $name;
@@ -77,7 +80,12 @@ macro_rules! network {
         }
 
         fn from_bpk(bytes: Vec<u8>, device: &Device) -> Self {
-          Model::from_bytes(Bytes::from_bytes_vec(bytes), device)
+          // Model::from_bytes, widening an `.f16.bpk`'s weights to the model's f32.
+          let mut model = Model::new(device);
+          let mut store =
+            BurnpackStore::from_bytes(Some(Bytes::from_bytes_vec(bytes))).with_from_adapter(burn_store::FloatCastAdapter::to(burn::tensor::DType::F32));
+          model.load_from(&mut store).unwrap_or_else(|e| panic!("Failed to load burnpack bytes: {e}"));
+          model
         }
 
         fn forward(&self, $b: Tensor<4>, $g: Tensor<2>, $mi: Option<Tensor<2>>) -> super::RawOutputs {

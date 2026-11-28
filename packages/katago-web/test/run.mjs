@@ -304,7 +304,7 @@ try {
       results.b18.load = { cold, warm, storage, vramDeltaMiB: vramDelta(vram0, vram1) };
       check("b18: first load fetches the weights once", cold.backend === "webgpu" && cold.modelSource === "network" && afterCold - before === 1, `${afterCold - before} .bpk request(s), source ${cold.modelSource}, adapter ${cold.adapter}`);
       check("b18: second load does no model network request", warm.modelSource === "cache" && afterWarm === afterCold && browserBpk.length === 0, `server saw ${afterWarm - afterCold}, browser issued ${browserBpk.length}, source ${warm.modelSource}`);
-      check("b18: precision auto is f16 on an adapter with shader-f16, f32 without", cold.precision === (storage.features.includes("shader-f16") ? "f16" : "f32"), `precision ${cold.precision}, shader-f16 ${storage.features.includes("shader-f16")}`);
+      check("b18: precision auto is f16 (on the f16 weights) on an adapter with shader-f16, f32 without", cold.precision === (storage.features.includes("shader-f16") ? "f16" : "f32") && cold.modelWeights === cold.precision, `precision ${cold.precision}, weights ${cold.modelWeights}, shader-f16 ${storage.features.includes("shader-f16")}`);
       check("b18: second load compiles no WebGPU kernel", cold.kernelCache?.compiled > 0 && warm.kernelCache?.compiled === 0 && warm.kernelCache?.hits > 0, `cold ${JSON.stringify(cold.kernelCache)}, warm ${JSON.stringify(warm.kernelCache)}`);
       // Before M9 the biggest buffer of a b18c384nbt forward pass was the im2col matrix of its 192-channel 3x3 convs:
       // batch * 361 * 1728 floats = 2.5 MB per row, 80 MB at 32 rows. The Winograd convs (M9) need less (the input

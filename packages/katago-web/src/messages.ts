@@ -17,6 +17,9 @@ export interface ModelSpec {
   sha256: string;
   /** Size in bytes (progress reporting only). */
   size?: number;
+  /** The same network's `.f16.bpk` (its conv and linear weights in f16: half the download), fetched instead when the
+   * engine runs on WebGPU in f16 (`precision`). */
+  half?: { url: string; sha256: string; size?: number };
 }
 
 export interface EngineInitOptions {
@@ -77,6 +80,8 @@ export interface ReadyInfo {
   gitHash: string;
   /** Where the weights came from. */
   modelSource: "network" | "cache";
+  /** Which weights: `f16` when the model's `half` file was loaded. */
+  modelWeights: "f32" | "f16";
   /** Size of the wasm linear memory when the engine became ready (it only grows: the peak so far). */
   wasmMemoryBytes: number;
   /** Why WebGPU was not used, when `backend: "auto"` fell back to the CPU. */

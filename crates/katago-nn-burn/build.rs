@@ -41,7 +41,38 @@ fn main() {
     fuse_bn_act(net);
     fuse_tf(net);
     write_model_desc(&onnx, net);
+    write_f16_weights(net);
   }
+}
+
+/// Writes `$OUT_DIR/model/<net>.f16.bpk`: the `.bpk` with the conv and linear weights (`*.weight`, ~99% of the
+/// bytes) rounded to f16, the rest (biases, folded batch norms, RoPE tables) kept in f32. Half the download for
+/// the browser's f16 engines; `Network::from_bpk` widens it back to f32 on load.
+fn write_f16_weights(net: &str) {
+  use burn_pack::{Bytes, DType, Reader, Tensor, Writer};
+  let dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("model");
+  let reader = Reader::from_bytes(Bytes::from_bytes_vec(std::fs::read(dir.join(format!("{net}.bpk"))).unwrap())).unwrap();
+  let metadata = reader.metadata().clone();
+  let scalars = reader.scalars().clone();
+  let tensors = reader.into_tensors().unwrap().into_iter().map(|t| {
+    let (name, dtype, shape, id, bytes) = t.into_parts().unwrap();
+    if dtype != DType::F32 || !name.ends_with(".weight") {
+      return Tensor::new(name, dtype, shape, id, bytes);
+    }
+    let half: Vec<u8> = bytes
+      .chunks_exact(4)
+      .flat_map(|b| half::f16::from_f32(f32::from_le_bytes(b.try_into().unwrap())).to_le_bytes())
+      .collect();
+    Tensor::new(name, DType::F16, shape, id, Bytes::from_bytes_vec(half))
+  });
+  let mut writer = Writer::new(tensors.collect());
+  for (k, v) in &metadata {
+    writer = writer.with_metadata(k, v);
+  }
+  for (k, v) in scalars {
+    writer = writer.with_scalar(&k, v);
+  }
+  writer.write_to_file(dir.join(format!("{net}.f16.bpk"))).unwrap();
 }
 
 /// Reads `ModelProto.metadata_props` (field 14, repeated `StringStringEntryProto {1: key, 2: value}`)

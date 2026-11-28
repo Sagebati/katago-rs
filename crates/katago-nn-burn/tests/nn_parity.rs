@@ -599,7 +599,8 @@ fn nn_parity_b18c384nbt_humanv0_wgpu() {
   check_wgpu(&d);
 }
 
-/// The 3x3 and 1x1 convs in f16 (wino.rs `set_half`, as the browser runs them on adapters with shader-f16).
+/// The 3x3 and 1x1 convs in f16 (wino.rs `set_half`), on the f16 weights: what the browser runs on adapters with
+/// shader-f16 (native useFP16 loads the f32 `.bpk`: the rocm f16 and precision-per-network tests).
 #[cfg(all(feature = "wgpu", feature = "net-b18c384nbt"))]
 #[test]
 fn nn_parity_b18c384nbt_wgpu_f16() {
@@ -607,7 +608,22 @@ fn nn_parity_b18c384nbt_wgpu_f16() {
   let _half = Half::on();
   let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
     "wgpu",
-    katago_nn_burn::b18c384nbt::BPK_PATH,
+    katago_nn_burn::b18c384nbt::BPK_F16_PATH,
+    "evals_b18.txt",
+    "kata1-b18c384nbt.out.bin",
+    usize::MAX,
+  );
+  check_f16(&d);
+}
+
+/// f32 math on the f16 weights: the browser's f32 retry of an engine that failed in f16 keeps the f16 file.
+#[cfg(all(feature = "wgpu", feature = "net-b18c384nbt"))]
+#[test]
+fn nn_parity_b18c384nbt_wgpu_f16_weights() {
+  let _gpu = gpu_lock();
+  let d = run_net::<katago_nn_burn::b18c384nbt::Model>(
+    "wgpu",
+    katago_nn_burn::b18c384nbt::BPK_F16_PATH,
     "evals_b18.txt",
     "kata1-b18c384nbt.out.bin",
     usize::MAX,
@@ -622,7 +638,7 @@ fn nn_parity_b18c384nbt_humanv0_wgpu_f16() {
   let _half = Half::on();
   let d = run_net::<katago_nn_burn::b18c384nbt_humanv0::Model>(
     "wgpu",
-    katago_nn_burn::b18c384nbt_humanv0::BPK_PATH,
+    katago_nn_burn::b18c384nbt_humanv0::BPK_F16_PATH,
     "evals_human.txt",
     "b18c384nbt-humanv0.out.bin",
     usize::MAX,
@@ -686,7 +702,7 @@ fn nn_parity_b18c384nbt_rocm_f16() {
 /// The transformer nets (attention + RMSNorm blocks between nested bottleneck blocks; model v15 b10c384h6nbttflrs,
 /// model v17 b10c512h8nbt3tflrs-fson-silu-rsnh and kata1-tf3-b11c768) on the evals of evals_b18.txt (72 evals,
 /// policyOptimism > 0 included), each on flex, wgpu and rocm, f32 and f16 (`wino::set_half`; the 3x3 and 1x1 convs run
-/// in f16: a transformer net's input conv and its 1x1 convs). Tolerances: [`check_tf`]. The flex tests are
+/// in f16: a transformer net's input conv and its 1x1 convs; wgpu f16 on the `.f16.bpk`, as the browser). Tolerances: [`check_tf`]. The flex tests are
 /// release-only (1.5-2 minutes per net in release, b10c512h8nbt3tflrs-fson-silu-rsnh ~10 minutes: it runs the first `$flex_limit`
 /// evals only).
 macro_rules! transformer_parity {
@@ -712,7 +728,7 @@ macro_rules! transformer_parity {
     fn $wgpu_f16() {
       let _gpu = gpu_lock();
       let _half = Half::on();
-      let d = run_net::<katago_nn_burn::$module::Model>("wgpu", katago_nn_burn::$module::BPK_PATH, "evals_b18.txt", $out, usize::MAX);
+      let d = run_net::<katago_nn_burn::$module::Model>("wgpu", katago_nn_burn::$module::BPK_F16_PATH, "evals_b18.txt", $out, usize::MAX);
       check_tf(&d, Tier::F16);
     }
 
